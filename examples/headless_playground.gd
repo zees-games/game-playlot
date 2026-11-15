@@ -327,7 +327,7 @@ func _the_warmup_ran_under_the_cover() -> void:
 	var keys := {}
 	var twice := 0
 	for item: Variant in _tcb_client.gate.warm_items():
-		var key: String = PlaygroundClientPrewarm.item_key(item)
+		var key: String = DotRenderWarmup.item_key(item)
 		if key != "" and keys.has(key):
 			twice += 1
 		keys[key] = true

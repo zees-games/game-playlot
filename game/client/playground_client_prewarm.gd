@@ -448,7 +448,7 @@ func _warm_icon(item: Variant) -> void:
 func _hand(items: Array) -> void:
 	var fresh: Array = []
 	for item: Variant in items:
-		var key := item_key(item, _key_cache)
+		var key := DotRenderWarmup.item_key(item, _key_cache)
 		if key != "" and _keys.has(key):
 			skipped += 1
 			continue
@@ -460,48 +460,3 @@ func _hand(items: Array) -> void:
 	warmed += fresh.size()
 	if gate != null:
 		gate.warm_up(fresh)
-
-
-## What decides the pipeline [param item] compiles: for a [BaseMaterial3D] its class, every int and bool property
-## and which textures it has (a superset of Godot's own shader key), for a [Mesh] each surface's primitive, vertex
-## format and material key. "" for anything else (a [ShaderMaterial], a particle process material): never merged.
-static func item_key(item: Variant, cache: Dictionary = {}) -> String:
-	if item is BaseMaterial3D:
-		return material_key(item as BaseMaterial3D, cache)
-	if item is Mesh:
-		var mesh := item as Mesh
-		var parts := PackedStringArray([mesh.get_class()])
-		for i in mesh.get_surface_count():
-			var mat := mesh.surface_get_material(i)
-			var mat_key := "default" if mat == null else item_key(mat, cache)
-			if mat_key == "":
-				return ""
-			var fmt := (mesh as ArrayMesh).surface_get_format(i) if mesh is ArrayMesh else -1
-			var prim := (mesh as ArrayMesh).surface_get_primitive_type(i) if mesh is ArrayMesh else -1
-			parts.append("%d/%d/%s" % [prim, fmt, mat_key])
-		return "mesh:" + "#".join(parts)
-	return ""
-
-
-static func material_key(mat: BaseMaterial3D, cache: Dictionary = {}) -> String:
-	var id := mat.get_instance_id()
-	if cache.has(id):
-		return cache[id]
-	var parts := PackedStringArray([mat.get_class()])
-	for prop: Dictionary in mat.get_property_list():
-		if not int(prop["usage"]) & PROPERTY_USAGE_STORAGE:
-			continue
-		var name: String = prop["name"]
-		match int(prop["type"]):
-			TYPE_BOOL, TYPE_INT:
-				parts.append("%s=%s" % [name, mat.get(name)])
-			TYPE_OBJECT:
-				if name != "next_pass":
-					parts.append("%s=%s" % [name, mat.get(name) != null])
-	var next := mat.next_pass
-	if next != null:
-		var next_key := item_key(next, cache)
-		parts.append("next=" + (next_key if next_key != "" else "id%d" % next.get_instance_id()))
-	var key := "mat:" + ";".join(parts)
-	cache[id] = key
-	return key
