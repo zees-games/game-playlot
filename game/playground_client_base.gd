@@ -541,6 +541,7 @@ func _add_noblock_and_workbench() -> void:
 		return
 	var wb := DotGameWorkbench.new()
 	wb.name = "Workbench"
+	wb.lazy_panel = true
 	wb.listen_host_fn = func() -> bool: return true
 	PlaygroundWorkbenchSets.add_sets(wb, playground, func() -> bool: return arena_on)
 	add_child(wb)

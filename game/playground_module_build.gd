@@ -353,6 +353,7 @@ func _bind_profile_edit() -> void:
 func _start_workbench(rt: DotProfileRuntime) -> void:
 	workbench = DotGameWorkbench.new()
 	workbench.name = "Workbench"
+	workbench.lazy_panel = true
 	workbench.dedicated = DisplayServer.get_name() == "headless"
 	workbench.listen_host_fn = func() -> bool: return DisplayServer.get_name() != "headless"
 	var admin_permit := Callable()
