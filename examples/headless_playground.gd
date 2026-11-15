@@ -1,6 +1,6 @@
 extends "res://examples/headless_playground_part9.gd"
 
-const CHECKS := 782 + 22 + 9 + 10 + 8 + 1 + 4 + 15 + 2 + 1 + 26 + 3 + 2 + 2 + 1 + 8 + 1 + 5 + 10 + 25 + 1 + 1 + 30 + 18 + 1 + 6
+const CHECKS := 782 + 22 + 9 + 10 + 8 + 1 + 4 + 15 + 2 + 1 + 26 + 3 + 2 + 2 + 1 + 8 + 1 + 5 + 10 + 25 + 1 + 1 + 30 + 18 + 1 + 6 + 3
 
 ## Sections entered against sections that ran to their last line, and against this. A
 ## runtime error inside a section aborts that function and nothing says so; a section that
@@ -256,7 +256,7 @@ func _test_the_client_boots() -> void:
 	await _gate_opens(_tcb_client)
 	_check(_tcb_client.gate != null and _tcb_client.gate.is_open(), "the load gate opens once the level, player and camera are in",
 		"state %s held %s" % [_tcb_client.gate.state(), _tcb_client.gate.reasons()] if _tcb_client.gate != null else "no gate")
-
+	_the_warmup_ran_under_the_cover()
 	_check(_tcb_client.playground != null, "the client builds a playground")
 	_check(
 		_tcb_client.playground != null and _tcb_client.playground.booted,
@@ -310,6 +310,17 @@ func _test_the_client_boots() -> void:
 	_tcb_pg_xh = null
 	_tcb_sink = null
 	_tcb_edited = null
+
+
+## What the first spawn, shot and menu would build in play was built under the load cover, and
+## nothing of it was left in the world.
+func _the_warmup_ran_under_the_cover() -> void:
+	var warm: Variant = _tcb_client.prewarm
+	_check(warm != null and warm.finished and warm.warmed > 0 and not _tcb_client.gate.is_holding(&"prewarm"),
+		"the warm-up ran under the cover and let go of it", "warm-up %s" % [warm.phase_ms if warm != null else "missing"])
+	_check(_tcb_client.gate.warm_items().size() > 0,
+		"and handed the gate what NPCs, weapons and effects draw (%d items)" % _tcb_client.gate.warm_items().size())
+	_check(warm != null and warm.get_child_count() == 0, "and kept none of what it built")
 
 
 func _test_the_maps_are_surveyed() -> void:

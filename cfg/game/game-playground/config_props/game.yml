@@ -34,3 +34,7 @@
 # prop_world_budget: 1024
 # Seconds between one player's spawns. [0.0..10.0]
 # prop_spawn_interval: 0.1
+# Whether a client builds every NPC, weapon, effect and menu icon once under the loading cover, so the first ...
+# prewarm: true
+# Whether that warm-up also loads every model prop's scene: one file load each, so it lengthens the cover by ...
+# prewarm_model_props: false

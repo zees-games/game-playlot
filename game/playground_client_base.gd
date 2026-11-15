@@ -22,6 +22,7 @@ const PlaygroundWeapons := preload("playground_weapons.gd")
 const PlaygroundZee := preload("playground_zee.gd")
 const PlaygroundWeaponDef := preload("weapons/playground_weapon_def.gd")
 const PlaygroundTouch := preload("client/playground_touch.gd")
+const PlaygroundClientPrewarm := preload("client/playground_client_prewarm.gd")
 const PlaygroundWorkbenchSets := preload("playground_workbench_sets.gd")
 
 ## Boots a playable playground: one local player, a camera, a HUD, a spawn menu and the keys
@@ -233,6 +234,8 @@ func _build_gate() -> void:
 ## Releases the map hold once the first level is in, and holds again for each map change.
 ## Connected to `changing` (before the old level goes) and `changed` (the new one is built).
 func _wire_gate_to_maps() -> void:
+	# Held before the map lets go, so the cover stays up while the first spawn, shot and menu are built.
+	_build_prewarm()
 	gate.release(&"map")
 	playground.maps.changing.connect(
 		func(_from: DotMapDef, _to: DotMapDef) -> void: gate.hold(&"map", "Loading the map")
@@ -240,6 +243,21 @@ func _wire_gate_to_maps() -> void:
 	playground.maps.changed.connect(
 		func(_map: DotMapDef, _loaded: Node) -> void: gate.release(&"map")
 	)
+
+
+## The warm-up that runs under the cover once the first map is in.
+var prewarm: PlaygroundClientPrewarm = null
+
+
+func _build_prewarm() -> void:
+	prewarm = PlaygroundClientPrewarm.new()
+	prewarm.name = "Prewarm"
+	prewarm.gate = gate
+	prewarm.config = config
+	prewarm.catalogue = playground.props.catalogue if playground.props != null else null
+	prewarm.fx_catalogue = presentation.fx.catalogue if presentation != null and presentation.fx != null else null
+	add_child(prewarm)
+	var _started := prewarm.start()
 
 
 ## True while the load gate covers the screen: no input, no tool, no prediction.

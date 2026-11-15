@@ -174,6 +174,14 @@ extends DotConfig
 ## operator who is being spammed can tighten it without a build.
 @export_range(0.0, 10.0, 0.01) var prop_spawn_interval: float = 0.1
 
+## Whether a client builds every NPC, weapon, effect and menu icon once under the loading cover,
+## so the first spawn, shot and menu open do not stall. A presentation choice; the server ignores it.
+@export var prewarm: bool = true
+
+## Whether that warm-up also loads every model prop's scene: one file load each, so it lengthens
+## the cover by as many loads as the catalogue has models. Off by default.
+@export var prewarm_model_props: bool = false
+
 @export_group("Arena")
 
 ## Seconds one arena round lasts.
