@@ -118,11 +118,7 @@ func _ready() -> void:
 	else:
 		# Offline the client IS the server: its own world confirms its hits. Connected, the
 		# server's HIT event does (`_build_netcode`), and this world decides nothing.
-		playground.hit_landed.connect(func(id: StringName, victim: int, amount: float, point: Vector3, killed: bool, headshot: bool) -> void:
-			if id == player_id:
-				if killed:
-					note_offline(&"kills")
-				_on_hit(victim, amount, point, killed, headshot))
+		playground.hit_landed.connect(_on_offline_hit)
 	_sync_hud()
 
 	# After the HUD, because for a CanvasItem tree order is draw order and a menu
@@ -426,3 +422,12 @@ func _unhandled_input(event: InputEvent) -> void:
 			# a browser refuses pointer lock just after Escape.
 			if not _menu_is_open() and game_menu != null:
 				game_menu.open()
+
+
+## Offline, this world's own hit on another player: counted for the Tab board, then shown as a confirmed hit.
+func _on_offline_hit(id: StringName, victim: int, amount: float, point: Vector3, killed: bool, headshot: bool) -> void:
+	if id != player_id:
+		return
+	if killed:
+		note_offline(&"kills")
+	_on_hit(victim, amount, point, killed, headshot)

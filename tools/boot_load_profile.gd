@@ -1,8 +1,7 @@
 extends SceneTree
-## Boot-compile profile: loads the playground scene headless and reports how long the load
-## took and how many scripts it pulled in (game and addons, by count and bytes). Run:
-##   godot --headless --path . --script res://tools/boot_load_profile.gd
-## Script compile is the whole cost of the load; compare the counts before and after a change.
+## Boot-compile profile: loads the playground scene headless and reports the load time and the scripts
+## it pulled in (game and addons, by count and bytes); compile is the whole cost, so compare counts.
+## Run: godot --headless --path . --script res://tools/boot_load_profile.gd
 
 
 func _walk(dir: String, out: Array) -> void:
