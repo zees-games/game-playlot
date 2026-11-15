@@ -51,7 +51,7 @@ var _parts_warmed := false
 var _held_icons: Array[Texture2D] = []
 
 
-## Starts the work and holds [member gate] until it is done. Returns false (nothing held) when
+## Starts the work and holds [member gate] until all but the icons are done. Returns false (nothing held) when
 ## [member config] turns it off.
 func start() -> bool:
 	if config != null and not config.prewarm:
@@ -67,6 +67,8 @@ func start() -> bool:
 ## frame, so a budget of 0 still finishes.
 func _run() -> void:
 	for phase in range(Phase.DONE):
+		if phase == Phase.ICONS:
+			_release_cover()
 		var began := Time.get_ticks_usec()
 		for item in _items_for(phase as Phase):
 			if _slice == null:
@@ -93,10 +95,19 @@ func _free_spare_view() -> void:
 	_spare_view = null
 
 
+## Icons are loaded and drawn on the CPU, not compiled for the GPU, so the cover does not wait for
+## them: on a software WebGL they took 26 s of a 41 s hold. They finish in play, a slice a frame.
+func _release_cover() -> void:
+	_free_spare_view()
+	DotLog.info(CHANNEL, "warmed under the cover", {"items": warmed, "ms": phase_ms.duplicate()})
+	if gate != null:
+		gate.release(HOLD)
+
+
 func _finish() -> void:
 	finished = true
 	_free_spare_view()
-	DotLog.info(CHANNEL, "warmed under the cover", {"items": warmed, "ms": phase_ms})
+	DotLog.info(CHANNEL, "warmed the icons in play", {"ms": phase_ms.get("ICONS", 0)})
 	if gate != null:
 		gate.release(HOLD)
 
