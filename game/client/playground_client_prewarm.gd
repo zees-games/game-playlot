@@ -56,6 +56,12 @@ var skipped: int = 0
 ## Frames the cover-held phases took to run: on a software WebGL each costs hundreds of ms.
 var cover_frames: int = 0
 
+## When true, [member profile] collects microseconds per step and per item ("prop.load", "item:PROPS:<id>"...).
+var profiling: bool = false
+## Step or item name -> total microseconds, filled while [member profiling] is on.
+var profile: Dictionary = {}
+var _lap_at := 0
+
 var _slice: DotFrameSlice = null
 var _spare_view: ZeeViewModel = null
 var _parts_warmed := false
@@ -70,17 +76,23 @@ var _on_camera: Array[Node] = []
 ## Artwork icons are loaded with `load()` and not cached by the icon code: kept here until the
 ## game is over, so the spawn menu's first open finds them in the resource cache.
 var _held_icons: Array[Texture2D] = []
+## The viewport whose 3D drawing is off under the cover ([member PlaygroundConfig.prewarm_hide_world]), else null.
+var _hidden_view: Viewport = null
+## True once the 3D world was left undrawn under the cover: what a test reads.
+var hid_world: bool = false
 
 
 ## Starts the work and holds [member gate] until all but the icons are done. Returns false (nothing held) when
 ## [member config] turns it off.
 func start() -> bool:
+	profiling = profiling or OS.get_cmdline_user_args().has("--prewarm-profile")
 	if config != null and not config.prewarm:
 		finished = true
 		return false
 	if gate != null:
 		gate.hold(HOLD, "Getting things ready")
 		_covering = true
+		_hide_world()
 	_run()
 	return true
 
@@ -111,6 +123,27 @@ func _run() -> void:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_PREDELETE:
 		_free_spare_view()
+		_show_world()
+
+
+## Turns off 3D drawing while the hold covers the screen: nothing here needs it (the gate draws the warmed items
+## after every hold is gone), and on software GL each covered frame drew the whole map. The gate's own signals
+## turn it back on too, because its time-out drops this hold while the work is still running.
+func _hide_world() -> void:
+	if config == null or not config.prewarm_hide_world or not is_inside_tree() or get_viewport().disable_3d:
+		return
+	_hidden_view = get_viewport()
+	_hidden_view.disable_3d = true
+	hid_world = true
+	for sig: Signal in [gate.ready_to_show, gate.opened]:
+		if not sig.is_connected(_show_world):
+			sig.connect(_show_world, CONNECT_ONE_SHOT)
+
+
+func _show_world() -> void:
+	if _hidden_view != null and is_instance_valid(_hidden_view):
+		_hidden_view.disable_3d = false
+	_hidden_view = null
 
 
 func _free_spare_view() -> void:
@@ -124,6 +157,7 @@ func _free_spare_view() -> void:
 func _release_cover() -> void:
 	_free_spare_view()
 	_covering = false
+	_show_world()
 	_hold_light_probe()
 	DotLog.info(CHANNEL, "warmed under the cover", {"items": warmed, "skipped": skipped, "frames": cover_frames,
 		"ms": phase_ms.duplicate()})
@@ -135,9 +169,21 @@ func _finish() -> void:
 	finished = true
 	_covering = false
 	_free_spare_view()
+	_show_world()
 	DotLog.info(CHANNEL, "warmed the icons in play", {"ms": phase_ms.get("ICONS", 0)})
+	if profiling:
+		_print_profile()
 	if gate != null:
 		gate.release(HOLD)
+
+
+## The profile, slowest first, one "prewarm profile:" line per entry (a tool's output, so print).
+func _print_profile() -> void:
+	var keys := profile.keys()
+	keys.sort_custom(func(a: String, b: String) -> bool: return int(profile[a]) > int(profile[b]))
+	print("prewarm profile: phases ms=%s cover_frames=%d" % [phase_ms, cover_frames])
+	for key: String in keys:
+		print("prewarm profile: %8.1f ms  %s" % [int(profile[key]) / 1000.0, key])
 
 
 func _items_for(phase: Phase) -> Array:
@@ -208,6 +254,33 @@ func _all_props() -> Array[DotPropDef]:
 
 
 func _warm_one(phase: Phase, item: Variant) -> void:
+	var began := Time.get_ticks_usec() if profiling else 0
+	_lap_at = began
+	_warm_one_inner(phase, item)
+	if profiling:
+		var key := "item:%s:%s" % [Phase.keys()[phase], _item_name(item)]
+		profile[key] = int(profile.get(key, 0)) + Time.get_ticks_usec() - began
+
+
+static func _item_name(item: Variant) -> String:
+	if item is DotPropDef:
+		return str((item as DotPropDef).id)
+	if item is Resource:
+		var res := item as Resource
+		return res.resource_path.get_file() if res.resource_path != "" else res.get_class()
+	return str(item)
+
+
+## Adds the time since the last lap to [param step] in [member profile].
+func _lap(step: String) -> void:
+	if not profiling:
+		return
+	var now := Time.get_ticks_usec()
+	profile[step] = int(profile.get(step, 0)) + now - _lap_at
+	_lap_at = now
+
+
+func _warm_one_inner(phase: Phase, item: Variant) -> void:
 	match phase:
 		Phase.PROPS:
 			_warm_prop(item as DotPropDef)
@@ -231,22 +304,29 @@ func _warm_prop(def: DotPropDef) -> void:
 	if def == null:
 		return
 	var scene: Variant = load(def.scene_path) if def.scene_path != "" and ResourceLoader.exists(def.scene_path) else null
+	_lap("prop.load")
 	if not scene is PackedScene:
 		return
 	if PlaygroundSpawnables.kind_of(def) == PlaygroundSpawnables.Kind.ENTITY:
 		var _script := PlaygroundSpawnables.load_script(def)
+	_lap("prop.script")
 	var node := (scene as PackedScene).instantiate()
+	_lap("prop.instantiate")
 	# An entity's scene is a bare body. Its own script would run its brain on configure's
 	# heels; the prop script it extends builds the same mesh and figure and nothing else.
 	if not node.has_method(&"configure") and node is RigidBody3D:
 		node.set_script(PlaygroundProp)
 	if node.has_method(&"configure"):
 		node.call(&"configure", def)
+	_lap("prop.configure")
 	var figure := node.get_node_or_null(^"Figure")
 	if figure != null:
 		var _surfaces := DotSkinSurfaces.warm(figure)
+	_lap("prop.skin")
 	_hand(DotRenderWarmup.collect(node))
+	_lap("prop.collect")
 	node.free()
+	_lap("prop.free")
 
 
 ## Draws the weapon into a spare view model and drops it again: the model file loads, its
@@ -258,12 +338,16 @@ func _warm_weapon(art: ZeeWeaponArt) -> void:
 		_spare_view = ZeeViewModel.new()
 		_spare_view.name = "PrewarmView"
 	var equipped := _spare_view.equip(art)
+	_lap("weapon.equip")
 	if equipped.ok:
 		_hand(DotRenderWarmup.collect(_spare_view))
+	_lap("weapon.collect")
 	_spare_view.clear()
+	_lap("weapon.clear")
 	if not _parts_warmed:
 		_parts_warmed = true
 		_spare_view.prewarm(art)
+		_lap("weapon.parts")
 
 
 func _warm_fx_scene(path: String) -> void:

@@ -1,6 +1,6 @@
 extends "res://examples/headless_playground_part9.gd"
 
-const CHECKS := 782 + 22 + 9 + 10 + 8 + 1 + 4 + 15 + 2 + 1 + 26 + 3 + 2 + 2 + 1 + 8 + 1 + 5 + 10 + 25 + 1 + 1 + 30 + 18 + 1 + 6 + 3 + 1 + 2
+const CHECKS := 782 + 22 + 9 + 10 + 8 + 1 + 4 + 15 + 2 + 1 + 26 + 3 + 2 + 2 + 1 + 8 + 1 + 5 + 10 + 25 + 1 + 1 + 30 + 18 + 1 + 6 + 3 + 1 + 2 + 1
 const PlaygroundClientPrewarm := preload("res://game/client/playground_client_prewarm.gd")
 
 ## Sections entered against sections that ran to their last line, and against this. A
@@ -322,6 +322,8 @@ func _the_warmup_ran_under_the_cover() -> void:
 	_check(_tcb_client.gate.warm_items().size() > 0,
 		"and handed the gate what NPCs, weapons and effects draw (%d items)" % _tcb_client.gate.warm_items().size())
 	_check(warm != null and warm.get_child_count() == 0, "and kept none of what it built")
+	_check(warm != null and warm.hid_world and not _tcb_client.get_viewport().disable_3d,
+		"and left the world undrawn under the cover, then drew it again", "hid %s" % [warm.hid_world if warm != null else "?"])
 	var keys := {}
 	var twice := 0
 	for item: Variant in _tcb_client.gate.warm_items():

@@ -2,6 +2,7 @@ extends SceneTree
 
 const PlaygroundClient := preload("../game/playground_client.gd")
 const PlaygroundPresentation := preload("../game/playground_presentation.gd")
+const PlaygroundConfig := preload("../game/playground_config.gd")
 
 ## Boots the solo client and prints, per rendered frame, what a player would see: whether the
 ## map, the player and the camera exist, where the body is and whether the load gate (if any)
@@ -11,6 +12,8 @@ const PlaygroundPresentation := preload("../game/playground_presentation.gd")
 ## --cover times the cover instead (a software-GL stand-in for the web build, where each shader compiles on
 ## its first draw): no per-frame lines, a quit 10 frames after the gate opens, and one line
 ## "load_probe cover: map_ms=.. open_ms=.. map_to_open_ms=.. frames=.." (ms from boot; frames rendered map to open).
+## --prewarm-profile also waits for the warm-up and prints its per-step and per-item times.
+## --draw-world keeps the 3D world drawn under the warm-up's cover (PlaygroundConfig.prewarm_hide_world off), for A/B.
 var _client: PlaygroundClient = null
 var _frame := 0
 var _frames := 90
@@ -36,6 +39,9 @@ func _initialize() -> void:
 	DirAccess.make_dir_recursive_absolute("res://screenshots")
 	_client = PlaygroundClient.new()
 	_client.link = null
+	if OS.get_cmdline_user_args().has("--draw-world"):
+		_client.config = PlaygroundConfig.new()
+		_client.config.prewarm_hide_world = false
 	root.add_child(_client)
 
 
@@ -71,8 +77,15 @@ func _time_cover(gate: Object, covered: bool, map_up: bool) -> void:
 	if _map_ms >= 0 and gate != null and not covered and _open_ms < 0:
 		_open_ms = now
 		_open_frame = _frame
-	if (_open_ms >= 0 and _frame - _open_frame >= 10) or _frame >= _frames:
+	if (_open_ms >= 0 and _frame - _open_frame >= 10 and _profile_done()) or _frame >= _frames:
 		print("load_probe cover: map_ms=%d open_ms=%d map_to_open_ms=%d frames=%d" % [
 			_map_ms, _open_ms, _open_ms - _map_ms if _open_ms >= 0 else -1,
 			_open_frame - _map_frame if _open_ms >= 0 else -1])
 		quit(0)
+
+
+## With --prewarm-profile the run also waits for the warm-up to finish, so its profile is printed.
+func _profile_done() -> bool:
+	if not OS.get_cmdline_user_args().has("--prewarm-profile"):
+		return true
+	return _client.prewarm == null or _client.prewarm.finished

@@ -188,6 +188,11 @@ extends DotConfig
 ## GL (PH, 3 runs against 3) it kept the cover up about 10 s longer (map to open 43 s against 33 s).
 @export var prewarm_shot_effects: bool = false
 
+## Whether the 3D world is left undrawn while that warm-up holds the cover. The cover hides it anyway, and on
+## software GL each frame of it cost about 0.7 s: most of the warm-up's time under the cover went to drawing a map
+## nobody could see. Off draws it, as before.
+@export var prewarm_hide_world: bool = true
+
 @export_group("Arena")
 
 ## Seconds one arena round lasts.
