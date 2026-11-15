@@ -7,7 +7,6 @@ const PlaygroundZee := preload("../game/playground_zee.gd")
 
 ## Renders the offline client in first person holding each listed weapon, then in third person,
 ## and prints what draws for the local player: arms rigs, weapon models, meshes in view.
-##
 ## Run: `xvfb-run -a godot --path . --resolution 1280x720 res://tools/render_avatar_arms.tscn -- <out dir> [ids...]`
 
 const DEFAULT_IDS: Array[StringName] = [&"pistol", &"sniper", &"smg", &"lmg", &"shotgun", &"crowbar"]

@@ -157,7 +157,7 @@ func _build() -> void:
 				print("screenshot_menus: skipping ", s["file"], ", no pack tab")
 				return false
 			return true)
-	# SHOTS=a,b renders only the files whose name contains one of the words (a quick look at one tab).
+	# With SHOTS set to a comma list, this renders only the files whose name contains one of the words (a quick look at one tab).
 	var only := OS.get_environment("SHOTS")
 	if only != "":
 		var words := only.split(",")

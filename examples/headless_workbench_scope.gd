@@ -1,10 +1,7 @@
 extends DotGameCheckSuite
 
-## The playground's Workbench lists only what is loaded: the arena mode's settings while `pg_arena` is on, a heading per
-## weapon pack that has profiles, addon cvar sets when their cvars exist, and every heading says which side it edits.
-##
-## [codeblock]
-## godot --headless --path . res://examples/headless_workbench_scope.tscn
+## The playground's Workbench lists only what is loaded: the arena mode's settings while `pg_arena` is on, a heading per weapon pack that has profiles, addon cvar sets when their cvars exist, and every heading says which side it edits.
+## [codeblock] godot --headless --path . res://examples/headless_workbench_scope.tscn
 ## [/codeblock]
 
 const PlaygroundConfig := preload("../game/playground_config.gd")

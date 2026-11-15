@@ -603,7 +603,7 @@ func show_tab(tab: Tab) -> void:
 	# one, so a caller can ask for a tab that is not there: ignore it rather than index
 	# the bar out of bounds.
 	if _tabs != null and int(tab) >= _tabs.tab_count:
-		push_warning("PlaygroundSpawnMenu.show_tab: no tab %d (%d tabs)" % [int(tab), _tabs.tab_count])
+		DotLog.warn("playground.menu", "show_tab: no such tab", {"tab": int(tab), "tabs": _tabs.tab_count})
 		return
 	if _tabs != null:
 		# Through the TabBar rather than by setting `_tab`, so the bar and the grid

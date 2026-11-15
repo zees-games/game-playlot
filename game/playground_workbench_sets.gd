@@ -1,9 +1,7 @@
 extends RefCounted
 
-## What the playground's Workbench lists, and under which heading. One call for the three hosts: the offline client,
-## an online client's remote panel and the server. Every set is scoped with dot-workbench's [DotWorkbenchScope] to what
-## is loaded. The arena mode's settings show only while `pg_arena` is on. Each loaded weapon pack's profiles get a
-## heading of their own. Every heading says which side it edits.
+## What the playground's Workbench lists, and under which heading. One call for the three hosts: the offline client, an online client's remote panel and the server. Every set is scoped with dot-workbench's [DotWorkbenchScope] to what
+## is loaded. The arena mode's settings show only while `pg_arena` is on. Each loaded weapon pack's profiles get a heading of their own. Every heading says which side it edits.
 
 const GAME := "game-playground"
 ## The owner the arena mode's settings are listed under.

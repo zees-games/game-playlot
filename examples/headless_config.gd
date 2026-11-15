@@ -130,10 +130,8 @@ func _ambience_cvars() -> void:
 	_check(not ambient.is_empty() and odd.is_empty(), "the ambience set offers the pg_ambient* cvars", ",".join(odd))
 
 
-## The pack ships only game/, maps/ and the committed addons/pg_*: a web shell carries dot_* alone,
-## and solo play fetches every other addon from the names in requires.floor.json. A Zee* or Aw*
-## class named in a shipped script whose addon the floor leaves out is a grey screen on playlot.app
-## ("Could not find type ZeeViewModel"), so every such addon must be named, at a sound floor.
+## The pack ships only game/, maps/ and the committed addons/pg_*: a web shell carries dot_* alone, and solo play fetches every other addon from the names in requires.floor.json. A Zee* or Aw*
+## class named in a shipped script whose addon the floor leaves out is a grey screen on playlot.app ("Could not find type ZeeViewModel"), so every such addon must be named, at a sound floor.
 func _pack_floor() -> void:
 	var derived := DotAddonApi.derive("res://")
 	for dir in DirAccess.get_directories_at("res://addons"):

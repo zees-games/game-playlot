@@ -3,10 +3,8 @@ extends DotGamePerfBench
 const PlaygroundConfig := preload("../game/playground_config.gd")
 const PlaygroundPresentation := preload("../game/playground_presentation.gd")
 
-## The offline sandbox benchmark: dot-game's DotGamePerfBench (flags, recording, sidecar; see it) on the playground client. Run it
-## windowed with `tools/perf_bench.sh --box staging02` (gamedev, from a checkout).
-## `--bots N` NPCs (wanderers, chasers, soldiers) and `--props N` props (crates, barrels, balls) dropped in a pile in front of the
-## player, so the run has physics, NPC brains and draw work; `--map ID` another map first (default pg_flatgrass).
+## The offline sandbox benchmark: dot-game's DotGamePerfBench (flags, recording, sidecar; see it) on the playground client. Run it windowed with `tools/perf_bench.sh --box staging02` (gamedev, from a checkout).
+## `--bots N` NPCs (wanderers, chasers, soldiers) and `--props N` props (crates, barrels, balls) dropped in a pile in front of the player, so the run has physics, NPC brains and draw work; `--map ID` another map first (default pg_flatgrass).
 
 const NPC_IDS: Array[StringName] = [&"npc_wanderer", &"npc_chaser", &"npc_soldier"]
 const PROP_IDS: Array[StringName] = [&"crate", &"barrel", &"beach_ball", &"plank"]

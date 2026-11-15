@@ -139,10 +139,8 @@ var profiles: Object = null
 var _scene_spawns: Dictionary = {}
 
 
-## Lets go of everything. An item's callback is a lambda that captures the item and this object,
-## and a provider entry's `spawn` is a Callable bound to the provider's script: a reference
-## cycle the engine reports as leaked at exit, with every linked pack's script in it. Called when
-## the game leaves the tree.
+## Lets go of everything. An item's callback is a lambda that captures the item and this object, and a provider entry's `spawn` is a Callable bound to the provider's script: a reference
+## cycle the engine reports as leaked at exit, with every linked pack's script in it. Called when the game leaves the tree.
 func release() -> void:
 	for item in _items:
 		item.callback = Callable()

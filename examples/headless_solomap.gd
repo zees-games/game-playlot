@@ -1,12 +1,8 @@
 extends DotGameCheckSuite
 
-## Solo in the client shell: the map packs it mounted are in the catalogue before the first map, and its `start_map`
-## (`--solo-map`, a hotspot "Play map" link) is that first map. With no host, an older shell or a map nobody has, the
-## first map is `initial_map` as before.
-##
-## [codeblock]
-## godot --headless --path . res://examples/headless_solomap.tscn
-## [/codeblock]
+## Solo in the client shell: the map packs it mounted are in the catalogue before the first map, and its `start_map` (`--solo-map`, a hotspot "Play map" link) is that first map. With no host, an older shell or a map nobody has, the
+## first map is `initial_map` as before. [codeblock]
+## godot --headless --path . res://examples/headless_solomap.tscn [/codeblock]
 
 const Playground := preload("../game/playground.gd")
 const PlaygroundConfig := preload("../game/playground_config.gd")

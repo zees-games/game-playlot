@@ -1,11 +1,8 @@
 extends SceneTree
 
-## Live proof that a purchase made on the site reaches a game's loadout: a real DotBackboneClient asks the site's
-## STORE_READ entitlements route and the manager wrapped by DotGameStoreEntitlements.attach holds the result.
-## Dev site only; the token is a dev credential. Exit 1 when the expected item is not held.
-##
-##   STORE_PLAYER=<scoped key> STORE_EXPECT=e2e_trail STORE_TOKEN_FILE=~/.config/dot/store-token-dev-games \
-##   STORE_URL=https://games.tmcdev.net godot --headless --path . --script tools/store_live_check.gd
+## Live proof that a purchase made on the site reaches a game's loadout: a real DotBackboneClient asks the site's STORE_READ entitlements route and the manager wrapped by DotGameStoreEntitlements.attach holds the result.
+## Dev site only; the token is a dev credential. Exit 1 when the expected item is not held. STORE_PLAYER=<scoped key> STORE_EXPECT=e2e_trail STORE_TOKEN_FILE=~/.config/dot/store-token-dev-games \
+## STORE_URL=https://games.tmcdev.net godot --headless --path . --script tools/store_live_check.gd
 
 func _initialize() -> void:
 	DotLog.set_level(DotLog.Level.WARN)

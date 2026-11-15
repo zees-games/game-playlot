@@ -88,10 +88,8 @@ static func add_provider_def(def: PlaygroundWeaponDef, provider: Object = null) 
 static var _art_providers: Dictionary = {}
 
 
-## Every pack and provider weapon gets art in zee's table, so each draws a first-person model on the
-## avatar's arms and a gun in a remote player's hand. Without it a weapon zee has no art for (the
-## arena pack's `lmg`) drew nothing at all. The provider's own art when it ships `weapon_art()`,
-## else zee's gun of the same tier dressed with the provider's model (`art_rows()`).
+## Every pack and provider weapon gets art in zee's table, so each draws a first-person model on the avatar's arms and a gun in a remote player's hand. Without it a weapon zee has no art for (the
+## arena pack's `lmg`) drew nothing at all. The provider's own art when it ships `weapon_art()`, else zee's gun of the same tier dressed with the provider's model (`art_rows()`).
 static func pack_art() -> Array[ZeeWeaponArt]:
 	var out: Array[ZeeWeaponArt] = []
 	for table: Dictionary in [_pack_defs, _provider_defs]:

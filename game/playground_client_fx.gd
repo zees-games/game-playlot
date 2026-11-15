@@ -261,10 +261,8 @@ func _process(_delta: float) -> void:
 		hud.follow_hands(hands)
 
 
-## Sway, bob and the hands hidden in third person, once a frame. Returns the camera's half of the
-## recoil (degrees, x pitch y yaw), which the camera write adds: presentation only, the command's
-## angles and so the shot are untouched.
-## Whether the sights may come up: only first person, with the pointer on the view, no menu up, a zee gun in hand and the player alive.
+## Sway, bob and the hands hidden in third person, once a frame. Returns the camera's half of the recoil (degrees, x pitch y yaw), which the camera write adds: presentation only, the command's
+## angles and so the shot are untouched. Whether the sights may come up: only first person, with the pointer on the view, no menu up, a zee gun in hand and the player alive.
 func _aim_may() -> bool:
 	return _zee_rig() != null and mouse_drives_view() and not _menu_is_open() and view_id() == &"fp" and player != null and not player.downed
 

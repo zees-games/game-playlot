@@ -6,10 +6,8 @@ const PlaygroundViewGrip := preload("../game/playground_view_grip.gd")
 const PlaygroundZee := preload("../game/playground_zee.gd")
 const PlaygroundWeaponDef := preload("../game/weapons/playground_weapon_def.gd")
 
-## The avatar owns the arms; a weapon brings only the gun and where to hold it. One arms rig
-## per player, the same arms and body whatever is held (only the pose moves), a remote
-## player's body unchanged by its gun, no second copy of the gun in first person, and a
-## first-person model for every weapon in the catalogue, workshop and provider packs included.
+## The avatar owns the arms; a weapon brings only the gun and where to hold it. One arms rig per player, the same arms and body whatever is held (only the pose moves), a remote
+## player's body unchanged by its gun, no second copy of the gun in first person, and a first-person model for every weapon in the catalogue, workshop and provider packs included.
 ## Run: godot --headless --path . res://examples/headless_avatar_arms.tscn
 
 const SECTIONS := 4

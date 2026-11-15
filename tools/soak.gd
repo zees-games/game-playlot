@@ -5,10 +5,8 @@ const PlaygroundConfig := preload("../game/playground_config.gd")
 const PlaygroundPlayer := preload("../game/playground_player.gd")
 const PlaygroundPresentation := preload("../game/playground_presentation.gd")
 
-## Soak on the real sandbox: N players wander one map for M simulated minutes through dot-bot's DotBotSoak, fed by dot-spawn's DotSpawnWatch.
-## The playground has no bot brain (a sandbox has nothing to chase), so each stand-in holds a random heading for a second or three and jumps now and then,
-## which is what walks them into walls, water, ramps and every prop and pane a map has. Run `./game.sh soak [map] [minutes]`; DotBotSoakConfig flags are accepted too.
-## Writes .godot/test-logs/soak-<map>.json, prints the SOAK line, exits 1 on failure. No navigation, goals or combat here: stuck is lenient (they bump walls on purpose).
+## Soak on the real sandbox: N players wander one map for M simulated minutes through dot-bot's DotBotSoak, fed by dot-spawn's DotSpawnWatch. The playground has no bot brain (a sandbox has nothing to chase), so each stand-in holds a random heading for a second or three and jumps now and then,
+## which is what walks them into walls, water, ramps and every prop and pane a map has. Run `./game.sh soak [map] [minutes]`; DotBotSoakConfig flags are accepted too. Writes .godot/test-logs/soak-<map>.json, prints the SOAK line, exits 1 on failure. No navigation, goals or combat here: stuck is lenient (they bump walls on purpose).
 
 const DEFAULT_MAP := &"pg_flatgrass"
 const DEFAULT_MINUTES := 1.0

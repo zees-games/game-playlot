@@ -28,10 +28,8 @@ static func piece_theme() -> Theme:
 	return t
 
 
-## The theme's HUD colours onto a run timer's block (the time, the speed, the strafes), which
-## is not a dot-ui piece and so does not read the theme the menu sets on this HUD.
-## [param palette] is the menu's; null is the default theme. Kept so a timer block added
-## later is themed too.
+## The theme's HUD colours onto a run timer's block (the time, the speed, the strafes), which is not a dot-ui piece and so does not read the theme the menu sets on this HUD.
+## [param palette] is the menu's; null is the default theme. Kept so a timer block added later is themed too.
 func apply_theme(palette: DotMenuPalette = null) -> void:
 	_palette = palette if palette != null else DotMenuPalette.new()
 	if timer_hud != null:

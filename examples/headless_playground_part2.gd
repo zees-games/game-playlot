@@ -249,12 +249,9 @@ func _test_boots() -> void:
 	_check(playground.props != null, "the prop spawner exists")
 	_check(playground.boards != null, "the leaderboards exist")
 
-	# Two built in (the flat grass plane and `pg_generated`) and the custom maps linked in, each
-	# built by `pg_data`. The count is asserted, not the ids: a list of ids would be a second
-	# copy of `Playground.map_catalogue()`.
-	# The catalogue also takes documents from `user://maps` (internal-use originals unzipped on a developer machine), so what varies
-	# per machine is split out: only the documents under `maps/custom` are counted against the survey list, and the folder itself is
-	# compared with that list so a document nobody surveyed fails by name instead of as "26 in all, 24 documents".
+	# Two built in (the flat grass plane and `pg_generated`) and the custom maps linked in, each built by `pg_data`. The count is asserted, not the ids: a list of ids would be a second
+	# copy of `Playground.map_catalogue()`. The catalogue also takes documents from `user://maps` (internal-use originals unzipped on a developer machine), so what varies
+	# per machine is split out: only the documents under `maps/custom` are counted against the survey list, and the folder itself is compared with that list so a document nobody surveyed fails by name instead of as "26 in all, 24 documents".
 	var data_maps := 0
 	var user_maps := 0
 	for map: DotMapDef in playground.maps.catalogue.maps:
