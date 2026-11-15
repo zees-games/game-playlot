@@ -33,7 +33,7 @@ Things you can do:
 - **Save what you built** with `pg_save <name>` and load it later with `pg_load <name>`.
 - **Break things.** When the server has `pg_destruction 1`, crates and planks break apart and barrels explode.
 - **Creative mode.** Type `!creative`. Nobody can touch you or your props, and you cannot hurt anybody.
-- **Fight.** `pg_arena 1` turns on damage between players, and `pg_waves` sends waves of armed NPCs. The dead fall as ragdolls (via [dot-player-char](https://github.com/modcommunity/dot-player-char)). `sv_ragdoll 0` gives a quick fall with no physics, and `sv_ragdoll_reactions` weights the kinds of fall.
+- **Fight.** `pg_arena 1` turns on damage between players, and `pg_waves` sends waves of armed NPCs. The dead fall as ragdolls (via [dot-player-char](https://github.com/gamespice-platform/player-char)). `sv_ragdoll 0` gives a quick fall with no physics, and `sv_ragdoll_reactions` weights the kinds of fall.
 
 ### Maps
 
@@ -76,10 +76,10 @@ Every key can be rebound under Controls in the menu.
 
 ## Getting started
 
-You need [Godot 4.7](https://godotengine.org/download). The game uses many Dot addons, each in its own repository. The easiest way to get everything is [dot-bootstrap](https://github.com/modcommunity/dot-bootstrap), which clones each project and links the addons into it:
+You need [Godot 4.7](https://godotengine.org/download). The game uses many Dot addons, each in its own repository. The easiest way to get everything is [dot-bootstrap](https://github.com/gamespice-platform/bootstrap), which clones each project and links the addons into it:
 
 ```bash
-git clone https://github.com/modcommunity/dot-bootstrap.git
+git clone https://github.com/gamespice-platform/bootstrap.git
 cd dot-bootstrap
 ./bootstrap.sh
 cd projects/game-playlot
@@ -98,7 +98,7 @@ On Windows, run `bootstrap.ps1` instead and open the project in Godot.
 | `./game.sh shot` | Save a screenshot to `screenshots/` |
 | `./game.sh help` | List all options |
 
-`online` and `server` use [dot-server-deploy](https://github.com/modcommunity/dot-server-deploy), which bootstrap clones next to this project. Run its `./setup.sh` once first.
+`online` and `server` use [dot-server-deploy](https://github.com/gamespice-platform/server-deploy), which bootstrap clones next to this project. Run its `./setup.sh` once first.
 
 ## Running a server
 
@@ -148,7 +148,7 @@ pg_limits u3                 // what player u3 is using against their limits
 | `pg_shop [0\|1]` | Prices for spawning, paid from a bag |
 | `pg_give <player> <prop> [count]`, `pg_inv <player>` | Put things in a player's bag, or read it |
 
-Admin commands such as `!noclip`, `!freeze`, `!slay` and `!bring` come from [dot-moderation](https://github.com/modcommunity/dot-moderation). `blind <player>` blacks out that player's screen, and `beacon <player>` puts a ring and a ping on them for everybody to see.
+Admin commands such as `!noclip`, `!freeze`, `!slay` and `!bring` come from [dot-moderation](https://github.com/gamespice-platform/moderation). `blind <player>` blacks out that player's screen, and `beacon <player>` puts a ring and a ping on them for everybody to see.
 
 ### Fight mode defaults
 
@@ -156,7 +156,7 @@ With fights on, a round lasts 240 seconds or until someone reaches 25 kills. The
 
 ### The map vote
 
-Players vote on the next map with [dot-vote](https://github.com/modcommunity/dot-vote). The defaults are in `game/playground_vote.gd`. To change them, put a file at `user://cfg/playground_vote.json`, or use `DOT_VOTE_*` environment variables or `--vote-*` arguments:
+Players vote on the next map with [dot-vote](https://github.com/gamespice-platform/vote). The defaults are in `game/playground_vote.gd`. To change them, put a file at `user://cfg/playground_vote.json`, or use `DOT_VOTE_*` environment variables or `--vote-*` arguments:
 
 ```json
 { "end_vote": true, "vote_lead_sec": 120, "include_extend": true, "extend_seconds": 900, "max_extends": 4 }
@@ -170,7 +170,7 @@ With `pg_shop 1`, spawning costs money. A player's bag is a 10 x 6 grid with a 4
 
 ### Run timer
 
-The game does not ship a run timer. A server that wants timed courses adds [dot-timer](https://github.com/modcommunity/dot-timer): put its `addons/dot_timer` folder in the project, run `godot --headless --path . --import` once, and start the server. The game's own `addons/pg_timer` notices it and turns on timing: zones from a map's zone file, records, leaderboards and the commands `pg_timer`, `pg_track`, `pg_top`, `pg_cp`, `pg_tp` and `pg_cp_clear`. Details in [docs/timer.md](docs/timer.md).
+The game does not ship a run timer. A server that wants timed courses adds [dot-timer](https://github.com/gamespice-platform/timer): put its `addons/dot_timer` folder in the project, run `godot --headless --path . --import` once, and start the server. The game's own `addons/pg_timer` notices it and turns on timing: zones from a map's zone file, records, leaderboards and the commands `pg_timer`, `pg_track`, `pg_top`, `pg_cp`, `pg_tp` and `pg_cp_clear`. Details in [docs/timer.md](docs/timer.md).
 
 ### Spawn providers
 
@@ -207,7 +207,7 @@ An optional pack can add weapons, NPCs and bots to the Q menu by shipping `addon
 | Map textures | [Kenney's Prototype Textures](https://kenney.nl/assets/prototype-textures), in `assets/kenney/prototype/` | CC0 |
 | Footsteps | Kenney, Impact Sounds (see `addons/dot_audio/stock/CREDITS.md`) | CC0 |
 | Ambience beds | Generated by dot-audio | CC0 |
-| Toys | [dot-props](https://github.com/modcommunity/dot-props), drawn in code; sounds by Kenney plus a horn made for it (see `addons/dot_props/toys/sounds/CREDITS.md`) | CC0 |
+| Toys | [dot-props](https://github.com/gamespice-platform/props), drawn in code; sounds by Kenney plus a horn made for it (see `addons/dot_props/toys/sounds/CREDITS.md`) | CC0 |
 
 A model dropped into `user://props/` appears in the Q menu with no code ([docs/sandbox.md](docs/sandbox.md#model-props-and-the-drop-in-folder)). If you made one of these assets and want it removed, open an issue.
 
