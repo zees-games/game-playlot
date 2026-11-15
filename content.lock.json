@@ -18,9 +18,9 @@
 			"id": "gamemann/game-playlot",
 			"into": "",
 			"kind": "pack",
-			"manifest_sha256": "177cb2fc46a7e84ff878b475f5bed1042d536dda1ca70a899112a6f7cdcc7089",
+			"manifest_sha256": "658d2322e103e95f53e7739b0e2078ba017f1322d630c61b3eb394e0eb890e7e",
 			"optional": false,
-			"version": "0.1.31"
+			"version": "0.1.32"
 		}
 	]
 }
