@@ -268,7 +268,17 @@ func _test_glance_pieces() -> void:
 	_check(hud.ammo.covered and hud.ammo.self_modulate.a < 1.0, "and one over it dims it",
 		"ballot %s" % str(ballot.get_global_rect()))
 
-	# The camera motion settings reach the player they are bound to, live.
+	_check_camera_motion(p)
+	_check_ui_floor()
+
+	ballot.queue_free()
+	hud.queue_free()
+	body.queue_free()
+	_done()
+
+
+## The camera motion settings reach the player they are bound to, live.
+func _check_camera_motion(p: PlaygroundPresentation) -> void:
 	var stub := GDScript.new()
 	stub.source_code = "extends Node\nvar got: Array = []\nfunc set_camera_motion_scales(a: float, b: float, c: float) -> void:\n\tgot = [a, b, c]\n"
 	var _compiled := stub.reload()
@@ -288,9 +298,11 @@ func _test_glance_pieces() -> void:
 		"and they belong to the person, not the machine")
 	holder.queue_free()
 
-	# A pack naming these classes does not parse on a shell whose dot-ui predates them, so the
-	# requires.json dot-ci derives must ask for dot-ui 4, and nothing may lower it.
-	# The floor file exists to name the game addons solo play fetches; it must not lower dot-ui.
+
+## A pack naming these classes does not parse on a shell whose dot-ui predates them, so the
+## requires.json dot-ci derives must ask for dot-ui 4, and nothing may lower it.
+## The floor file exists to name the game addons solo play fetches; it must not lower dot-ui.
+func _check_ui_floor() -> void:
 	var asks := DotAddonApi.derive()
 	var floor_path := "res://" + DotAddonApi.FLOOR_FILE
 	var floors := {}
@@ -304,11 +316,6 @@ func _test_glance_pieces() -> void:
 		"the pack asks a shell for dot-ui level 4, the glance pieces",
 		str(asks.get("dot_ui"))
 	)
-
-	ballot.queue_free()
-	hud.queue_free()
-	body.queue_free()
-	_done()
 
 
 ## `[p2p-await-games]`: a party over the HTTP rendezvous, host and join, each awaited end to end through

@@ -64,13 +64,7 @@ func _run() -> void:
 	_check(binder.write_schema(schema_path).ok and FileAccess.file_exists(schema_path), "write_schema writes the schema")
 	DirAccess.remove_absolute(schema_path)
 
-	var bad := FileAccess.open(ROOT + "_config_bad.json", FileAccess.WRITE)
-	bad.store_string('{"no_such_field": 1}')
-	bad.close()
-	var strict := PlaygroundConfig.make_binder(PlaygroundConfig.new(), ROOT + "_config_bad.json")
-	strict.strict = true
-	_check(not strict.load_layers().ok, "strict: an unknown key is refused")
-	DirAccess.remove_absolute(ROOT + "_config_bad.json")
+	_strict_refuses_unknown()
 
 	_entered += 1
 	_pack_floor()
@@ -107,17 +101,33 @@ func _run() -> void:
 	var text: String = files.get("cfg/game/game-playground/config_world/game.yml", "")
 	_check(text.contains("wave_kill_reward: 90"), "the export holds the edit in the cfg layout")
 
+	_ambience_cvars()
+
+	wb.free()
+	console.free()
+	_finished += 2
+	_report_sections(_entered, _finished, SECTIONS, CHECKS)
+
+
+## A strict binder refuses a layer with a key the config does not have.
+func _strict_refuses_unknown() -> void:
+	var bad := FileAccess.open(ROOT + "_config_bad.json", FileAccess.WRITE)
+	bad.store_string('{"no_such_field": 1}')
+	bad.close()
+	var strict := PlaygroundConfig.make_binder(PlaygroundConfig.new(), ROOT + "_config_bad.json")
+	strict.strict = true
+	_check(not strict.load_layers().ok, "strict: an unknown key is refused")
+	DirAccess.remove_absolute(ROOT + "_config_bad.json")
+
+
+## The ambience set offers only pg_ambient* cvars.
+func _ambience_cvars() -> void:
 	var ambient := PlaygroundAmbience.cvar_types()
 	var odd := PackedStringArray()
 	for name: String in ambient:
 		if not name.begins_with("pg_ambient"):
 			odd.append(name)
 	_check(not ambient.is_empty() and odd.is_empty(), "the ambience set offers the pg_ambient* cvars", ",".join(odd))
-
-	wb.free()
-	console.free()
-	_finished += 2
-	_report_sections(_entered, _finished, SECTIONS, CHECKS)
 
 
 ## The pack ships only game/, maps/ and the committed addons/pg_*: a web shell carries dot_* alone,

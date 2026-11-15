@@ -633,58 +633,6 @@ func _stopping(vehicle: DotVehicleInstance, at: Vector3, id: StringName, button:
 ## The survey is asked about a fixture first, so a sweep that finds nothing is known to be looking.
 var _tmas_data_script: GDScript
 
-func _test_the_maps_are_surveyed() -> void:
-	print("")
-	_section("the hand-built maps, surveyed for slots, unreached ground and traps")
-
-	_the_survey_sees_what_it_looks_for()
-
-	for id in _built_map_ids():
-		var script := load("res://maps/%s.gd" % id) as GDScript
-		var map: Node3D = script.new()
-		map._build()
-
-		# The map brings its light with it (`PlaygroundGeometry.light`): exactly one sun and
-		# one environment, or the second is silently ignored by the renderer. dot-lighting's
-		# shadowless `Fill` (painted()) is not a second sun.
-		var suns := map.get_children().filter(func(n: Node) -> bool: return n is DirectionalLight3D and n.name != "Fill").size()
-		var skies := map.get_children().filter(func(n: Node) -> bool: return n is WorldEnvironment).size()
-		_check(suns == 1 and skies == 1, "%s: carries one sun and one sky (its dot-lighting document)" % id,
-			"%d suns, %d environments" % [suns, skies])
-
-		# A hand-built map here declares no zones (a run timer's, when a server has one,
-		# come from the map document or zone file), so its ways out are its walls and
-		# floor alone.
-		var spawns: Array[Vector3] = [map.fallback_spawn]
-
-		var declared: Array = map.survey_declared()
-		var started := Time.get_ticks_msec()
-		var found: Dictionary = PlaygroundMapSurvey.survey(map, [], spawns, declared)
-		map.free()
-
-		print("    %s: %d standable cells in %d regions, %d spawns, %d declared, %d falls into nothing, %d ms" % [
-			id, int(found["cells"]), int(found["regions"]), spawns.size(), declared.size(),
-			int(found["void_falls"]), Time.get_ticks_msec() - started,
-		])
-
-		_check((found["spawnless"] as Array).is_empty(),
-			"%s: every spawn stands on standable ground" % id,
-			", ".join(found["spawnless"]))
-		_check((found["slots"] as Array).is_empty(),
-			"%s: no two boxes leave a slot narrower than a player" % id,
-			"; ".join(found["slots"]))
-		_check((found["unreached"] as Array).is_empty(),
-			"%s: nothing standable is out of reach of every spawn, but what it declares" % id,
-			"; ".join(found["unreached"]))
-		_check((found["trapped"] as Array).is_empty(),
-			"%s: and nowhere a spawn reaches is a place with no way out" % id,
-			"; ".join(found["trapped"]))
-
-	# The custom maps playlot-maps delivers, linked in as `maps/custom`. Named rather
-	# than listed off the directory, so a checkout without the link fails here instead of
-	# surveying nothing and passing.
-	_tmas_data_script = load("res://maps/pg_data.gd") as GDScript
-	_test_the_maps_are_surveyed_2()
 
 func _test_the_maps_are_surveyed_2() -> void:
 	for id in CUSTOM_MAPS:

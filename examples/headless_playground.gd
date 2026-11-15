@@ -229,3 +229,138 @@ func _print_pace(
 		route_name, covered, length, seconds, pace, max_speed, top,
 	])
 	return pace
+
+
+func _test_the_client_boots() -> void:
+	_section("the client boots")
+
+	_tcb_client = PlaygroundClient.new()
+	_tcb_client.name = "Client"
+	_tcb_client.fetch_content = false
+
+	# Its own config, records in memory. A test must not write into the user's data
+	# directory, and this is the only reason `PlaygroundClient.config` exists.
+	var config := PlaygroundConfig.new()
+	config.records_directory = ""
+	config.record_replays = false
+	_tcb_client.config = config
+
+	add_child(_tcb_client)
+
+	for _i in range(4):
+		await get_tree().process_frame
+
+	# The load gate covers the client, and holds its input and its body, until the level, the
+	# player and the camera are in and the physics has settled: a test that drives the
+	# client waits for it as a player would.
+	await _gate_opens(_tcb_client)
+	_check(_tcb_client.gate != null and _tcb_client.gate.is_open(), "the load gate opens once the level, player and camera are in",
+		"state %s held %s" % [_tcb_client.gate.state(), _tcb_client.gate.reasons()] if _tcb_client.gate != null else "no gate")
+
+	_check(_tcb_client.playground != null, "the client builds a playground")
+	_check(
+		_tcb_client.playground != null and _tcb_client.playground.booted,
+		"which finishes booting"
+	)
+	_check(
+		_tcb_client.playground != null and _tcb_client.playground.maps.current != null,
+		"with a map up",
+		String(_tcb_client.playground.maps.current.id)
+			if _tcb_client.playground != null and _tcb_client.playground.maps.current != null
+			else "none"
+	)
+
+	# The four things that are all missing together when `_ready` stops halfway.
+	_check(_tcb_client.player != null, "the client has a player")
+	_check(_tcb_client.camera != null, "and a camera")
+	_check(_tcb_client.hud != null, "and a HUD")
+	_check(
+		_tcb_client.screens != null and _tcb_client.menu != null,
+		"and a spawn menu registered on a stack"
+	)
+
+	_check(
+		_tcb_client.menu != null and _tcb_client.screens != null
+		and _tcb_client.screens.screen(_tcb_client.menu.screen_id()) == _tcb_client.menu,
+		"which the stack can find by id"
+	)
+	_check(
+		_tcb_client.player != null and _tcb_client.player.samples_input
+		and _tcb_client.player.sampler != null,
+		"and the player samples input, with a sampler actually built"
+	)
+	_the_client_mounts_the_downed_arms()
+	await _test_the_client_boots_2()
+	await _test_the_client_boots_3()
+	await _test_the_client_boots_4()
+	_test_the_client_boots_5()
+	await _test_the_client_boots_6()
+	await _test_the_client_boots_7()
+	await _test_the_client_boots_8()
+	await _test_the_client_boots_12()
+	await _test_the_client_boots_13()
+	_tcb_client = null
+	_tcb_look_settings = null
+	_tcb_look = null
+	_tcb_net_sampler = null
+	_tcb_kept_menu = null
+	_tcb_keys = null
+	_tcb_menu = null
+	_tcb_pg_hud = null
+	_tcb_pg_xh = null
+	_tcb_sink = null
+	_tcb_edited = null
+
+
+func _test_the_maps_are_surveyed() -> void:
+	print("")
+	_section("the hand-built maps, surveyed for slots, unreached ground and traps")
+
+	_the_survey_sees_what_it_looks_for()
+
+	for id in _built_map_ids():
+		var script := load("res://maps/%s.gd" % id) as GDScript
+		var map: Node3D = script.new()
+		map._build()
+
+		# The map brings its light with it (`PlaygroundGeometry.light`): exactly one sun and
+		# one environment, or the second is silently ignored by the renderer. dot-lighting's
+		# shadowless `Fill` (painted()) is not a second sun.
+		var suns := map.get_children().filter(func(n: Node) -> bool: return n is DirectionalLight3D and n.name != "Fill").size()
+		var skies := map.get_children().filter(func(n: Node) -> bool: return n is WorldEnvironment).size()
+		_check(suns == 1 and skies == 1, "%s: carries one sun and one sky (its dot-lighting document)" % id,
+			"%d suns, %d environments" % [suns, skies])
+
+		# A hand-built map here declares no zones (a run timer's, when a server has one,
+		# come from the map document or zone file), so its ways out are its walls and
+		# floor alone.
+		var spawns: Array[Vector3] = [map.fallback_spawn]
+
+		var declared: Array = map.survey_declared()
+		var started := Time.get_ticks_msec()
+		var found: Dictionary = PlaygroundMapSurvey.survey(map, [], spawns, declared)
+		map.free()
+
+		print("    %s: %d standable cells in %d regions, %d spawns, %d declared, %d falls into nothing, %d ms" % [
+			id, int(found["cells"]), int(found["regions"]), spawns.size(), declared.size(),
+			int(found["void_falls"]), Time.get_ticks_msec() - started,
+		])
+
+		_check((found["spawnless"] as Array).is_empty(),
+			"%s: every spawn stands on standable ground" % id,
+			", ".join(found["spawnless"]))
+		_check((found["slots"] as Array).is_empty(),
+			"%s: no two boxes leave a slot narrower than a player" % id,
+			"; ".join(found["slots"]))
+		_check((found["unreached"] as Array).is_empty(),
+			"%s: nothing standable is out of reach of every spawn, but what it declares" % id,
+			"; ".join(found["unreached"]))
+		_check((found["trapped"] as Array).is_empty(),
+			"%s: and nowhere a spawn reaches is a place with no way out" % id,
+			"; ".join(found["trapped"]))
+
+	# The custom maps playlot-maps delivers, linked in as `maps/custom`. Named rather
+	# than listed off the directory, so a checkout without the link fails here instead of
+	# surveying nothing and passing.
+	_tmas_data_script = load("res://maps/pg_data.gd") as GDScript
+	_test_the_maps_are_surveyed_2()

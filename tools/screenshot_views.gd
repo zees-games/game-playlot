@@ -127,31 +127,7 @@ func _process(_delta: float) -> bool:
 		_hud.bind(_game, &"local")
 		_hud.visible = false
 
-		_shots = [
-			{"name": "view_first_person", "third": false},
-			{"name": "view_third_person", "third": true},
-			{
-				"name": "hud_clock", "third": false,
-				"clock": {"has_clock": true, "seconds_left": 2700, "running": true},
-			},
-			{"name": "hud_no_clock", "third": false, "clock": {"has_clock": false}},
-			{"name": "admin_beacon", "third": false, "beacon": true},
-			{"name": "admin_beacon_wall", "third": false, "beacon": true, "wall": true},
-			{"name": "admin_blind", "third": false, "blind": true},
-			{"name": "hud_creative", "third": false, "creative": true},
-			# The tool gun's edit mode: three crates ahead, the middle one selected, painted and
-			# half again as big, with the box the client draws round a selection.
-			{"name": "edit_selection", "third": false, "edit": true},
-			{"name": "body_standing", "third": false, "other": true},
-			{"name": "rider_seated", "third": false, "other": true, "seated": true},
-			# A zee weapon in hand and two confirmed hits on Bea, the second a kill: the ammunition
-			# counter bottom right, the marker round the crosshair and the number on her body.
-			{"name": "hud_hits", "third": false, "other": true, "hits": true},
-			# A map vote as a connected player sees it: the ballot's chat line, through the
-			# client's own chat handler, and the drawn panel a client shell puts top right. The
-			# line must be in the chat box once and not on the notice line as well.
-			{"name": "chat_ballot", "third": false, "ballot": true},
-		]
+		_shots = _shot_list()
 		return false
 
 	# The first-person camera at the simulated eye, as `PlaygroundClient._process` puts it.
@@ -222,6 +198,35 @@ func _process(_delta: float) -> bool:
 	_at += 1
 	_arranged = false
 	return false
+
+
+## The frames to take, in order, with how each is arranged.
+func _shot_list() -> Array[Dictionary]:
+	return [
+		{"name": "view_first_person", "third": false},
+		{"name": "view_third_person", "third": true},
+		{
+			"name": "hud_clock", "third": false,
+			"clock": {"has_clock": true, "seconds_left": 2700, "running": true},
+		},
+		{"name": "hud_no_clock", "third": false, "clock": {"has_clock": false}},
+		{"name": "admin_beacon", "third": false, "beacon": true},
+		{"name": "admin_beacon_wall", "third": false, "beacon": true, "wall": true},
+		{"name": "admin_blind", "third": false, "blind": true},
+		{"name": "hud_creative", "third": false, "creative": true},
+		# The tool gun's edit mode: three crates ahead, the middle one selected, painted and
+		# half again as big, with the box the client draws round a selection.
+		{"name": "edit_selection", "third": false, "edit": true},
+		{"name": "body_standing", "third": false, "other": true},
+		{"name": "rider_seated", "third": false, "other": true, "seated": true},
+		# A zee weapon in hand and two confirmed hits on Bea, the second a kill: the ammunition
+		# counter bottom right, the marker round the crosshair and the number on her body.
+		{"name": "hud_hits", "third": false, "other": true, "hits": true},
+		# A map vote as a connected player sees it: the ballot's chat line, through the
+		# client's own chat handler, and the drawn panel a client shell puts top right. The
+		# line must be in the chat box once and not on the notice line as well.
+		{"name": "chat_ballot", "third": false, "ballot": true},
+	]
 
 
 ## Puts the second player eight metres ahead of the camera for a beacon frame, a wall
