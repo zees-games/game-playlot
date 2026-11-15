@@ -1,6 +1,7 @@
 extends "res://examples/headless_playground_part9.gd"
 
-const CHECKS := 782 + 22 + 9 + 10 + 8 + 1 + 4 + 15 + 2 + 1 + 26 + 3 + 2 + 2 + 1 + 8 + 1 + 5 + 10 + 25 + 1 + 1 + 30 + 18 + 1 + 6 + 3 + 1
+const CHECKS := 782 + 22 + 9 + 10 + 8 + 1 + 4 + 15 + 2 + 1 + 26 + 3 + 2 + 2 + 1 + 8 + 1 + 5 + 10 + 25 + 1 + 1 + 30 + 18 + 1 + 6 + 3 + 1 + 2
+const PlaygroundClientPrewarm := preload("res://game/client/playground_client_prewarm.gd")
 
 ## Sections entered against sections that ran to their last line, and against this. A
 ## runtime error inside a section aborts that function and nothing says so; a section that
@@ -321,6 +322,18 @@ func _the_warmup_ran_under_the_cover() -> void:
 	_check(_tcb_client.gate.warm_items().size() > 0,
 		"and handed the gate what NPCs, weapons and effects draw (%d items)" % _tcb_client.gate.warm_items().size())
 	_check(warm != null and warm.get_child_count() == 0, "and kept none of what it built")
+	var keys := {}
+	var twice := 0
+	for item: Variant in _tcb_client.gate.warm_items():
+		var key: String = PlaygroundClientPrewarm.item_key(item)
+		if key != "" and keys.has(key):
+			twice += 1
+		keys[key] = true
+	_check(twice == 0 and warm != null and warm.skipped > 0,
+		"and handed each shader once (%d alike left out)" % [warm.skipped if warm != null else 0], "%d handed twice" % twice)
+	var cam: Camera3D = _tcb_client.get_viewport().get_camera_3d()
+	_check(not _tcb_client.gate.is_open() or cam == null or cam.get_node_or_null(^"PrewarmLightProbe") == null,
+		"and took its light off the camera once the gate opened")
 
 
 func _test_the_maps_are_surveyed() -> void:

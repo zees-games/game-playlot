@@ -179,8 +179,14 @@ extends DotConfig
 @export var prewarm: bool = true
 
 ## Whether that warm-up also loads every model prop's scene: one file load each, so it lengthens
-## the cover by as many loads as the catalogue has models. Off by default.
+## the cover by as many loads as the catalogue has models. Off by default: on software GL it pushed the
+## warm-up past the gate's time-out, so the weapon phase ran in play instead.
 @export var prewarm_model_props: bool = false
+
+## Whether that warm-up also draws dot-fx's muzzle flashes on the camera and holds an omni light there until the
+## gate opens, so the first shot compiles neither the flash nor its lit variants in play. Off by default: on software
+## GL (PH, 3 runs against 3) it kept the cover up about 10 s longer (map to open 43 s against 33 s).
+@export var prewarm_shot_effects: bool = false
 
 @export_group("Arena")
 

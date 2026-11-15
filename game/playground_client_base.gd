@@ -256,6 +256,7 @@ func _build_prewarm() -> void:
 	prewarm.config = config
 	prewarm.catalogue = playground.props.catalogue if playground.props != null else null
 	prewarm.fx_catalogue = presentation.fx.catalogue if presentation != null and presentation.fx != null else null
+	prewarm.blood = presentation.blood if presentation != null else null
 	add_child(prewarm)
 	var _started := prewarm.start()
 

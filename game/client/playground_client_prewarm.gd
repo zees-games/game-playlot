@@ -17,14 +17,18 @@ const CHANNEL := "playground.prewarm"
 ## The gate's hold while this runs.
 const HOLD := &"prewarm"
 
-## The per-frame budget asked of [method DotLoadGate.slice_msec].
+## The per-frame budget asked of [method DotLoadGate.slice_msec]. A wider slice under the cover measured slower:
+## the gate's own draw, after its time-out, shared each frame with it.
 const SLICE_MS := 8
+
+## Range of the light held on the camera under the cover, in metres: it reaches what the host draws in front of it.
+const PROBE_RANGE := 2.0
 
 ## Ids built even when the catalogue's shapes would not reach them: what the Launcher fires
 ## with nothing armed and what the spawn menu has selected before anybody picks.
 const ALWAYS := [&"ball", &"crate"]
 
-enum Phase { PROPS, SHOT_FX, WEAPONS, FX, ICONS, DONE }
+enum Phase { PROPS, SHOT_FX, MUZZLE, BLOOD, WEAPONS, FX, ICONS, DONE }
 
 ## Fired on the frame after a pause: the run waits on this node, so a freed node is never resumed.
 signal _frame
@@ -33,6 +37,8 @@ var gate: DotLoadGate = null
 var config: PlaygroundConfig = null
 var catalogue: DotPropCatalogue = null
 var fx_catalogue: DotFxCatalogue = null
+## The presentation's blood, whose decal settings the warmed splat copies. Null warms no blood.
+var blood: DotFxBlood = null
 
 ## True once every phase has run and the hold is released.
 var finished: bool = false
@@ -43,9 +49,24 @@ var warmed: int = 0
 ## Milliseconds each phase took, by name: what the log line reports and a test reads.
 var phase_ms: Dictionary = {}
 
+## Items not handed because one with the same shader and vertex format already was: each would only lengthen the
+## host's draw under the cover, compiling nothing new.
+var skipped: int = 0
+
+## Frames the cover-held phases took to run: on a software WebGL each costs hundreds of ms.
+var cover_frames: int = 0
+
 var _slice: DotFrameSlice = null
 var _spare_view: ZeeViewModel = null
 var _parts_warmed := false
+## True while [constant HOLD] is held.
+var _covering := false
+## Shader keys (and mesh keys) handed so far.
+var _keys := {}
+## Material instance id -> its key, so a material shared by many items is keyed once.
+var _key_cache := {}
+## What stays drawn on the camera until the gate opens: the muzzle flashes and the light probe.
+var _on_camera: Array[Node] = []
 ## Artwork icons are loaded with `load()` and not cached by the icon code: kept here until the
 ## game is over, so the spawn menu's first open finds them in the resource cache.
 var _held_icons: Array[Texture2D] = []
@@ -59,6 +80,7 @@ func start() -> bool:
 		return false
 	if gate != null:
 		gate.hold(HOLD, "Getting things ready")
+		_covering = true
 	_run()
 	return true
 
@@ -76,6 +98,8 @@ func _run() -> void:
 			_warm_one(phase as Phase, item)
 			if _slice.due():
 				_slice = null
+				if _covering:
+					cover_frames += 1
 				get_tree().process_frame.connect(_frame.emit, CONNECT_ONE_SHOT)
 				await _frame
 		phase_ms[Phase.keys()[phase]] = (Time.get_ticks_usec() - began) / 1000
@@ -99,13 +123,17 @@ func _free_spare_view() -> void:
 ## them: on a software WebGL they took 26 s of a 41 s hold. They finish in play, a slice a frame.
 func _release_cover() -> void:
 	_free_spare_view()
-	DotLog.info(CHANNEL, "warmed under the cover", {"items": warmed, "ms": phase_ms.duplicate()})
+	_covering = false
+	_hold_light_probe()
+	DotLog.info(CHANNEL, "warmed under the cover", {"items": warmed, "skipped": skipped, "frames": cover_frames,
+		"ms": phase_ms.duplicate()})
 	if gate != null:
 		gate.release(HOLD)
 
 
 func _finish() -> void:
 	finished = true
+	_covering = false
 	_free_spare_view()
 	DotLog.info(CHANNEL, "warmed the icons in play", {"ms": phase_ms.get("ICONS", 0)})
 	if gate != null:
@@ -116,8 +144,10 @@ func _items_for(phase: Phase) -> Array:
 	match phase:
 		Phase.PROPS:
 			return _prop_defs()
-		Phase.SHOT_FX:
+		Phase.SHOT_FX, Phase.BLOOD:
 			return [null]
+		Phase.MUZZLE:
+			return [null] if _shot_effects() else []
 		Phase.WEAPONS:
 			var out: Array = []
 			for def in PlaygroundZee.defs():
@@ -145,8 +175,8 @@ func _items_for(phase: Phase) -> Array:
 
 
 ## Every entity and vehicle, and one plain prop of each shape: plain props differ only in colour
-## and size, so one per mesh draws every shader they use. Model props load a scene file each and
-## are built only when [member PlaygroundConfig.prewarm_model_props] says so.
+## and size, so one per mesh draws every shader they use. Model props load a scene file each; they are
+## left out when [member PlaygroundConfig.prewarm_model_props] is off.
 func _prop_defs() -> Array:
 	var out: Array = []
 	var shapes := {}
@@ -183,6 +213,10 @@ func _warm_one(phase: Phase, item: Variant) -> void:
 			_warm_prop(item as DotPropDef)
 		Phase.SHOT_FX:
 			_hand(ZeeShotFx.warm())
+		Phase.MUZZLE:
+			_warm_muzzle_flashes()
+		Phase.BLOOD:
+			_warm_blood()
 		Phase.WEAPONS:
 			_warm_weapon(item as ZeeWeaponArt)
 		Phase.FX:
@@ -243,6 +277,76 @@ func _warm_fx_scene(path: String) -> void:
 	node.free()
 
 
+## dot-fx's muzzle flashes: every flash scene loaded and pinned, and one of each size drawn on the camera until
+## the gate opens, so the first shot loads and compiles nothing. Without a camera the scenes are still pinned.
+func _warm_muzzle_flashes() -> void:
+	if not DotMuzzleFlash.available():
+		return
+	var first: int = DotMuzzleFlash.FOLDERS.keys()[0]
+	if not ResourceLoader.exists("%s%s01.tscn" % [DotMuzzleFlash.ROOT, DotMuzzleFlash.FOLDERS[first]]):
+		return
+	var cam := _camera()
+	if cam == null:
+		var _pinned := DotMuzzleFlash.pin_scenes(1 << 30)
+		return
+	var rig := DotMuzzleFlash.prewarm(cam)
+	if rig != null:
+		rig.position = Vector3(0.0, 0.0, -0.5)
+		_keep_on_camera(rig)
+
+
+## One blood splat built the way a hit builds it (a quad and its material on the web, a Decal elsewhere), in a
+## pool of its own with the presentation's settings, and handed to the gate.
+func _warm_blood() -> void:
+	if blood == null or not is_instance_valid(blood):
+		return
+	var pool := DotFxDecals.new()
+	pool.apply_config(blood.decals.config)
+	var _splat := pool.splatter(Vector3.ZERO, Vector3.UP)
+	_hand(DotRenderWarmup.collect(pool))
+	pool.free()
+
+
+## A shadowless omni light on the camera from the hold's release until the gate opens: the host's draw of every
+## material then compiles its lit-by-omni variant too, which a muzzle flash's light would otherwise compile in play.
+func _hold_light_probe() -> void:
+	var cam := _camera()
+	if cam == null or gate == null or gate.is_open() or not _shot_effects():
+		return
+	var light := OmniLight3D.new()
+	light.name = "PrewarmLightProbe"
+	light.omni_range = PROBE_RANGE
+	light.light_energy = 0.01
+	light.shadow_enabled = false
+	cam.add_child(light)
+	_keep_on_camera(light)
+
+
+## [member PlaygroundConfig.prewarm_shot_effects]; off without a config.
+func _shot_effects() -> bool:
+	return config != null and config.prewarm_shot_effects
+
+
+## Keeps [param node] until the gate opens (or this node goes), then frees it.
+func _keep_on_camera(node: Node) -> void:
+	if _on_camera.is_empty() and gate != null and not gate.opened.is_connected(_drop_camera_nodes):
+		gate.opened.connect(_drop_camera_nodes, CONNECT_ONE_SHOT)
+	_on_camera.append(node)
+	if gate == null or gate.is_open():
+		_drop_camera_nodes.call_deferred()
+
+
+func _drop_camera_nodes() -> void:
+	for node in _on_camera:
+		if is_instance_valid(node):
+			node.queue_free()
+	_on_camera.clear()
+
+
+func _camera() -> Camera3D:
+	return get_viewport().get_camera_3d() if is_inside_tree() else null
+
+
 func _warm_icon(item: Variant) -> void:
 	if item is DotPropDef:
 		var icon := PlaygroundIcons.for_def(item as DotPropDef)
@@ -255,9 +359,65 @@ func _warm_icon(item: Variant) -> void:
 		var _drawn := PlaygroundIcons.for_weapon(def)
 
 
+## Hands the gate [param items], less any whose shader (a material) or shaders and vertex formats (a mesh) were
+## handed already: [BaseMaterial3D]s with the same features share one shader, so drawing the second compiles nothing.
 func _hand(items: Array) -> void:
-	if items.is_empty():
+	var fresh: Array = []
+	for item: Variant in items:
+		var key := item_key(item, _key_cache)
+		if key != "" and _keys.has(key):
+			skipped += 1
+			continue
+		if key != "":
+			_keys[key] = true
+		fresh.append(item)
+	if fresh.is_empty():
 		return
-	warmed += items.size()
+	warmed += fresh.size()
 	if gate != null:
-		gate.warm_up(items)
+		gate.warm_up(fresh)
+
+
+## What decides the pipeline [param item] compiles: for a [BaseMaterial3D] its class, every int and bool property
+## and which textures it has (a superset of Godot's own shader key), for a [Mesh] each surface's primitive, vertex
+## format and material key. "" for anything else (a [ShaderMaterial], a particle process material): never merged.
+static func item_key(item: Variant, cache: Dictionary = {}) -> String:
+	if item is BaseMaterial3D:
+		return material_key(item as BaseMaterial3D, cache)
+	if item is Mesh:
+		var mesh := item as Mesh
+		var parts := PackedStringArray([mesh.get_class()])
+		for i in mesh.get_surface_count():
+			var mat := mesh.surface_get_material(i)
+			var mat_key := "default" if mat == null else item_key(mat, cache)
+			if mat_key == "":
+				return ""
+			var fmt := (mesh as ArrayMesh).surface_get_format(i) if mesh is ArrayMesh else -1
+			var prim := (mesh as ArrayMesh).surface_get_primitive_type(i) if mesh is ArrayMesh else -1
+			parts.append("%d/%d/%s" % [prim, fmt, mat_key])
+		return "mesh:" + "#".join(parts)
+	return ""
+
+
+static func material_key(mat: BaseMaterial3D, cache: Dictionary = {}) -> String:
+	var id := mat.get_instance_id()
+	if cache.has(id):
+		return cache[id]
+	var parts := PackedStringArray([mat.get_class()])
+	for prop: Dictionary in mat.get_property_list():
+		if not int(prop["usage"]) & PROPERTY_USAGE_STORAGE:
+			continue
+		var name: String = prop["name"]
+		match int(prop["type"]):
+			TYPE_BOOL, TYPE_INT:
+				parts.append("%s=%s" % [name, mat.get(name)])
+			TYPE_OBJECT:
+				if name != "next_pass":
+					parts.append("%s=%s" % [name, mat.get(name) != null])
+	var next := mat.next_pass
+	if next != null:
+		var next_key := item_key(next, cache)
+		parts.append("next=" + (next_key if next_key != "" else "id%d" % next.get_instance_id()))
+	var key := "mat:" + ";".join(parts)
+	cache[id] = key
+	return key
