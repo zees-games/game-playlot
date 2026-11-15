@@ -78,9 +78,9 @@ func _time_cover(gate: Object, covered: bool, map_up: bool) -> void:
 		_open_ms = now
 		_open_frame = _frame
 	if (_open_ms >= 0 and _frame - _open_frame >= 10 and _profile_done()) or _frame >= _frames:
-		print("load_probe cover: map_ms=%d open_ms=%d map_to_open_ms=%d frames=%d" % [
-			_map_ms, _open_ms, _open_ms - _map_ms if _open_ms >= 0 else -1,
-			_open_frame - _map_frame if _open_ms >= 0 else -1])
+		print("load_probe cover: map_ms=", _map_ms, " open_ms=", _open_ms, " map_to_open_ms=",
+			_open_ms - _map_ms if _open_ms >= 0 else -1, " frames=",
+			_open_frame - _map_frame if _open_ms >= 0 else -1)
 		quit(0)
 
 
