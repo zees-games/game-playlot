@@ -22,6 +22,7 @@ const PlaygroundWeapons := preload("playground_weapons.gd")
 const PlaygroundZee := preload("playground_zee.gd")
 const PlaygroundWeaponDef := preload("weapons/playground_weapon_def.gd")
 const PlaygroundTouch := preload("client/playground_touch.gd")
+const PlaygroundMapDrop := preload("client/playground_map_drop.gd")
 const PlaygroundClientPrewarm := preload("client/playground_client_prewarm.gd")
 const PlaygroundShotSound := preload("client/playground_shot_sound.gd")
 const PlaygroundWorkbenchSets := preload("playground_workbench_sets.gd")
@@ -77,6 +78,8 @@ var net: DotNetManager = null
 var bridge: PlaygroundNetBridge = null
 var player: PlaygroundPlayer = null
 var hud: PlaygroundHud = null
+## Takes maps dropped on the window or the executable (a DotMapDropIntake); null on a dot-map older than API 26.
+var map_drop: Node = null
 
 ## The client half of chat: the channels, the history, the unread counts and the gap
 ## detection. It decides nothing — every rule is the server's.

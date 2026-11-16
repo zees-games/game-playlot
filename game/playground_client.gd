@@ -126,8 +126,35 @@ func _ready() -> void:
 	_build_client_services()
 	_build_screens()
 	_wire_presentation()
+	# Last: a drop on the executable is handled now, and its notice needs the HUD and a loaded map.
+	map_drop = PlaygroundMapDrop.attach(self, Playground.USER_MAPS_DIR, _map_id_taken, _on_maps_dropped)
 
 	set_process(true)
+
+
+## Why a dropped map cannot use [param id], or empty: a built-in or linked map keeps its id (`add_map_docs` keeps the first).
+func _map_id_taken(id: StringName) -> String:
+	var have: DotMapDef = playground.maps.catalogue.get_map(id) if playground.maps != null else null
+	if have == null or str(have.meta.get("doc", "")).begins_with(Playground.USER_MAPS_DIR):
+		return ""
+	return "%s is already one of this game's maps; give the dropped one another id" % id
+
+
+## After a drop: solo, the new maps join the catalogue at once; connected, they wait for a solo game. Every line is shown.
+func _on_maps_dropped(result: Dictionary) -> void:
+	var lines: PackedStringArray = load(PlaygroundMapDrop.INTAKE_SCRIPT).lines_for(result)
+	var added: Array = result.get("added", [])
+	if not added.is_empty():
+		if link == null:
+			var _n := playground.add_map_directory(Playground.USER_MAPS_DIR)
+			# Dropped on the executable: the person asked to play it, so the game goes there.
+			if str(result.get("source", "")) == "command line":
+				playground.change_map(StringName(str(added[0]["id"])))
+			lines.append("Play it: pg_map %s" % " | pg_map ".join(PackedStringArray(added.map(func(e: Dictionary) -> String: return str(e["id"])))))
+		else:
+			lines.append("Saved to %s: dropped maps play in a solo game." % ProjectSettings.globalize_path(Playground.USER_MAPS_DIR))
+	if hud != null and not lines.is_empty():
+		hud.notice("\n".join(lines))
 
 
 ## Brings up the netcode and points it at the server's link, as the proven sibling client does.
