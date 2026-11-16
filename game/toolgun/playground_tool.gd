@@ -58,7 +58,12 @@ func apply_settings(incoming: Dictionary) -> void:
 		match str(field["type"]):
 			"float":
 				if value is float or value is int:
-					settings[key] = clampf(float(value), float(field["min"]), float(field["max"]))
+					var wanted := float(value)
+
+					if wanted < float(field["min"]) or wanted > float(field["max"]):
+						push_warning("tool setting %s: %s is outside %s..%s; refused, keeping %s" % [key, wanted, field["min"], field["max"], settings.get(key)])
+					else:
+						settings[key] = wanted
 			"bool":
 				settings[key] = bool(value)
 			"colour":
