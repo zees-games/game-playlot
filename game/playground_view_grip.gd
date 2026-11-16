@@ -6,6 +6,10 @@ extends RefCounted
 const NEEDS_LEVEL := 8
 ## Poses held with the firing hand alone.
 const ONE_HAND: Array[StringName] = [&"melee", &"thrown", &"fists"]
+## A zee pose to the dot-player-char hand pose kind (DotViewHandPoses) the fingers close in; a pose missing here
+## is held as a rifle. Older dot-player-char builds have no grip kind and keep their one shared pose.
+const POSE_KINDS := {&"rifle": &"rifle", &"pistol": &"pistol", &"heavy": &"launcher", &"melee": &"knife",
+	&"thrown": &"grenade", &"fists": &"fists"}
 
 
 static func available() -> bool:
@@ -21,4 +25,6 @@ static func update(old: DotViewGrip, anchor: Node3D, grip: Vector3, fore: Vector
 	made.grip = grip
 	if not one:
 		made.support = fore
+	if "kind" in made:
+		made.kind = POSE_KINDS.get(pose, &"rifle")
 	return made

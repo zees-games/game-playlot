@@ -55,6 +55,10 @@ func _the_arms_hold_each_weapon_class() -> void:
 			"%s (%s): the arms are mounted and shown on the armed weapon" % [chosen[pose], pose])
 		var one := pose in PlaygroundViewGrip.ONE_HAND
 		_check(grip != null and grip.is_two_hand() != one, "%s: %s hands" % [pose, "one" if one else "two"])
+		# An older dot-player-char has no grip kind: nothing to pick, so the check passes there (and the count holds).
+		var kind: StringName = PlaygroundViewGrip.POSE_KINDS.get(pose, &"rifle")
+		_check(grip != null and (not ("kind" in grip) or grip.kind == kind), "%s: the fingers take the %s hand pose" % [pose, kind],
+			str(grip.get(&"kind")) if grip != null else "no grip")
 		# The draw runs on physics ticks, not frames (a few hundred ms of them), and the grip travels with
 		# it; eight frames on a fast box end before it does, so the hand was read mid-draw. Wait for the
 		# hand to stop moving instead (two physics ticks within a millimetre), then read it.
