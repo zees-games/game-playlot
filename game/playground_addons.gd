@@ -25,6 +25,8 @@ extends RefCounted
 const PlaygroundWeaponDefScript := preload("weapons/playground_weapon_def.gd")
 const PlaygroundZeeScript := preload("playground_zee.gd")
 const CHANNEL := "pg.addons"
+## Metres a second of shove a monster limb is given per point of damage (only a severed limb uses it).
+const MONSTER_IMPULSE := 0.05
 const HOOK_FILE := "playground_hook.gd"
 const REGISTER := "playground_register"
 const RECEIVE := "playground_receive"
@@ -408,6 +410,60 @@ func _runtime_npcs(world: Node) -> Dictionary:
 				out[npc.instance_id] = spawner
 
 	return out
+
+
+## Damage to a pack monster. A monster's body has no `take_damage` (its health is the pack
+## spawner's, dot-npc's), so every shot and blast that asks for that method used to treat it as a wall.
+## [param collider] is what the ray or shape hit: the body, or a node under it. Hurts the limb at
+## [param point], then the monster, and tells the shooter ([method confirm_hit]). True when [param collider]
+## was a monster, dead or alive: the caller has nothing more to do with it.
+func hurt_monster(game: Node, collider: Node, damage: float, by: StringName, point: Vector3, direction: Vector3 = Vector3.ZERO) -> bool:
+	var body := collider
+	while body != null and not body.has_method(&"zhm_limb_hit"):
+		body = body.get_parent()
+
+	if body == null or not body is Node3D:
+		return false
+
+	var held := _runtime_npcs(game.get("world"))
+
+	for id: int in held:
+		var spawner: DotNpcSpawner = held[id]
+		var npc := spawner.get_npc(id)
+
+		if npc == null or npc.node != body:
+			continue
+
+		if not npc.is_alive():
+			return true
+
+		var limb: Variant = body.call(&"zhm_limb_hit", point, damage, direction * damage * MONSTER_IMPULSE)
+		var lost := spawner.damage(id, damage, by)
+		game.call("confirm_hit", by, game.call("hit_victim_id", DotEntity.KIND_NPC, id), lost, point, not npc.is_alive(), limb == &"head")
+		return true
+
+	return true
+
+
+## A blast that is not a grenade's (a barrel going up): every living pack monster within [param radius] of
+## [param at] is hurt, less the further out it stands. How many it hurt.
+func blast_monsters(game: Node, at: Vector3, radius: float, damage: float, by: StringName) -> int:
+	var hurt := 0
+	var held := _runtime_npcs(game.get("world"))
+
+	for id: int in held:
+		var npc := (held[id] as DotNpcSpawner).get_npc(id)
+
+		if npc == null or not npc.is_alive() or not npc.node is Node3D:
+			continue
+
+		var centre := (npc.node as Node3D).global_position + Vector3.UP
+		var distance := centre.distance_to(at)
+
+		if distance <= radius and hurt_monster(game, npc.node, damage * (1.0 - distance / radius), by, centre, (centre - at).normalized()):
+			hurt += 1
+
+	return hurt
 
 
 ## Removes every monster a pack's runtime holds, the dead lying about included: a map change takes everything

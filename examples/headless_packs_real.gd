@@ -23,8 +23,8 @@ const PlaygroundSpawnMenu := preload("../game/playground_spawn_menu.gd")
 
 const PACKS: Array[String] = ["zz_modern_weapons", "zz_medieval_weapons", "zz_historical_monsters"]
 const MONSTERS: Array[String] = ["trex", "allosaurus", "raptor", "tiger", "thylacine", "bear"]
-const CHECKS := 67
-const SECTIONS := 9
+const CHECKS := 98
+const SECTIONS := 10
 
 var _entered := 0
 var _completed := 0
@@ -70,6 +70,7 @@ func _run() -> void:
 	await _test_alive_and_undo()
 	await _test_map_change_clears()
 	await _test_monsters()
+	await _test_monster_damage()
 	_test_override()
 	_test_live_edit()
 	await _test_workbench()
@@ -261,6 +262,105 @@ func _bodies() -> Array:
 			if c is CharacterBody3D or c is RigidBody3D or c.is_in_group("zhm_monster"):
 				out.append(c)
 			stack.append(c)
+	return out
+
+
+## Every way a player hurts something reaches a monster: a rifle shot, a grenade's blast, a blow.
+## The pack's body is a CharacterBody3D with no `take_damage`, and its health lives in the pack's spawner, so a
+## shot used to land on it as on a wall.
+func _test_monster_damage() -> void:
+	_section("a player's weapons hurt every monster, and kill it")
+	var bot: PlaygroundPlayer = _game.players[&"bot"]
+	bot.teleport(Vector3(0, 1, 40), 0.0)
+	_game.addons.despawn_all(_game.world)  # the earlier section left the pack's monster cap full
+	await get_tree().physics_frame
+	var killed: Array = []
+	var landed: Array = []
+	var on_hit := func(by: StringName, _victim: int, amount: float, _at: Vector3, dead: bool, _head: bool) -> void:
+		landed.append([by, amount, dead])
+	_game.hit_landed.connect(on_hit)
+	var slot := 0
+	for row in _npc_rows:
+		var key := str(row["key"])
+		var species := key.get_slice("/", key.get_slice_count("/") - 1).trim_prefix("zhm_")
+		var at := Vector3(float(slot) * 9.0 - 20.0, 1.0, 0.0)
+		slot += 1
+		var before := _monsters()
+		var res: DotResult = _game.activate_addon_item(key, 0, at, &"bot")
+		await get_tree().physics_frame
+		await get_tree().physics_frame
+		var fresh := _monsters().filter(func(m: Dictionary) -> bool: return not before.any(func(b: Dictionary) -> bool: return b["npc"] == m["npc"]))
+		if not res.ok or fresh.is_empty():
+			_check(false, "%s spawns to be shot" % species)
+			continue
+		var mon: Dictionary = fresh[0]
+		var npc: DotNpcInstance = mon["npc"]
+		var body := npc.node as Node3D
+		var spawner: DotNpcSpawner = mon["spawner"]
+		var start := npc.health
+
+		# Hitscan: the game's own trace, the way every rifle shot goes.
+		landed.clear()
+		var aim := body.global_position + Vector3.UP * 0.9
+		_game.player_shots_fired(&"bot", _shot_outcome(aim + Vector3(0, 0, 6.0), 20.0))
+		_check(npc.health < start, "%s: a rifle shot hurts it" % species, "%.0f of %.0f" % [npc.health, start])
+		_check(not landed.is_empty() and landed[0][0] == &"bot", "%s: and the shooter is told it landed" % species)
+
+		# Explosion: a grenade's blast through the projectile layer.
+		var after_shot := npc.health
+		var frag := DotWeaponSpawn.new()
+		frag.id = &"frag"
+		frag.origin = body.global_position + Vector3(1.2, 0.8, 0)
+		frag.gravity_scale = 0.0
+		frag.radius = 0.08
+		frag.splash_radius = 5.0
+		frag.splash_damage = 30.0
+		frag.fuse_ticks = 4
+		frag.life_ticks = 40
+		var _f := _game.projectiles.launch(frag, &"bot")
+		for _i in 12:
+			await get_tree().physics_frame
+		_check(npc.health < after_shot, "%s: a grenade's blast hurts it" % species, "%.0f of %.0f" % [npc.health, after_shot])
+
+		# A barrel going up beside it.
+		var after_blast := npc.health
+		_game._on_prop_exploded(body.global_position + Vector3(2.0, 0, 0), 6.0, 40.0, 0.0, &"bot")
+		_check(npc.health < after_blast, "%s: a barrel's blast hurts it" % species, "%.0f of %.0f" % [npc.health, after_blast])
+
+		# Death: enough damage takes it out of the world and the spawner counts a kill.
+		var kills := spawner.kill_count
+		_game.player_shots_fired(&"bot", _shot_outcome(body.global_position + Vector3(0, 0.9, 6.0), 1.0e6))
+		await get_tree().physics_frame
+		_check(spawner.kill_count == kills + 1 and not npc.alive, "%s: enough damage kills it" % species)
+		killed.append(species)
+		for _i in 40:
+			await get_tree().physics_frame
+	_game.hit_landed.disconnect(on_hit)
+	_check(killed.size() == MONSTERS.size(), "all six species died to the player's weapons", str(killed))
+	_done()
+
+
+func _shot_outcome(origin: Vector3, damage: float) -> DotWeaponOutcome:
+	var shot := DotShot.new()
+	shot.origin = origin
+	shot.direction = Vector3(0, 0, -1)
+	shot.damage = damage
+	shot.max_range = 50.0
+	var outcome := DotWeaponOutcome.new()
+	outcome.used = true
+	outcome.shots.append(shot)
+	return outcome
+
+
+## Each live monster as `{npc, spawner}`, from the pack's runtime in the world.
+func _monsters() -> Array:
+	var out: Array = []
+	for runtime in _game.world.get_children():
+		if not runtime.has_meta(&"zhm_runtime"):
+			continue
+		var spawner: DotNpcSpawner = runtime.get("spawner")
+		for npc in spawner.all_npcs():
+			out.append({"npc": npc, "spawner": spawner})
 	return out
 
 

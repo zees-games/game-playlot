@@ -60,6 +60,8 @@ func player_shots_fired(player_id: StringName, outcome: DotWeaponOutcome) -> voi
 
 		if collider is Node and (collider as Node).has_method("take_damage"):
 			(collider as Node).call("take_damage", float(hit["damage"]), player_id)
+		elif collider is Node and addons != null and addons.hurt_monster(self, collider as Node, float(hit["damage"]), player_id, hit["point"], hit["direction"]):
+			pass
 		elif collider is Node and hurt_pane(collider as Node, float(hit["damage"]), player_id):
 			pass
 		elif collider is Node:
@@ -94,6 +96,8 @@ func npc_shots_fired(entity: Node3D, outcome: DotWeaponOutcome) -> void:
 
 		if collider is Node and (collider as Node).has_method("take_damage"):
 			(collider as Node).call("take_damage", damage, shooter_id)
+		elif collider is Node and addons != null and addons.hurt_monster(self, collider as Node, damage, shooter_id, hit["point"], hit["direction"]):
+			pass
 		elif collider is PlaygroundPlayer:
 			if arena_hurt.is_valid():
 				arena_hurt.call(shooter_id, (collider as PlaygroundPlayer).player_id, damage, float(hit["distance"]))

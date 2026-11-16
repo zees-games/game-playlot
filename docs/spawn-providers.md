@@ -39,6 +39,10 @@ Props and the rest of the kinds are not built yet: a `prop` entry works today on
 
 `weapon` entries get a **Pack Weapons** tab and `npc` / `bot` entries an **NPCs** tab, both in the Q menu beside the game's own tabs (Props, Entities, NPCs, Weapons, Pack Weapons, Tools, Builds, Addons). Each has category chips, the search box, an icon grid and the entry's hint as the tooltip. A tab exists only while at least one entry of its kind does (`PlaygroundSpawnMenu._sync_provider_tabs`; it is hidden, not removed, so the `Tab` indices stay fixed), and falls back to Props if the open one loses its entries. The weapons tab is titled "Pack Weapons" because the game's own Weapons tab already has that name. An entry without an `icon` gets a tile from `PlaygroundIcons.for_provider` (its kind's silhouette in a colour taken from the name). Clicking asks the server by key (`addon_item_chosen`), exactly as the Addons tab did. Any other kind stays on the Addons tab with the hooks' items.
 
+## Hurting a pack monster
+
+A pack monster's body has no `take_damage`: its health is the pack runtime's `DotNpcSpawner` (dot-npc). Every game damage path asks the collider for `take_damage` first, so until `PlaygroundAddons.hurt_monster` existed a rifle shot, a grenade and a barrel's blast all treated a dinosaur as a wall. `hurt_monster` finds the monster whose body (or a node under it) was hit, takes off the limb at the point (`zhm_limb_hit`), calls `DotNpcSpawner.damage` (which runs the brain's flinch, the `died` signal and the removal) and tells the shooter through `confirm_hit`. It is called from `Playground.player_shots_fired`, `npc_shots_fired`, `PlaygroundProjectiles.hurt` (grenade and rocket splash) and `blast_monsters` (a barrel going up). The physics gun moves props and deals no damage, so it has no path here. `headless_packs_real` covers all six species.
+
 ## Not yet
 
 - Entries are listed once at start; a pack mounted later by dot-cloud shows after the next boot.

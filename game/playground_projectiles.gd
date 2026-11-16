@@ -559,15 +559,19 @@ func _apply(events: Array[Dictionary], colliders: Array, f: Flying, at: Vector3)
 
 		match String(event["event"]):
 			"damage":
-				hurt(body, float(event["damage"]), f.owner_id, at.distance_to(_centre(body)))
+				hurt(body, float(event["damage"]), f.owner_id, at.distance_to(_centre(body)), at)
 				_shove(body, float(event["damage"]), at)
 
 
 ## Damage to [param body] from [param owner_id]: an armed NPC takes it, a player takes it through
-## the arena, a breakable prop takes it as a prop.
-func hurt(body: Node3D, damage: float, owner_id: StringName, distance: float) -> void:
+## the arena, a breakable prop takes it as a prop. [param at] is the blast centre, when there is one.
+func hurt(body: Node3D, damage: float, owner_id: StringName, distance: float, at: Vector3 = Vector3.INF) -> void:
+	var addons: Variant = game.get("addons") if game != null else null
+
 	if body.has_method("take_damage"):
 		body.call("take_damage", damage, owner_id)
+	elif addons != null and (addons as Object).call(&"hurt_monster", game, body, damage, owner_id, _centre(body), (_centre(body) - at).normalized() if at.is_finite() else Vector3.ZERO):
+		pass
 	elif body is PlaygroundPlayer:
 		var arena: Variant = game.get("arena_hurt") if game != null else null
 		if arena is Callable and (arena as Callable).is_valid():

@@ -465,6 +465,9 @@ func _on_prop_exploded(at: Vector3, radius: float, damage: float, _force: float,
 
 	var _thrown := blast_toys(at, radius)
 
+	if addons != null:
+		var _monsters := addons.blast_monsters(self, at, radius, damage, by)
+
 	if props != null:
 		for other in props.all_props():
 			if other == null or not other.is_alive() or other.node == null or _breaking.has(other.instance_id):
