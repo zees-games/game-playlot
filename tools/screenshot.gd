@@ -111,6 +111,28 @@ func _initialize() -> void:
 		return
 
 	_shots = _shots_for(id, custom)
+	var views := _views_from_args(args)
+	if not views.is_empty():
+		_shots = views
+
+
+## `--view NAME:FX,FY,FZ:AX,AY,AZ` (repeatable): shoot only these, from FROM looking at AT, in
+## the map's metres, named `<NAME>.png`. For a look at one spot (a decal, a door) the
+## default angles never reach. A malformed view stops the run, not a frame of the wrong place.
+func _views_from_args(args: PackedStringArray) -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	for i in args.size() - 1:
+		if args[i] != "--view":
+			continue
+		var parts := args[i + 1].split(":")
+		var from := parts[1].split_floats(",") if parts.size() == 3 else PackedFloat64Array()
+		var at := parts[2].split_floats(",") if parts.size() == 3 else PackedFloat64Array()
+		if parts.size() != 3 or parts[0].is_empty() or from.size() != 3 or at.size() != 3:
+			push_error("--view wants NAME:FX,FY,FZ:AX,AY,AZ, got %s" % args[i + 1])
+			quit(2)
+			return []
+		out.append({"name": parts[0], "from": Vector3(from[0], from[1], from[2]), "at": Vector3(at[0], at[1], at[2])})
+	return out
 
 
 ## A document map's props, drawn from the real prop scene and catalogue where the server
