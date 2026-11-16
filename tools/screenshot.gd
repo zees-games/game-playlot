@@ -110,7 +110,7 @@ func _initialize() -> void:
 		_action_id = id
 		return
 
-	_shots = _shots_for(id)
+	_shots = _shots_for(id, custom)
 
 
 ## A document map's props, drawn from the real prop scene and catalogue where the server
@@ -158,14 +158,13 @@ var _action_figure: DotHumanoidFigure = null
 var _toy_placements: Array = []
 
 
-## Maps converted from a community .bsp (playlot-maps' tools/import_bsp.py): they have no
-## hand-picked angles, so these are worked out from the document, an oblique view over the
-## whole thing, a high view straight down and the player's eye at the spawn facing the middle.
-const IMPORTED := ["pgc_construct_small", "pgc_smallbase", "pgc_mountain_resort"]
-
-
-func _imported_shots(id: String) -> Array[Dictionary]:
-	var doc: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://maps/custom/%s.json" % id))
+## Maps converted from a community .bsp (playlot-maps' tools/convert_all.sh): every document
+## map without hand-picked angles. These are worked out from the document at [param path], an
+## oblique view over the whole thing, a high view straight down and the player's eye at the
+## spawn facing the middle. The high views are marked "in_air": a converted world's culling
+## needs the camera inside the map's air, so [method _into_air] brings them down under its sky.
+func _imported_shots(id: String, path: String) -> Array[Dictionary]:
+	var doc: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
 	var lo := Vector3(INF, INF, INF)
 	var hi := Vector3(-INF, -INF, -INF)
 	for b: Dictionary in doc["boxes"]:
@@ -181,11 +180,36 @@ func _imported_shots(id: String) -> Array[Dictionary]:
 	var spawn := Vector3(sp[0], sp[1] + 0.7, sp[2])
 	var reach := maxf(ext.x, ext.z)
 	return [
-		{"name": id, "from": centre + Vector3(0.0, reach * 0.9, reach * 0.55), "at": centre},
-		{"name": id + "_top", "from": centre + Vector3(0.0, reach * 1.1, 0.1), "at": centre},
+		{"name": id, "from": centre + Vector3(0.0, reach * 0.9, reach * 0.55), "at": centre, "in_air": true},
+		{"name": id + "_top", "from": centre + Vector3(0.0, reach * 1.1, 0.1), "at": centre, "in_air": true},
 		{"name": id + "_spawn", "from": spawn, "at": Vector3(centre.x, spawn.y - 0.3, centre.z)},
-		{"name": id + "_side", "from": Vector3(lo.x + ext.x * 0.15, lo.y + minf(ext.y, 12.0), hi.z - ext.z * 0.15), "at": Vector3(centre.x, lo.y + 1.0, centre.z)},
+		{"name": id + "_side", "from": Vector3(lo.x + ext.x * 0.15, lo.y + minf(ext.y, 12.0), hi.z - ext.z * 0.15), "at": Vector3(centre.x, lo.y + 1.0, centre.z), "in_air": true},
 	]
+
+
+## Metres between the points [method _into_air] tries.
+const AIR_STEP := 0.5
+
+
+## The first point from [param from] towards [param at] inside the drawn world's air (a leaf
+## with a visibility cluster), or [param from] when the map draws no culled world or the
+## whole line is solid. Above the sky or inside a wall the culling has no cluster to start
+## from and shows the wrong part of the map.
+func _into_air(from: Vector3, at: Vector3) -> Vector3:
+	var drawn: DotMapDrawnWorld = null
+	if _map_node != null:
+		drawn = _map_node.get(&"drawn_world") as DotMapDrawnWorld
+	if drawn == null or drawn.visibility == null or drawn.visibility.root == null:
+		return from
+	var vis := drawn.visibility
+	var to_local := vis.root.global_transform.affine_inverse()
+	var steps := maxi(1, ceili(from.distance_to(at) / AIR_STEP))
+	for i in steps:   # not `at` itself: the camera could not look at the point it stands on
+		var p := from.lerp(at, float(i) / steps)
+		if not vis.clusters_in_box(AABB(to_local * p - Vector3.ONE * 0.01, Vector3.ONE * 0.02)).is_empty():
+			return p
+	push_warning("screenshot: no air between %s and %s; shooting from %s" % [from, at, from])
+	return from
 
 
 ## Camera views for the course maps (pgc_*); empty for any other id.
@@ -296,9 +320,7 @@ func _course_shots_more(id: String) -> Array[Dictionary]:
 
 ## Angles per map, because a 200 m sandbox with a park at one end and a movement corner at
 ## the other has nothing useful to say from one camera.
-func _shots_for(id: String) -> Array[Dictionary]:
-	if id in IMPORTED:
-		return _imported_shots(id)
+func _shots_for(id: String, doc_path: String) -> Array[Dictionary]:
 	if id == "pg_brushes":
 		return [
 			{"name": "pg_brushes", "from": Vector3(-12.0, 7.0, 16.0), "at": Vector3(0.0, 1.5, -1.0)},
@@ -307,6 +329,8 @@ func _shots_for(id: String) -> Array[Dictionary]:
 	var course := _course_shots(id)
 	if not course.is_empty():
 		return course
+	if not MAPS.has(id):
+		return _imported_shots(id, doc_path)
 	if id != "pg_flatgrass":
 		return [
 			{"name": "%s_overview" % id, "from": Vector3(-90, 70, 90), "at": Vector3(0, 8, 0)},
@@ -541,7 +565,7 @@ func _process(_delta: float) -> bool:
 
 	if not _armed:
 		var shot: Dictionary = _shots[_index]
-		_camera.position = shot["from"]
+		_camera.position = _into_air(shot["from"], shot["at"]) if shot.get("in_air", false) else shot["from"]
 		_camera.look_at(shot["at"], Vector3.UP)
 		_armed = true
 		if shot.has("arm"):
