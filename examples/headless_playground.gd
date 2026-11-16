@@ -1,6 +1,6 @@
 extends "res://examples/headless_playground_part9.gd"
 
-const CHECKS := 782 + 22 + 9 + 10 + 8 + 1 + 4 + 15 + 2 + 1 + 26 + 3 + 2 + 2 + 1 + 8 + 1 + 5 + 10 + 25 + 1 + 1 + 30 + 18 + 1 + 6 + 3 + 1 + 2 + 1 + 8
+const CHECKS := 782 + 22 + 9 + 10 + 8 + 1 + 4 + 15 + 2 + 1 + 26 + 3 + 2 + 2 + 1 + 8 + 1 + 5 + 10 + 25 + 1 + 1 + 30 + 18 + 1 + 6 + 3 + 1 + 2 + 1 + 8 + 4
 const PlaygroundClientPrewarm := preload("res://game/client/playground_client_prewarm.gd")
 
 ## Sections entered against sections that ran to their last line, and against this. A
