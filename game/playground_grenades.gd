@@ -2,7 +2,7 @@ extends Node
 
 const PlaygroundPlayer := preload("playground_player.gd")
 
-## What flash, smoke and incendiary grenades leave behind, on the authority: arena_weapons' [AwUtilityZones]
+## What flash, smoke and incendiary grenades leave behind, on the authority: fc_weapons' [AwUtilityZones]
 ## does the zones and the blinds, and this plugs the sandbox's bodies, world trace and hurt path into it.
 ## The projectile layer builds one, hands it each utility blast and ticks it.
 

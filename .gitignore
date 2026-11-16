@@ -82,7 +82,7 @@ Thumbs.db
 /addons/dot_workbench
 /addons/dot_weapon
 /addons/zee_weapons
-/addons/arena_weapons
+/addons/fc_weapons
 /addons/dot_workbench
 # Optional: natural-disasters, shown in the Addons tab by addons/pg_natural_disasters.
 /addons/natural_disasters
@@ -103,8 +103,8 @@ Thumbs.db
 # weapon headings are empty and the packs fire at their scene defaults. The zz ones are skipped under --min.
 # bootstrap-link: zee-dot-weapons/cfg/addons/zee_weapons
 /cfg/addons/zee_weapons
-# bootstrap-link: arena-weapons/cfg/addons/arena_weapons
-/cfg/addons/arena_weapons
+# bootstrap-link: arena-weapons/cfg/addons/fc_weapons
+/cfg/addons/fc_weapons
 # bootstrap-link: zz-modern-weapons/cfg/addons/zz_modern_weapons
 /cfg/addons/zz_modern_weapons
 # bootstrap-link: zz-medieval-weapons/cfg/addons/zz_medieval_weapons

@@ -15,7 +15,7 @@ const PlaygroundZee := preload("playground_zee.gd")
 ## is Godot physics: crates, welds and whatever somebody built. A grenade has to bounce off
 ## those as well as the floor.
 ##
-## [b]A fused grenade is arena_weapons' [AwGrenade], and every blast is its [AwGrenadeBlast].[/b]
+## [b]A fused grenade is fc_weapons' [AwGrenade], and every blast is its [AwGrenadeBlast].[/b]
 ## This layer only supplies the world: the swept ray, the thrower's grace, what a crate does
 ## to a stuck grenade, and who stands in the splash. Bounce, stick and fuse are the addon's,
 ## tuned by `sv_grenade_*`.

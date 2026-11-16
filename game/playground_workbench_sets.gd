@@ -15,7 +15,7 @@ const CONFIG := {
 }
 ## Addon cvar sets a server lists when the addon bound them: [kind, cvar prefix, heading, owner, side].
 const CVAR_SETS := [
-	["grenades", "sv_grenade", "Grenades (sv_grenade_*)", "arena_weapons", DotWorkbenchScope.SIDE_SERVER],
+	["grenades", "sv_grenade", "Grenades (sv_grenade_*)", "fc_weapons", DotWorkbenchScope.SIDE_SERVER],
 	["ragdolls", "sv_ragdoll", "Ragdolls (sv_ragdoll*)", "dot-player-char", DotWorkbenchScope.SIDE_REPLICATED],
 	["toys", "sv_toys", "Map toys (sv_toys*)", "dot-props", DotWorkbenchScope.SIDE_REPLICATED],
 ]

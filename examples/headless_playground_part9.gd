@@ -279,9 +279,9 @@ func _test_grenades_3() -> void:
 		if not _g_rocket_blasts.is_empty():
 			break
 
-## arena_weapons' thrown set, through the projectile layer: provider ids, AwGrenade flight, zones.
+## fc_weapons' thrown set, through the projectile layer: provider ids, AwGrenade flight, zones.
 func _test_aw_grenades() -> void:
-	_section("arena_weapons grenades")
+	_section("fc_weapons grenades")
 	var layer: PlaygroundProjectiles = playground.projectiles
 	for id: StringName in [&"aw_frag", &"aw_sticky", &"aw_flash", &"aw_smoke", &"aw_incendiary"]:
 		_check(PlaygroundZee.pack_def(id) != null, "the provider taught the game %s" % id)
