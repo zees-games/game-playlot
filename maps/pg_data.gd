@@ -149,7 +149,8 @@ func configure_doc(path: String) -> DotResult:
 	doc = read.value
 	_doc_path = path
 	_liquids = build_into(self, doc)
-	add_contact_shade()
+	if _shades_boxes():
+		add_contact_shade()
 	fallback_spawn = _vec(doc.get("spawn", [0, 1, 0]))
 	_declared = declared_of(doc)
 	if draw_world and not world_spec(doc).is_empty():
@@ -160,6 +161,24 @@ func configure_doc(path: String) -> DotResult:
 
 
 # --- The drawn world ------------------------------------------------------------
+
+## Whether the box meshes are what is seen, so they want dot-lighting's contact shade. A
+## document with a world pack is seen through the pack ([method attach_world] drops the shade),
+## and a headless server sees nothing: building the shade there is all cost. It is not cheap:
+## gm_fork's 21,329 boxes took two minutes of it on the build box, and timed out a suite. A
+## pack that does not load gets the shade then ([method _boxes_stay_drawn]).
+func _shades_boxes() -> bool:
+	if world_spec(doc).is_empty():
+		return true
+	return not draw_world and DisplayServer.get_name() != "headless"
+
+
+## The world pack did not load, so the boxes stay what is seen: shade them as a map without a
+## pack would have been.
+func _boxes_stay_drawn() -> void:
+	if get_node_or_null(^"ContactShade") == null:
+		add_contact_shade()
+
 
 ## The document's `world` as `{pack, offset: Vector3, metres_per_unit: float (0 unchecked)}`,
 ## or empty when it names none. Read from a checked document.
@@ -195,6 +214,7 @@ func load_world() -> DotResult:
 	if not FileAccess.file_exists(prefix + ".json"):
 		DotLog.warn(CHANNEL, "a map names a world pack that is not here; its boxes are drawn",
 			{"map": id, "at": prefix})
+		_boxes_stay_drawn()
 		return DotResult.fail(DotError.CODE_IO, "No world pack at %s." % prefix)
 	_world_loading = true
 	var read: DotResult = await DotMapDrawnWorld.read(prefix, DotRegistry.get_service(&"dot_cloud_client"))
@@ -202,6 +222,7 @@ func load_world() -> DotResult:
 		_world_loading = false
 		DotLog.warn(CHANNEL, "a map's world pack would not read; its boxes are drawn",
 			{"map": id, "at": prefix, "why": read.error.message})
+		_boxes_stay_drawn()
 		return read
 	var world: DotMapBspMesh = read.value
 	var wanted := float(spec["metres_per_unit"])
@@ -210,6 +231,7 @@ func load_world() -> DotResult:
 		_world_loading = false
 		DotLog.warn(CHANNEL, "a map's world pack was made at another scale; its boxes are drawn",
 			{"map": id, "pack": made, "doc": wanted})
+		_boxes_stay_drawn()
 		return DotResult.fail(DotError.CODE_INVALID, "World pack %s is at %s metres a unit, the document %s." % [prefix, made, wanted])
 	var drawn: DotMapDrawnWorld = await attach_world(world, spec["offset"], is_original(spec))
 	_world_loading = false

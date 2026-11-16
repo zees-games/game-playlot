@@ -755,6 +755,8 @@ func _test_drawn_worlds() -> void:
 	await get_tree().process_frame
 	_check(server.get_node_or_null(^"World") == null and server.drawn_world == null and _hidden_box_meshes(server) == 0,
 		"world: a map that does not draw reads no pack and keeps its boxes drawn")
+	_check(not server._shades_boxes(), "world: a server builds no contact shade for a map its pack would draw",
+		"gm_fork's 21,329 boxes spent two minutes in it")
 	server.queue_free()
 
 	var map: Node3D = _tmas_data_script.new()
@@ -811,9 +813,14 @@ func _test_drawn_worlds() -> void:
 		other.configure_doc(path)
 		other.draw_world = true
 		var got: DotResult = await other.load_world()
+		var shaded_before: bool = other._shades_boxes()
 		_check(not got.ok and other.drawn_world == null and other.get_node_or_null(^"World") == null and _hidden_box_meshes(other) == 0,
 			"world: a pack %s leaves the boxes drawn" % ("that is not there" if name == "missing" else "made at another scale"),
 			str(got.value) if got.ok else got.error.message)
+		var plain_doc: Dictionary = (other.doc as Dictionary).duplicate()
+		plain_doc.erase("world")
+		other.doc = plain_doc
+		_check(not shaded_before and other._shades_boxes(), "world: a map with no pack shades its boxes, one with a pack only when it is not drawn")
 		other.queue_free()
 		DirAccess.remove_absolute(path)
 	for ext in [".json", ".bin"]:
