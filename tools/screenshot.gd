@@ -615,7 +615,7 @@ func _stage_grenades() -> Array[Dictionary]:
 ## bool synchronously; making it a coroutine returns a signal object instead, which is
 ## truthy, so the tree quits on the first frame and writes nothing. That is what
 ## game-fatal-contact's first version of this file did and the reason its comment says so.
-## Frame sequence after each still (DOT_SHOT_FRAMES); see DotShotSeq.
+## Frame sequence after each still (GS_SHOT_FRAMES); see DotShotSeq.
 var _seq := DotShotSeq.new()
 var _seq_active := false
 

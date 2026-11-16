@@ -61,7 +61,7 @@ func _spawn(id: StringName, at: Vector3) -> DotWeaponSpawn:
 	return spawn
 
 
-## Frame sequence after each still (DOT_SHOT_FRAMES, set by the .sh); see DotShotSeq.
+## Frame sequence after each still (GS_SHOT_FRAMES, set by the .sh); see DotShotSeq.
 var _seq := DotShotSeq.new()
 
 

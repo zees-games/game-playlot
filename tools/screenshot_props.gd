@@ -55,7 +55,7 @@ func _initialize() -> void:
 	cam.look_at_from_position(Vector3(0, 6.5, 9.5), Vector3(0, 0.8, -1.0))
 
 
-## Frame sequence after each still (DOT_SHOT_FRAMES, set by the .sh); see DotShotSeq. The state machine holds still while it records, and `_seq_end` defers the quit until it is done.
+## Frame sequence after each still (GS_SHOT_FRAMES, set by the .sh); see DotShotSeq. The state machine holds still while it records, and `_seq_end` defers the quit until it is done.
 var _seq := DotShotSeq.new()
 var _seq_active := false
 var _seq_end := false

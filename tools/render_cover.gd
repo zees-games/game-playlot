@@ -15,7 +15,7 @@ const PlaylotPresentation := preload("../game/playlot_presentation.gd")
 const PORT := 27299
 
 var _server_pid := -1
-## Frame sequence after each still (DOT_SHOT_FRAMES); see DotShotSeq. The headless
+## Frame sequence after each still (GS_SHOT_FRAMES); see DotShotSeq. The headless
 ## cover_server renders nothing, so the clips are recorded here on the client.
 var _seq := DotShotSeq.new()
 

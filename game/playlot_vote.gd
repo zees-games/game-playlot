@@ -39,7 +39,7 @@ const CHANNEL := "playlot.vote"
 ## }
 ## [/codeblock]
 ##
-## [code]DOT_VOTE_EXTEND_SECONDS=1200[/code] or [code]--vote-include-extend=false[/code]
+## [code]GS_VOTE_EXTEND_SECONDS=1200[/code] or [code]--vote-include-extend=false[/code]
 ## do the same for one run. A result that does not validate is refused whole and the
 ## defaults stand, with the reason in the log.
 const CONFIG_PATH := "user://cfg/playlot_vote.json"

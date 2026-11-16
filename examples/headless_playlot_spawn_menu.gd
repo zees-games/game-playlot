@@ -96,7 +96,7 @@ func _test_spawn_menu() -> void:
 func _test_spawn_menu_2() -> void:
 
 	# The site's listing: off unless a site is named, and this game's servers when one is.
-	var env_key := "DOT_BROWSER_BACKBONE_URL"
+	var env_key := "GS_BROWSER_BACKBONE_URL"
 	var had := OS.get_environment(env_key)
 	OS.unset_environment(env_key)
 	var off: DotResult = PlaylotBrowser.site_listing()
