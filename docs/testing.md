@@ -18,6 +18,7 @@ The family rules on suites (both counters, read stderr, cap every run, re-import
 - **The suites run without dot-timer**, which is how the game ships. Linked, `headless_playground` and `dedicated` add their `TIMER_SECTIONS` and `TIMER_CHECKS` and run the timer's sections; absent they print a SKIP line ([timer.md](timer.md#testing-it)). Run both ways after touching `addons/pg_timer`.
 - `tools/map_props.gd` checks a custom map's props stay put ([maps.md](maps.md#map-props)).
 - Every addon's own suite still has to pass; these exercise the joins and do not re-test what the addons cover.
+- How the weapons and avatar look (first person and outside, 60 fps contact sheets and clips) is not a suite: `tools/anim_review.sh`, [anim-review.md](anim-review.md).
 
 ## Arm a new check
 

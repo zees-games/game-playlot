@@ -285,6 +285,14 @@ func set_shown(shown: bool) -> void:
 	figure.first_person = DotHumanoidOwnView.THIRD if shown else DotHumanoidOwnView.LEGS
 
 
+## What the hand holds, [enum DotHumanoidFigure.Hold]: a gun draws the figure's held-gun arms. Once a frame
+## from the player's `face_body`; a capsule body has no arms and ignores it.
+func set_hold(kind: int) -> void:
+	var figure := _figure()
+	if figure != null and figure.hold != kind:
+		figure.set_hold(kind)
+
+
 func _figure() -> DotHumanoidFigure:
 	if _parts == null or not is_instance_valid(_parts):
 		return null

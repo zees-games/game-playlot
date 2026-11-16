@@ -125,6 +125,10 @@ var zee_quiet: float = 0.0
 ## Built on a client from the server's WEAPON event by [method PlaygroundZee.show_held].
 var zee_world: Node3D = null
 
+## The weapon [method _hold_kind_now] last looked up, and the arms it is held with.
+var _hold_id: StringName = &"-"
+var _hold_kind: int = DotHumanoidFigure.Hold.NONE
+
 ## Whether this player is in a vehicle, and so is not walking.
 ##
 ## [b]Read-only from outside: [method set_riding] is the switch.[/b] It exists as a flag
@@ -292,6 +296,32 @@ func face_body() -> void:
 			# The view's pitch: the upper body, the head and a held gun follow it.
 			"aim": deg_to_rad(state.pitch),
 		})
+		character.set_hold(_hold_kind_now())
+
+
+## The arms the body holds [member zee_world]'s weapon with: a gun's, a blade's, or empty hands for a
+## thrown weapon, fists, nothing or a weapon put away mid-switch.
+##
+## [b]Nothing set it, so a watcher saw every gun float.[/b] The figure draws its held-gun arms only when
+## told the hand holds a gun ([method DotHumanoidFigure.set_hold]); with the default the arms hung at the
+## sides and the gun hung off a hand at the hip (the third-person sheets of tools/anim_review.sh).
+## Looked up once per weapon, as FC does.
+func _hold_kind_now() -> int:
+	var model := zee_world as ZeeWorldModel if zee_world != null and is_instance_valid(zee_world) else null
+	if model == null or not model.visible:
+		return DotHumanoidFigure.Hold.NONE
+	var id := model.equipped()
+	if id != _hold_id:
+		_hold_id = id
+		var art: Variant = ZeeWeaponArtTable.table().get(id)
+		var pose: StringName = (art as ZeeWeaponArt).pose if art is ZeeWeaponArt else &""
+		if pose == &"" or not (art as ZeeWeaponArt).has_model() or pose == ZeeWeaponArtTable.POSE_THROWN:
+			_hold_kind = DotHumanoidFigure.Hold.NONE
+		elif pose == ZeeWeaponArtTable.POSE_MELEE:
+			_hold_kind = DotHumanoidFigure.Hold.MELEE
+		else:
+			_hold_kind = DotHumanoidFigure.Hold.GUN
+	return _hold_kind
 
 
 ## A rider's body faces the vehicle, whoever is looking where. Everybody else's faces where
