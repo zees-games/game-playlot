@@ -179,12 +179,52 @@ func _imported_shots(id: String, path: String) -> Array[Dictionary]:
 	var sp: Array = doc["spawn"]
 	var spawn := Vector3(sp[0], sp[1] + 0.7, sp[2])
 	var reach := maxf(ext.x, ext.z)
-	return [
+	var shots: Array[Dictionary] = [
 		{"name": id, "from": centre + Vector3(0.0, reach * 0.9, reach * 0.55), "at": centre, "in_air": true},
 		{"name": id + "_top", "from": centre + Vector3(0.0, reach * 1.1, 0.1), "at": centre, "in_air": true},
 		{"name": id + "_spawn", "from": spawn, "at": Vector3(centre.x, spawn.y - 0.3, centre.z)},
 		{"name": id + "_side", "from": Vector3(lo.x + ext.x * 0.15, lo.y + minf(ext.y, 12.0), hi.z - ext.z * 0.15), "at": Vector3(centre.x, lo.y + 1.0, centre.z), "in_air": true},
 	]
+	shots.append_array(_ground_shots(id, spawn, centre))
+	return shots
+
+
+## Metres a ground view's eye stands above the floor it lands on.
+const EYE_HEIGHT := 1.7
+## Metres between the walking views, out from the spawn towards the middle of the map.
+const WALK_STEP := 10.0
+## How many walking views; 0 shoots none.
+const WALK_VIEWS := 3
+
+
+## What a player sees: the eye at the spawn facing four ways, then walking views out from the
+## spawn towards the middle. Marked "drop": [method _drop_to_floor] puts each on the collision
+## floor under it when shot, as the overview angles never show a ground-level material or prop.
+func _ground_shots(id: String, spawn: Vector3, centre: Vector3) -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	var ahead := Vector3(centre.x - spawn.x, 0.0, centre.z - spawn.z)
+	if ahead.length() < 1.0:
+		ahead = Vector3(0.0, 0.0, -1.0)
+	ahead = ahead.normalized()
+	for k in 4:
+		var dir := ahead.rotated(Vector3.UP, k * PI / 2.0)
+		out.append({"name": "%s_eye%d" % [id, k], "from": spawn, "dir": dir, "drop": 2.0})
+	for k in WALK_VIEWS:
+		out.append({"name": "%s_walk%d" % [id, k], "from": spawn + ahead * WALK_STEP * (k + 1), "dir": ahead, "drop": 8.0})
+	return out
+
+
+## [param from] moved onto the first floor under it (looked for from [param lift] metres above:
+## a hill climbs from the spawn, a ceiling over the spawn must not be taken for its floor) at eye
+## height, or [param from] unchanged when nothing is under it.
+func _drop_to_floor(from: Vector3, lift: float) -> Vector3:
+	var space := root.get_world_3d().direct_space_state
+	var query := PhysicsRayQueryParameters3D.create(from + Vector3.UP * lift, from + Vector3.DOWN * 200.0)
+	var hit := space.intersect_ray(query)
+	if hit.is_empty():
+		push_warning("screenshot: no floor under %s" % from)
+		return from
+	return (hit["position"] as Vector3) + Vector3.UP * EYE_HEIGHT
 
 
 ## Metres between the points [method _into_air] tries.
@@ -565,8 +605,13 @@ func _process(_delta: float) -> bool:
 
 	if not _armed:
 		var shot: Dictionary = _shots[_index]
-		_camera.position = _into_air(shot["from"], shot["at"]) if shot.get("in_air", false) else shot["from"]
-		_camera.look_at(shot["at"], Vector3.UP)
+		if shot.has("drop"):
+			var eye := _drop_to_floor(shot["from"], float(shot["drop"]))
+			_camera.position = eye
+			_camera.look_at(eye + (shot["dir"] as Vector3) * 10.0 + Vector3.DOWN * 0.8, Vector3.UP)
+		else:
+			_camera.position = _into_air(shot["from"], shot["at"]) if shot.get("in_air", false) else shot["from"]
+			_camera.look_at(shot["at"], Vector3.UP)
 		_armed = true
 		if shot.has("arm"):
 			(shot["arm"] as Callable).call()

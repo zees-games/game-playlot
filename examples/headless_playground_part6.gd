@@ -656,6 +656,9 @@ func _stopping(vehicle: DotVehicleInstance, at: Vector3, id: StringName, button:
 ##
 ## The survey is asked about a fixture first, so a sweep that finds nothing is known to be looking.
 var _tmas_data_script: GDScript
+## The four survey checks of each unedited map, which is loaded but not surveyed; `_ready` takes them
+## off the expected total, so the count follows the documents the maps repository holds.
+var _tmas_unsurveyed_checks := 0
 
 
 func _test_the_maps_are_surveyed_2() -> void:
@@ -664,6 +667,15 @@ func _test_the_maps_are_surveyed_2() -> void:
 		var map: Node3D = _tmas_data_script.new()
 		var configured: DotResult = map.configure_doc(path)
 		_check(configured.ok, "%s: the document loads" % id, str(configured.error) if not configured.ok else "")
+		# A whole-map import (`"unedited": true`, written by the converter) is the author's map as built for Garry's
+		# Mod, not a course laid out for this game's player: its ledges and slots are the author's, and a survey of a
+		# whole Source map runs for minutes. It is shown as imported, so only the load is checked.
+		var doc: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
+		if doc is Dictionary and DotValue.same((doc as Dictionary).get("unedited", false), true):
+			map.free()
+			print("    %s: an unedited whole-map import, not surveyed" % id)
+			_tmas_unsurveyed_checks += 4
+			continue
 		var spawns: Array[Vector3] = [map.fallback_spawn]
 		var declared: Array = map.survey_declared()
 		var started := Time.get_ticks_msec()

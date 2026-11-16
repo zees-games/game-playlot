@@ -84,7 +84,7 @@ func _run() -> void:
 	_test_view_cycle()
 
 	var sections := SECTIONS + (TIMER_SECTIONS if _timer_linked() else 0)
-	var checks := CHECKS + (TIMER_CHECKS if _timer_linked() else 0)
+	var checks := CHECKS + (TIMER_CHECKS if _timer_linked() else 0) - _tmas_unsurveyed_checks
 	_report_sections(_entered, _completed, sections, checks)
 
 

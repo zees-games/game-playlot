@@ -77,9 +77,10 @@ const CHANNEL := "playground.maps"
 
 const FORMAT := 1
 
-## The most boxes one map may hold. A map is a few hundred; past this it is a mistake or a
-## document meant to stall a server's load.
-const MAX_BOXES := 4000
+## The most boxes one map may hold, or 0 for no bound (the default: a whole converted map holds
+## tens of thousands). A host that loads strangers' documents sets one; a document past it fails
+## [method validate] by name, it is never cut short.
+static var max_boxes: int = 0
 
 ## How far from the origin anything may be, in metres. The wire's own extent is larger.
 const MAX_EXTENT := 2000.0
@@ -210,7 +211,7 @@ func load_world() -> DotResult:
 		DotLog.warn(CHANNEL, "a map's world pack was made at another scale; its boxes are drawn",
 			{"map": id, "pack": made, "doc": wanted})
 		return DotResult.fail(DotError.CODE_INVALID, "World pack %s is at %s metres a unit, the document %s." % [prefix, made, wanted])
-	var drawn: DotMapDrawnWorld = await attach_world(world, spec["offset"])
+	var drawn: DotMapDrawnWorld = await attach_world(world, spec["offset"], is_original(spec))
 	_world_loading = false
 	return DotResult.success(drawn != null)
 
@@ -219,7 +220,9 @@ func load_world() -> DotResult:
 ## brush mesh but a see-through one (glass the pack does not draw, and a pane that breaks
 ## must vanish), and the contact shade under them. Their bodies stay: the pack is only what is
 ## seen. Liquids stay drawn. Null when the map went away during the build.
-func attach_world(world: DotMapBspMesh, offset: Vector3) -> DotMapDrawnWorld:
+## [param original] draws the map's own textures the pack carries (the `_orig` variant).
+## Props and vegetation the pack places are drawn too.
+func attach_world(world: DotMapBspMesh, offset: Vector3, original: bool = false) -> DotMapDrawnWorld:
 	var environment: Environment = null
 	var lamps: Array = []
 	for child in get_children():
@@ -232,6 +235,8 @@ func attach_world(world: DotMapBspMesh, offset: Vector3) -> DotMapDrawnWorld:
 		"environment": environment,
 		"lamps": lamps,
 		"cloud": DotRegistry.get_service(&"dot_cloud_client"),
+		"props": true,
+		"original_textures": original,
 	}
 	var drawn: DotMapDrawnWorld = null
 	if world_slice_ms > 0:
@@ -320,6 +325,12 @@ static func read_doc(path: String) -> DotResult:
 	return validate(parsed)
 
 
+## Whether a document's world [param spec] (from [method world_spec]) is the original variant:
+## its pack ends in dot-map's `_orig` mark and carries the map's own textures.
+static func is_original(spec: Dictionary) -> bool:
+	return str(spec.get("pack", "")).ends_with(DotMapLocalMaps.ORIG_MARK)
+
+
 ## Whether a document is one this builds. Every field is checked before anything is built,
 ## so a bad map is refused whole rather than half drawn.
 static func validate(d: Dictionary) -> DotResult:
@@ -332,9 +343,11 @@ static func validate(d: Dictionary) -> DotResult:
 	if not _is_vec(d.get("spawn")):
 		return DotResult.fail(DotError.CODE_INVALID, "Map %s has no spawn." % id)
 	var boxes: Variant = d.get("boxes")
-	if not (boxes is Array) or (boxes as Array).is_empty() or (boxes as Array).size() > MAX_BOXES:
-		return DotResult.fail(DotError.CODE_INVALID,
-			"Map %s needs between 1 and %d boxes." % [id, MAX_BOXES])
+	if not (boxes is Array) or (boxes as Array).is_empty():
+		return DotResult.fail(DotError.CODE_INVALID, "Map %s needs at least 1 box." % id)
+	if max_boxes > 0 and (boxes as Array).size() > max_boxes:
+		return DotResult.fail(DotError.CODE_INVALID, "Map %s has %d boxes, past this host's max_boxes %d." % [
+			id, (boxes as Array).size(), max_boxes])
 	for i in (boxes as Array).size():
 		var b: Variant = boxes[i]
 		if not (b is Dictionary) or not _is_vec(b.get("at")) or not _is_vec(b.get("size")):
