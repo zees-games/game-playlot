@@ -320,9 +320,33 @@ func _test_spawn_menu_5() -> void:
 
 	var popped := _sm_stack.pop(_sm_menu.screen_id())
 	_check(popped.ok and not _sm_stack.any_open(), "the menu closes")
+	await _test_spawn_menu_reopen()
 
 	_sm_stack.queue_free()
 	_done()
+
+
+## Every Q used to rebuild ~130 cards, a 40-50 ms frame in the owner's profile; an unchanged menu now keeps them.
+func _test_spawn_menu_reopen() -> void:
+	var builds := _sm_menu.grid_builds
+	var cards := _sm_menu.shown().size()
+	var t0 := Time.get_ticks_usec()
+	var again := _sm_stack.push(_sm_menu.screen_id())
+	var reopen_us := Time.get_ticks_usec() - t0
+	await get_tree().process_frame
+	_check(again.ok and _sm_menu.grid_builds == builds and _sm_menu.shown().size() == cards,
+		"reopened unchanged, the menu keeps its cards rather than rebuilding them", "%d -> %d builds" % [builds, _sm_menu.grid_builds])
+	_sm_stack.pop(_sm_menu.screen_id())
+
+	var picked := _sm_menu.shown()[0] if cards > 0 else &"barrel"
+	_sm_menu.selected = picked if _sm_menu.selected != picked else &""
+	t0 = Time.get_ticks_usec()
+	_sm_stack.push(_sm_menu.screen_id())
+	var rebuild_us := Time.get_ticks_usec() - t0
+	await get_tree().process_frame
+	_check(_sm_menu.grid_builds == builds + 1, "and rebuilds them once what it shows has changed", "%d builds" % _sm_menu.grid_builds)
+	print("    bench spawn menu open: rebuild %.2f ms, reopen %.2f ms (%d cards)" % [rebuild_us / 1000.0, reopen_us / 1000.0, cards])
+	_sm_stack.pop(_sm_menu.screen_id())
 
 
 # The sandbox, and the course in the corner of it

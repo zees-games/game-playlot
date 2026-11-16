@@ -39,6 +39,8 @@ var catalogue: DotPropCatalogue = null
 var fx_catalogue: DotFxCatalogue = null
 ## The presentation's blood, whose decal settings the warmed splat copies. Null warms no blood.
 var blood: DotFxBlood = null
+## The client's shared layered shot (playground_shot_sound.gd), built in the SHOT_FX phase. Null builds none.
+var shot_sound: Node = null
 
 ## True once every phase has run and the hold is released.
 var finished: bool = false
@@ -286,6 +288,8 @@ func _warm_one_inner(phase: Phase, item: Variant) -> void:
 			_warm_prop(item as DotPropDef)
 		Phase.SHOT_FX:
 			_hand(ZeeShotFx.warm())
+			if shot_sound != null and is_instance_valid(shot_sound):
+				var _layers_ready: bool = shot_sound.call(&"warm")
 		Phase.MUZZLE:
 			_warm_muzzle_flashes()
 		Phase.BLOOD:

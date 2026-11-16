@@ -162,11 +162,12 @@ func _build_header() -> Control:
 
 
 func _on_push() -> void:
-	# Rebuilt on every open rather than once. The catalogue is replaced outright when
-	# an operator points `props_path` somewhere else and reloaded on a map change, and
-	# a menu built once shows a list the server has stopped offering — every click on
-	# which is refused with "no such prop".
-	refresh()
+	# Rebuilt when what it shows changed (a replaced or reloaded catalogue changes the key), else
+	# the cards are kept: rebuilding ~130 of them made every open a 40-50 ms frame.
+	if _shown_key() == _built_key:
+		_refresh_around_grid()
+	else:
+		refresh()
 
 	# A card takes focus, not the search box: see SEARCH_KEY.
 	if _first_card != null and _first_card.is_inside_tree():
@@ -177,6 +178,21 @@ func _on_push() -> void:
 func refresh() -> void:
 	_rebuild_categories()
 	_rebuild_grid()
+	_refresh_around_grid()
+
+
+## Every entry the open tab has, its categories and filters, the armed prop and tool, and the icon
+## style: the cards and category pills are a function of these.
+func _shown_key() -> Array:
+	var icons := PlaygroundWeaponIcons.shared
+	return [
+		_tab, _category, _search, selected, tool_mode, _pack_titles, _all_in_tab().duplicate(), _categories_for_tab(),
+		icons.style if icons != null else &"", icons.sprites if icons != null else false,
+	]
+
+
+## The settings, footer, hand and tab icons: cheap, and rebuilt on every open.
+func _refresh_around_grid() -> void:
 	_rebuild_settings()
 	_rebuild_footer()
 	_sync_hand()
@@ -316,6 +332,9 @@ func _rebuild_grid() -> void:
 
 		if _first_card == null:
 			_first_card = card
+
+	grid_builds += 1
+	_built_key = _shown_key()
 
 	if _empty != null:
 		_empty.visible = visible_now.is_empty()

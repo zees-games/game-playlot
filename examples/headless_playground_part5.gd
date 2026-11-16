@@ -317,9 +317,43 @@ func _test_zee_weapons_2() -> void:
 			"reload %.3f s, deploy %.3f s" % [reload_here, deploy_here]
 		)
 	PlaygroundZee.disarm(_zw_player)
+	_test_shared_shot_sound()
 
 	playground.props.clear_all(DotPropSpawner.REASON_ADMIN)
 	_done()
+
+
+## Each weapon picked used to build its own layered shot on its first shot (~30 ms, ~30 nodes); the client's
+## one PlaygroundShotSound now plays every rig's.
+func _test_shared_shot_sound() -> void:
+	var sound := preload("res://game/client/playground_shot_sound.gd").new()
+	add_child(sound)
+	var t0 := Time.get_ticks_usec()
+	var warmed: bool = sound.warm()
+	var warm_us := Time.get_ticks_usec() - t0
+	if not warmed:
+		_check(not ZeeShotLayers.available(), "the shared shot sound builds wherever dot-audio's stock is linked")
+		sound.queue_free()
+		return
+	var first := ZeeShotFx.new()
+	var second := ZeeShotFx.new()
+	for fx in [first, second]:
+		add_child(fx)
+		sound.attach(fx)
+	var heard: Array = []
+	second.heard.connect(func(stream: AudioStream) -> void: heard.append(stream))
+	var at := Vector3(-60.0, 1.5, -60.0)
+	var played_a: bool = first.shot_sound.call(&"zee_pistol", DotWeaponOutcome.KIND_SHOT, at, false)
+	var played_b: bool = second.shot_sound.call(&"zee_rifle", DotWeaponOutcome.KIND_SHOT, at, false)
+	_check(played_a and played_b and sound.played == 2 and heard.size() == 1,
+		"two armed rigs play their shots through the client's one layered shot, and still say what was heard",
+		"%s %s, %d played, %d heard" % [played_a, played_b, sound.played, heard.size()])
+	_check(sound.get_child_count() == 1 and first.get(&"_layers") == null and second.get(&"_layers") == null,
+		"so neither rig builds layers of its own on its first shot")
+	print("    bench shot layers built once: %.2f ms" % (warm_us / 1000.0))
+	first.queue_free()
+	second.queue_free()
+	sound.queue_free()
 
 
 ## The Workshop in solo play: packs a player subscribed to land on the Q menu, only in solo.

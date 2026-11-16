@@ -150,6 +150,10 @@ var _subtitle: Label = null
 var _panel: PanelContainer = null
 var _settings_card: PanelContainer = null
 var _hand_buttons: Dictionary = {}
+## What the grid and the categories were last built from ([method _shown_key]); an open with the same key keeps the cards.
+var _built_key: Array = []
+## Grid rebuilds so far, for a suite that asserts a second open reuses the cards.
+var grid_builds: int = 0
 
 ## Whether the menu moves: it fades in, cards appear in a quick cascade and ease on hover. Off
 ## for a still render and for suites, where nothing draws a frame to finish a tween.

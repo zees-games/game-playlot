@@ -700,6 +700,9 @@ func _arm_zee(def: PlaygroundWeaponDef) -> bool:
 		_disarm_zee()
 		return false
 
+	if shot_sound != null:
+		shot_sound.attach(rig.shot_fx())
+
 	# Connected, the server's WEAPON event draws it (`PlaygroundNetBridge`); offline nobody
 	# sends one, and the gun still belongs in the hands a third-person camera shows.
 	if bridge == null:

@@ -23,6 +23,7 @@ const PlaygroundZee := preload("playground_zee.gd")
 const PlaygroundWeaponDef := preload("weapons/playground_weapon_def.gd")
 const PlaygroundTouch := preload("client/playground_touch.gd")
 const PlaygroundClientPrewarm := preload("client/playground_client_prewarm.gd")
+const PlaygroundShotSound := preload("client/playground_shot_sound.gd")
 const PlaygroundWorkbenchSets := preload("playground_workbench_sets.gd")
 
 ## Boots a playable playground: one local player, a camera, a HUD, a spawn menu and the keys
@@ -248,9 +249,17 @@ func _wire_gate_to_maps() -> void:
 ## The warm-up that runs under the cover once the first map is in.
 var prewarm: PlaygroundClientPrewarm = null
 
+## The layered shot every armed rig plays through, built once rather than per weapon picked.
+var shot_sound: PlaygroundShotSound = null
+
 
 func _build_prewarm() -> void:
+	if shot_sound == null:
+		shot_sound = PlaygroundShotSound.new()
+		shot_sound.name = "ShotSound"
+		add_child(shot_sound)
 	prewarm = PlaygroundClientPrewarm.new()
+	prewarm.shot_sound = shot_sound
 	prewarm.name = "Prewarm"
 	prewarm.gate = gate
 	prewarm.config = config
