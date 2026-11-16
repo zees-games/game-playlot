@@ -48,6 +48,15 @@ const PlaygroundMaterials := preload("../game/playground_materials.gd")
 ## `params` its [code]{steps, segments, thickness, holes}[/code], and `at`, `turn`, `colour` and
 ## `material` read as for a box. Convex pieces collide; the survey (boxes only) does not see them.
 ##
+## `world` (optional, 2026-11-15) names the converted world pack a map converted from a BSP is
+## drawn with (dot-map-convert's mesh route): textured faces, terrain and sky where the boxes are
+## flat colour. It is hide-n-seek's key, `{"pack": "pg_world_<id>", "metres_per_unit": S,
+## "offset": [x, y, z]}` (the converter's ground shift, undone), or only the pack's name. The
+## pack is read from beside the document, `<doc dir>/world/<pack>/<id>.json` and `.bin`. A
+## client draws it in place of the box meshes ([method load_world]); the boxes still collide, so
+## physics, the survey and a server are unchanged, and a pack that is missing, will not read or
+## was made at another scale leaves the boxes drawn with a WARN.
+##
 ## `props` and `wires` are optional (2026-10-07), so every older document still reads. A prop
 ## is a catalogue id, put down by the SERVER when the map loads ([method map_props]) and owned
 ## by nobody in particular (`Playground.MAP_OWNER`): a door with a button beside it, a stack
@@ -88,9 +97,29 @@ const NAMED_COLOURS := {
 	"float": PlaygroundGeometry.COLOUR_FLOAT,
 }
 
+## The folder beside a document its world packs sit in. [method add_map_docs] reads only the
+## top level of a maps folder, so nothing under it is taken for a map.
+const WORLD_DIR := "world"
+
 ## The document this was built from, or empty before [method configure_doc].
 var doc: Dictionary = {}
 
+## Whether this map draws its document's `world` pack in place of the box meshes. A headless
+## server or test draws nothing, so it never reads one; a test that wants one sets this.
+var draw_world: bool = DisplayServer.get_name() != "headless"
+
+## Milliseconds of world build between frames ([DotFrameSlice]), so a map that loads during
+## play does not freeze a frame on the web. 0 builds it in one call.
+var world_slice_ms: int = 40
+
+## The drawn world pack, or null while the boxes are what is seen.
+var drawn_world: DotMapDrawnWorld = null
+
+## The drawn world's credit line (its author, and the art whose licence asks for a name).
+var world_credits: String = ""
+
+var _doc_path := ""
+var _world_loading := false
 var _built := false
 var _declared: Array = []
 var _liquids: Array = []
@@ -117,11 +146,126 @@ func configure_doc(path: String) -> DotResult:
 		return read
 
 	doc = read.value
+	_doc_path = path
 	_liquids = build_into(self, doc)
 	add_contact_shade()
 	fallback_spawn = _vec(doc.get("spawn", [0, 1, 0]))
 	_declared = declared_of(doc)
+	if draw_world and not world_spec(doc).is_empty():
+		# Not awaited: the boxes are the map from here on, and the pack replaces their look when
+		# it has been read and built.
+		load_world()
 	return DotResult.success(self)
+
+
+# --- The drawn world ------------------------------------------------------------
+
+## The document's `world` as `{pack, offset: Vector3, metres_per_unit: float (0 unchecked)}`,
+## or empty when it names none. Read from a checked document.
+static func world_spec(d: Dictionary) -> Dictionary:
+	var raw: Variant = d.get("world")
+	if raw is String:
+		return {"pack": raw, "offset": Vector3.ZERO, "metres_per_unit": 0.0}
+	if raw is Dictionary:
+		var w: Dictionary = raw
+		return {
+			"pack": str(w["pack"]),
+			"offset": _vec(w["offset"]) if w.has("offset") else Vector3.ZERO,
+			"metres_per_unit": float(w.get("metres_per_unit", 0.0)),
+		}
+	return {}
+
+
+## Where the pack of [param spec] for map [param id] is, beside the document at [param doc_path]:
+## the path without `.json`, as [method DotMapBspMesh.load_prefix] takes it.
+static func world_prefix(doc_path: String, spec: Dictionary, id: String) -> String:
+	return doc_path.get_base_dir().path_join(WORLD_DIR).path_join(str(spec["pack"])).path_join(id)
+
+
+## Reads the document's world pack and draws it in place of the box meshes (dot-map's
+## [DotMapDrawnWorld], as hide-n-seek and zombie-zone draw theirs). Succeeds with true when the
+## world is drawn, false when there is none to draw; anything else leaves the boxes drawn.
+func load_world() -> DotResult:
+	var spec := world_spec(doc)
+	if not draw_world or spec.is_empty() or drawn_world != null or _world_loading:
+		return DotResult.success(false)
+	var id := str(doc["id"])
+	var prefix := world_prefix(_doc_path, spec, id)
+	if not FileAccess.file_exists(prefix + ".json"):
+		DotLog.warn(CHANNEL, "a map names a world pack that is not here; its boxes are drawn",
+			{"map": id, "at": prefix})
+		return DotResult.fail(DotError.CODE_IO, "No world pack at %s." % prefix)
+	_world_loading = true
+	var read: DotResult = await DotMapDrawnWorld.read(prefix, DotRegistry.get_service(&"dot_cloud_client"))
+	if not read.ok:
+		_world_loading = false
+		DotLog.warn(CHANNEL, "a map's world pack would not read; its boxes are drawn",
+			{"map": id, "at": prefix, "why": read.error.message})
+		return read
+	var world: DotMapBspMesh = read.value
+	var wanted := float(spec["metres_per_unit"])
+	var made := float((world.manifest.get("units", {}) as Dictionary).get("metres_per_unit", 0.0))
+	if wanted > 0.0 and absf(made - wanted) > 1e-5:
+		_world_loading = false
+		DotLog.warn(CHANNEL, "a map's world pack was made at another scale; its boxes are drawn",
+			{"map": id, "pack": made, "doc": wanted})
+		return DotResult.fail(DotError.CODE_INVALID, "World pack %s is at %s metres a unit, the document %s." % [prefix, made, wanted])
+	var drawn: DotMapDrawnWorld = await attach_world(world, spec["offset"])
+	_world_loading = false
+	return DotResult.success(drawn != null)
+
+
+## Lays [param world] over the map at [param offset] and hides what it replaces: every box and
+## brush mesh but a see-through one (glass the pack does not draw, and a pane that breaks
+## must vanish), and the contact shade under them. Their bodies stay: the pack is only what is
+## seen. Liquids stay drawn. Null when the map went away during the build.
+func attach_world(world: DotMapBspMesh, offset: Vector3) -> DotMapDrawnWorld:
+	var environment: Environment = null
+	var lamps: Array = []
+	for child in get_children():
+		if child is WorldEnvironment:
+			environment = (child as WorldEnvironment).environment
+		elif child is OmniLight3D:
+			lamps.append(child)
+	var options := {
+		"transform": Transform3D(Basis.IDENTITY, offset),
+		"environment": environment,
+		"lamps": lamps,
+		"cloud": DotRegistry.get_service(&"dot_cloud_client"),
+	}
+	var drawn: DotMapDrawnWorld = null
+	if world_slice_ms > 0:
+		drawn = await DotMapDrawnWorld.attach_async(self, world, options, DotFrameSlice.new(world_slice_ms))
+	else:
+		drawn = DotMapDrawnWorld.attach(self, world, options)
+	if drawn == null:
+		return null
+	var hidden := hide_box_meshes()
+	var shade := get_node_or_null(^"ContactShade")
+	if shade != null:
+		remove_child(shade)
+		shade.queue_free()
+	drawn_world = drawn
+	world_credits = drawn.credits
+	DotLog.info(CHANNEL, "the map is drawn from its world pack",
+		{"map": str(doc.get("id", "")), "hidden": hidden, "lit": drawn.lit != null, "credits": world_credits})
+	return drawn
+
+
+## Hides the meshes of this map's boxes and brushes, but a see-through one's, and returns how
+## many. Their collision shapes are untouched.
+func hide_box_meshes() -> int:
+	var hidden := 0
+	for child in get_children():
+		if not (child is StaticBody3D and child.has_meta(&"pg_box")):
+			continue
+		if PlaygroundMaterials.look(String(PlaygroundMaterials.material_of(child)), Color.WHITE).a < 0.999:
+			continue
+		for part in child.get_children():
+			if part is GeometryInstance3D and (part as GeometryInstance3D).visible:
+				(part as GeometryInstance3D).visible = false
+				hidden += 1
+	return hidden
 
 
 ## The yaw a player spawns facing, in degrees. Read by [Playground] beside the spawn.
@@ -217,6 +361,10 @@ static func validate(d: Dictionary) -> DotResult:
 				return DotResult.fail(DotError.CODE_INVALID, "Map %s: box %d is %s and turned; a liquid is an axis-aligned volume." % [id, i, material])
 	if d.has("lighting") and not (d["lighting"] is Dictionary):
 		return DotResult.fail(DotError.CODE_INVALID, "Map %s: lighting is a dot-lighting document (an object)." % id)
+	if d.has("world"):
+		var bad := _world_fault(d["world"])
+		if bad != "":
+			return DotResult.fail(DotError.CODE_INVALID, "Map %s: world %s" % [id, bad])
 	var props: Variant = d.get("props", [])
 	if not (props is Array) or (props as Array).size() > MAX_PROPS:
 		return DotResult.fail(DotError.CODE_INVALID, "Map %s: props is a list of at most %d." % [id, MAX_PROPS])
@@ -302,6 +450,30 @@ static func _liquid_mesh(at: Vector3, size: Vector3, colour: Color, index: int) 
 	# the bed's shape; this says it is meant.
 	mesh.set_meta(DotCollisionAudit.META, true)
 	return mesh
+
+
+## What is wrong with a document's `world`, or empty. A pack is a folder name, never a path, so a
+## document cannot reach outside its own folder.
+static func _world_fault(raw: Variant) -> String:
+	var pack := ""
+	if raw is String:
+		pack = raw
+	elif raw is Dictionary:
+		var w: Dictionary = raw
+		pack = str(w.get("pack", ""))
+		if w.has("offset") and not _is_vec(w["offset"]):
+			return "offset is [x, y, z]."
+		if w.has("offset") and _vec(w["offset"]).length() > MAX_EXTENT:
+			return "offset is out of the world."
+		if w.has("metres_per_unit") and not (w["metres_per_unit"] is float or w["metres_per_unit"] is int):
+			return "metres_per_unit is a number."
+		if w.has("metres_per_unit") and float(w["metres_per_unit"]) <= 0.0:
+			return "metres_per_unit is above 0."
+	else:
+		return "is a pack name or {pack, metres_per_unit, offset}."
+	if pack == "" or not pack.is_valid_filename() or pack.begins_with("."):
+		return "pack \"%s\" is not a folder name." % pack
+	return ""
 
 
 static func declared_of(d: Dictionary) -> Array:

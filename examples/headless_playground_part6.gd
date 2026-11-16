@@ -700,6 +700,121 @@ func _brush_documents() -> void:
 	DirAccess.remove_absolute(path)
 
 
+# A map drawn from its converted world pack
+
+const WORLD_FIXTURE := "res://examples/fixtures/world_map"
+
+
+## A document naming a converted world pack (dot-map's mesh fixture, copied): a drawing map lays the pack over its boxes,
+## hides every opaque box and brush mesh and keeps their collision, and leaves glass and water drawn. A server draws nothing;
+## a pack that is missing or made at another scale leaves the boxes drawn; a bad `world` refuses the document.
+func _test_drawn_worlds() -> void:
+	_section("a map drawn from its converted world pack")
+	var doc_path := WORLD_FIXTURE + "/pg_world.json"
+
+	var server: Node3D = _tmas_data_script.new()
+	server.draw_world = false
+	add_child(server)
+	server.configure_doc(doc_path)
+	await get_tree().process_frame
+	_check(server.get_node_or_null(^"World") == null and server.drawn_world == null and _hidden_box_meshes(server) == 0,
+		"world: a map that does not draw reads no pack and keeps its boxes drawn")
+	server.queue_free()
+
+	var map: Node3D = _tmas_data_script.new()
+	map.draw_world = true
+	add_child(map)
+	var configured: DotResult = map.configure_doc(doc_path)
+	var guard := 300
+	while map.drawn_world == null and map._world_loading and guard > 0:
+		await get_tree().process_frame
+		guard -= 1
+	_check(configured.ok and map.drawn_world != null and map.get_node_or_null(^"World") != null,
+		"world: the pack is drawn under the map", str(configured.error) if not configured.ok else "%d frames left" % guard)
+	var bodies := 0
+	var shapes := 0
+	for child in map.get_children():
+		if child is StaticBody3D and child.has_meta(&"pg_box"):
+			bodies += 1
+			for part in child.get_children():
+				if part is CollisionShape3D and not (part as CollisionShape3D).disabled:
+					shapes += 1
+					break
+	_check(_hidden_box_meshes(map) == 2, "world: the floor and the wedge are drawn by the pack, not as boxes",
+		"%d box meshes hidden" % _hidden_box_meshes(map))
+	_check(bodies == 3 and shapes == 3, "world: every box and brush still collides", "%d bodies, %d with a shape" % [bodies, shapes])
+	var glass_drawn := false
+	for child in map.get_children():
+		if child is StaticBody3D and PlaygroundMaterials.material_of(child) == &"glass":
+			for part in child.get_children():
+				glass_drawn = glass_drawn or (part is GeometryInstance3D and (part as GeometryInstance3D).visible)
+	var water := map.get_node_or_null(^"Liquid3") as GeometryInstance3D
+	_check(glass_drawn and water != null and water.visible and map.get_node_or_null(^"ContactShade") == null,
+		"world: glass and water stay drawn, the boxes' contact shade goes")
+	map.queue_free()
+
+	# Copies beside a pack named elsewhere and one made at another scale: both refused, the boxes drawn.
+	var text := FileAccess.get_file_as_string(doc_path)
+	var dir := "user://pg_world_fixture"
+	var pack_dir := dir.path_join("world/pg_world_fixture")
+	DirAccess.make_dir_recursive_absolute(pack_dir)
+	for ext in [".json", ".bin"]:
+		DirAccess.copy_absolute(WORLD_FIXTURE + "/world/pg_world_fixture/pg_world" + ext, pack_dir.path_join("pg_world" + ext))
+	var cases := {
+		"missing": text.replace("\"pack\": \"pg_world_fixture\"", "\"pack\": \"pg_world_gone\""),
+		"scale": text.replace("0.01905", "0.0254"),
+	}
+	for name: String in cases:
+		var path := dir.path_join("pg_world.json")
+		var f := FileAccess.open(path, FileAccess.WRITE)
+		f.store_string(cases[name])
+		f.close()
+		var other: Node3D = _tmas_data_script.new()
+		other.draw_world = false
+		add_child(other)
+		other.configure_doc(path)
+		other.draw_world = true
+		var got: DotResult = await other.load_world()
+		_check(not got.ok and other.drawn_world == null and other.get_node_or_null(^"World") == null and _hidden_box_meshes(other) == 0,
+			"world: a pack %s leaves the boxes drawn" % ("that is not there" if name == "missing" else "made at another scale"),
+			str(got.value) if got.ok else got.error.message)
+		other.queue_free()
+		DirAccess.remove_absolute(path)
+	for ext in [".json", ".bin"]:
+		DirAccess.remove_absolute(pack_dir.path_join("pg_world" + ext))
+	DirAccess.remove_absolute(pack_dir)
+	DirAccess.remove_absolute(dir.path_join("world"))
+	DirAccess.remove_absolute(dir)
+
+	var parsed: Dictionary = JSON.parse_string(text)
+	var refused := 0
+	for bad: Variant in ["../up", "", 5, {"pack": "a/b"}, {"pack": "p", "offset": [0, 0]}, {"pack": "p", "metres_per_unit": 0}]:
+		var d := parsed.duplicate(true)
+		d["world"] = bad
+		refused += 0 if _tmas_data_script.call("validate", d).ok else 1
+	var named := parsed.duplicate(true)
+	named["world"] = "pg_world_fixture"
+	var plain := parsed.duplicate(true)
+	plain.erase("world")
+	_check(refused == 6 and _tmas_data_script.call("validate", named).ok and _tmas_data_script.call("validate", plain).ok
+		and (_tmas_data_script.call("world_spec", plain) as Dictionary).is_empty(),
+		"world: a path, a number or a bad offset or scale refuses the document; a bare pack name and no world read",
+		"%d of 6 refused" % refused)
+	await get_tree().process_frame
+	_done()
+
+
+## How many box and brush meshes under [param map] are hidden.
+func _hidden_box_meshes(map: Node3D) -> int:
+	var hidden := 0
+	for child in map.get_children():
+		if child is StaticBody3D and child.has_meta(&"pg_box"):
+			for part in child.get_children():
+				if part is GeometryInstance3D and not (part as GeometryInstance3D).visible:
+					hidden += 1
+	return hidden
+
+
 # The collision audit
 
 ## A floor with one of everything on it: a 0.5 m slot between two walls, a platform 5 m

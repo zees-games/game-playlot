@@ -1,13 +1,13 @@
 extends "res://examples/headless_playground_part9.gd"
 
-const CHECKS := 782 + 22 + 9 + 10 + 8 + 1 + 4 + 15 + 2 + 1 + 26 + 3 + 2 + 2 + 1 + 8 + 1 + 5 + 10 + 25 + 1 + 1 + 30 + 18 + 1 + 6 + 3 + 1 + 2 + 1
+const CHECKS := 782 + 22 + 9 + 10 + 8 + 1 + 4 + 15 + 2 + 1 + 26 + 3 + 2 + 2 + 1 + 8 + 1 + 5 + 10 + 25 + 1 + 1 + 30 + 18 + 1 + 6 + 3 + 1 + 2 + 1 + 8
 const PlaygroundClientPrewarm := preload("res://game/client/playground_client_prewarm.gd")
 
 ## Sections entered against sections that ran to their last line, and against this. A
 ## runtime error inside a section aborts that function and nothing says so; a section that
 ## bailed out early after a failed guard is counted as not finished on purpose. The CHECKS
 ## total above is the other half — see docs/testing.md.
-const SECTIONS := 45
+const SECTIONS := 46
 
 ## What `_test_the_run_timer` and `_test_leaderboards` add when dot-timer is linked.
 const TIMER_SECTIONS := 2
@@ -67,6 +67,7 @@ func _run() -> void:
 	await _test_saved_builds()
 	await _test_editing_a_selected_prop()
 	await _test_the_maps_are_surveyed()
+	await _test_drawn_worlds()
 	await _test_nothing_drawn_is_walked_through()
 	await _test_a_maps_own_props()
 	await _test_toys()

@@ -28,6 +28,8 @@ const MAPS := {
 }
 
 var _shots: Array[Dictionary] = []
+## The map, so a converted world it is still drawing over frames holds the shots back.
+var _map_node: Node = null
 var _index := 0
 var _camera: Camera3D = null
 var _blood_from: PlaygroundPresentation = null
@@ -68,6 +70,7 @@ func _initialize() -> void:
 	DirAccess.make_dir_recursive_absolute(OUT_DIR)
 
 	var map_node := (scene as PackedScene).instantiate()
+	_map_node = map_node
 	if not MAPS.has(id):
 		map_node.call("configure_doc", custom)
 	root.add_child(map_node)
@@ -527,6 +530,10 @@ func _process(_delta: float) -> bool:
 
 	if _index >= _shots.size():
 		return true
+
+	# A document naming a converted world draws it over frames (`PlaygroundData.load_world`); shoot it drawn.
+	if _map_node != null and _map_node.get(&"_world_loading") == true:
+		return false
 
 	if _wait > 0:
 		_wait -= 1
