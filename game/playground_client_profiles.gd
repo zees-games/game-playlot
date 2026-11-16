@@ -1,4 +1,4 @@
-extends "playground_client_base.gd"
+extends "playground_client_chat.gd"
 
 
 # Profile screen, map-edit toggle and the admin probe, split out of the UI layer to keep files small.

@@ -1,4 +1,4 @@
-extends "res://examples/headless_playground_part6.gd"
+extends "res://examples/headless_playground_drawn_worlds.gd"
 
 ## dot-core's [DotCollisionAudit] over every map as built: visible geometry with no shape under it, which a player walks through.
 ## The strict pass: each mesh sits on its own body. What is passable on purpose carries `dot_no_collision` with the reason where the map builds it.

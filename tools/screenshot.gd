@@ -610,6 +610,42 @@ func _splatter_blood() -> void:
 	_blood_from = null
 
 
+## Builds whichever one-shot stage was asked for and queues its shots; true when one was built this frame.
+func _stage_pending() -> bool:
+	if _fx_pending:
+		_fx_pending = false
+		_shots = _stage_fx()
+		return true
+
+	if _grenades_pending:
+		_grenades_pending = false
+		_shots = _stage_grenades.call()  # one-shot staging, not a per-frame cost
+		return true
+
+	if _arms_pending:
+		_arms_pending = false
+		_shots = _stage_arms.call(_action_id)  # one-shot staging, not a per-frame cost
+		return true
+
+	return false
+
+
+## Puts the camera where [param shot] looks from and runs its arm callback; the grab follows once the frames have rendered.
+func _arm_shot(shot: Dictionary) -> void:
+	if shot.has("drop"):
+		var eye := _drop_to_floor(shot["from"], float(shot["drop"]))
+		_camera.position = eye
+		_camera.look_at(eye + (shot["dir"] as Vector3) * 10.0 + Vector3.DOWN * 0.8, Vector3.UP)
+	else:
+		_camera.position = _into_air(shot["from"], shot["at"]) if shot.get("in_air", false) else shot["from"]
+		_camera.look_at(shot["at"], Vector3.UP)
+	_armed = true
+	if shot.has("arm"):
+		(shot["arm"] as Callable).call()
+	# Three frames before grabbing: the viewport's texture is the last COMPLETED frame.
+	_wait = int(shot.get("wait", 3))
+
+
 func _process(_delta: float) -> bool:
 	# The toys build in the tree, which the root's children are not during `_initialize`.
 	if _toy_box != null and _toy_box.count() == 0 and not _toy_placements.is_empty():
@@ -622,19 +658,7 @@ func _process(_delta: float) -> bool:
 		if _blood_delay <= 0:
 			_splatter_blood.call()
 
-	if _fx_pending:
-		_fx_pending = false
-		_shots = _stage_fx()
-		return false
-
-	if _grenades_pending:
-		_grenades_pending = false
-		_shots = _stage_grenades.call()  # one-shot staging, not a per-frame cost
-		return false
-
-	if _arms_pending:
-		_arms_pending = false
-		_shots = _stage_arms.call(_action_id)  # one-shot staging, not a per-frame cost
+	if _stage_pending():
 		return false
 
 	if _arms != null:
@@ -662,19 +686,7 @@ func _process(_delta: float) -> bool:
 		return false
 
 	if not _armed:
-		var shot: Dictionary = _shots[_index]
-		if shot.has("drop"):
-			var eye := _drop_to_floor(shot["from"], float(shot["drop"]))
-			_camera.position = eye
-			_camera.look_at(eye + (shot["dir"] as Vector3) * 10.0 + Vector3.DOWN * 0.8, Vector3.UP)
-		else:
-			_camera.position = _into_air(shot["from"], shot["at"]) if shot.get("in_air", false) else shot["from"]
-			_camera.look_at(shot["at"], Vector3.UP)
-		_armed = true
-		if shot.has("arm"):
-			(shot["arm"] as Callable).call()
-		# Three frames before grabbing: the viewport's texture is the last COMPLETED frame.
-		_wait = int(shot.get("wait", 3))
+		_arm_shot(_shots[_index])
 		return false
 
 	if _seq_active:
