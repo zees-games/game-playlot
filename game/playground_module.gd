@@ -1,4 +1,6 @@
 extends "playground_module_build.gd"
+
+const PlaygroundAvatarLibrary := preload("playground_avatar_library.gd")
 ## Binds a [Playground] to a [DotServer]: the console commands an operator and an admin type.
 ##
 ## The only file in the project that names dot-server; a game wanting a dedicated server writes
@@ -218,6 +220,7 @@ func _register_addon_cvars() -> void:
 		add_cvar, DotConVar.FLAG_ARCHIVE | DotConVar.FLAG_NOTIFY | DotConVar.FLAG_REPLICATED,
 		DotConVar.FLAG_ARCHIVE | DotConVar.FLAG_NOTIFY
 	)
+	_add_avatar_library_cvars()
 	# The Workbench started with the netcode, before these addon cvars existed: list their sets now.
 	var _addon_sets := PlaygroundWorkbenchSets.add_cvar_sets(workbench, console, game.profiles.runtime)
 
@@ -275,3 +278,24 @@ func _register_addon_commands() -> void:
 	add_command(
 		"pg_mute", _cmd_mute, "pg_mute <who> <seconds> [reason]", DotAdminFlags.MUTE
 	).with_chat()
+
+
+## `sv_avatar_app_id`: this game's app id on Gamespice, sent on every avatar library call (0 = not set, calls refused).
+## `sv_avatar_loadout_max_entries` / `sv_avatar_loadout_max_per_kind`: how many entries one loadout message carries and
+## how many equipped actions of a kind the server accepts; 0 = unlimited, over it is refused, never trimmed.
+func _add_avatar_library_cvars() -> void:
+	add_cvar("sv_avatar_app_id", str(PlaygroundAvatarLibrary.app_id),
+		"Playlot's app id on Gamespice, sent on every avatar library call (0 = not set)",
+		DotConVar.FLAG_ARCHIVE | DotConVar.FLAG_NOTIFY | DotConVar.FLAG_REPLICATED).with_min(0.0).changed.connect(
+		func(_old: String, new_value: String) -> void:
+			PlaygroundAvatarLibrary.app_id = int(new_value.to_float()))
+	add_cvar("sv_avatar_loadout_max_entries", "0",
+		"Most entries one avatar loadout message carries (0 = unlimited); over it the loadout is refused, never trimmed",
+		DotConVar.FLAG_ARCHIVE | DotConVar.FLAG_NOTIFY).with_min(0.0).changed.connect(
+		func(_old: String, new_value: String) -> void:
+			var _r := PlaygroundAvatarLibrary.apply_loadout_limits(int(new_value.to_float()), DotGameAvatarLoadouts.max_per_kind))
+	add_cvar("sv_avatar_loadout_max_per_kind", "0",
+		"Most equipped emotes, poses or gestures of one kind the server accepts (0 = unlimited); over it the read is refused",
+		DotConVar.FLAG_ARCHIVE | DotConVar.FLAG_NOTIFY).with_min(0.0).changed.connect(
+		func(_old: String, new_value: String) -> void:
+			var _r := PlaygroundAvatarLibrary.apply_loadout_limits(DotGameAvatarLoadoutMessage.max_entries, int(new_value.to_float())))
