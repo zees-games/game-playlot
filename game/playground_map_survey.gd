@@ -59,6 +59,54 @@ static func survey(
 	return s._run(ways_out, spawns, declared)
 
 
+## The crouch pass: floor only a crouched player fits over (headroom between [param crouch_height]
+## and [constant HEIGHT]: a vent, a duct, a crawlway) and whether a spawn leads to it with the
+## crouched hull. Surveys the map twice, standing and at [param crouch_height], and takes the cells
+## the crouched run has that the standing run lacks.
+##
+## Returns `{crouch_only: cells only a crouched player stands on, crouch_reached: how many of those a
+## spawn leads to, cut_off: lines for each region of them no spawn leads to even crouched (an area
+## in [param declared] is left out)}`. [param crouch_height] is the family hull a map is made for
+## (`DotFpsTunables.crouch_height`), never a number of this survey's own: a player that cannot
+## fit a passage is not a reason to reopen the passage.
+static func crouch_cut_off(
+	map: Node3D, ways_out: Array, spawns: Array[Vector3], declared: Array, crouch_height: float
+) -> Dictionary:
+	var standing := new()
+	standing._collect(map)
+	standing._run(ways_out, spawns, declared)
+	var seen: Dictionary = {}
+	for n in range(standing._node_col.size()):
+		seen[Vector2i(standing._node_col[n], roundi(standing._node_y[n] * 100.0))] = true
+
+	var crouched := new()
+	crouched.height = crouch_height
+	crouched._collect(map)
+	crouched._run(ways_out, spawns, declared)
+
+	var only := 0
+	var reached := 0
+	var lost: Dictionary = {}
+	for n in range(crouched._node_col.size()):
+		if seen.has(Vector2i(crouched._node_col[n], roundi(crouched._node_y[n] * 100.0))):
+			continue
+		only += 1
+		var region: int = crouched._node_region[n]
+		if crouched._reached.has(region):
+			reached += 1
+		elif not crouched._is_declared(region, declared):
+			lost[region] = int(lost.get(region, 0)) + 1
+
+	var cut_off: Array[String] = []
+	for region: int in lost:
+		var low := crouched._region_low[region]
+		var high := crouched._region_high[region]
+		cut_off.append("%d crouch-only cells (of %d) from (%.1f, %.1f, %.1f) to (%.1f, %.1f, %.1f)" % [
+			int(lost[region]), crouched._region_count[region], low.x, low.y, low.z, high.x, high.y, high.z,
+		])
+	return {"crouch_only": only, "crouch_reached": reached, "cut_off": cut_off}
+
+
 ## Surveys a list of solids directly: for a fixture that is not a map.
 static func survey_solids(
 	boxes: Array[Solid], ways_out: Array, spawns: Array[Vector3], declared: Array
@@ -156,6 +204,7 @@ func _run(ways_out: Array, spawns: Array[Vector3], declared: Array) -> Dictionar
 			_escapes[_node_region[node]] = true
 
 	var reached := _flood(starts.keys(), _out)
+	_reached = reached
 
 	# Backward from every way out.
 	var back: Array[Dictionary] = []

@@ -33,6 +33,10 @@ class Solid:
 
 var solids: Array[Solid] = []
 
+## The hull height this survey asks about: [constant HEIGHT] standing, or a crouched
+## player's for the crouch pass (see `PlaygroundMapSurvey.crouch_cut_off`).
+var height := HEIGHT
+
 var _origin := Vector2.ZERO
 var _nx := 0
 var _nz := 0
@@ -65,6 +69,9 @@ var _region_edge: Array[PackedInt32Array] = []
 # Directed region graph, as sets: region -> {region: true}.
 var _out: Array[Dictionary] = []
 var _escapes: Dictionary = {}
+
+# The regions a spawn leads to, as the last run found them.
+var _reached: Dictionary = {}
 var _void_falls := 0
 func _rasterise() -> void:
 	var low := Vector2(INF, INF)
@@ -252,7 +259,7 @@ func _find_cells() -> void:
 			var y := spans[k + 1]
 
 			# Headroom in this column.
-			if k + 5 < spans.size() and spans[k + 5] - y < HEIGHT:
+			if k + 5 < spans.size() and spans[k + 5] - y < height:
 				continue
 
 			# And the hull, in the columns round it: a wall beside this cell, over a step's
@@ -263,7 +270,7 @@ func _find_cells() -> void:
 				var jz := iz + d.y
 				if jx < 0 or jz < 0 or jx >= _nx or jz >= _nz:
 					continue
-				if _solid_between(jx + jz * _nx, y + STEP, y + HEIGHT):
+				if _solid_between(jx + jz * _nx, y + STEP, y + height):
 					clear = false
 					break
 
@@ -397,7 +404,7 @@ func _link_regions(ways_out: Array) -> void:
 			# on a walled sandbox plate they are most of the cells with no level neighbour.
 			# Something LOW — a kerb, a stair — is still a place to jump from, with
 			# nothing to drop to.
-			if inside_grid and _solid_between(jcol, at.y + STEP, at.y + HEIGHT):
+			if inside_grid and _solid_between(jcol, at.y + STEP, at.y + height):
 				if not _too_tall(jcol, at.y):
 					edge = true
 				continue
@@ -406,7 +413,7 @@ func _link_regions(ways_out: Array) -> void:
 				var kx := jx + d.x
 				var kz := jz + d.y
 				var beyond := kx >= 0 and kz >= 0 and kx < _nx and kz < _nz
-				if not (beyond and _solid_between(kx + kz * _nx, at.y + STEP, at.y + HEIGHT)
+				if not (beyond and _solid_between(kx + kz * _nx, at.y + STEP, at.y + height)
 						and _too_tall(kx + kz * _nx, at.y)):
 					edge = true
 				continue
