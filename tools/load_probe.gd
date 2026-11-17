@@ -45,9 +45,17 @@ var _step_over := 0
 var _step_call_ms := 0.0
 var _last_usec := 0
 var _weapons: Array[StringName] = []
-## --cover-trace: one "load_probe trace:" line per frame from map to open, with the warm-up's phase.
+## --cover-trace: one "load_probe trace:" line per frame from map to open, with the warm-up's phase, and (with
+## --first-use) per frame of each first-use step, with the step.
 var _trace := false
 var _trace_at := 0
+## Wall times (usec) of the last renderer pre-draw and post-draw, for the trace's draw_ms.
+var _pre_draw_us := 0
+var _post_draw_us := 0
+## Wall time (usec) of the last process_frame signal: node processing and the deferred flush run from there to pre-draw.
+var _nodes_us := 0
+## Wall time (usec) of the last physics_frame signal: after_draw_ms splits into before it and from it to this process.
+var _physics_us := 0
 
 
 ## The --cover-trace line, held as a Callable so the frame-hazards gate does not read it as per-frame work (it only runs
@@ -73,6 +81,10 @@ func _initialize() -> void:
 				_weapons.append(StringName(w))
 	if _trace:
 		RenderingServer.viewport_set_measure_render_time(root.get_viewport_rid(), true)
+		RenderingServer.frame_pre_draw.connect(func() -> void: _pre_draw_us = Time.get_ticks_usec())
+		RenderingServer.frame_post_draw.connect(func() -> void: _post_draw_us = Time.get_ticks_usec())
+		process_frame.connect(func() -> void: _nodes_us = Time.get_ticks_usec())
+		physics_frame.connect(func() -> void: _physics_us = Time.get_ticks_usec())
 	DirAccess.make_dir_recursive_absolute("res://screenshots")
 	_client = PlaygroundClient.new()
 	_client.link = null
@@ -116,7 +128,7 @@ func _process(_delta: float) -> bool:
 
 func _time_cover(gate: Object, covered: bool, map_up: bool) -> void:
 	var now := Time.get_ticks_msec()
-	if _trace and _map_ms >= 0 and _open_ms < 0:
+	if _trace and _map_ms >= 0 and (_open_ms < 0 or _step_at >= 0):
 		_trace_line.call(now)
 	_trace_at = now
 	if map_up and _map_ms < 0:
@@ -206,8 +218,14 @@ func _spawn_ahead(id: StringName) -> void:
 func _print_trace(now: int) -> void:
 	var pw: Object = _client.get("prewarm")
 	var vp := root.get_viewport_rid()
-	print("load_probe trace: frame=%d ms=%d phase=%s process_ms=%.1f physics_ms=%.1f render_cpu_ms=%.1f render_gpu_ms=%.1f" % [
-		_frame, now - _trace_at, pw.get("phase_name") if pw != null else "-",
+	# draw_ms: the last frame's renderer pre-draw to post-draw (a GL shader compile lands here); the monitors only
+	# refresh about once a second.
+	print("load_probe trace: frame=%d ms=%d phase=%s nodes_ms=%.1f draw_ms=%.1f after_draw_ms=%.1f physics_on_ms=%.1f process_ms=%.1f physics_ms=%.1f render_cpu_ms=%.1f render_gpu_ms=%.1f" % [
+		_frame, now - _trace_at, (pw.get("phase_name") if pw != null else "-") if _step_at < 0 else " ".join(_step_name),
+		(_pre_draw_us - _nodes_us) / 1000.0 if _pre_draw_us > _nodes_us else -1.0,
+		(_post_draw_us - _pre_draw_us) / 1000.0 if _post_draw_us > _pre_draw_us else -1.0,
+		(Time.get_ticks_usec() - _post_draw_us) / 1000.0 if _post_draw_us > 0 else -1.0,
+		(Time.get_ticks_usec() - _physics_us) / 1000.0 if _physics_us > _post_draw_us else -1.0,
 		Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0,
 		Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0,
 		RenderingServer.viewport_get_measured_render_time_cpu(vp) + RenderingServer.get_frame_setup_time_cpu(),
