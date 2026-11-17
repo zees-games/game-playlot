@@ -672,9 +672,25 @@ func _test_ice_slime_foliage() -> void:
 	_done()
 
 
-## Frames until [member PlaygroundClient.gate] is open (physics frames, because it settles on them).
+## Waits until [member PlaygroundClient.gate] is open, on physics frames (it settles on them) but bounded by wall-clock time: the gate waits on loader threads, which a loaded box slows down while frames keep ticking, so a frame count gave up too early on a busy PH. The bound is PLAYGROUND_TEST_GATE_SECONDS (default 60; 0 waits forever). On expiry it returns with the gate still closed, so the caller's check fails loudly with the gate's state.
 func _gate_opens(client: PlaygroundClient) -> void:
-	for _i in range(240):
+	var limit := _gate_wait_seconds()
+	var start := Time.get_ticks_msec()
+	while true:
 		if client.gate == null or client.gate.is_open():
 			return
+		if limit > 0.0 and float(Time.get_ticks_msec() - start) / 1000.0 >= limit:
+			push_error("load gate still closed after %.0f s (PLAYGROUND_TEST_GATE_SECONDS)" % limit)
+			return
 		await get_tree().physics_frame
+
+
+## Seconds the tests wait for the load gate: PLAYGROUND_TEST_GATE_SECONDS, default 60, 0 for no limit. A value that is not a number is an error, not a silent default.
+func _gate_wait_seconds() -> float:
+	var raw := OS.get_environment("PLAYGROUND_TEST_GATE_SECONDS")
+	if raw.is_empty():
+		return 60.0
+	if not raw.is_valid_float():
+		push_error("PLAYGROUND_TEST_GATE_SECONDS=%s is not a number" % raw)
+		return 60.0
+	return maxf(0.0, raw.to_float())

@@ -1,6 +1,6 @@
 extends "res://examples/headless_playground_grenades_and_tools.gd"
 
-const CHECKS := 782 + 22 + 9 + 10 + 8 + 1 + 4 + 15 + 2 + 1 + 26 + 3 + 2 + 2 + 1 + 8 + 1 + 5 + 10 + 25 + 1 + 1 + 30 + 18 + 1 + 6 + 3 + 1 + 2 + 1 + 8 + 4 + 5 + 3 + 1
+const CHECKS := 782 + 22 + 9 + 10 + 8 + 1 + 4 + 15 + 2 + 1 + 26 + 3 + 2 + 2 + 1 + 8 + 1 + 5 + 10 + 25 + 1 + 1 + 30 + 18 + 1 + 6 + 3 + 1 + 2 + 1 + 8 + 4 + 5 + 3 + 1 + 3
 const PlaygroundClientPrewarm := preload("res://game/client/playground_client_prewarm.gd")
 
 ## Sections entered against sections that ran to their last line, and against this. A
@@ -256,9 +256,10 @@ func _test_the_client_boots() -> void:
 	# player and the camera are in and the physics has settled: a test that drives the
 	# client waits for it as a player would.
 	await _gate_opens(_tcb_client)
+	_gate_wait_is_configurable()
 	_check(_tcb_client.gate != null and _tcb_client.gate.is_open(), "the load gate opens once the level, player and camera are in",
 		"state %s held %s" % [_tcb_client.gate.state(), _tcb_client.gate.reasons()] if _tcb_client.gate != null else "no gate")
-	_the_warmup_ran_under_the_cover()
+	await _the_warmup_ran_under_the_cover()
 	_check(_tcb_client.playground != null, "the client builds a playground")
 	_check(
 		_tcb_client.playground != null and _tcb_client.playground.booted,
@@ -318,6 +319,12 @@ func _test_the_client_boots() -> void:
 ## nothing of it was left in the world.
 func _the_warmup_ran_under_the_cover() -> void:
 	var warm: Variant = _tcb_client.prewarm
+	# The icons finish in play, after the gate has opened (see PlaygroundClientPrewarm._release_cover), so on a slow box
+	# `finished` is not yet set when the gate opens; wait for it within the same bound as the gate.
+	var limit := _gate_wait_seconds()
+	var began := Time.get_ticks_msec()
+	while warm != null and not warm.finished and (limit <= 0.0 or float(Time.get_ticks_msec() - began) / 1000.0 < limit):
+		await get_tree().physics_frame
 	_check(warm != null and warm.finished and warm.warmed > 0 and not _tcb_client.gate.is_holding(&"prewarm"),
 		"the warm-up ran under the cover and let go of it", "warm-up %s" % [warm.phase_ms if warm != null else "missing"])
 	_check(_tcb_client.gate.warm_items().size() > 0,
@@ -404,3 +411,18 @@ func _test_the_maps_are_surveyed() -> void:
 	# surveying nothing and passing.
 	_tmas_data_script = load("res://maps/pg_data.gd") as GDScript
 	_test_the_maps_are_surveyed_2()
+
+
+## The gate wait is a wall-clock bound that PLAYGROUND_TEST_GATE_SECONDS sets (0 = no limit), not a fixed frame count.
+func _gate_wait_is_configurable() -> void:
+	var before := OS.get_environment("PLAYGROUND_TEST_GATE_SECONDS")
+	OS.unset_environment("PLAYGROUND_TEST_GATE_SECONDS")
+	_check(is_equal_approx(_gate_wait_seconds(), 60.0), "the load-gate wait defaults to 60 s")
+	OS.set_environment("PLAYGROUND_TEST_GATE_SECONDS", "240")
+	_check(is_equal_approx(_gate_wait_seconds(), 240.0), "and PLAYGROUND_TEST_GATE_SECONDS sets it")
+	OS.set_environment("PLAYGROUND_TEST_GATE_SECONDS", "0")
+	_check(_gate_wait_seconds() == 0.0, "and 0 means no limit")
+	if before.is_empty():
+		OS.unset_environment("PLAYGROUND_TEST_GATE_SECONDS")
+	else:
+		OS.set_environment("PLAYGROUND_TEST_GATE_SECONDS", before)
