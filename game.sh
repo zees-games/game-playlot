@@ -34,7 +34,7 @@
 # are other packs it needs as id:repository pairs, and SUITES are the scenes in
 # examples/ that test it.
 GAME_NAME="Playlot"
-PACK="playground"
+PACK="playlot"
 EXTRA_PACKS=""
 SUITES="headless_config headless_mapdrop headless_workbench headless_workbench_scope headless_playground headless_net headless_presentation headless_stack headless_packs_real dedicated headless_mapcfg headless_weapondrop headless_spawntool headless_avatar_arms headless_avatar_library"
 # --------------------------------------------------------------------------------
