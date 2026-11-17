@@ -90,27 +90,47 @@ static var _art_providers: Dictionary = {}
 
 ## Every pack and provider weapon gets art in zee's table, so each draws a first-person model on the avatar's arms and a gun in a remote player's hand. Without it a weapon zee has no art for (the
 ## arena pack's `lmg`) drew nothing at all. The provider's own art when it ships `weapon_art()`, else zee's gun of the same tier dressed with the provider's model (`art_rows()`).
+## A provider's `weapon_art()` and `art_rows()` build its whole pack, so they are asked once per provider here rather than
+## once per weapon (asked per weapon they cost about 1.5 s of one frame the first time zee's art table is built in PLAYLOT).
 static func pack_art() -> Array[ZeeWeaponArt]:
 	var out: Array[ZeeWeaponArt] = []
+	var asked := {}
 	for table: Dictionary in [_pack_defs, _provider_defs]:
 		for id: StringName in table:
 			var def: DotWeaponDef = table[id]
 			var ref: Variant = _art_providers.get(id)
 			var provider: Object = (ref as WeakRef).get_ref() if ref is WeakRef else null
-			out.append(_art_for(def, provider))
+			out.append(_art_for(def, provider, asked))
 	return out
 
 
-static func _art_for(def: DotWeaponDef, provider: Object) -> ZeeWeaponArt:
-	if provider != null and provider.has_method(&"weapon_art"):
-		for art: Variant in provider.call(&"weapon_art"):
-			if art is ZeeWeaponArt and (art as ZeeWeaponArt).id == def.id:
-				return art
-	var rows: Variant = provider.call(&"art_rows") if provider != null and provider.has_method(&"art_rows") else {}
+## [param asked] caches each provider's answers (instance id -> {arts, rows}) for one [method pack_art] call.
+static func _art_for(def: DotWeaponDef, provider: Object, asked: Dictionary = {}) -> ZeeWeaponArt:
+	var answers: Dictionary = {}
+	if provider != null:
+		var key := provider.get_instance_id()
+		if not asked.has(key):
+			asked[key] = _provider_answers(provider)
+		answers = asked[key]
+	var art: Variant = (answers.get("arts", {}) as Dictionary).get(def.id)
+	if art is ZeeWeaponArt:
+		return art
+	var rows: Variant = answers.get("rows", {})
 	var copy := ZeePackSource._base_for(def)
 	copy.id = def.id
 	ZeeArtDress.apply(copy, (rows as Dictionary).get(def.id, {}) if rows is Dictionary else {})
 	return copy
+
+
+## A provider's arts by id (its first art per id wins, as the per-weapon scan did) and its art rows.
+static func _provider_answers(provider: Object) -> Dictionary:
+	var arts := {}
+	if provider.has_method(&"weapon_art"):
+		for art: Variant in provider.call(&"weapon_art"):
+			if art is ZeeWeaponArt and not arts.has((art as ZeeWeaponArt).id):
+				arts[(art as ZeeWeaponArt).id] = art
+	var rows: Variant = provider.call(&"art_rows") if provider.has_method(&"art_rows") else {}
+	return {"arts": arts, "rows": rows}
 
 
 ## (Re)joins [method pack_art] to zee's art table; adding a source drops the table's cache.

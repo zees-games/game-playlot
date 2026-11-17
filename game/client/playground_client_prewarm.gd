@@ -58,6 +58,9 @@ var skipped: int = 0
 ## Frames the cover-held phases took to run: on a software WebGL each costs hundreds of ms.
 var cover_frames: int = 0
 
+## The phase running now ("" before the first, "DONE" after the last): what a load probe's trace prints.
+var phase_name: String = ""
+
 ## When true, [member profile] collects microseconds per step and per item ("prop.load", "item:PROPS:<id>"...).
 var profiling: bool = false
 ## Step or item name -> total microseconds, filled while [member profiling] is on.
@@ -106,7 +109,12 @@ func _run() -> void:
 		if phase == Phase.ICONS:
 			_release_cover()
 		var began := Time.get_ticks_usec()
-		for item in _items_for(phase as Phase):
+		phase_name = Phase.keys()[phase]
+		var items := _items_for(phase as Phase)
+		if profiling:
+			var key := "items_for:%s" % phase_name
+			profile[key] = int(profile.get(key, 0)) + Time.get_ticks_usec() - began
+		for item in items:
 			if _slice == null:
 				_slice = DotFrameSlice.new(gate.slice_msec(SLICE_MS) if gate != null else SLICE_MS)
 			_warm_one(phase as Phase, item)
@@ -115,8 +123,13 @@ func _run() -> void:
 				if _covering:
 					cover_frames += 1
 				get_tree().process_frame.connect(_frame.emit, CONNECT_ONE_SHOT)
+				var paused := Time.get_ticks_usec()
 				await _frame
+				if profiling:
+					var gap := "frame_gap:%s" % phase_name
+					profile[gap] = int(profile.get(gap, 0)) + Time.get_ticks_usec() - paused
 		phase_ms[Phase.keys()[phase]] = (Time.get_ticks_usec() - began) / 1000
+	phase_name = "DONE"
 	_finish()
 
 
@@ -422,13 +435,35 @@ func _shot_effects() -> bool:
 	return config.prewarm_shot_effects_software or not is_software_renderer()
 
 
-## Whether this process draws through a software rasteriser (by the adapter's name).
+## Whether this process draws through a software rasteriser (by the adapter's name). On the web the engine only sees
+## the browser's masked name ("WebKit WebGL"), so the page's own unmasked one is asked too (see [method web_adapter_name]).
 static func is_software_renderer() -> bool:
-	var adapter := RenderingServer.get_video_adapter_name().to_lower()
+	var adapter := (RenderingServer.get_video_adapter_name() + " " + web_adapter_name()).to_lower()
 	for name: String in SOFTWARE_ADAPTERS:
 		if adapter.contains(name):
 			return true
 	return false
+
+
+static var _web_adapter: Variant = null
+
+
+## The browser's unmasked WebGL renderer (WEBGL_debug_renderer_info, e.g. "ANGLE (Google, Vulkan 1.3.0 (SwiftShader
+## Device ...))"), asked once; empty off the web or when the browser hides it.
+static func web_adapter_name() -> String:
+	if _web_adapter == null:
+		_web_adapter = ""
+		if OS.has_feature("web") and Engine.has_singleton("JavaScriptBridge"):
+			var bridge: Object = Engine.get_singleton("JavaScriptBridge")
+			var name: Variant = bridge.call(&"eval", WEB_ADAPTER_JS, true)
+			_web_adapter = str(name) if name != null else ""
+	return _web_adapter
+
+
+const WEB_ADAPTER_JS := "(function(){try{var c=document.createElement('canvas');var g=c.getContext('webgl2')||c.getContext('webgl');" + \
+	"if(!g)return '';var e=g.getExtension('WEBGL_debug_renderer_info');" + \
+	"var n=e?g.getParameter(e.UNMASKED_RENDERER_WEBGL):g.getParameter(g.RENDERER);" + \
+	"var l=g.getExtension('WEBGL_lose_context');if(l)l.loseContext();return String(n||'');}catch(x){return '';}})()"
 
 
 ## Keeps [param node] until the gate opens (or this node goes), then frees it.

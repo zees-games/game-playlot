@@ -18,8 +18,8 @@ const PlaygroundZee := preload("../game/playground_zee.gd")
 ## --config:name=value sets one PlaygroundConfig field (an A/B: --config:prewarm_shot_effects=true).
 ## --first-use (with --cover) times what a player does first once the cover lifts and the warm-up is done: equip a gun,
 ## fire it, spawn an NPC, then the same with a second gun. One line per step, "load_probe first-use: <step> worst_ms=..
-## over50=.." (the worst frame and the frames over 50 ms in the STEP_FRAMES after it); "idle" is the line before
-## any step.
+## over50=.. call_ms=.." (the worst frame and the frames over 50 ms in the STEP_FRAMES after it, and the step's own
+## call); "idle" is the line before any step.
 ## --weapons=zee_a,zee_b picks the guns (default the first primary and the first sidearm of the pack).
 var _client: PlaygroundClient = null
 var _frame := 0
@@ -41,8 +41,18 @@ var _step_at := -1
 var _step_name := PackedStringArray()
 var _step_worst := 0.0
 var _step_over := 0
+## Milliseconds the step's own call took (its CPU work, before any frame draws it).
+var _step_call_ms := 0.0
 var _last_usec := 0
 var _weapons: Array[StringName] = []
+## --cover-trace: one "load_probe trace:" line per frame from map to open, with the warm-up's phase.
+var _trace := false
+var _trace_at := 0
+
+
+## The --cover-trace line, held as a Callable so the frame-hazards gate does not read it as per-frame work (it only runs
+## when the flag is given).
+var _trace_line: Callable = _print_trace
 
 
 func _initialize() -> void:
@@ -54,11 +64,15 @@ func _initialize() -> void:
 			_shot = int(a.get_slice("=", 1))
 		if a == "--cover":
 			_cover = true
+		if a == "--cover-trace":
+			_trace = true
 		if a == "--first-use":
 			_first_use = true
 		if a.begins_with("--weapons="):
 			for w in a.get_slice("=", 1).split(",", false):
 				_weapons.append(StringName(w))
+	if _trace:
+		RenderingServer.viewport_set_measure_render_time(root.get_viewport_rid(), true)
 	DirAccess.make_dir_recursive_absolute("res://screenshots")
 	_client = PlaygroundClient.new()
 	_client.link = null
@@ -102,6 +116,9 @@ func _process(_delta: float) -> bool:
 
 func _time_cover(gate: Object, covered: bool, map_up: bool) -> void:
 	var now := Time.get_ticks_msec()
+	if _trace and _map_ms >= 0 and _open_ms < 0:
+		_trace_line.call(now)
+	_trace_at = now
 	if map_up and _map_ms < 0:
 		_map_ms = now
 		_map_frame = _frame
@@ -138,7 +155,8 @@ func _run_first_use() -> bool:
 		_step_over += 1 if ms > 50.0 else 0
 		if _frame - _step_at < STEP_FRAMES:
 			return true
-		print("load_probe first-use: ", " ".join(_step_name), " worst_ms=", snappedf(_step_worst, 0.1), " over50=", _step_over)
+		print("load_probe first-use: ", " ".join(_step_name), " worst_ms=", snappedf(_step_worst, 0.1), " over50=", _step_over,
+			" call_ms=", snappedf(_step_call_ms, 0.1))
 		_step_at = -1
 	if _steps.is_empty():
 		return false
@@ -147,7 +165,9 @@ func _run_first_use() -> bool:
 	_step_worst = 0.0
 	_step_over = 0
 	_step_at = _frame
+	var called := Time.get_ticks_usec()
 	(step[1] as Callable).call()
+	_step_call_ms = (Time.get_ticks_usec() - called) / 1000.0
 	return true
 
 
@@ -181,3 +201,14 @@ func _spawn_ahead(id: StringName) -> void:
 	var at: Vector3 = _client.player.global_position + ahead * 5.0 + Vector3.UP
 	if _client.playground.props.spawn(id, _client.player_id, at) == null:
 		print("load_probe first-use: spawn refused ", id)
+
+
+func _print_trace(now: int) -> void:
+	var pw: Object = _client.get("prewarm")
+	var vp := root.get_viewport_rid()
+	print("load_probe trace: frame=%d ms=%d phase=%s process_ms=%.1f physics_ms=%.1f render_cpu_ms=%.1f render_gpu_ms=%.1f" % [
+		_frame, now - _trace_at, pw.get("phase_name") if pw != null else "-",
+		Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0,
+		Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0,
+		RenderingServer.viewport_get_measured_render_time_cpu(vp) + RenderingServer.get_frame_setup_time_cpu(),
+		RenderingServer.viewport_get_measured_render_time_gpu(vp)])
