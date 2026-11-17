@@ -311,6 +311,17 @@ static func entity_rows() -> Array:
 	return _entity_rows()
 
 
+## The scripts the catalogue's entity rows run (one path each, in row order), for what loads them before the catalogue
+## is built: the client's warm-up starts compiling them on a worker while the map loads.
+static func entity_script_paths() -> PackedStringArray:
+	var out := PackedStringArray()
+	for row: Array in _entity_rows():
+		var path := PlaygroundPaths.rebase("res://game/entities/%s.gd") % row[2]
+		if not out.has(path):
+			out.append(path)
+	return out
+
+
 ## The soldiers and the rebel, split out of [method _entity_rows].
 static func _armed_rows() -> Array:
 	var rows := []

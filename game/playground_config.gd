@@ -205,6 +205,11 @@ extends DotConfig
 ## are no threads, or the worker is not done by then, the warm-up builds them as before. Off builds them there.
 @export var prewarm_figure_clips_early: bool = true
 
+## Whether the catalogue's entity scripts start compiling on the loader's worker threads before the first map loads,
+## rather than on the main thread when the warm-up loads each (about 150 ms under the cover, most of it the soldier's
+## brain). Where there are no threads they load as before. Off loads them there.
+@export var prewarm_entity_scripts_early: bool = true
+
 @export_group("Arena")
 
 ## Seconds one arena round lasts.

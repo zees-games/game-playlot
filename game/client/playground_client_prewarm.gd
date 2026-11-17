@@ -82,6 +82,9 @@ var _on_camera: Array[Node] = []
 ## Artwork icons are loaded with `load()` and not cached by the icon code: kept here until the
 ## game is over, so the spawn menu's first open finds them in the resource cache.
 var _held_icons: Array[Texture2D] = []
+## The entity scripts taken in from [method prefetch_scripts], held while this node lives so the PROPS phase's load (and a
+## first spawn's) finds them compiled in the cache.
+var _held_scripts: Array[Resource] = []
 ## The viewport whose 3D drawing is off under the cover ([member PlaygroundConfig.prewarm_hide_world]), else null.
 var _hidden_view: Viewport = null
 ## True once the 3D world was left undrawn under the cover: what a test reads.
@@ -109,7 +112,10 @@ func start() -> bool:
 ## NPC id. Nothing is waited for here; whatever is not done by then is built where it always was. Returns the bodies started.
 static func prefetch(p_config: PlaygroundConfig) -> Array[StringName]:
 	var bodies: Array[StringName] = []
-	if p_config != null and (not p_config.prewarm or not p_config.prewarm_figure_clips_early):
+	if p_config != null and not p_config.prewarm:
+		return bodies
+	var _scripts := prefetch_scripts(p_config)
+	if p_config != null and not p_config.prewarm_figure_clips_early:
 		return bodies
 	for row: Array in PlaygroundSpawnables.entity_rows():
 		var id := String(row[0])
@@ -121,6 +127,53 @@ static func prefetch(p_config: PlaygroundConfig) -> Array[StringName]:
 	if not bodies.is_empty():
 		DotHumanoidAssets.prepare_libraries(bodies)
 	return bodies
+
+
+## Entity script paths [method prefetch_scripts] asked the loader for and nobody has taken yet.
+static var _script_requests := PackedStringArray()
+
+
+## Starts compiling the catalogue's entity scripts on the loader's worker threads before the first map loads
+## ([method ResourceLoader.load_threaded_request]), rather than on the main thread when the PROPS phase loads each
+## (about 150 ms under the cover, most of it the soldier's brain). Only where there are threads: without them a request
+## would compile on this frame. Nothing is waited for here; the PROPS phase takes each in ([method _settle_script]) and
+## whatever was not requested loads where it always did. Returns the paths requested.
+static func prefetch_scripts(p_config: PlaygroundConfig) -> PackedStringArray:
+	var requested := PackedStringArray()
+	if p_config != null and (not p_config.prewarm or not p_config.prewarm_entity_scripts_early):
+		return requested
+	if not DotPlatform.has_threads():
+		return requested
+	for path in PlaygroundSpawnables.entity_script_paths():
+		if _script_requests.has(path) or ResourceLoader.has_cached(path) or not ResourceLoader.exists(path):
+			continue
+		if ResourceLoader.load_threaded_request(path, "GDScript") == OK:
+			_script_requests.append(path)
+			requested.append(path)
+	return requested
+
+
+## Takes in the entity script [method prefetch_scripts] started for [param def], a frame at a time while the loader's
+## worker is still on it, so the PROPS phase's own load finds it compiled. Returns at once for one never requested.
+func _settle_script(def: DotPropDef) -> void:
+	var path := PlaygroundSpawnables.script_of(def)
+	var at := _script_requests.find(path)
+	if at < 0:
+		return
+	var began := Time.get_ticks_usec() if profiling else 0
+	while ResourceLoader.load_threaded_get_status(path) == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
+		if _covering:
+			cover_frames += 1
+		_slice = null
+		get_tree().process_frame.connect(_frame.emit, CONNECT_ONE_SHOT)
+		await _frame
+	_script_requests.remove_at(at)
+	# Ends the request; a failed one returns null and the phase's own load reports it, loudly, as before.
+	var script := ResourceLoader.load_threaded_get(path)
+	if script != null:
+		_held_scripts.append(script)
+	if profiling:
+		profile["entity_scripts_wait"] = int(profile.get("entity_scripts_wait", 0)) + Time.get_ticks_usec() - began
 
 
 ## Every phase in turn, pausing a frame whenever the gate's budget is spent: at least one item a
@@ -138,6 +191,8 @@ func _run() -> void:
 		for item in items:
 			if phase == Phase.PROPS and _is_figure(item):
 				await _settle_figure_clips()
+			if phase == Phase.PROPS and not _script_requests.is_empty() and item is DotPropDef:
+				await _settle_script(item as DotPropDef)
 			if _slice == null:
 				_slice = DotFrameSlice.new(gate.slice_msec(SLICE_MS) if gate != null else SLICE_MS)
 			_warm_one(phase as Phase, item)
