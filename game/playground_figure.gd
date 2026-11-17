@@ -22,6 +22,21 @@ const CHANNEL := "playground.figure"
 ## indices; a negative one takes the next slot's, and all negative takes [param fallback_key]
 ## hashed, so a guest is dressed the same on every machine.
 static func build(height: float, skins: PackedInt32Array, fallback_key: String = "") -> Node3D:
+	var look := look_of(skins, fallback_key)
+
+	var person := DotHumanoidFigure.new()
+	person.name = "Figure"
+	person.build(look, height)
+	if not person.from_art:
+		DotLog.warn(CHANNEL, "no people art; drawing the capsule", {})
+		person.free()
+		return null
+	return person
+
+
+## The look [method build] dresses a person in: the same [param skins] and [param fallback_key] give the same
+## look, and so the same body, which is what a warm-up reads to build that body's clips ahead of time.
+static func look_of(skins: PackedInt32Array, fallback_key: String = "") -> DotHumanoidLook:
 	var resolved := resolve(skins, fallback_key)
 	var face := PlaygroundAvatars.LETTERS[resolved[0]]
 	var look := DotHumanoidLook.from_letter(face)
@@ -33,15 +48,7 @@ static func build(height: float, skins: PackedInt32Array, fallback_key: String =
 		look.top = top.top
 	if legs != null:
 		look.bottom = legs.bottom
-
-	var person := DotHumanoidFigure.new()
-	person.name = "Figure"
-	person.build(look, height)
-	if not person.from_art:
-		DotLog.warn(CHANNEL, "no people art; drawing the capsule", {})
-		person.free()
-		return null
-	return person
+	return look
 
 
 ## [face, top, legs] with every slot filled: a missing one borrows the top's, then the

@@ -305,6 +305,12 @@ static func _entity_rows() -> Array:
 	return entities
 
 
+## The NPC, turret and armed NPC rows (id, name, script, extent, colour, mass, cost, meta), for what reads them
+## before the catalogue is built: the client's warm-up starts the NPCs' clip sets from them.
+static func entity_rows() -> Array:
+	return _entity_rows()
+
+
 ## The soldiers and the rebel, split out of [method _entity_rows].
 static func _armed_rows() -> Array:
 	var rows := []

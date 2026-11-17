@@ -10,6 +10,7 @@ const PlaygroundProp := preload("../playground_prop.gd")
 const PlaygroundSpawnables := preload("../playground_spawnables.gd")
 const PlaygroundWeaponIcons := preload("../playground_weapon_icons.gd")
 const PlaygroundZee := preload("../playground_zee.gd")
+const PlaygroundFigure := preload("../playground_figure.gd")
 const PlaygroundWeaponDef := preload("../weapons/playground_weapon_def.gd")
 
 const CHANNEL := "playground.prewarm"
@@ -102,6 +103,26 @@ func start() -> bool:
 	return true
 
 
+## Starts, before the first map loads, the NPC bodies' clip sets the PROPS phase would otherwise build on the main
+## thread when it dresses its first NPC ([method DotHumanoidAssets.prepare_libraries]: a worker thread where there are
+## threads, so it runs while the map loads). The bodies are the ones [method PlaygroundFigure.dress_body] picks for each
+## NPC id. Nothing is waited for here; whatever is not done by then is built where it always was. Returns the bodies started.
+static func prefetch(p_config: PlaygroundConfig) -> Array[StringName]:
+	var bodies: Array[StringName] = []
+	if p_config != null and (not p_config.prewarm or not p_config.prewarm_figure_clips_early):
+		return bodies
+	for row: Array in PlaygroundSpawnables.entity_rows():
+		var id := String(row[0])
+		if not id.begins_with("npc_"):
+			continue
+		var body := PlaygroundFigure.look_of(PackedInt32Array(), id).body
+		if not bodies.has(body):
+			bodies.append(body)
+	if not bodies.is_empty():
+		DotHumanoidAssets.prepare_libraries(bodies)
+	return bodies
+
+
 ## Every phase in turn, pausing a frame whenever the gate's budget is spent: at least one item a
 ## frame, so a budget of 0 still finishes.
 func _run() -> void:
@@ -115,6 +136,8 @@ func _run() -> void:
 			var key := "items_for:%s" % phase_name
 			profile[key] = int(profile.get(key, 0)) + Time.get_ticks_usec() - began
 		for item in items:
+			if phase == Phase.PROPS and _is_figure(item):
+				await _settle_figure_clips()
 			if _slice == null:
 				_slice = DotFrameSlice.new(gate.slice_msec(SLICE_MS) if gate != null else SLICE_MS)
 			_warm_one(phase as Phase, item)
@@ -131,6 +154,26 @@ func _run() -> void:
 		phase_ms[Phase.keys()[phase]] = (Time.get_ticks_usec() - began) / 1000
 	phase_name = "DONE"
 	_finish()
+
+
+## True for a prop that is dressed as a person ([method PlaygroundFigure.dress_body]).
+static func _is_figure(item: Variant) -> bool:
+	return item is DotPropDef and String((item as DotPropDef).id).begins_with("npc_")
+
+
+## Takes in the clip sets [method prefetch] started, a frame at a time while a worker is still on them: the first NPC
+## would otherwise build the same sets again on this thread. Returns at once when none was started (or all are in);
+## where there are no threads each frame builds one set, the same work the first NPC would have done in one frame.
+func _settle_figure_clips() -> void:
+	var began := Time.get_ticks_usec() if profiling else 0
+	while not DotHumanoidAssets.poll_libraries():
+		if _covering:
+			cover_frames += 1
+		_slice = null
+		get_tree().process_frame.connect(_frame.emit, CONNECT_ONE_SHOT)
+		await _frame
+	if profiling:
+		profile["figure_clips_wait"] = int(profile.get("figure_clips_wait", 0)) + Time.get_ticks_usec() - began
 
 
 ## The spare view lives outside the tree, so nothing frees it with this node: a game that ends
@@ -240,18 +283,24 @@ func _items_for(phase: Phase) -> Array:
 ## left out when [member PlaygroundConfig.prewarm_model_props] is off.
 func _prop_defs() -> Array:
 	var out: Array = []
+	var people: Array = []
 	var shapes := {}
 	for def in _all_props():
 		var kind := PlaygroundSpawnables.kind_of(def)
 		var model := PlaygroundProp.model_of(def) != ""
 		if kind != PlaygroundSpawnables.Kind.PROP:
-			out.append(def)
+			if _is_figure(def):
+				people.append(def)
+			else:
+				out.append(def)
 		elif model:
 			if config != null and config.prewarm_model_props:
 				out.append(def)
 		elif ALWAYS.has(def.id) or not shapes.has(PlaygroundProp.shape_of(def)):
 			shapes[PlaygroundProp.shape_of(def)] = true
 			out.append(def)
+	# The people last: the clip sets [method prefetch] started get the rest of the phase to finish on their worker.
+	out.append_array(people)
 	return out
 
 

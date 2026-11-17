@@ -200,6 +200,11 @@ extends DotConfig
 ## nobody could see. Off draws it, as before.
 @export var prewarm_hide_world: bool = true
 
+## Whether the NPCs' animation clip sets start building on a worker thread before the first map loads, rather than on
+## the main thread when the warm-up dresses its first NPC (the shared set alone is over 100 ms in one frame). Where there
+## are no threads, or the worker is not done by then, the warm-up builds them as before. Off builds them there.
+@export var prewarm_figure_clips_early: bool = true
+
 @export_group("Arena")
 
 ## Seconds one arena round lasts.

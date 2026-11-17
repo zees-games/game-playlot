@@ -19,6 +19,9 @@ func _ready() -> void:
 	# zee-dot-weapons' art is this game's copy of it, wherever this game is mounted.
 	PlaygroundZee.use_this_games_art()
 
+	# The NPCs' clip sets, on a worker while the map below loads, not on the main thread under the cover.
+	var _clips := PlaygroundClientPrewarm.prefetch(config)
+
 	# Looked up when nobody handed it over: a pack's client scene is instantiated by
 	# `DotClientLink._on_load_game`, which sets nothing on it. The export still wins, so two shells
 	# in one process keep their own links.
