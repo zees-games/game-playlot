@@ -220,7 +220,7 @@ func _on_npc_removed(npc: DotNpcInstance, reason: StringName) -> void:
 	if behaviour == null or behaviour.identity == null or net == null:
 		return
 
-	var net_id := behaviour.identity.net_id
+	var net_id: int = behaviour.identity.net_id
 	net.registry.unregister(net_id)
 	_broadcast(PlaygroundEvents.Kind.PROP_GONE, PlaygroundEvents.write_prop_gone(
 		net_id, reason, _death_of(npc.node, reason)))
@@ -236,7 +236,7 @@ func _on_prop_removed(prop: DotPropInstance, reason: StringName) -> void:
 	if behaviour == null or behaviour.identity == null:
 		return
 
-	var net_id := behaviour.identity.net_id
+	var net_id: int = behaviour.identity.net_id
 	net.registry.unregister(net_id)
 
 	_broadcast(PlaygroundEvents.Kind.PROP_GONE, PlaygroundEvents.write_prop_gone(

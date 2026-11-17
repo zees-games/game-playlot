@@ -301,7 +301,7 @@ func _cmd_waves(ctx: DotCmdContext) -> void:
 
 ## `pg_spec` — watch somebody else. In a sandbox watching is not about being dead: the interesting thing is what somebody is making.
 func _cmd_spec(ctx: DotCmdContext) -> void:
-	var session := ctx.session
+	var session: DotClientSession = ctx.session
 
 	if session == null:
 		ctx.reply("Only a player can watch somebody.")
@@ -446,7 +446,7 @@ func _cmd_inv(ctx: DotCmdContext) -> void:
 
 
 func _cmd_achievements(ctx: DotCmdContext) -> void:
-	var session := ctx.session
+	var session: DotClientSession = ctx.session
 
 	if ctx.args.size() > 0:
 		var found := server.find_sessions(ctx.arg(0), ctx.session)
