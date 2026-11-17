@@ -1,16 +1,20 @@
 extends DotGameCheckSuite
 
 const PlaygroundMapDrop := preload("../game/client/playground_map_drop.gd")
+const PlaygroundMapSources := preload("../game/client/playground_map_sources.gd")
+const PlaygroundWorldMaps := preload("../game/playground_world_maps.gd")
 
 ## Maps dropped on the window or the executable: PLAYLOT's documents (alone, in a folder, in a zip) are copied into
-## the maps folder; anything else, a bad document or a taken id is refused with a line that says why.
+## the maps folder; anything else, a bad document or a taken id is refused with a line that says why. A Garry's Mod map
+## (gm_fork's Workshop folder, its .bsp or .gma) is the PLAYLOT map converted from it (pgc_fork), or a refusal saying
+## what to drop instead; the converted map knows its Garry's Mod name, which is what `pg_map gm_fork` finds.
 ##
 ## [codeblock]
 ## godot --headless --path . res://examples/headless_mapdrop.tscn
 ## [/codeblock]
 
-const CHECKS := 21
-const SECTIONS := 3
+const CHECKS := 34
+const SECTIONS := 4
 const ROOT := "user://headless_mapdrop"
 const OUTSIDE := ROOT + "/outside"
 const INTO := ROOT + "/maps"
@@ -30,6 +34,7 @@ func _run() -> void:
 	_fixtures()
 	_test_acceptor()
 	_test_drop_args()
+	_test_source_maps()
 	await _test_intake()
 	_wipe(ProjectSettings.globalize_path(ROOT))
 	_report_sections(_entered, _finished, SECTIONS, CHECKS)
@@ -64,6 +69,42 @@ func _test_acceptor() -> void:
 	_check(zipped.get("added", []).size() == 2, "a zip of documents is taken", str(zipped))
 	var broken := PlaygroundMapDrop.accept(out.path_join("broken.zip"), _into(), 3, none)
 	_check((broken.get("errors", PackedStringArray()) as PackedStringArray).size() == 1, "an unreadable zip is an error", str(broken))
+	_finished += 1
+
+
+func _test_source_maps() -> void:
+	_entered += 1
+	_check(PlaygroundMapSources.name_of("/w/326332456_gm_fork.gma") == "gm_fork", "a Workshop .gma is named without its id")
+	_check(PlaygroundMapSources.name_of("C:/maps/GM_Fork.bsp") == "gm_fork", "a .bsp is named by its file, lower case")
+	_check(PlaygroundMapSources.source_of({"source_frame": {"map": "gm_fork.bsp"}}) == "gm_fork",
+			"a converted document names its map by source_frame")
+	_check(PlaygroundMapSources.source_of({"attribution": "Geometry converted from gm_construct_small, https://x by Y."})
+			== "gm_construct_small", "or by its attribution")
+	_check(PlaygroundMapSources.source_of({"attribution": "Built in PLAYLOT."}) == "", "a map made in PLAYLOT has none")
+	var catalogue := DotMapCatalogue.new()
+	var shelf := ProjectSettings.globalize_path(ROOT + "/shelf")
+	var added := PlaygroundWorldMaps.add_map_docs(catalogue, shelf)
+	var fork := catalogue.get_map(&"pgt_fork")
+	_check(added == 1 and fork != null and str(fork.meta.get("source_map", "")) == "gm_fork",
+			"a loaded document keeps its Garry's Mod name", str(fork.meta if fork != null else {}))
+	_check(PlaygroundMapSources.find(catalogue, "gm_fork") == fork and PlaygroundMapSources.find(catalogue, "GM_FORK.bsp") == fork,
+			"pg_map's alias: gm_fork finds the converted map")
+	_check(PlaygroundMapSources.find(catalogue, "gm_other") == null, "a map with no conversion finds nothing")
+	var converted := func(source: String) -> Dictionary:
+		var map := PlaygroundMapSources.find(catalogue, source)
+		return {} if map == null else {"id": map.id, "title": map.name_or_id()}
+	var out := _outside()
+	var folder := PlaygroundMapDrop.accept(out.path_join("gm_fork"), _into(), 3, func(_id: StringName) -> String: return "", converted)
+	var got: Array = folder.get("added", [])
+	_check(got.size() == 1 and got[0]["id"] == &"pgt_fork" and got[0]["source_map"] == "gm_fork"
+			and (folder["errors"] as PackedStringArray).is_empty(), "a dropped gm_fork Workshop folder is the converted map", str(folder))
+	_check(not FileAccess.file_exists(_into().path_join("pgt_fork.json")), "and nothing is copied for it")
+	var gma := PlaygroundMapDrop.accept(out.path_join("326332456_gm_fork.gma"), _into(), 3, func(_id: StringName) -> String: return "", converted)
+	_check(gma.get("added", []).size() == 1, "so is its .gma", str(gma))
+	var other := PlaygroundMapDrop.accept(out.path_join("gm_other.bsp"), _into(), 3, func(_id: StringName) -> String: return "", converted)
+	var why: PackedStringArray = other.get("errors", PackedStringArray())
+	_check(other.get("added", []).size() == 0 and why.size() == 1 and why[0].begins_with("gm_other: a Garry's Mod")
+			and why[0].contains(".json converted from it"), "a .bsp with no conversion is refused saying what to drop", str(other))
 	_finished += 1
 
 
@@ -103,6 +144,10 @@ func _test_intake() -> void:
 	var missing: Dictionary = intake.call(&"take_cmdline", PackedStringArray(["--map-path=/no/such/map"]), false)
 	_check((missing.get("errors", PackedStringArray()) as PackedStringArray).size() == 1, "a missing --map-path is an error")
 	_check(str(intake.call(&"describe_lines")[1]).contains(PlaygroundMapDrop.TAKES), "describe_lines names what it takes")
+	var bsp: Dictionary = intake.call(&"handle", PackedStringArray([out.path_join("gm_other.bsp")]), "window")
+	var bsp_lines: PackedStringArray = load(PlaygroundMapDrop.INTAKE_SCRIPT).lines_for(bsp)
+	_check(bsp_lines.size() == 1 and bsp_lines[0].begins_with("Cannot load gm_other: a Garry's Mod (Source engine) map"),
+			"through the intake a dropped .bsp says plainly it is a Garry's Mod map", str(bsp_lines))
 	await get_tree().process_frame
 	holder.free()
 	_finished += 1
@@ -117,7 +162,8 @@ func _into() -> String:
 
 
 ## A document, one of another kind, a broken one, a text file, a folder with two documents two folders down, a zip
-## of the same and a file that only says it is a zip.
+## of the same, a file that only says it is a zip, gm_fork's Workshop folder and .gma, a .bsp PLAYLOT has no conversion
+## of, and a shelf with a document converted from gm_fork.
 func _fixtures() -> void:
 	_wipe(ProjectSettings.globalize_path(ROOT))
 	var out := _outside()
@@ -144,6 +190,17 @@ func _fixtures() -> void:
 		var _w := zip.write_file(JSON.stringify(docs[k]).to_utf8_buffer())
 		var _c := zip.close_file()
 	var _z := zip.close()
+	var _g := DirAccess.make_dir_recursive_absolute(out.path_join("gm_fork/maps"))
+	_write(out.path_join("gm_fork/addon.json"), JSON.stringify({"title": "gm_fork", "type": "map"}))
+	_write(out.path_join("gm_fork/maps/gm_fork.bsp"), "VBSP")
+	_write(out.path_join("326332456_gm_fork.gma"), "GMAD")
+	_write(out.path_join("gm_other.bsp"), "VBSP")
+	var shelf := ProjectSettings.globalize_path(ROOT + "/shelf")
+	var _s := DirAccess.make_dir_recursive_absolute(shelf)
+	var fork := doc.duplicate(true)
+	fork["id"] = "pgt_fork"
+	fork["source_frame"] = {"map": "gm_fork.bsp"}
+	_write(shelf.path_join("pgt_fork.json"), JSON.stringify(fork))
 
 
 func _write(path: String, text: String) -> void:

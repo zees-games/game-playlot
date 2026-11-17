@@ -1,5 +1,7 @@
 extends "playground_client_fx.gd"
 
+const PlaygroundMapSources := preload("client/playground_map_sources.gd")
+
 
 
 func _ready() -> void:
@@ -127,7 +129,7 @@ func _ready() -> void:
 	_build_screens()
 	_wire_presentation()
 	# Last: a drop on the executable is handled now, and its notice needs the HUD and a loaded map.
-	map_drop = PlaygroundMapDrop.attach(self, Playground.USER_MAPS_DIR, _map_id_taken, _on_maps_dropped)
+	map_drop = PlaygroundMapDrop.attach(self, Playground.USER_MAPS_DIR, _map_id_taken, _on_maps_dropped, _map_converted_from)
 
 	set_process(true)
 
@@ -140,10 +142,24 @@ func _map_id_taken(id: StringName) -> String:
 	return "%s is already one of this game's maps; give the dropped one another id" % id
 
 
-## After a drop: solo, the new maps join the catalogue at once; connected, they wait for a solo game. Every line is shown.
+## `{id, title}` of the map converted from the Garry's Mod map [param source] (gm_fork: pgc_fork), or empty.
+func _map_converted_from(source: String) -> Dictionary:
+	var map: DotMapDef = PlaygroundMapSources.find(playground.maps.catalogue, source) if playground.maps != null else null
+	return {} if map == null else {"id": map.id, "title": map.name_or_id()}
+
+
+## After a drop: solo, the new maps join the catalogue at once; connected, they wait for a solo game. A dropped Garry's Mod
+## map PLAYLOT has a conversion of plays that map at once, solo. Every line is shown.
 func _on_maps_dropped(result: Dictionary) -> void:
-	var lines: PackedStringArray = load(PlaygroundMapDrop.INTAKE_SCRIPT).lines_for(result)
-	var added: Array = result.get("added", [])
+	var converted: Array = (result.get("added", []) as Array).filter(func(e: Dictionary) -> bool: return e.has("source_map"))
+	var shown := result.duplicate()
+	shown["added"] = (result.get("added", []) as Array).filter(func(e: Dictionary) -> bool: return not e.has("source_map"))
+	var lines: PackedStringArray = load(PlaygroundMapDrop.INTAKE_SCRIPT).lines_for(shown)
+	for e: Dictionary in converted:
+		lines.append("%s is PLAYLOT's %s: pg_map %s" % [e["source_map"], e["title"], e["id"]])
+	if not converted.is_empty() and link == null:
+		playground.change_map(StringName(str(converted[0]["id"])))
+	var added: Array = shown["added"]
 	if not added.is_empty():
 		if link == null:
 			var _n := playground.add_map_directory(Playground.USER_MAPS_DIR)

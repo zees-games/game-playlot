@@ -15,6 +15,7 @@ const PlaygroundProjectiles := preload("../game/playground_projectiles.gd")
 ##
 ##   xvfb-run -a godot --path . --script tools/screenshot.gd -- --map pg_flatgrass
 ##   tools/screenshot.sh pg_flatgrass --fx     # a spawn puff and the physics gun's beam
+##   tools/screenshot.sh pgc_fork --cloud-store https://dev.dotgames.org/content,pack-dev.pub  # art from its store slices
 ##
 ## Needs a real rendering context, so it does NOT run under `--headless`; `xvfb-run` is
 ## how it runs on a machine with no display. It writes into `screenshots/`, which is
@@ -69,6 +70,12 @@ func _initialize() -> void:
 
 	DirAccess.make_dir_recursive_absolute(OUT_DIR)
 
+	var store_at := args.find("--cloud-store")
+	if store_at >= 0:
+		if store_at + 1 >= args.size() or not _cloud_store(args[store_at + 1]):
+			quit(2)
+			return
+
 	var map_node := (scene as PackedScene).instantiate()
 	_map_node = map_node
 	if not MAPS.has(id):
@@ -114,6 +121,35 @@ func _initialize() -> void:
 	var views := _views_from_args(args)
 	if not views.is_empty():
 		_shots = views
+
+
+## `--cloud-store ORIGIN,PUBKEY`: draw a converted world's library models and PBR sets from its dot-cloud slices
+## (licence.store_pack), fetched from ORIGIN (a content URL, or a folder of published packs) and checked against the
+## public key in the file PUBKEY, the way a web client gets them, instead of from maps/world/.stores beside the document
+## (which a web client never has). A cache emptied first, so every slice is really fetched. The client registers itself
+## as the dot_cloud_client service the map reads (pg_data.load_world), so it must join the tree before the map does.
+func _cloud_store(spec: String) -> bool:
+	var parts := spec.split(",")
+	var pub := FileAccess.get_file_as_string(parts[1]) if parts.size() == 2 else ""
+	if parts.size() != 2 or parts[0].is_empty() or pub.strip_edges().is_empty():
+		push_error("--cloud-store wants ORIGIN,PUBKEY_FILE (a readable public key), got %s" % spec)
+		return false
+	var config := DotCloudConfig.new()
+	config.cache_dir = "user://screenshot_store_cache"
+	DotPaths.remove_tree(config.cache_dir)
+	config.require_signed_manifests = true
+	config.trusted_keys = {"default": pub}
+	var cloud := DotCloudClient.new()
+	cloud.name = "Cloud"
+	cloud.config = config
+	cloud.config_file = ""
+	if parts[0].begins_with("http"):
+		cloud.http_base_urls = PackedStringArray([parts[0]])
+	else:
+		cloud.local_search_dirs = PackedStringArray([parts[0]])
+	cloud.allow_netchan_fallback = false
+	root.add_child(cloud)
+	return true
 
 
 ## `--view NAME:FX,FY,FZ:AX,AY,AZ` (repeatable): shoot only these, from FROM looking at AT, in

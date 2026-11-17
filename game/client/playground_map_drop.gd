@@ -1,19 +1,23 @@
 extends RefCounted
 
 ## Maps dropped on PLAYLOT's window or executable: map documents (`.json`), and folders and zips of them, copied into
-## `user://maps` by dot-map's DotMapDropIntake (API 26) and added to the solo game's maps. Anything else is refused out loud.
+## `user://maps` by dot-map's DotMapDropIntake (API 26) and added to the solo game's maps. A Garry's Mod map (a `.bsp`, a
+## Workshop `.gma`, or a folder holding one) is claimed too: one PLAYLOT has a conversion of is that map (gm_fork is pgc_fork,
+## entry `source_map` set), any other is refused with what to drop instead. Anything else is refused out loud.
 
 const CHANNEL := "playground.map_drop"
 const NEEDS_LEVEL := 26
 const INTAKE_SCRIPT := "res://addons/dot_map/core/dot_map_drop_intake.gd"
 const DATA_MAP_SCRIPT := "res://maps/pg_data.gd"
+const PlaygroundMapSources := preload("playground_map_sources.gd")
 ## What the refusal says this game takes.
 const TAKES := "a PLAYLOT map .json, or a folder or .zip of them"
 
 
 ## Adds the intake under [param parent], watching its window, and hands it the command line (a drop on the executable).
-## [param on_result] gets each drop's result dictionary. Null, with a warning, on a dot-map older than API 26.
-static func attach(parent: Node, into: String, taken: Callable, on_result: Callable) -> Node:
+## [param on_result] gets each drop's result dictionary. [param converted] is `func(source: String) -> Dictionary`, the
+## `{id, title}` of the map converted from a Source map, or empty. Null, with a warning, on a dot-map older than API 26.
+static func attach(parent: Node, into: String, taken: Callable, on_result: Callable, converted: Callable = Callable()) -> Node:
 	if DotAddonApi.build_level("dot_map") < NEEDS_LEVEL or not ResourceLoader.exists(INTAKE_SCRIPT):
 		DotLog.warn(CHANNEL, "dropped maps are off: this build's dot-map is older than API %d" % NEEDS_LEVEL)
 		return null
@@ -21,7 +25,7 @@ static func attach(parent: Node, into: String, taken: Callable, on_result: Calla
 	intake.name = "MapDrop"
 	intake.set(&"into", into)
 	intake.call(&"add_acceptor", TAKES, func(path: String, to: String) -> Dictionary:
-		return accept(path, to, int(intake.get(&"search_depth")), taken))
+		return accept(path, to, int(intake.get(&"search_depth")), taken, converted))
 	var _c := intake.connect(&"handled", on_result)
 	parent.add_child(intake)
 	var _r: Dictionary = intake.call(&"take_cmdline", drop_args(cmdline()), false)
@@ -54,8 +58,9 @@ static func drop_args(args: PackedStringArray) -> PackedStringArray:
 
 ## The acceptor: `{}` when [param path] holds no PLAYLOT map document, else `{added, errors}`. Each document is checked
 ## by `maps/pg_data.gd` and written to `<into>/<id>.json`. [param taken] is `func(id: StringName) -> String`, a reason
-## the id cannot be used or empty. [param depth] is how many folders down a folder is searched; 0 is no limit.
-static func accept(path: String, into: String, depth: int, taken: Callable) -> Dictionary:
+## the id cannot be used or empty. [param depth] is how many folders down a folder is searched; 0 is no limit. With no
+## document, a Source map in [param path] is answered by [method source_maps] through [param converted].
+static func accept(path: String, into: String, depth: int, taken: Callable, converted: Callable = Callable()) -> Dictionary:
 	var found: Array = []
 	var errors := PackedStringArray()
 	if DirAccess.dir_exists_absolute(path):
@@ -66,8 +71,10 @@ static func accept(path: String, into: String, depth: int, taken: Callable) -> D
 		var doc := _map_doc(FileAccess.get_file_as_string(path))
 		if not doc.is_empty():
 			found.append([path.get_file(), doc])
+	if found.is_empty() and errors.is_empty():
+		return source_maps(PlaygroundMapSources.in_path(path, depth), converted)
 	if found.is_empty():
-		return {} if errors.is_empty() else {"added": [], "errors": errors}
+		return {"added": [], "errors": errors}
 	var added: Array[Dictionary] = []
 	var data_map: GDScript = load(DATA_MAP_SCRIPT)
 	var dir_made := DirAccess.make_dir_recursive_absolute(into)
@@ -91,6 +98,23 @@ static func accept(path: String, into: String, depth: int, taken: Callable) -> D
 		var _w := f.store_string(JSON.stringify(doc, "\t"))
 		f.close()
 		added.append({"id": id, "title": str(doc.get("name", String(id))), "path": target})
+	return {"added": added, "errors": errors}
+
+
+## The Source maps [param names] as a drop result: each one [param converted] (`func(source) -> {id, title}`) knows is
+## `{id, title, path: "", source_map}`, the PLAYLOT map to play, each other one an error saying what to drop instead.
+## `{}` (not claimed) for no names.
+static func source_maps(names: PackedStringArray, converted: Callable) -> Dictionary:
+	if names.is_empty():
+		return {}
+	var added: Array[Dictionary] = []
+	var errors := PackedStringArray()
+	for name in names:
+		var hit: Variant = converted.call(name) if converted.is_valid() else {}
+		if hit is Dictionary and str((hit as Dictionary).get("id", "")) != "":
+			added.append({"id": StringName(str(hit["id"])), "title": str(hit.get("title", hit["id"])), "path": "", "source_map": name})
+		else:
+			errors.append(PlaygroundMapSources.REFUSAL % name)
 	return {"added": added, "errors": errors}
 
 

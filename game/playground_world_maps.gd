@@ -4,6 +4,8 @@ extends "playground_setup_props.gd"
 
 ## The client shell's solo host, which mounts map packs for a game played with no server.
 const SOLO_SERVICE := &"dot_solo"
+## A converted map's Garry's Mod name (`meta.source_map`), its alias for `pg_map` and for a dropped .bsp.
+const PlaygroundMapSources := preload("client/playground_map_sources.gd")
 
 
 ## The maps this build ships; a server with delivered maps loads a JSON catalogue. An instance method that forwards, and a static
@@ -65,7 +67,7 @@ static func solo_start_map() -> StringName:
 
 
 ## Adds every map document (`*.json`) in [param dir] to [param catalogue], each built by [constant DATA_MAP_SCENE] with its path in
-## `meta.doc`. An unreadable document is left out with a WARN; an existing id is kept, so a delivered map never replaces a
+## `meta.doc` and the Source map it was converted from, if any, in `meta.source_map`. An unreadable document is left out with a WARN; an existing id is kept, so a delivered map never replaces a
 ## built-in one. Returns how many were added.
 static func add_map_docs(catalogue: DotMapCatalogue, dir: String) -> int:
 	if not DirAccess.dir_exists_absolute(dir):
@@ -93,6 +95,9 @@ static func add_map_docs(catalogue: DotMapCatalogue, dir: String) -> int:
 		map.author = str(doc.get("author", ""))
 		map.scene_path = PlaygroundPaths.rebase(DATA_MAP_SCENE)
 		map.meta["doc"] = path
+		var source := PlaygroundMapSources.source_of(doc)
+		if source != "":
+			map.meta["source_map"] = source
 		catalogue.add(map)
 		added += 1
 	return added

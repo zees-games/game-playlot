@@ -4,6 +4,7 @@ extends DotModule
 
 const PlaygroundConfig := preload("playground_config.gd")
 const PlaygroundPaths := preload("playground_paths.gd")
+const PlaygroundMapSources := preload("client/playground_map_sources.gd")
 const PlaygroundMapConfig := preload("playground_map_config.gd")
 const PlaygroundAmbience := preload("playground_ambience.gd")
 ## The workbench kind of the ambience cvar set.
@@ -461,6 +462,12 @@ func _cmd_map(ctx: DotCmdContext) -> void:
 		return
 
 	var found := game.maps.catalogue.search(ctx.args[0])
+
+	# A Garry's Mod name (`gm_fork`) is the converted map's alias (pgc_fork); only a map's own id comes first.
+	var converted := PlaygroundMapSources.find(game.maps.catalogue, ctx.args[0])
+	if converted != null and game.maps.catalogue.get_map(StringName(ctx.args[0].strip_edges().to_lower())) == null:
+		found.clear()
+		found.append(converted)
 
 	if found.is_empty():
 		ctx.reply("No map matches '%s'." % ctx.args[0])
