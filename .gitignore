@@ -103,7 +103,7 @@ Thumbs.db
 # weapon headings are empty and the packs fire at their scene defaults. The zz ones are skipped under --min.
 # bootstrap-link: zee-dot-weapons/cfg/addons/zee_weapons
 /cfg/addons/zee_weapons
-# bootstrap-link: arena-weapons/cfg/addons/fc_weapons
+# bootstrap-link: fc-weapons/cfg/addons/fc_weapons
 /cfg/addons/fc_weapons
 # bootstrap-link: zz-modern-weapons/cfg/addons/zz_modern_weapons
 /cfg/addons/zz_modern_weapons
