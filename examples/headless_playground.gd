@@ -1,6 +1,6 @@
 extends "res://examples/headless_playground_part9.gd"
 
-const CHECKS := 782 + 22 + 9 + 10 + 8 + 1 + 4 + 15 + 2 + 1 + 26 + 3 + 2 + 2 + 1 + 8 + 1 + 5 + 10 + 25 + 1 + 1 + 30 + 18 + 1 + 6 + 3 + 1 + 2 + 1 + 8 + 4 + 5 + 3
+const CHECKS := 782 + 22 + 9 + 10 + 8 + 1 + 4 + 15 + 2 + 1 + 26 + 3 + 2 + 2 + 1 + 8 + 1 + 5 + 10 + 25 + 1 + 1 + 30 + 18 + 1 + 6 + 3 + 1 + 2 + 1 + 8 + 4 + 5 + 3 + 1
 const PlaygroundClientPrewarm := preload("res://game/client/playground_client_prewarm.gd")
 
 ## Sections entered against sections that ran to their last line, and against this. A
@@ -337,6 +337,19 @@ func _the_warmup_ran_under_the_cover() -> void:
 	var cam: Camera3D = _tcb_client.get_viewport().get_camera_3d()
 	_check(not _tcb_client.gate.is_open() or cam == null or cam.get_node_or_null(^"PrewarmLightProbe") == null,
 		"and took its light off the camera once the gate opened")
+	var on := PlaygroundConfig.new()
+	var soft_on := PlaygroundConfig.new()
+	soft_on.prewarm_shot_effects_software = true
+	var wants: Callable = func(c: PlaygroundConfig) -> bool:
+		var probe := PlaygroundClientPrewarm.new()
+		probe.config = c
+		var out: bool = probe._shot_effects()
+		probe.free()
+		return out
+	var soft := PlaygroundClientPrewarm.is_software_renderer()
+	_check(on.prewarm_shot_effects and wants.call(on) == (not soft) and wants.call(soft_on),
+		"and warms the first shot's flash and light by default, on a software rasteriser only when asked",
+		"software %s, default %s, asked %s" % [soft, wants.call(on), wants.call(soft_on)])
 
 
 func _test_the_maps_are_surveyed() -> void:

@@ -410,9 +410,25 @@ func _hold_light_probe() -> void:
 	_keep_on_camera(light)
 
 
-## [member PlaygroundConfig.prewarm_shot_effects]; off without a config.
+## Adapter names of software rasterisers: a shader compile there costs the CPU what a draw does.
+const SOFTWARE_ADAPTERS := ["llvmpipe", "softpipe", "swiftshader", "software"]
+
+
+## [member PlaygroundConfig.prewarm_shot_effects], and on a software rasteriser
+## [member PlaygroundConfig.prewarm_shot_effects_software] too; off without a config.
 func _shot_effects() -> bool:
-	return config != null and config.prewarm_shot_effects
+	if config == null or not config.prewarm_shot_effects:
+		return false
+	return config.prewarm_shot_effects_software or not is_software_renderer()
+
+
+## Whether this process draws through a software rasteriser (by the adapter's name).
+static func is_software_renderer() -> bool:
+	var adapter := RenderingServer.get_video_adapter_name().to_lower()
+	for name: String in SOFTWARE_ADAPTERS:
+		if adapter.contains(name):
+			return true
+	return false
 
 
 ## Keeps [param node] until the gate opens (or this node goes), then frees it.

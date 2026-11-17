@@ -3,6 +3,7 @@ extends SceneTree
 const PlaygroundClient := preload("../game/playground_client.gd")
 const PlaygroundPresentation := preload("../game/playground_presentation.gd")
 const PlaygroundConfig := preload("../game/playground_config.gd")
+const PlaygroundZee := preload("../game/playground_zee.gd")
 
 ## Boots the solo client and prints, per rendered frame, what a player would see: whether the
 ## map, the player and the camera exist, where the body is and whether the load gate (if any)
@@ -14,6 +15,12 @@ const PlaygroundConfig := preload("../game/playground_config.gd")
 ## "load_probe cover: map_ms=.. open_ms=.. map_to_open_ms=.. frames=.." (ms from boot; frames rendered map to open).
 ## --prewarm-profile also waits for the warm-up and prints its per-step and per-item times.
 ## --draw-world keeps the 3D world drawn under the warm-up's cover (PlaygroundConfig.prewarm_hide_world off), for A/B.
+## --config:name=value sets one PlaygroundConfig field (an A/B: --config:prewarm_shot_effects=true).
+## --first-use (with --cover) times what a player does first once the cover lifts and the warm-up is done: equip a gun,
+## fire it, spawn an NPC, then the same with a second gun. One line per step, "load_probe first-use: <step> worst_ms=..
+## over50=.." (the worst frame and the frames over 50 ms in the STEP_FRAMES after it); "idle" is the line before
+## any step.
+## --weapons=zee_a,zee_b picks the guns (default the first primary and the first sidearm of the pack).
 var _client: PlaygroundClient = null
 var _frame := 0
 var _frames := 90
@@ -25,6 +32,17 @@ var _map_ms := -1
 var _map_frame := -1
 var _open_ms := -1
 var _open_frame := -1
+var _first_use := false
+## Frames each first-use step is watched for.
+const STEP_FRAMES := 40
+var _steps: Array = []
+var _planned := false
+var _step_at := -1
+var _step_name := ""
+var _step_worst := 0.0
+var _step_over := 0
+var _last_usec := 0
+var _weapons: Array[StringName] = []
 
 
 func _initialize() -> void:
@@ -36,11 +54,24 @@ func _initialize() -> void:
 			_shot = int(a.get_slice("=", 1))
 		if a == "--cover":
 			_cover = true
+		if a == "--first-use":
+			_first_use = true
+		if a.begins_with("--weapons="):
+			for w in a.get_slice("=", 1).split(",", false):
+				_weapons.append(StringName(w))
 	DirAccess.make_dir_recursive_absolute("res://screenshots")
 	_client = PlaygroundClient.new()
 	_client.link = null
+	for flag: String in OS.get_cmdline_user_args():
+		if flag.begins_with("--config:"):
+			# --config:name=value sets one PlaygroundConfig field, for an A/B (--config:prewarm_shot_effects=true).
+			if _client.config == null:
+				_client.config = PlaygroundConfig.new()
+			var pair := flag.trim_prefix("--config:")
+			_client.config.set(pair.get_slice("=", 0), str_to_var(pair.get_slice("=", 1)))
 	if OS.get_cmdline_user_args().has("--draw-world"):
-		_client.config = PlaygroundConfig.new()
+		if _client.config == null:
+			_client.config = PlaygroundConfig.new()
 		_client.config.prewarm_hide_world = false
 	root.add_child(_client)
 
@@ -77,6 +108,8 @@ func _time_cover(gate: Object, covered: bool, map_up: bool) -> void:
 	if _map_ms >= 0 and gate != null and not covered and _open_ms < 0:
 		_open_ms = now
 		_open_frame = _frame
+	if _first_use and _open_ms >= 0 and _profile_done() and _frame < _frames and _run_first_use():
+		return
 	if (_open_ms >= 0 and _frame - _open_frame >= 10 and _profile_done()) or _frame >= _frames:
 		print("load_probe cover: map_ms=", _map_ms, " open_ms=", _open_ms, " map_to_open_ms=",
 			_open_ms - _map_ms if _open_ms >= 0 else -1, " frames=",
@@ -89,3 +122,62 @@ func _profile_done() -> bool:
 	if not OS.get_cmdline_user_args().has("--prewarm-profile"):
 		return true
 	return _client.prewarm == null or _client.prewarm.finished
+
+
+## Runs the first-use steps a frame at a time; false once every step has been watched. A frame's time is the wall time
+## between two process calls.
+func _run_first_use() -> bool:
+	var now := Time.get_ticks_usec()
+	var ms := (now - _last_usec) / 1000.0 if _last_usec > 0 else 0.0
+	_last_usec = now
+	if not _planned:
+		_planned = true
+		_plan_first_use()
+	if _step_at >= 0:
+		_step_worst = maxf(_step_worst, ms)
+		_step_over += 1 if ms > 50.0 else 0
+		if _frame - _step_at < STEP_FRAMES:
+			return true
+		print("load_probe first-use: %s worst_ms=%.1f over50=%d" % [_step_name, _step_worst, _step_over])
+		_step_at = -1
+	if _steps.is_empty():
+		return false
+	var step: Array = _steps.pop_front()
+	_step_name = step[0]
+	_step_worst = 0.0
+	_step_over = 0
+	_step_at = _frame
+	(step[1] as Callable).call()
+	return true
+
+
+func _plan_first_use() -> void:
+	if _weapons.is_empty():
+		for slot in [3, 2]:
+			for def in PlaygroundZee.defs():
+				if int(def.meta.get("slot", 0)) == slot:
+					_weapons.append(def.id)
+					break
+	_steps.append(["idle", func() -> void: pass])
+	var npcs: Array[StringName] = [&"npc_soldier", &"npc_chaser"]
+	for i in _weapons.size():
+		var id := _weapons[i]
+		_steps.append(["equip %s" % id, func() -> void: _client._set_tool(id)])
+		_steps.append(["fire %s" % id, func() -> void: _client._primary_down()])
+		_steps.append(["release %s" % id, func() -> void: _client._primary_up()])
+		var npc := npcs[i % npcs.size()]
+		_steps.append(["spawn %s" % npc, _spawn_ahead.bind(npc)])
+	print("load_probe first-use: weapons ", _weapons)
+
+
+## Spawns [param id] five metres in front of the player, as the spawn menu does for this player.
+func _spawn_ahead(id: StringName) -> void:
+	if _client.playground == null or _client.playground.props == null or _client.player == null:
+		print("load_probe first-use: no spawner for ", id)
+		return
+	var ahead: Vector3 = _client.player.aim_direction()
+	ahead.y = 0.0
+	ahead = ahead.normalized() if ahead.length() > 0.01 else Vector3.FORWARD
+	var at: Vector3 = _client.player.global_position + ahead * 5.0 + Vector3.UP
+	if _client.playground.props.spawn(id, _client.player_id, at) == null:
+		print("load_probe first-use: spawn refused ", id)

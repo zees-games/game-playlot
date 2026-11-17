@@ -184,9 +184,16 @@ extends DotConfig
 @export var prewarm_model_props: bool = false
 
 ## Whether that warm-up also draws dot-fx's muzzle flashes on the camera and holds an omni light there until the
-## gate opens, so the first shot compiles neither the flash nor its lit variants in play. Off by default: on software
-## GL (PH, 3 runs against 3) it kept the cover up about 10 s longer (map to open 43 s against 33 s).
-@export var prewarm_shot_effects: bool = false
+## gate opens, so the first shot compiles neither the flash nor its lit variants in play. On a real GPU (RTX 2070,
+## Compatibility renderer, tools/load_probe.gd --first-use, 3 runs against 3) the first SMG shot's worst frame went
+## from 124-220 ms to 4-8 ms and the first pistol shot's from 32-36 ms to 10-12 ms, for about 1.5 s more cover (map to
+## open 4.1-5.0 s against 3.1-3.2 s): a freeze in play traded for time under the cover. A software rasteriser skips
+## it unless [member prewarm_shot_effects_software] is on.
+@export var prewarm_shot_effects: bool = true
+
+## Whether [member prewarm_shot_effects] runs on a software rasteriser too (llvmpipe, SwiftShader): there it kept the
+## cover up about 10 s longer (PH, 3 runs against 3: map to open 43 s against 33 s), a worse trade than one slow shot.
+@export var prewarm_shot_effects_software: bool = false
 
 ## Whether the 3D world is left undrawn while that warm-up holds the cover. The cover hides it anyway, and on
 ## software GL each frame of it cost about 0.7 s: most of the warm-up's time under the cover went to drawing a map
