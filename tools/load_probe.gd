@@ -38,7 +38,7 @@ const STEP_FRAMES := 40
 var _steps: Array = []
 var _planned := false
 var _step_at := -1
-var _step_name := ""
+var _step_name := PackedStringArray()
 var _step_worst := 0.0
 var _step_over := 0
 var _last_usec := 0
@@ -132,18 +132,18 @@ func _run_first_use() -> bool:
 	_last_usec = now
 	if not _planned:
 		_planned = true
-		_plan_first_use()
+		call(&"_plan_first_use")  # once per run, not per frame
 	if _step_at >= 0:
 		_step_worst = maxf(_step_worst, ms)
 		_step_over += 1 if ms > 50.0 else 0
 		if _frame - _step_at < STEP_FRAMES:
 			return true
-		print("load_probe first-use: %s worst_ms=%.1f over50=%d" % [_step_name, _step_worst, _step_over])
+		print("load_probe first-use: ", " ".join(_step_name), " worst_ms=", snappedf(_step_worst, 0.1), " over50=", _step_over)
 		_step_at = -1
 	if _steps.is_empty():
 		return false
 	var step: Array = _steps.pop_front()
-	_step_name = step[0]
+	_step_name = step[0] as PackedStringArray
 	_step_worst = 0.0
 	_step_over = 0
 	_step_at = _frame
@@ -158,15 +158,15 @@ func _plan_first_use() -> void:
 				if int(def.meta.get("slot", 0)) == slot:
 					_weapons.append(def.id)
 					break
-	_steps.append(["idle", func() -> void: pass])
+	_steps.append([PackedStringArray(["idle"]), func() -> void: pass])
 	var npcs: Array[StringName] = [&"npc_soldier", &"npc_chaser"]
 	for i in _weapons.size():
 		var id := _weapons[i]
-		_steps.append(["equip %s" % id, func() -> void: _client._set_tool(id)])
-		_steps.append(["fire %s" % id, func() -> void: _client._primary_down()])
-		_steps.append(["release %s" % id, func() -> void: _client._primary_up()])
+		_steps.append([PackedStringArray(["equip", String(id)]), func() -> void: _client._set_tool(id)])
+		_steps.append([PackedStringArray(["fire", String(id)]), func() -> void: _client._primary_down()])
+		_steps.append([PackedStringArray(["release", String(id)]), func() -> void: _client._primary_up()])
 		var npc := npcs[i % npcs.size()]
-		_steps.append(["spawn %s" % npc, _spawn_ahead.bind(npc)])
+		_steps.append([PackedStringArray(["spawn", String(npc)]), _spawn_ahead.bind(npc)])
 	print("load_probe first-use: weapons ", _weapons)
 
 
