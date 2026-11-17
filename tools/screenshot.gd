@@ -134,11 +134,9 @@ func _draw_map_extras(map_node: Node) -> void:
 		_draw_toys(map_node.call("map_toys"))
 
 
-## `--cloud-store ORIGIN,PUBKEY`: draw a converted world's library models and PBR sets from its dot-cloud slices
-## (licence.store_pack), fetched from ORIGIN (a content URL, or a folder of published packs) and checked against the
-## public key in the file PUBKEY, the way a web client gets them, instead of from maps/world/.stores beside the document
-## (which a web client never has). A cache emptied first, so every slice is really fetched. The client registers itself
-## as the dot_cloud_client service the map reads (pg_data.load_world), so it must join the tree before the map does.
+## `--cloud-store ORIGIN,PUBKEY`: draw a converted world's models and PBR sets from its dot-cloud slices, fetched from
+## ORIGIN (a content URL or a folder of packs) and checked against the key in PUBKEY, as a web client gets them. The cache
+## is emptied first; the client registers as the dot_cloud_client service, so it must join the tree before the map does.
 func _cloud_store(spec: String) -> bool:
 	var parts := spec.split(",")
 	var pub := FileAccess.get_file_as_string(parts[1]) if parts.size() == 2 else ""
@@ -227,11 +225,9 @@ var _action_figure: DotHumanoidFigure = null
 var _toy_placements: Array = []
 
 
-## Maps converted from a community .bsp (playlot-maps' tools/convert_all.sh): every document
-## map without hand-picked angles. These are worked out from the document at [param path], an
-## oblique view over the whole thing, a high view straight down and the player's eye at the
-## spawn facing the middle. The high views are marked "in_air": a converted world's culling
-## needs the camera inside the map's air, so [method _into_air] brings them down under its sky.
+## Converted community .bsp maps (playlot-maps' tools/convert_all.sh): every document map without hand-picked angles.
+## Worked out from the document at [param path]: an oblique view, a high view straight down and the eye at the spawn.
+## The high views are marked "in_air" so [method _into_air] brings them down under the sky for the culling.
 func _imported_shots(id: String, path: String) -> Array[Dictionary]:
 	var doc: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
 	var lo := Vector3(INF, INF, INF)
@@ -291,7 +287,7 @@ func _drop_to_floor(from: Vector3, lift: float) -> Vector3:
 	var query := PhysicsRayQueryParameters3D.create(from + Vector3.UP * lift, from + Vector3.DOWN * 200.0)
 	var hit := space.intersect_ray(query)
 	if hit.is_empty():
-		push_warning("screenshot: no floor under", from)
+		print("screenshot: no floor under", from)
 		return from
 	return (hit["position"] as Vector3) + Vector3.UP * EYE_HEIGHT
 
@@ -300,10 +296,8 @@ func _drop_to_floor(from: Vector3, lift: float) -> Vector3:
 const AIR_STEP := 0.5
 
 
-## The first point from [param from] towards [param at] inside the drawn world's air (a leaf
-## with a visibility cluster), or [param from] when the map draws no culled world or the
-## whole line is solid. Above the sky or inside a wall the culling has no cluster to start
-## from and shows the wrong part of the map.
+## The first point from [param from] towards [param at] inside the drawn world's air (a leaf with a visibility cluster),
+## or [param from] when the map draws no culled world or the line is solid. Outside the air the culling shows the wrong part.
 func _into_air(from: Vector3, at: Vector3) -> Vector3:
 	var drawn: DotMapDrawnWorld = null
 	if _map_node != null:
@@ -317,7 +311,7 @@ func _into_air(from: Vector3, at: Vector3) -> Vector3:
 		var p := from.lerp(at, float(i) / steps)
 		if not vis.clusters_in_box(AABB(to_local * p - Vector3.ONE * 0.01, Vector3.ONE * 0.02)).is_empty():
 			return p
-	push_warning("screenshot: no air between", from, "and", at, "; shooting from", from)
+	print("screenshot: no air between", from, "and", at, "; shooting from", from)
 	return from
 
 

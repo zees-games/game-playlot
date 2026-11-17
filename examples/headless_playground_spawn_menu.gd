@@ -326,7 +326,7 @@ func _test_spawn_menu_5() -> void:
 	_done()
 
 
-## Every Q used to rebuild ~130 cards, a 40-50 ms frame in the owner's profile; an unchanged menu now keeps them.
+## Every Q rebuilt ~130 cards, a 40-50 ms frame in the owner's profile; an unchanged menu keeps them.
 func _test_spawn_menu_reopen() -> void:
 	var builds := _sm_menu.grid_builds
 	var cards := _sm_menu.shown().size()
