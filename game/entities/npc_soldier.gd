@@ -137,12 +137,17 @@ func _entity_tick(delta: float) -> void:
 		_drive_weapon()
 
 
+## Whether a tick with no button down and nothing under way takes the rig's own idle tick (no
+## context, no wall probe) instead of a built context. Off only to compare the two in a test.
+static var idle_rig_ticks: bool = true
+
+## Weapon ticks this soldier has handed to the rig's idle tick (a count for tests and `describe`).
+var idle_ticks: int = 0
+
+
 func _drive_weapon() -> void:
 	var rig := zee_rig as ZeeWeaponRig
 	var fire := bool(brain.get("wants_fire"))
-	var aim: Vector3 = brain.get("aim_at")
-	var origin := muzzle()
-	var direction := (aim - origin).normalized() if fire and aim.distance_to(origin) > 0.01 else -global_basis.z
 
 	var command := DotWeaponCommand.new()
 	# Held, then released, for a semi-automatic weapon: a trigger held down fires one shot
@@ -153,6 +158,20 @@ func _drive_weapon() -> void:
 	command.set_button(DotWeaponCommand.BUTTON_RELOAD, PlaygroundZee.rig_magazine_empty(rig))
 	command.slot = PlaygroundZee.slot_of(rig)
 	_held_trigger = press
+
+	# Nothing pressed, nothing pressed last tick, nothing under way: exactly the rig's own test
+	# for its idle tick, which reads no context. Handing it none skips the muzzle, the context
+	# and the wall-barrel rays (most of an armed NPC's tick) on a tick no shot can leave; a
+	# server rig has no view, so the idle tick changes the same state the full one would.
+	if idle_rig_ticks and rig.is_ready() and rig.arsenal.is_idle_for(command, rig._previous_command):
+		var _idle := rig.simulate_tick(command, game.current_tick())
+		idle_ticks += 1
+		PlaygroundZee.top_up(rig)
+		return
+
+	var aim: Vector3 = brain.get("aim_at")
+	var origin := muzzle()
+	var direction := (aim - origin).normalized() if fire and aim.distance_to(origin) > 0.01 else -global_basis.z
 
 	var ctx := DotWeaponContext.new()
 	ctx.tick = game.current_tick()

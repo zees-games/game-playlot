@@ -193,6 +193,7 @@ An optional pack can add weapons, NPCs and bots to the Q menu by shipping `addon
 | `headless_stack` | All the addons together |
 | `headless_packs_real` | The real content packs |
 | `headless_weapondrop`, `headless_spawntool`, `headless_solomap` | Dropping weapons, the spawn tool, a single-player map |
+| `headless_npc_weapon_idle` | An armed NPC's idle weapon tick (the rig's own, no context or wall probe) against the full one: rig snapshots agree tick for tick |
 | `dedicated` | A real server: boots, loads the game, runs its commands |
 
 [`CLAUDE.md`](CLAUDE.md) has the contributor rules and [`docs/`](docs/README.md) the design decisions.
