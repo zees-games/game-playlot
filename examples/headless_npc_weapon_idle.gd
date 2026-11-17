@@ -110,18 +110,9 @@ func _test_parity() -> void:
 				brain.set("wants_fire", fire)
 				brain.set("aim_at", (body as Node3D).global_position + Vector3(0.0, 30.0, 10.0))
 			var idle_was: int = on.get("idle_ticks")
-			var spent_on := 0
-			var spent_off := 0
-			for on_now: bool in ([true, false] if tick % 2 == 0 else [false, true]):
-				NpcSoldier.idle_rig_ticks = on_now
-				var t0 := Time.get_ticks_usec()
-				(on if on_now else off).call("_drive_weapon")
-				var spent := Time.get_ticks_usec() - t0
-				if on_now:
-					spent_on = spent
-				else:
-					spent_off = spent
-			NpcSoldier.idle_rig_ticks = true
+			var spent := _timed_drive(on, off, tick)
+			var spent_on: int = spent.x
+			var spent_off: int = spent.y
 			if int(on.get("idle_ticks")) > idle_was:
 				idle_on_list.append(spent_on)
 				idle_off_list.append(spent_off)
@@ -145,6 +136,22 @@ func _test_parity() -> void:
 		idle_on_list.size(), idle_on, idle_off, _median(full_on_list), _median(full_off_list)])
 	_check(idle_on < idle_off, "the idle tick costs less than the full one it replaces (%d vs %d us)" % [idle_on, idle_off])
 	_completed += 1
+
+
+## One tick's weapon drive on [param on] with the idle tick and on [param off] without, in alternating order each tick; the microseconds each took, as (on, off).
+func _timed_drive(on: Node, off: Node, tick: int) -> Vector2i:
+	var spent := Vector2i.ZERO
+	for on_now: bool in ([true, false] if tick % 2 == 0 else [false, true]):
+		NpcSoldier.idle_rig_ticks = on_now
+		var t0 := Time.get_ticks_usec()
+		(on if on_now else off).call("_drive_weapon")
+		var took := Time.get_ticks_usec() - t0
+		if on_now:
+			spent.x = took
+		else:
+			spent.y = took
+	NpcSoldier.idle_rig_ticks = true
+	return spent
 
 
 static func _median(values: Array[int]) -> int:
