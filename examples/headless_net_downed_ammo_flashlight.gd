@@ -1,4 +1,4 @@
-extends "res://examples/headless_net_part6.gd"
+extends "res://examples/headless_net_join_riding_grenades.gd"
 
 ## The gun a connected client draws takes the server's count once it has gone quiet.
 ##

@@ -1,4 +1,4 @@
-extends "res://examples/headless_net_part1.gd"
+extends "res://examples/headless_net_command_and_event_wire.gd"
 
 ## The map's time left, from the server's vote to what the client's HUD draws.
 ##

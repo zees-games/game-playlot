@@ -1,4 +1,4 @@
-extends "res://examples/headless_presentation_part1.gd"
+extends "res://examples/headless_presentation_effects_and_generation.gd"
 
 
 func _test_party_does_not_migrate() -> void:

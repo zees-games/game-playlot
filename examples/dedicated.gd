@@ -1,4 +1,4 @@
-extends "res://examples/dedicated_part2.gd"
+extends "res://examples/dedicated_rotation_vote_records.gd"
 ## Boots a real [DotServer], loads the playground module into it, and runs the
 ## commands an operator and an admin would actually type.
 ##

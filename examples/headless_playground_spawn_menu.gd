@@ -1,4 +1,4 @@
-extends "res://examples/headless_playground_part5.gd"
+extends "res://examples/headless_playground_entities_and_weapons.gd"
 
 ## The hand-built maps: every script in res://maps but the generated one and the
 ## document reader, which are surveyed with their own arguments. Read off the directory so

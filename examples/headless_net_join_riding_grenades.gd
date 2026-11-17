@@ -1,4 +1,4 @@
-extends "res://examples/headless_net_part5.gd"
+extends "res://examples/headless_net_remote_bodies_inventory.gd"
 
 ## A peer dot-server has spawned but that has not said READY hears NOTHING on this link.
 ##

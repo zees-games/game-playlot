@@ -1,4 +1,4 @@
-extends "res://examples/dedicated_part1.gd"
+extends "res://examples/dedicated_profiles_and_lifecycle.gd"
 ## The sections of the dedicated-server suite from the rotation file on: the vote, live tools, the loading cover and records.
 
 

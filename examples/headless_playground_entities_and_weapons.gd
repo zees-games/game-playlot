@@ -1,4 +1,4 @@
-extends "res://examples/headless_playground_part4.gd"
+extends "res://examples/headless_playground_npc_chaser_and_spawn_providers.gd"
 
 const WorkshopScript := preload("res://game/playground_workshop.gd")
 

@@ -1,4 +1,4 @@
-extends "res://examples/headless_playground_part1.gd"
+extends "res://examples/headless_playground_profiles_and_props.gd"
 
 func _check_near(
 	value: float, expected: float, epsilon: float, what: String

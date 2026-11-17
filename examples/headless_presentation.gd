@@ -1,4 +1,4 @@
-extends "res://examples/headless_presentation_part2.gd"
+extends "res://examples/headless_presentation_chat_and_touch.gd"
 
 
 ## The five addons this game gained at once: settings, randomness, audio, effects and a

@@ -1,4 +1,4 @@
-extends "res://examples/headless_playground_part8.gd"
+extends "res://examples/headless_playground_client_boot.gd"
 
 func _test_the_wheel_cycles_tools() -> void:
 	_section("the wheel cycles tools")

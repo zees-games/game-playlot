@@ -1,4 +1,4 @@
-extends "res://examples/headless_playground_part7.gd"
+extends "res://examples/headless_playground_collision_audit_and_materials.gd"
 
 const PlaygroundViewGrip := preload("res://game/playground_view_grip.gd")
 

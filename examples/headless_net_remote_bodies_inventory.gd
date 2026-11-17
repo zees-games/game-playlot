@@ -1,4 +1,4 @@
-extends "res://examples/headless_net_part4.gd"
+extends "res://examples/headless_net_vehicle_chat_lossy.gd"
 
 ## Another player has a body on this client, it stands where the server has them, and it moves every frame rather than every snapshot.
 ##

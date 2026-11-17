@@ -1,4 +1,4 @@
-extends "res://examples/headless_net_part7.gd"
+extends "res://examples/headless_net_downed_ammo_flashlight.gd"
 
 const CHECKS := 441
 

@@ -1,4 +1,4 @@
-extends "res://examples/headless_playground_part3.gd"
+extends "res://examples/headless_playground_model_props_and_tool_gun.gd"
 
 ## The chaser goes through dot-npc's perception, not "the nearest player this tick".
 ##

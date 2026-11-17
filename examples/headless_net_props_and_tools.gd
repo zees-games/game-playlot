@@ -1,4 +1,4 @@
-extends "res://examples/headless_net_part2.gd"
+extends "res://examples/headless_net_clock_builds_movement.gd"
 
 var _lip_mine: PlaygroundPlayer
 var _lip_identity

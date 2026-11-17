@@ -1,4 +1,4 @@
-extends "res://examples/headless_playground_part9.gd"
+extends "res://examples/headless_playground_grenades_and_tools.gd"
 
 const CHECKS := 782 + 22 + 9 + 10 + 8 + 1 + 4 + 15 + 2 + 1 + 26 + 3 + 2 + 2 + 1 + 8 + 1 + 5 + 10 + 25 + 1 + 1 + 30 + 18 + 1 + 6 + 3 + 1 + 2 + 1 + 8 + 4 + 5 + 3 + 1
 const PlaygroundClientPrewarm := preload("res://game/client/playground_client_prewarm.gd")

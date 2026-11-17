@@ -1,4 +1,4 @@
-extends "res://examples/headless_playground_part2.gd"
+extends "res://examples/headless_playground_run_timer_and_map_change.gd"
 
 const WeaponScript := preload("res://game/weapons/playground_weapon.gd")
 
