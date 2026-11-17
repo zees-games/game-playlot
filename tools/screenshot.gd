@@ -37,8 +37,9 @@ var _blood_from: PlaygroundPresentation = null
 var _blood_delay := 0
 var _arms_pending := false
 var _arms: DotPlayerViewArms = null
-## [scene, id, custom, args] of a map built from the first frame (see `--cloud-store`).
-var _map_pending: Array = []
+## Builds the map on the first frame, when set (see `--cloud-store`); it is a Callable so the
+## one-off build is not part of what `_process` runs every frame.
+var _map_pending: Callable = Callable()
 
 
 func _initialize() -> void:
@@ -79,7 +80,7 @@ func _initialize() -> void:
 	if args.has("--cloud-store"):
 		# Built from the first frame: the store's slices come over HTTP, which refuses to send
 		# from a node that is not inside the tree yet, and nothing is during `_initialize`.
-		_map_pending = [scene, id, custom, args]
+		_map_pending = _build_map.bind(scene as PackedScene, id, custom, args)
 		return
 	_build_map(scene as PackedScene, id, custom, args)
 
@@ -667,10 +668,10 @@ func _arm_shot(shot: Dictionary) -> void:
 
 
 func _process(_delta: float) -> bool:
-	if not _map_pending.is_empty():
+	if _map_pending.is_valid():
 		var staged := _map_pending
-		_map_pending = []
-		_build_map(staged[0], staged[1], staged[2], staged[3])
+		_map_pending = Callable()
+		staged.call()
 		return false
 
 	# The toys build in the tree, which the root's children are not during `_initialize`.
