@@ -37,6 +37,8 @@ var _blood_from: PlaygroundPresentation = null
 var _blood_delay := 0
 var _arms_pending := false
 var _arms: DotPlayerViewArms = null
+## [scene, id, custom, args] of a map built from the first frame (see `--cloud-store`).
+var _map_pending: Array = []
 
 
 func _initialize() -> void:
@@ -74,7 +76,17 @@ func _initialize() -> void:
 		quit(2)
 		return
 
-	var map_node := (scene as PackedScene).instantiate()
+	if args.has("--cloud-store"):
+		# Built from the first frame: the store's slices come over HTTP, which refuses to send
+		# from a node that is not inside the tree yet, and nothing is during `_initialize`.
+		_map_pending = [scene, id, custom, args]
+		return
+	_build_map(scene as PackedScene, id, custom, args)
+
+
+## The map, camera and whichever stage the arguments ask for.
+func _build_map(scene: PackedScene, id: String, custom: String, args: PackedStringArray) -> void:
+	var map_node := scene.instantiate()
 	_map_node = map_node
 	if not MAPS.has(id):
 		map_node.call("configure_doc", custom)
@@ -158,6 +170,9 @@ func _cloud_store(spec: String) -> bool:
 		cloud.local_search_dirs = PackedStringArray([parts[0]])
 	cloud.allow_netchan_fallback = false
 	root.add_child(cloud)
+	# Registered here: the client registers itself only from `_ready`, which a child added during
+	# `_initialize` has not run when the map asks for it.
+	DotRegistry.register(DotCloudClient.SERVICE, cloud)
 	return true
 
 
@@ -652,6 +667,12 @@ func _arm_shot(shot: Dictionary) -> void:
 
 
 func _process(_delta: float) -> bool:
+	if not _map_pending.is_empty():
+		var staged := _map_pending
+		_map_pending = []
+		_build_map(staged[0], staged[1], staged[2], staged[3])
+		return false
+
 	# The toys build in the tree, which the root's children are not during `_initialize`.
 	if _toy_box != null and _toy_box.count() == 0 and not _toy_placements.is_empty():
 		var _built := _toy_box.build(_toy_placements)
