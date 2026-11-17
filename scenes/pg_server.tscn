@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://game/playlot.gd" id="1_game"]
 
-[node name="PlaygroundServer" type="Node"]
+[node name="PlaylotServer" type="Node"]
 
 [node name="Game" type="Node3D" parent="."]
 script = ExtResource("1_game")

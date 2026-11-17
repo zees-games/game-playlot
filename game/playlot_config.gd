@@ -1,8 +1,9 @@
 extends DotConfig
 
 ## Everything the playlot is configured with, layered like every [DotConfig]:
-## exported defaults, then a JSON file, then [code]PLAYGROUND_*[/code] environment
-## variables, then [code]--pg-*[/code] arguments.
+## exported defaults, then a JSON file, then [code]PLAYLOT_*[/code] environment
+## variables, then [code]--pg-*[/code] arguments. The variables under the old Playlot name
+## ([constant FORMER_ENV_PREFIX]) are still read, with a warning, and the new name wins.
 ##
 ## [b]The tick rate is the one that matters, and it is deliberately not here.[/b] It
 ## is taken from the engine ([method Playlot._resolve_tick_rate]), which on a
@@ -48,7 +49,7 @@ extends DotConfig
 ## A folder of loose models (.glb or .gltf, each with an optional same-named .json sidecar for
 ## name, category, scale and mass) that become props with no code. Read at start and by
 ## [method Playlot.rescan_props]. A server sets it to its content directory
-## ([code]PLAYGROUND_PROPS_DIR[/code]); a missing folder is not an error. A connected client
+## ([code]PLAYLOT_PROPS_DIR[/code]); a missing folder is not an error. A connected client
 ## needs the same model to draw a prop the server added, so drop-ins that should be seen by
 ## everyone belong in the game's pack instead.
 @export var props_dir: String = "user://props"
@@ -99,7 +100,7 @@ extends DotConfig
 @export_group("Records")
 
 ## Where records are kept. Empty keeps them in memory only.
-@export var records_directory: String = "user://playground/records"
+@export var records_directory: String = "user://playlot/records"
 
 @export var record_replays: bool = true
 
@@ -301,7 +302,29 @@ static func make_binder(config: DotConfig, json_path := "") -> DotGameConfigBind
 
 
 func env_prefix() -> String:
-	return "PLAYGROUND_"
+	return "PLAYLOT_"
+
+
+## The environment prefix under the old Playlot name, which servers were started with until
+## 2026-11-17. Still read so a host's unit file keeps working; every variable found is a warning
+## naming its replacement, and a variable under [method env_prefix] wins over it.
+const FORMER_ENV_PREFIX := "PLAYGROUND_"
+
+
+func apply_env(prefix_override: String = "") -> PackedStringArray:
+	if prefix_override != "":
+		return super(prefix_override)
+	for key in config_keys():
+		var former := gs_env_name(FORMER_ENV_PREFIX + key.to_upper())
+		if OS.has_environment(former):
+			DotLog.warn(CHANNEL, "an environment variable has the old Playlot prefix; rename it", {
+				"variable": former, "use": gs_env_name(env_prefix() + key.to_upper()),
+			})
+	var applied := super(FORMER_ENV_PREFIX)
+	for key in super(env_prefix()):
+		if not applied.has(key):
+			applied.append(key)
+	return applied
 
 
 func cli_prefix() -> String:

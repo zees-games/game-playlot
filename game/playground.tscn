@@ -3,4 +3,4 @@
 ; Compat shim: the client scene under the old Playlot path, which dot-server-deploy content/playlot/game.yml still names.
 [ext_resource type="PackedScene" path="res://game/playlot.tscn" id="1"]
 
-[node name="PlaygroundClient" instance=ExtResource("1")]
+[node name="PlaylotClient" instance=ExtResource("1")]

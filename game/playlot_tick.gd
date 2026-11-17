@@ -21,6 +21,11 @@ func _ready() -> void:
 		return
 
 	authoritative = config.authoritative
+	# The default records folder had the old Playlot name until 2026-11-17; adopt it once.
+	if authoritative:
+		var records := PlaylotUserFiles.resolve(config.records_directory)
+		if records != config.records_directory:
+			config.records_directory = records
 	tick_rate = _resolve_tick_rate()
 
 	DotLog.info(CHANNEL, "playlot starting", {
@@ -246,7 +251,7 @@ func tick_timers_only(tick: int) -> void:
 
 ## Puts the whole game on a tick rate decided elsewhere (a server's `sv_tickrate`, reaching a client through HELLO). Every player's
 ## controller moves with it, not just the loop: a controller keeps its own rate, and a mismatch is correct on one's own screen and wrong everywhere else.
-## The tick accessor `ArenaGame` and `G2GGame` also have, so a layer ticked from the module need not reach past the underscore of `_tick`.
+## The tick accessor `ArenaGame` and `AirdriftGame` also have, so a layer ticked from the module need not reach past the underscore of `_tick`.
 func current_tick() -> int:
 	return _tick
 

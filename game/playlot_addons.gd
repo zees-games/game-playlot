@@ -40,7 +40,10 @@ const FORMER_HOOK_FILE := "playground_hook.gd"
 const FORMER_REGISTER := "playground_register"
 const FORMER_RECEIVE := "playground_receive"
 ## The "addon" a game-made message carries when the game itself, not a hook, speaks to the clients.
+## It keeps the old Playlot name because a deployed client only knows that one; a client also
+## accepts [constant NEXT_UNDO_ADDON], so a later release can switch the server to it.
 const UNDO_ADDON := "playground.undo"
+const NEXT_UNDO_ADDON := "playlot.undo"
 
 ## The spawn provider contract: `res://addons/<pack>/spawn_provider.gd`, or any object registered
 ## in [DotRegistry] under a name starting with [constant REGISTRY_PREFIX]. See docs/spawn-providers.md.
@@ -770,7 +773,7 @@ func activate(key: String, ctx: Context) -> DotResult:
 
 ## A message the authority sent, on a client: handed to the hook that sent it.
 func deliver(addon: String, body: Dictionary) -> bool:
-	if addon == UNDO_ADDON:
+	if addon == UNDO_ADDON or addon == NEXT_UNDO_ADDON:
 		var at: Variant = body.get("at", [])
 		var point := Vector3(float(at[0]), float(at[1]), float(at[2])) if at is Array and (at as Array).size() == 3 else Vector3.ZERO
 		undo_heard.emit(StringName(str(body.get("undo", ""))), point)

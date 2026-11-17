@@ -87,7 +87,7 @@ func _run(count: int) -> void:
 		holder.add_child(c.link)
 		c.stub = Stub.new()
 		c.net_link = PlaylotNetLink.attached_to(c.link, c.stub, false)
-		c.net_link.name = "Playground"
+		c.net_link.name = PlaylotNetLink.NODE_NAME
 		c.link.add_child(c.net_link)
 		# The game scene is what makes a real client expensive and is not what is measured.
 		c.link.envelope.handle(DotEnvelope.LOAD_GAME, _stub_load.bind(c))

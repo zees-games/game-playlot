@@ -34,7 +34,7 @@ func _boot_server(_bots_wanted: int, data_dir: String) -> DotNetManager:
 	pg_config.initial_map = &"pg_flatgrass"
 	pg_config.map_seconds = 0.0
 	var game: Node = (load("res://game/playlot.gd") as GDScript).new()
-	game.name = "Playground"
+	game.name = "Playlot"
 	game.config = pg_config
 	add_child(game)
 	await get_tree().process_frame

@@ -27,7 +27,7 @@ var _player_files_were: String = ""
 
 func _ready() -> void:
 	# Before anything builds a presentation layer: the Escape menu section drags the volume
-	# to 0.15 and that used to land in this machine's real `user://playground_settings`, so
+	# to 0.15 and that used to land in this machine's real settings folder, so
 	# the next real session started nearly silent. Everything goes to a scratch directory
 	# emptied first, never the player's.
 	_player_files_were = _player_files_stamp()

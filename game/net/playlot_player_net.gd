@@ -188,7 +188,7 @@ func _net_state_applied(tick: int) -> void:
 	# predictor reconciles, and reconcile's first act is to read the node as "what the
 	# client is showing". Moving it here makes the measured error the whole replay
 	# distance and the correction rate reads as if every snapshot snapped. Both
-	# HungryPieceNet and G2GPlayerNet shipped with that line.
+	# HungryPieceNet and AirdriftPlayerNet shipped with that line.
 	# ...unless they are riding, when there is no replay to spoil: nothing was predicted,
 	# so the server's answer IS what the client should be showing. Without this the local
 	# player's node — and the camera under it — stays where they got in, and the player

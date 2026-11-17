@@ -19,9 +19,11 @@ extends Node
 ## everything under the session id, which lasts exactly as long as the session — honest,
 ## and the reason this exists.
 
+const PlaylotUserFiles := preload("playlot_user_files.gd")
+
 const CHANNEL := "playlot.platform"
 
-const DEFAULT_DIR := "user://playground_identity"
+const DEFAULT_DIR := "user://playlot_identity"
 
 var users: DotUserManager = null
 var avatars: DotAvatarManager = null
@@ -48,6 +50,8 @@ var service_scope: StringName = &""
 ## because dot-server's module host does not await that and a module whose load suspends
 ## returns null to it.
 func setup() -> DotResult:
+	# The default folder had the old Playlot name until 2026-11-17; adopt it once.
+	directory = PlaylotUserFiles.resolve(directory)
 	var profiled: DotResult = await _build_users()
 
 	if not profiled.ok:

@@ -156,7 +156,7 @@ With fights on, a round lasts 240 seconds or until someone reaches 25 kills. The
 
 ### The map vote
 
-Players vote on the next map with [dot-vote](https://github.com/gamespice-platform/vote). The defaults are in `game/playlot_vote.gd`. To change them, put a file at `user://cfg/playground_vote.json`, or use `DOT_VOTE_*` environment variables or `--vote-*` arguments:
+Players vote on the next map with [dot-vote](https://github.com/gamespice-platform/vote). The defaults are in `game/playlot_vote.gd`. To change them, put a file at `user://cfg/playlot_vote.json` (a file at the path under the old Playlot name is copied there once), or use `DOT_VOTE_*` environment variables or `--vote-*` arguments:
 
 ```json
 { "end_vote": true, "vote_lead_sec": 120, "include_extend": true, "extend_seconds": 900, "max_extends": 4 }

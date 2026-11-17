@@ -48,8 +48,8 @@ const MAP_EDIT := &"pg_map_edit"
 const MAP_EDIT_PICK := &"pg_map_edit_pick"
 const SCOREBOARD := &"pg_scoreboard"
 ## The chat box's own actions (`PlaylotPresentation`'s `DotChatWindow`).
-const CHAT := &"playground_chat"
-const CHAT_NEAR := &"playground_chat_near"
+const CHAT := &"playlot_chat"
+const CHAT_NEAR := &"playlot_chat_near"
 
 
 static func make() -> DotMenuBindings:

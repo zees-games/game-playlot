@@ -1,6 +1,7 @@
 extends "playlot_module_handlers.gd"
 
 const PlaylotWorkbenchSets := preload("playlot_workbench_sets.gd")
+const PlaylotUserFiles := preload("playlot_user_files.gd")
 
 ## What a server browser is told about this sandbox: the GAME part of a DQP/A2S query.
 ##
@@ -205,7 +206,7 @@ func _build_extras() -> DotResult:
 	services = PlaylotServices.new()
 	services.name = "Services"
 	services.bridge = bridge
-	services.punishments_path = punishments_path
+	services.punishments_path = PlaylotUserFiles.resolve(punishments_path)
 	add_child(services)
 
 	# [DotGameServices]' sequence: moderation, chat, the relay, voice. The bridge is the

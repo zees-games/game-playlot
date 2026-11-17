@@ -5,7 +5,7 @@ const PlaylotNetLink := preload("playlot_net_link.gd")
 
 ## The four remote calls this game needs, on one node that exists on both ends.
 ##
-## A copy of [G2GNetLink] in shape — deliberately, per the family rule that games copy
+## A copy of [code]AirdriftNetLink[/code] in shape — deliberately, per the family rule that games copy
 ## what they need rather than growing a shared dependency — because it encodes the one
 ## thing that cost this family a day: Godot refuses an RPC unless both ends declare the
 ## same set of @rpc methods, and routes it by the receiver's node path. Using the same
@@ -17,12 +17,14 @@ const PlaylotNetLink := preload("playlot_net_link.gd")
 ## [codeblock]
 ## Server            <- DotServer, or DotClientLink named to match
 ##   Chat            <- DotChatManager / DotClientChat
-##   Playlot      <- this, on both
+##   (NODE_NAME)   <- this, on both
 ## [/codeblock]
 
 const CHANNEL := "playlot.link"
 
-## The node name both ends must use. It is the routing, so it is a constant.
+## The node name both ends must use. It is the routing, so it is a constant, and it keeps the
+## old Playlot name: a deployed client and server route by it, so it changes only in a release
+## that ships both ends together.
 const NODE_NAME := &"Playground"
 
 ## Everything here rides [constant DotTransport.Channel.STATE], which dot-server reserves

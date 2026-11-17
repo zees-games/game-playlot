@@ -57,7 +57,7 @@ const NEAR_RANGE := 25.0
 
 ## Where punishments are kept unless a host says otherwise. The same file the hand-written
 ## layer used, and what [method _services_name] produces by default.
-const PUNISHMENTS_PATH := "user://playground_punishments.json"
+const PUNISHMENTS_PATH := "user://playlot_punishments.json"
 
 
 ## The bridge: who is in the game, what their player id is, and the wire. Set before
@@ -91,7 +91,7 @@ func setup(p_server: DotServer, p_game: Object, p_link: Object) -> DotResult:
 
 
 func _services_name() -> String:
-	return "playground"
+	return "playlot"
 
 
 # --- What this sandbox says and how ----------------------------------------

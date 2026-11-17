@@ -29,7 +29,7 @@
 
 # --- Records
 # Where records are kept. Empty keeps them in memory only.
-# records_directory: "user://playground/records"
+# records_directory: "user://playlot/records"
 # record_replays: true
 # Whether published boards are reported to the TMC backbone.
 # report_to_backbone: false

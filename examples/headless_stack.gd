@@ -61,7 +61,7 @@ func _build() -> bool:
 	config.map_seconds = 0.0
 
 	_game = Playlot.new()
-	_game.name = "Playground"
+	_game.name = "Playlot"
 	_game.config = config
 	add_child(_game)
 

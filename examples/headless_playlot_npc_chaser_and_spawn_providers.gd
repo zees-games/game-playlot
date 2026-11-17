@@ -363,7 +363,8 @@ func playlot_receive(msg: Dictionary) -> void:
 		var told_heard: Array = []
 		playlot.undone.connect(func(who: StringName, at: Vector3) -> void: told_heard.append([who, at]))
 		_check(playlot.addons.deliver(PlaylotAddons.UNDO_ADDON, {"undo": "me", "at": [1.0, 2.0, 3.0]})
-			and told_heard == [[&"me", Vector3(1, 2, 3)]], "a client hears who undid, and where")
+			and playlot.addons.deliver(PlaylotAddons.NEXT_UNDO_ADDON, {"undo": "you", "at": [4.0, 5.0, 6.0]})
+			and told_heard == [[&"me", Vector3(1, 2, 3)], [&"you", Vector3(4, 5, 6)]], "a client hears who undid, and where, under either undo id")
 
 	# The waypoint tool
 	var def := playlot.weapon_def(&"toolgun")

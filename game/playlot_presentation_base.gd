@@ -8,6 +8,7 @@ const PlaylotProfiles := preload("playlot_profiles.gd")
 
 const PlaylotServices := preload("playlot_services.gd")
 const PlaylotVote := preload("playlot_vote.gd")
+const PlaylotUserFiles := preload("playlot_user_files.gd")
 
 ## Settings, randomness, audio, effects and a console. This is the only game that holds dot-randomness as well:
 ## the generated map, props and wave composition come from one seed. The manager is here rather than in
@@ -19,8 +20,9 @@ const SCHEMA_VERSION := 1
 const SOUND_DIR := "res://audio"
 
 ## Where the player's settings document lives. Only a suite or a render tool changes it,
-## through [method use_scratch_settings]; see that.
-const PLAYER_SETTINGS := "user://playground_settings"
+## through [method use_scratch_settings]; see that. A settings folder under the old Playlot name is
+## copied here once ([PlaylotUserFiles]).
+const PLAYER_SETTINGS := "user://playlot_settings"
 
 ## The directory the next [PlaylotPresentation] stores its settings in.
 static var settings_directory: String = PLAYER_SETTINGS
@@ -163,7 +165,7 @@ const CAMERA_MOTION_KEYS := {
 
 ## Points every [PlaylotPresentation] made after this at a fresh, empty settings directory named [param tag], and
 ## returns it. For a suite or a render tool, never a player: a suite once drove the real
-## `user://playground_settings` volume to 0.15 and left every real session nearly silent.
+## player's own settings volume to 0.15 and left every real session nearly silent.
 static func use_scratch_settings(tag: String) -> String:
 	# One directory per process: user:// is shared by every run on the machine, and a concurrent run wiping or rewriting
 	# a shared directory re-binds keys and resets values under the other run. Directories of dead processes are swept.

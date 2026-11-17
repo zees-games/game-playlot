@@ -1,6 +1,7 @@
 extends Node3D
 
 const PlaylotAmbience := preload("playlot_ambience.gd")
+const PlaylotUserFiles := preload("playlot_user_files.gd")
 const PlaylotPaths := preload("playlot_paths.gd")
 const PlaylotZee := preload("playlot_zee.gd")
 
@@ -154,7 +155,7 @@ var boards: DotLeaderboardManager = null
 ## Where the boards live; null builds one layered from [constant BOARDS_CONFIG_PATH].
 var boards_config: DotBoardsConfig = null
 
-const BOARDS_CONFIG_PATH := "user://playground_boards.json"
+const BOARDS_CONFIG_PATH := "user://playlot_boards.json"
 
 
 ## The scripted spawnables in the world, ticked every simulated tick. A list beside the spawner's rather than a walk over it,
@@ -546,7 +547,7 @@ func _build_leaderboards() -> void:
 	boards.name = "Leaderboards"
 	if boards_config == null:
 		boards_config = DotBoardsConfig.for_game("playground")
-		var layered := boards_config.load_layered(BOARDS_CONFIG_PATH)
+		var layered := boards_config.load_layered(PlaylotUserFiles.resolve(BOARDS_CONFIG_PATH))
 		if not layered.ok:
 			DotLog.warn(CHANNEL, "the boards configuration is not usable, using memory", {
 				"why": str(layered.error),

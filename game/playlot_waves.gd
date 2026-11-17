@@ -59,7 +59,7 @@ var heat: DotNpcAiHeatKeeper = _make_heat()
 
 
 static func _make_heat() -> DotNpcAiHeatKeeper:
-	var keeper := DotNpcAiHeatKeeper.new("user://npc_heat", "playground")
+	var keeper := DotNpcAiHeatKeeper.new("user://npc_heat", "playlot")
 	keeper.persist = false
 	return keeper
 

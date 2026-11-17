@@ -10,13 +10,14 @@ const PlaylotConfig := preload("../game/playlot_config.gd")
 const PlaylotAmbience := preload("../game/playlot_ambience.gd")
 const PlaylotSpawnables := preload("../game/playlot_spawnables.gd")
 const PlaylotWaves := preload("../game/playlot_waves.gd")
+const PlaylotUserFiles := preload("../game/playlot_user_files.gd")
 ## One directory per suite process (the probe child is handed its parent's): user:// is shared by
 ## every copy of this project on a box, and two suites at once wrote and deleted each other's cfg files.
 const ROOT_ARG := "--cfgroot="
 var ROOT := _root()
 const GAME := "game-playground"
-const CHECKS := 44
-const SECTIONS := 5
+const CHECKS := 51
+const SECTIONS := 6
 
 var _entered := 0
 var _finished := 0
@@ -77,6 +78,10 @@ func _run() -> void:
 	_finished += 1
 
 	_entered += 1
+	_user_files()
+	_finished += 1
+
+	_entered += 1
 	var wb := DotGameWorkbench.new()
 	wb.panel_mode = 1
 	wb.config = {"enabled": false}
@@ -107,6 +112,25 @@ func _run() -> void:
 	console.free()
 	_finished += 2
 	_report_sections(_entered, _finished, SECTIONS, CHECKS)
+
+
+## A user:// file or folder under the old Playlot name is copied to the new path once, and the
+## new path is what is read from then on.
+func _user_files() -> void:
+	var base := ROOT.path_join("user_files")
+	_write("user_files/old.json", "{\"v\": 1}")
+	_write("user_files/old_dir/sub/b.txt", "kept")
+	var file := PlaylotUserFiles.adopt(base.path_join("new.json"), base.path_join("old.json"))
+	_check(file == base.path_join("new.json") and FileAccess.get_file_as_string(file) == "{\"v\": 1}", "a former file is copied to the new path", file)
+	var dir := PlaylotUserFiles.adopt(base.path_join("new_dir"), base.path_join("old_dir"))
+	_check(FileAccess.get_file_as_string(dir.path_join("sub/b.txt")) == "kept", "a former folder is copied whole, nested files included", dir)
+	_check(FileAccess.file_exists(base.path_join("old.json")), "the former file is left for an older build")
+	_write("user_files/old.json", "{\"v\": 2}")
+	PlaylotUserFiles.adopt(base.path_join("new.json"), base.path_join("old.json"))
+	_check(FileAccess.get_file_as_string(base.path_join("new.json")) == "{\"v\": 1}", "once the new file exists the former one is never copied again")
+	_check(PlaylotUserFiles.resolve("user://not_a_default.json") == "user://not_a_default.json" and PlaylotUserFiles.FORMER.size() == 8, "a path with no former name is returned as it is")
+	for rel in ["old.json", "new.json", "old_dir/sub/b.txt", "new_dir/sub/b.txt", "old_dir/sub", "new_dir/sub", "old_dir", "new_dir", ""]:
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(base.path_join(rel)))
 
 
 ## A strict binder refuses a layer with a key the config does not have.
@@ -187,14 +211,23 @@ func _child() -> String:
 func _layers() -> void:
 	_write("game/%s/config_server/game.yml" % GAME, "map_seconds: 1230.0\n")
 	_write("game/%s/config_props/game.yml" % GAME, "prop_budget: 20\n")
-	OS.set_environment("PLAYGROUND_PROP_BUDGET", "44")
+	OS.set_environment("PLAYLOT_PROP_BUDGET", "44")
 	var text := _child()
 	_check(text.contains("PROBE ok=true"), "the layers load strictly in a fresh process", text.right(300))
 	_check(text.contains("secs=1230") and text.contains("secs_src=yml"), "a cfg file reaches the live config")
 	_check(text.contains("budget=44") and text.contains("budget_src=env") and text.contains("cvar=44"), "the environment beats a second file and reaches the cvar")
 	_check(text.contains("score=9") and text.contains("score_src=argv"), "argv alone reaches the config")
 	_check(text.contains("max=12") and text.contains("max_src=argv"), "a second argv flag reaches it too")
-	OS.unset_environment("PLAYGROUND_PROP_BUDGET")
+	OS.unset_environment("PLAYLOT_PROP_BUDGET")
+	# The prefix under the old Playlot name still works, and the new one wins when both are set.
+	OS.set_environment(PlaylotConfig.FORMER_ENV_PREFIX + "PROP_BUDGET", "33")
+	text = _child()
+	_check(text.contains("budget=33") and text.contains("budget_src=env"), "the former environment prefix is still read", text.right(300))
+	OS.set_environment("PLAYLOT_PROP_BUDGET", "44")
+	text = _child()
+	_check(text.contains("budget=44") and text.contains("budget_src=env"), "the new environment prefix wins over the former one", text.right(300))
+	OS.unset_environment("PLAYLOT_PROP_BUDGET")
+	OS.unset_environment(PlaylotConfig.FORMER_ENV_PREFIX + "PROP_BUDGET")
 	_write("game/%s/config_arena/game.yml" % GAME, "map_seconds: 99.0\n")
 	_check(_child().contains("PROBE ok=false"), "strict: a key in the wrong file is refused")
 	for f in ["config_server", "config_props", "config_arena", "config_world"]:

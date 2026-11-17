@@ -1,6 +1,7 @@
 extends DotVoteTimedGame
 
 const Playlot := preload("playlot.gd")
+const PlaylotUserFiles := preload("playlot_user_files.gd")
 
 ## What plays next, decided by the players.
 ##
@@ -41,7 +42,7 @@ const CHANNEL := "playlot.vote"
 ## [code]DOT_VOTE_EXTEND_SECONDS=1200[/code] or [code]--vote-include-extend=false[/code]
 ## do the same for one run. A result that does not validate is refused whole and the
 ## defaults stand, with the reason in the log.
-const CONFIG_PATH := "user://cfg/playground_vote.json"
+const CONFIG_PATH := "user://cfg/playlot_vote.json"
 
 ## The key in the running game's descriptor metadata an operator's overrides are read
 ## from — [code]metadata: map_vote:[/code] in a delivered game's [code]game.yml[/code].
@@ -72,7 +73,7 @@ func _init() -> void:
 	metadata_key = METADATA_KEY
 	command_names = COMMAND_NAMES
 	noun = "map"
-	config_path = CONFIG_PATH
+	config_path = PlaylotUserFiles.resolve(CONFIG_PATH)
 	director_name = "Vote"
 	# The module applies the change itself (through the map session it already drives, so clients are told).
 	auto_apply = false

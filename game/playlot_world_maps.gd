@@ -33,7 +33,7 @@ static func map_catalogue() -> DotMapCatalogue:
 		map.kind = row[2]
 		map.tier = row[3]
 		map.scene_path = PlaylotPaths.rebase("res://maps/%s.tscn") % String(row[0])
-		map.author = "playground"
+		map.author = "playlot"
 		catalogue.add(map)
 
 	# Custom maps from playlot-maps, where a checkout links them in (dot-bootstrap's

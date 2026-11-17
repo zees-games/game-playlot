@@ -211,7 +211,7 @@ func _boot() -> void:
 	pg_config.map_seconds = 0.0
 
 	game = Playlot.new()
-	game.name = "Playground"
+	game.name = "Playlot"
 	game.config = pg_config
 	add_child(game)
 

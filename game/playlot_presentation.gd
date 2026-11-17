@@ -41,8 +41,8 @@ func _build_randomness() -> DotResult:
 	rng.config.master_seed = 0
 	rng.config.announce_seed = true
 	# The scope keeps two games on one seed from being one world. A launcher handing the
-	# same number to the sandbox and to the arena should produce two different places.
-	rng.config.scope = &"playground"
+	# same number to the sandbox and to Fatal Contact should produce two different places.
+	rng.config.scope = &"playlot"
 	add_child(rng)
 
 	var res := rng.setup()
@@ -55,7 +55,7 @@ func _build_settings() -> DotResult:
 	settings = DotSettingsManager.new()
 	settings.name = "Settings"
 	settings.schema = schema()
-	settings.local_store = DotSettingsStoreFile.new(settings_directory)
+	settings.local_store = DotSettingsStoreFile.new(PlaylotUserFiles.resolve(settings_directory))
 	settings.app_namespace = &"game_playlot"
 	settings.shared_namespace = &"tmc_account"
 	add_child(settings)
@@ -242,8 +242,8 @@ func _build_chat() -> void:
 
 	chat_window = DotChatWindow.new()
 	chat_window.name = "ChatWindow"
-	chat_window.open_action = &"playground_chat"
-	chat_window.team_action = &"playground_chat_near"
+	chat_window.open_action = PlaylotBindings.CHAT
+	chat_window.team_action = PlaylotBindings.CHAT_NEAR
 	chat_window.channels = offered
 	_chat_layer.add_child(chat_window)
 

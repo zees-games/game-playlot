@@ -1,6 +1,7 @@
 extends Node
 
 const Playlot := preload("playlot.gd")
+const PlaylotUserFiles := preload("playlot_user_files.gd")
 
 ## Per-player statistics, and what they are worth: dot-stats and dot-achievements.
 ##
@@ -22,7 +23,7 @@ const Playlot := preload("playlot.gd")
 
 const CHANNEL := "playlot.progress"
 
-const PROGRESS_DIR := "user://playground_achievements"
+const PROGRESS_DIR := "user://playlot_achievements"
 
 ## The published skill figure the site orders by (dot-stats' DotStatsRank).
 const RANK_SCORE := &"rank_score"
@@ -212,7 +213,7 @@ func setup(p_game: Playlot) -> DotResult:
 	achievements.name = "Achievements"
 	achievements.catalogue = catalogue()
 	achievements.catalogue_file = ""
-	achievements.store = DotAchievementStoreFile.new(progress_dir)
+	achievements.store = DotAchievementStoreFile.new(PlaylotUserFiles.resolve(progress_dir))
 	achievements.report_to_backbone = backbone != null
 	add_child(achievements)
 

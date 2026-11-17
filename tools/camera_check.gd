@@ -25,7 +25,7 @@ func _initialize() -> void:
 	config.initial_map = &"pg_flatgrass"
 	config.map_seconds = 0.0
 	_game = Playlot.new()
-	_game.name = "Playground"
+	_game.name = "Playlot"
 	_game.config = config
 	root.add_child(_game)
 	_run.call_deferred()

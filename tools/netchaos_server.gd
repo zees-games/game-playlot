@@ -27,7 +27,7 @@ func _boot_world() -> void:
 	pg_config.initial_map = StringName(map_id)
 	pg_config.map_seconds = 0.0
 	_game = Playlot.new()
-	_game.name = "Playground"
+	_game.name = "Playlot"
 	_game.config = pg_config
 	add_child(_game)
 	await get_tree().process_frame

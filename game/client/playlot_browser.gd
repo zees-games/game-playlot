@@ -1,6 +1,7 @@
 extends DotScreen
 
 const Playlot := preload("../playlot.gd")
+const PlaylotUserFiles := preload("../playlot_user_files.gd")
 
 ## The server list: what a person sees before they are in a game.
 ##
@@ -171,7 +172,7 @@ func _start() -> void:
 	# for a column nobody reads until they have picked a row.
 	browser.sections = PackedStringArray(["info"])
 	browser.register_as = &""
-	browser.favourites_path = "user://playground_servers.json"
+	browser.favourites_path = PlaylotUserFiles.resolve("user://playlot_servers.json")
 	add_child(browser)
 
 	browser.start()

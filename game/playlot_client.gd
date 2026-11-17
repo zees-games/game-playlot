@@ -9,7 +9,7 @@ func _ready() -> void:
 	_build_gate()
 
 	playlot = Playlot.new()
-	playlot.name = "Playground"
+	playlot.name = "Playlot"
 
 	# A networked client is not authoritative, and this is where that is decided: set afterwards,
 	# `Playlot._ready` would already have spent a map load believing it owned the world.
