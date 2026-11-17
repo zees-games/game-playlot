@@ -70,21 +70,16 @@ func _initialize() -> void:
 
 	DirAccess.make_dir_recursive_absolute(OUT_DIR)
 
-	var store_at := args.find("--cloud-store")
-	if store_at >= 0:
-		if store_at + 1 >= args.size() or not _cloud_store(args[store_at + 1]):
-			quit(2)
-			return
+	if not _use_cloud_store(args):
+		quit(2)
+		return
 
 	var map_node := (scene as PackedScene).instantiate()
 	_map_node = map_node
 	if not MAPS.has(id):
 		map_node.call("configure_doc", custom)
 	root.add_child(map_node)
-	if map_node.has_method("map_props"):
-		_draw_props(map_node.call("map_props"))
-	if map_node.has_method("map_toys"):
-		_draw_toys(map_node.call("map_toys"))
+	_draw_map_extras(map_node)
 
 	# The map brings its own sun, sky and fill light (`PlaygroundGeometry.light`), the same
 	# ones the client draws, so a second environment here would be the one ignored.
@@ -121,6 +116,22 @@ func _initialize() -> void:
 	var views := _views_from_args(args)
 	if not views.is_empty():
 		_shots = views
+
+
+## Whether `--cloud-store` (if given) was set up; true when it was not asked for.
+func _use_cloud_store(args: PackedStringArray) -> bool:
+	var store_at := args.find("--cloud-store")
+	if store_at < 0:
+		return true
+	return store_at + 1 < args.size() and _cloud_store(args[store_at + 1])
+
+
+## The props and toys the map lists, drawn when it has them.
+func _draw_map_extras(map_node: Node) -> void:
+	if map_node.has_method("map_props"):
+		_draw_props(map_node.call("map_props"))
+	if map_node.has_method("map_toys"):
+		_draw_toys(map_node.call("map_toys"))
 
 
 ## `--cloud-store ORIGIN,PUBKEY`: draw a converted world's library models and PBR sets from its dot-cloud slices
