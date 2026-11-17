@@ -309,6 +309,9 @@ signal toys_built()
 var ambient_rules: DotAmbienceRules = PlaygroundAmbience.make_rules()
 var view_rules: DotPlayerViewRules = make_view_rules()
 var body_rules: DotPlayerBodyRules = DotPlayerBodyRules.new()
+## dot-mobile's touch cvars (`sv_mobile_*`, `sv_aim_assist*`, `sv_autofire*`): bound by the module (REPLICATED), followed
+## by the client's overlay. Nothing here has an enemy to shoot at, so the defaults stay (no auto-fire, no aim assist).
+var mobile_rules: DotMobileRules = DotMobileRules.new()
 
 ## The view rules with this game's extra `selfie` view, cycled last (`mp_viewcycle` reorders or drops it).
 static func make_view_rules() -> DotPlayerViewRules:

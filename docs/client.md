@@ -136,3 +136,9 @@ M is dot-menu's map menu (`PlaygroundBindings.MAP` is `dot_menu_maps`, still sto
 ## The default keys
 
 The sandbox bindings, so the game can be picked up without a manual. Q (hold) opens the spawn menu, release closes it, a tap pins it open. Mouse 1 is the tool's primary (grab and hold, or punt), mouse 2 its secondary (freeze what is held, or pull and carry). The wheel sets how far out the physics gun holds a prop, shift plus mouse turns it. E spawns the prop the menu last armed, again; R unfreezes everything you have frozen; Z undoes your last spawn. 1, 2, 3 select the physics gun, the gravity gun, and cycle the weapons you have. T switches track and C, V, X, G are the practice checkpoints (save, go to, cycle, forget), both only with a run timer (the server added dot-timer). M goes to the next map.
+
+## Touch
+
+The phone's controls are dot-mobile's `DotMobileControls` (`game/client/playground_touch.gd`): the stick, drag-look and the buttons of `DotGameTouchLayout`'s fps preset (fire, alt, jump, crouch, Q for the spawn menu, tool previous/next, board, chat), driving the client's own `DotFpsTouchSampler`. Fire, alt and the rest reach the same handlers as the mouse and keys; jump and crouch are held on the sampler. The overlay forwards every touch itself, and the mouse Godot emulates from a touch is dropped (`PlaygroundTouch.takes`), so a tap neither clicks nor turns the view twice. It is paused (hidden, fingers lifted) while a menu, the chat box or the console has the screen, and the Menu button's rectangle is kept off the stick through the sampler's `ignore_fn`.
+
+The server's rules are `Playground.mobile_rules` (`sv_mobile_*`, `sv_aim_assist*`, `sv_autofire*`), bound REPLICATED by the module and followed by the client. There is no crosshair or aim-assist query: nothing in a sandbox is an enemy to shoot at, so auto-fire and aim assist stay off whatever the cvars say. Suite: `headless_presentation` ("A phone's on-screen buttons").

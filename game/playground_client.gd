@@ -284,6 +284,7 @@ func _follow_server_rules() -> void:
 		# The server's mp_forceview and mp_solidplayers: this end places its own camera and
 		# predicts its own player.
 		var _view := playground.view_rules.follow_cvars(link)
+		var _mobile := playground.mobile_rules.follow_cvars(link)
 		var _solid := playground.body_rules.follow_cvars(link)
 		var _ambient := playground.ambient_rules.follow_cvars(link)
 		_follow_arena(link)
@@ -347,6 +348,10 @@ func _unhandled_input(event: InputEvent) -> void:
 
 	if event is InputEventScreenTouch or event is InputEventScreenDrag:
 		_on_screen_touch(event)
+		return
+
+	# The mouse Godot emulates from a touch would click and turn the view a second time.
+	if event is InputEventMouse and _touch != null and _touch.takes(event):
 		return
 
 	if event is InputEventMouseMotion:

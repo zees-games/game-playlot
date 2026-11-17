@@ -212,6 +212,10 @@ func _register_addon_cvars() -> void:
 	var _views := game.view_rules.bind_cvars(
 		add_cvar, DotConVar.FLAG_ARCHIVE | DotConVar.FLAG_NOTIFY | DotConVar.FLAG_REPLICATED
 	)
+	# sv_mobile_*, sv_aim_assist*, sv_autofire*: dot-mobile's touch controls.
+	var _mobile := game.mobile_rules.bind_cvars(
+		add_cvar, DotConVar.FLAG_ARCHIVE | DotConVar.FLAG_NOTIFY | DotConVar.FLAG_REPLICATED
+	)
 	var _bodies := game.body_rules.bind_cvars(
 		add_cvar, DotConVar.FLAG_ARCHIVE | DotConVar.FLAG_NOTIFY | DotConVar.FLAG_REPLICATED
 	)

@@ -198,7 +198,7 @@ var _menu_pinned: bool = false
 var _sampler: DotFpsSampler = null
 
 ## The phone's on-screen buttons; null off a touch device.
-var _touch: PlaygroundTouch = null
+var _touch: RefCounted = null
 
 ## The tool triggers, as command buttons. Held rather than edge-triggered: the server decides what
 ## a press and a hold each mean (PlaygroundNetBridge._drive_tools), and a client sending only

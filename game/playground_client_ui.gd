@@ -58,14 +58,13 @@ func _sync_hud() -> void:
 		hud.set_tool(_tool_name(), selected_prop)
 
 
-## The phone's buttons over the HUD, on a touch device only. Fire and alt are the click's two buttons; Q is the
+## The phone's controls over the HUD (dot-mobile's overlay, shown on a touch device only). Fire and alt are the click's two buttons; Q is the
 ## spawn-menu key fed the same press and release, so hold-to-open and tap-to-pin are the keyboard's own; the
 ## tool arrows step the weapon wheel's actions, TAB holds the scoreboard and CHAT opens the chat box.
 func _build_touch() -> void:
-	if not DotPlatform.has_touch() or hud == null:
+	if not DotPlatform.has_touch() or hud == null or active_sampler() == null:
 		return
-	_touch = PlaygroundTouch.new()
-	var built := _touch.build(hud, active_sampler, {
+	_touch = PlaygroundTouch.build(hud, active_sampler(), playground.mobile_rules, {
 		PlaygroundTouch.FIRE: func(down: bool) -> void:
 			if down:
 				call(&"_primary_down")
@@ -93,8 +92,9 @@ func _build_touch() -> void:
 			if down and window != null and not _menu_is_open():
 				window.open(),
 	})
-	if platform != null:
-		var _scale := PlaygroundTouch.touch_layout().apply(built, platform)
+	var built: DotTouchButtons = _touch.buttons
+	if DotPlatform.has_touch() and built != null and platform != null and platform.has_method(&"fit_touch_buttons"):
+		var _scale: Variant = platform.call(&"fit_touch_buttons", built, PlaygroundTouch.layout())
 
 
 ## A tool step through the same wheel the keyboard's previous/next-weapon actions drive.
@@ -109,12 +109,14 @@ func _touch_step(step: int, down: bool) -> void:
 
 
 func _touch_ignores(position: Vector2) -> bool:
-	return _touch != null and _touch.buttons != null and _touch.buttons.contains_point(position)
+	var button: Button = game_menu.menu_button if game_menu != null else null
+	return button != null and button.is_visible_in_tree() and button.get_global_rect().has_point(position)
 
 
-## A finger on the look or move half goes to the touch sampler; with a menu open it is the menu's.
+## A finger on the look or move half goes to the touch sampler; with a menu open it is the menu's. With dot-mobile's
+## overlay up it forwards every touch itself, so nothing is handed over twice.
 func _on_screen_touch(event: InputEvent) -> void:
-	if _menu_is_open():
+	if _menu_is_open() or (_touch != null and _touch.takes(event)):
 		return
 	var sampler := active_sampler()
 	if sampler is DotFpsTouchSampler:

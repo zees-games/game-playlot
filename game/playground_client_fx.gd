@@ -198,6 +198,8 @@ func _process(_delta: float) -> void:
 		if hud != null and not _menu_is_open() and Input.is_physical_key_pressed(KEY_ESCAPE):
 			hud.notice("Click to play. Escape again for the menu.")
 	_was_driving = driving
+	if _touch != null:
+		_touch.sync(_menu_is_open() or _input_busy())
 	if presentation != null:
 	# Once a frame, with the camera position: dot-audio and dot-fx do not tick themselves,
 	# and `_process` does not run while paused.

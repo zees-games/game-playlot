@@ -16,7 +16,7 @@ extends "res://examples/headless_presentation_part2.gd"
 ## Exits non-zero on any failure.
 
 
-const CHECKS := 171
+const CHECKS := 179
 const SECTIONS := 19
 
 ## The player's own settings directory as it was before this run: every file's name,

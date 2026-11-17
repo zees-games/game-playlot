@@ -61,13 +61,13 @@ func _test_touch_buttons() -> void:
 				clear = clear and a.distance_to(b) >= ra + float(list[j]["radius"])
 		_check(inside, "every button sits in the right half at %dx%d" % [size.x, size.y])
 		_check(clear, "and no two overlap at %dx%d" % [size.x, size.y])
-	var got: Array = []
-	var handlers := {}
-	for id: StringName in [PlaygroundTouch.PREV, PlaygroundTouch.NEXT, PlaygroundTouch.BOARD, PlaygroundTouch.CHAT]:
-		handlers[id] = func(down: bool) -> void: got.append([id, down])
-	PlaygroundTouch.route(PlaygroundTouch.NEXT, true, Callable(), handlers)
-	PlaygroundTouch.route(PlaygroundTouch.BOARD, false, Callable(), handlers)
-	_check(got == [[PlaygroundTouch.NEXT, true], [PlaygroundTouch.BOARD, false]], "a press and a release reach their handlers", str(got))
+	var rows := PlaygroundTouch.layout()
+	var held := {}
+	for row: Dictionary in rows:
+		if row.has("hold"):
+			held[row["id"]] = row["hold"]
+	_check(held == {PlaygroundTouch.JUMP: DotFpsCommand.BUTTON_JUMP, PlaygroundTouch.CROUCH: DotFpsCommand.BUTTON_CROUCH}, "jump and crouch are held on the sampler, nothing else", str(held))
+	_test_touch_overlay()
 	for phone: Vector2 in [Vector2(1170, 540), Vector2(2340, 1080)]:
 		var fit := DotGameScreenFit.new()
 		fit.size_override = phone
@@ -75,8 +75,8 @@ func _test_touch_buttons() -> void:
 		fit.attach(get_tree().root)
 		var host := Control.new()
 		add_child(host)
-		var touch := PlaygroundTouch.new()
-		var built := touch.build(host, Callable(), {})
+		var touch := PlaygroundTouch.build(host, DotFpsTouchSampler.new(DotFpsTunables.new()), DotMobileRules.new(), {})
+		var built: DotTouchButtons = touch.buttons
 		var k := fit.fit_buttons(built, PlaygroundTouch.touch_layout().buttons())
 		var stretch := float(fit.plan.get("stretch", 0.0))
 		var smallest := INF
@@ -87,6 +87,52 @@ func _test_touch_buttons() -> void:
 		fit.detach()
 		host.free()
 	_done()
+
+
+## dot-mobile's overlay on a phone: it drives the sampler it was given, takes touches and the mouse emulated from them,
+## pauses under a menu, and a button reaches the game's handler, held ones the sampler.
+func _test_touch_overlay() -> void:
+	DotPlatform.touch_override = 1
+	var host := Control.new()
+	host.size = Vector2(844, 390)
+	add_child(host)
+	var sampler := DotFpsTouchSampler.new(DotFpsTunables.new())
+	var got: Array = []
+	var handlers := {}
+	for id: StringName in [PlaygroundTouch.FIRE, PlaygroundTouch.ALT, PlaygroundTouch.MENU, PlaygroundTouch.PREV, PlaygroundTouch.NEXT, PlaygroundTouch.BOARD, PlaygroundTouch.CHAT]:
+		handlers[id] = func(down: bool) -> void: got.append([id, down])
+	var touch := PlaygroundTouch.build(host, sampler, DotMobileRules.new(), handlers)
+	var controls: DotMobileControls = touch.controls
+	_check(controls != null and controls.touch and controls.sampler == sampler, "the overlay drives the client's own sampler", str(touch.describe()))
+	var tap := InputEventScreenTouch.new()
+	tap.pressed = true
+	var fake := InputEventMouseButton.new()
+	fake.device = InputEvent.DEVICE_ID_EMULATION
+	var real := InputEventMouseButton.new()
+	_check(touch.takes(tap) and touch.takes(fake), "it takes touches and the mouse emulated from them")
+	_check(not touch.takes(real), "and leaves a real mouse alone")
+	controls.buttons.button_down.emit(PlaygroundTouch.NEXT)
+	controls.buttons.button_up.emit(PlaygroundTouch.NEXT)
+	controls.buttons.button_down.emit(PlaygroundTouch.FIRE)
+	controls.buttons.button_up.emit(PlaygroundTouch.FIRE)
+	_check(got == [[PlaygroundTouch.NEXT, true], [PlaygroundTouch.NEXT, false], [PlaygroundTouch.FIRE, true], [PlaygroundTouch.FIRE, false]], "a press and a release reach the game's handler", str(got))
+	var finger := InputEventScreenTouch.new()
+	finger.index = 5
+	finger.pressed = true
+	finger.position = controls.buttons.centre_of(PlaygroundTouch.JUMP)
+	controls.buttons._input(finger)
+	var held_jump := (sampler.sample(1.0 / 60.0).buttons & DotFpsCommand.BUTTON_JUMP) != 0
+	finger.pressed = false
+	controls.buttons._input(finger)
+	_check(held_jump and (sampler.sample(1.0 / 60.0).buttons & DotFpsCommand.BUTTON_JUMP) == 0, "jump is held on the sampler while the finger is down")
+	touch.sync(true)
+	_check(not controls.visible and not touch.active(), "a menu pauses the overlay", str(touch.describe()))
+	touch.sync(false)
+	_check(touch.active() and controls.visible, "and closing the menu brings it back")
+	var rules := DotMobileRules.new()
+	_check(not rules.resolve(DotMobilePrefs.new(), true).autofire, "auto-fire is off by default: a sandbox has no enemy to shoot")
+	host.free()
+	DotPlatform.touch_override = -1
 
 
 func _test_chat_box() -> void:
