@@ -52,11 +52,7 @@ func _ready() -> void:
 	# Custom maps the server's game names as dependencies (playlot-maps): fetched in
 	# the same content sync as this game, so mounted by now. Added before any map change can
 	# name one, which on a client is the HELLO still to come.
-	if link != null:
-		for key: Variant in link.get("content_extra") if link.get("content_extra") != null else []:
-			var parts := DotGameDescriptor.split_key(str(key))
-			var _added := playground.add_map_directory(
-				DotCloudClient.mount_prefix_for(StringName(parts[0]), parts[1]).path_join("maps"))
+	_add_dependency_maps()
 	# Solo in the client shell, the playground added the packs the shell mounted itself, before its
 	# first map (`Playground.solo_map_dirs`), so a "Play map" link can start on one of them.
 
@@ -135,6 +131,16 @@ func _ready() -> void:
 	map_drop = PlaygroundMapDrop.attach(self, Playground.USER_MAPS_DIR, _map_id_taken, _on_maps_dropped, _map_converted_from)
 
 	set_process(true)
+
+
+## Map directories of the content packs the server's game names (playlot-maps), mounted by now.
+func _add_dependency_maps() -> void:
+	if link == null:
+		return
+	for key: Variant in link.get("content_extra") if link.get("content_extra") != null else []:
+		var parts := DotGameDescriptor.split_key(str(key))
+		var _added := playground.add_map_directory(
+			DotCloudClient.mount_prefix_for(StringName(parts[0]), parts[1]).path_join("maps"))
 
 
 ## Why a dropped map cannot use [param id], or empty: a built-in or linked map keeps its id (`add_map_docs` keeps the first).
