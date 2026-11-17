@@ -436,6 +436,18 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not key.is_pressed() or key.is_echo():
 		return
 
+	_on_press_key(key)
+
+	match key.physical_keycode:
+		KEY_ESCAPE:
+			# Only when no screen is up (the stack pops menus itself). Release, THEN open, never capture:
+			# a browser refuses pointer lock just after Escape.
+			if not _menu_is_open() and game_menu != null:
+				game_menu.open()
+
+
+## The keys read on press only (spawn, undo, vehicle, tools, view): the tail of [method _unhandled_input].
+func _on_press_key(key: InputEventKey) -> void:
 	if key.is_action(PlaygroundBindings.SPAWN):
 		_spawn()
 	elif key.is_action(PlaygroundBindings.UNDO):
@@ -466,13 +478,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		# The usual third-person toggle. It hands the player to a different CONTROLLER, so the
 		# handover carries position, velocity and look: pressing it mid-jump must not stop you dead.
 		_toggle_view()
-
-	match key.physical_keycode:
-		KEY_ESCAPE:
-			# Only when no screen is up (the stack pops menus itself). Release, THEN open, never capture:
-			# a browser refuses pointer lock just after Escape.
-			if not _menu_is_open() and game_menu != null:
-				game_menu.open()
 
 
 ## Offline, this world's own hit on another player: counted for the Tab board, then shown as a confirmed hit.
