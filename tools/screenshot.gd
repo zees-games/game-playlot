@@ -291,7 +291,7 @@ func _drop_to_floor(from: Vector3, lift: float) -> Vector3:
 	var query := PhysicsRayQueryParameters3D.create(from + Vector3.UP * lift, from + Vector3.DOWN * 200.0)
 	var hit := space.intersect_ray(query)
 	if hit.is_empty():
-		push_warning("screenshot: no floor under %s" % from)
+		push_warning("screenshot: no floor under", from)
 		return from
 	return (hit["position"] as Vector3) + Vector3.UP * EYE_HEIGHT
 
@@ -317,7 +317,7 @@ func _into_air(from: Vector3, at: Vector3) -> Vector3:
 		var p := from.lerp(at, float(i) / steps)
 		if not vis.clusters_in_box(AABB(to_local * p - Vector3.ONE * 0.01, Vector3.ONE * 0.02)).is_empty():
 			return p
-	push_warning("screenshot: no air between %s and %s; shooting from %s" % [from, at, from])
+	push_warning("screenshot: no air between", from, "and", at, "; shooting from", from)
 	return from
 
 
