@@ -1,6 +1,6 @@
-extends "playground_tool.gd"
+extends "playlot_tool.gd"
 
-const PlaygroundZee := preload("../playground_zee.gd")
+const PlaylotZee := preload("../playlot_zee.gd")
 
 ## Hands an NPC a weapon, or takes it away. Only an NPC that can hold one — a soldier or a
 ## rebel — and only a weapon an NPC can use: the zee pack's guns and melee, not its thrown
@@ -29,8 +29,8 @@ func schema() -> Array[Dictionary]:
 static func npc_weapon_ids() -> Array:
 	var out: Array = []
 
-	for def in PlaygroundZee.defs():
-		if PlaygroundZee.npc_can_use(def):
+	for def in PlaylotZee.defs():
+		if PlaylotZee.npc_can_use(def):
 			out.append(String(def.id))
 
 	return out

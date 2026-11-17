@@ -1,4 +1,4 @@
-extends "playground_entity.gd"
+extends "playlot_entity.gd"
 
 ## Walks toward the player it has committed to, and gives up when they get far enough.
 ##
@@ -9,7 +9,7 @@ extends "playground_entity.gd"
 ## version asked for the nearest player every tick, which at 128 Hz is the classic broken
 ## NPC: two players standing a metre apart made it turn back and forth for ever, and one
 ## who stepped behind a pillar made it forget instantly and walk away mid-swing.
-## [method PlaygroundEntity.target] goes through [DotNpcSenses], which acquires at one
+## [method PlaylotEntity.target] goes through [DotNpcSenses], which acquires at one
 ## threshold, drops at a weaker one, and keeps chasing for a grace period measured from
 ## the last sighting.
 ##

@@ -22,7 +22,7 @@ func _test_nothing_before_ready() -> void:
 		"to 0: %s, to them: %s" % [_event_kinds(0), _event_kinds(late_peer)]
 	)
 	_check(
-		_event_kinds(CLIENT_PEER).has(PlaygroundEvents.Kind.JOIN),
+		_event_kinds(CLIENT_PEER).has(PlaylotEvents.Kind.JOIN),
 		"while a peer that is already in is told about them",
 		str(_event_kinds(CLIENT_PEER))
 	)
@@ -30,7 +30,7 @@ func _test_nothing_before_ready() -> void:
 	# Voice is the one send that is not an EVENT. The module adds a peer to the voice
 	# router at `client_spawn`, which is this add; somebody talking in the gap relayed to
 	# the joiner over the link before it had the node a frame lands on.
-	var services := PlaygroundServices.new()
+	var services := PlaylotServices.new()
 	services.name = "VoiceServices"
 	services.service_scope = &"server"
 	services.bridge = _server_bridge
@@ -50,11 +50,11 @@ func _test_nothing_before_ready() -> void:
 	)
 
 	_server_events.clear()
-	_server_bridge.link.deliver(&"request", late_peer, _request_bytes(PlaygroundEvents.Ask.READY))
+	_server_bridge.link.deliver(&"request", late_peer, _request_bytes(PlaylotEvents.Ask.READY))
 	await _steps(2)
 	var theirs := _event_kinds(late_peer)
 	_check(
-		theirs.has(PlaygroundEvents.Kind.HELLO) and theirs.has(PlaygroundEvents.Kind.JOIN),
+		theirs.has(PlaylotEvents.Kind.HELLO) and theirs.has(PlaylotEvents.Kind.JOIN),
 		"and READY is what tells them, their own JOIN included",
 		str(theirs)
 	)
@@ -81,7 +81,7 @@ func _test_nothing_before_ready_2() -> void:
 	_server_bridge.remove_player(_nbr_late)
 	await _steps(2)
 	_check(
-		_event_kinds(0).is_empty() and _event_kinds(CLIENT_PEER).has(PlaygroundEvents.Kind.LEAVE),
+		_event_kinds(0).is_empty() and _event_kinds(CLIENT_PEER).has(PlaylotEvents.Kind.LEAVE),
 		"their leaving is told peer by peer too",
 		"to 0: %s, to us: %s" % [_event_kinds(0), _event_kinds(CLIENT_PEER)]
 	)
@@ -145,7 +145,7 @@ func _test_riding_over_the_wire() -> void:
 
 ## A connected player presses a button with F, and a door wired to it swings on the server and
 ## on this client's mirror of it. F is the vehicle request already on the wire; the server
-## tries a button first ([method Playground.use_vehicle]).
+## tries a button first ([method Playlot.use_vehicle]).
 func _test_button_over_the_wire() -> void:
 	_section("a button pressed over the wire opens a door")
 
@@ -163,8 +163,8 @@ func _test_button_over_the_wire() -> void:
 	_exchange()
 	await _steps(8)
 	# The server keys its behaviours by instance id; a client keys its mirrors by net id.
-	var server_net: PlaygroundPropNet = _server_bridge._prop_nets.get(door.instance_id)
-	var mirror: PlaygroundPropNet = _client_bridge._prop_nets.get(server_net.identity.net_id) \
+	var server_net: PlaylotPropNet = _server_bridge._prop_nets.get(door.instance_id)
+	var mirror: PlaylotPropNet = _client_bridge._prop_nets.get(server_net.identity.net_id) \
 		if server_net != null and server_net.identity != null else null
 	var shut_basis := (door.node as Node3D).global_basis
 
@@ -237,11 +237,11 @@ func _test_toys_over_the_wire() -> void:
 ## A zee-dot-weapons gun is run by the SERVER, from the buttons the client holds.
 ##
 ## A gun the server did not run is a client deciding what it hit, so `_give_weapon` puts a deciding rig on the server's player. Armed by skipping that branch, the two firing checks fail.
-var _zotw_theirs: PlaygroundPlayer
+var _zotw_theirs: PlaylotPlayer
 var _zotw_uses: Array[int]
 var _zotw_resolved: Array[int]
-var _zotw_mirror: PlaygroundPlayer
-var _zotw_mirror_net: PlaygroundPlayerNet
+var _zotw_mirror: PlaylotPlayer
+var _zotw_mirror_net: PlaylotPlayerNet
 
 func _test_zee_over_the_wire() -> void:
 	_section("a zee weapon is run by the server")
@@ -271,7 +271,7 @@ func _test_zee_over_the_wire() -> void:
 
 	# What a client draws of it: the server's WEAPON event puts the SMG on the body, and the
 	# fire counter crosses in the snapshot. Armed: without the bridge's `show_held` the first
-	# fails; without the specs in `PlaygroundPlayerNet` the counter check does.
+	# fails; without the specs in `PlaylotPlayerNet` the counter check does.
 	_zotw_mirror = _client_player()
 	var drawn: Variant = _zotw_mirror.zee_world if _zotw_mirror != null else null
 	_check(
@@ -326,7 +326,7 @@ func _test_zee_over_the_wire_2() -> void:
 
 	# Somebody arriving now was never sent the WEAPON event: READY replays what everybody
 	# holds. Armed: without the `_tool_of` loop in `_admit` this fails.
-	PlaygroundZee.show_held(_zotw_mirror, null)
+	PlaylotZee.show_held(_zotw_mirror, null)
 	await get_tree().process_frame
 	_client_bridge.ask_ready()
 	_exchange()
@@ -374,7 +374,7 @@ func _test_inventory_flood() -> void:
 
 	var mine := _client_bag()
 	var server := _server_bag()
-	var net_half: PlaygroundInventoryNet = _client_bridge.inventory_net
+	var net_half: PlaylotInventoryNet = _client_bridge.inventory_net
 	var reasons: Array[String] = []
 	var on_refused := func(reason: String) -> void: reasons.append(reason)
 	_client_bridge.inventory_refused.connect(on_refused)
@@ -409,7 +409,7 @@ func _test_inventory_flood() -> void:
 ## A person who reconnects is a new userid to dot-server, and the same person to their bag.
 var _irx_rejoin: int
 var _irx_person: StringName
-var _irx_inv: PlaygroundInventory
+var _irx_inv: PlaylotInventory
 var _irx_held: String
 
 func _test_inventory_rejoin() -> void:
@@ -418,7 +418,7 @@ func _test_inventory_rejoin() -> void:
 	_irx_rejoin = SESSION + 20
 	_irx_person = &"bag:ada"
 	_irx_inv = _server_game.inventory
-	var net_half: PlaygroundInventoryNet = _server_bridge.inventory_net
+	var net_half: PlaylotInventoryNet = _server_bridge.inventory_net
 	var old_key := net_half.bag_key(SESSION)
 
 	# What the module sets: who a session IS, for a bag that should outlast it.
@@ -701,6 +701,6 @@ func _test_utility_over_the_wire() -> void:
 func _voice_frame() -> PackedByteArray:
 	var packet := DotVoicePacket.new()
 	packet.channel = DotVoiceRouter.Channel.ALL
-	packet.sample_count = PlaygroundServices.voice_config().frame_samples()
+	packet.sample_count = PlaylotServices.voice_config().frame_samples()
 	packet.payload.resize(packet.sample_count / 2)
 	return packet.to_bytes()

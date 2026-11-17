@@ -1,14 +1,14 @@
 extends SceneTree
 
-const PlaygroundClient := preload("../game/playground_client.gd")
-const PlaygroundPresentation := preload("../game/playground_presentation.gd")
-const PlaygroundAddons := preload("../game/playground_addons.gd")
-const PlaygroundSpawnMenu := preload("../game/playground_spawn_menu.gd")
-const PlaygroundWorkshop := preload("../game/playground_workshop.gd")
-const PlaygroundSpawnables := preload("../game/playground_spawnables.gd")
-const PlaygroundProfiles := preload("../game/playground_profiles.gd")
-const PlaygroundZee := preload("../game/playground_zee.gd")
-const PlaygroundWeapons := preload("../game/playground_weapons.gd")
+const PlaylotClient := preload("../game/playlot_client.gd")
+const PlaylotPresentation := preload("../game/playlot_presentation.gd")
+const PlaylotAddons := preload("../game/playlot_addons.gd")
+const PlaylotSpawnMenu := preload("../game/playlot_spawn_menu.gd")
+const PlaylotWorkshop := preload("../game/playlot_workshop.gd")
+const PlaylotSpawnables := preload("../game/playlot_spawnables.gd")
+const PlaylotProfiles := preload("../game/playlot_profiles.gd")
+const PlaylotZee := preload("../game/playlot_zee.gd")
+const PlaylotWeapons := preload("../game/playlot_weapons.gd")
 
 ## Renders this game's own screens to `screenshots/` so a person can look at them.
 ##
@@ -25,7 +25,7 @@ const OUT_DIR := "res://screenshots"
 const SETTLE := 3
 
 var _stack: DotScreenStack = null
-## What a spawn provider hands the menu, as PlaygroundAddons.describe_items makes it.
+## What a spawn provider hands the menu, as PlaylotAddons.describe_items makes it.
 const PROVIDER_ROWS: Array = [
 	{"key": "demo_pack/rifle", "label": "Rifle", "category": "Firearms", "hint": "Rifle - weapon from demo_pack", "kind": "weapon"},
 	{"key": "demo_pack/pistol", "label": "Pistol", "category": "Firearms", "hint": "", "kind": "weapon"},
@@ -35,9 +35,9 @@ const PROVIDER_ROWS: Array = [
 	{"key": "demo_pack/sparring_bot", "label": "Sparring bot", "category": "Bots", "hint": "", "kind": "bot"},
 ]
 
-var _menu: PlaygroundSpawnMenu = null
-var _workshop: PlaygroundWorkshop = null
-var _presentation: PlaygroundPresentation = null
+var _menu: PlaylotSpawnMenu = null
+var _workshop: PlaylotWorkshop = null
+var _presentation: PlaylotPresentation = null
 var _game_menu: DotMenu = null
 var _shots: Array[Dictionary] = []
 var _at := 0
@@ -46,10 +46,10 @@ var _done := false
 
 
 ## What the real linked packs (`addons/zz_*`, gitignored symlinks) put in the Q menu: the rows
-## PlaygroundAddons builds from their own providers. Empty when none is linked, and the two shots
+## PlaylotAddons builds from their own providers. Empty when none is linked, and the two shots
 ## then show the tabs falling back to Props, which is the honest picture of "no pack".
 func _real_pack_rows() -> Array:
-	var found := PlaygroundAddons.new()
+	var found := PlaylotAddons.new()
 	found.scan_providers(null)
 	return found.describe_items()
 
@@ -68,7 +68,7 @@ func _sample_board() -> Dictionary:
 	}
 
 
-func _follow_zee_pack(menu: PlaygroundSpawnMenu) -> void:
+func _follow_zee_pack(menu: PlaylotSpawnMenu) -> void:
 	# A subscribed weapon pack, as the solo client wires it: the real zee provides.json in a
 	# DotContentIndex, followed by the workshop adapter, so the tab is the one a player sees.
 	var zee_dir := ProjectSettings.globalize_path("res://").path_join("../zee-dot-weapons").simplify_path()
@@ -78,14 +78,14 @@ func _follow_zee_pack(menu: PlaygroundSpawnMenu) -> void:
 		"content_id": "gamemann/zee-dot-weapons", "version": "1.0.0", "prefix": zee_dir,
 		"session": "solo", "source": "subscription", "provides": zee_provides,
 	})
-	_workshop = PlaygroundWorkshop.new()
+	_workshop = PlaylotWorkshop.new()
 	_workshop.follow(index, menu.catalogue, menu.weapons)
 	menu.set_pack_rows(_workshop.rows())
 
 
 func _initialize() -> void:
 	# Scratch settings, so a render never touches a player's file.
-	var _scratch := PlaygroundPresentation.use_scratch_settings("screenshot_menus")
+	var _scratch := PlaylotPresentation.use_scratch_settings("screenshot_menus")
 	DotLog.set_level(DotLog.Level.ERROR)
 	DirAccess.make_dir_recursive_absolute(OUT_DIR)
 
@@ -93,7 +93,7 @@ func _initialize() -> void:
 ## Built on the first frame: from `_initialize` nothing is in the tree yet, and the
 ## presentation and `DotGameClient.setup()` would set up outside it.
 func _build() -> void:
-	_presentation = PlaygroundPresentation.new()
+	_presentation = PlaylotPresentation.new()
 	_presentation.name = "Presentation"
 	root.add_child(_presentation)
 	_presentation.setup()
@@ -107,16 +107,16 @@ func _build() -> void:
 	_stack.setup()
 
 	# The real catalogues, because a picture of a hand-built list is a picture of a list.
-	var menu := PlaygroundSpawnMenu.new()
+	var menu := PlaylotSpawnMenu.new()
 	menu.name = "SpawnMenu"
 	menu.animated = false
-	menu.catalogue = PlaygroundSpawnables.with_models(PlaygroundSpawnables.catalogue(), "")
+	menu.catalogue = PlaylotSpawnables.with_models(PlaylotSpawnables.catalogue(), "")
 	# The fixture profiles, so the Entities tab shows a regrouped, re-iconed, hidden entry.
-	var profiles := PlaygroundProfiles.new()
+	var profiles := PlaylotProfiles.new()
 	profiles.setup(PackedStringArray(["res://examples/fixtures/profiles"]))
 	var _touched := profiles.apply_npcs(menu.catalogue)
-	menu.weapons = PlaygroundWeapons.built_in()
-	menu.weapons.append_array(PlaygroundZee.defs())
+	menu.weapons = PlaylotWeapons.built_in()
+	menu.weapons.append_array(PlaylotZee.defs())
 	_stack.register(menu)
 	_menu = menu
 
@@ -133,7 +133,7 @@ func _build() -> void:
 	var _set := _game_menu.setup()
 	# As the client does: the console after the menu, so it is one of the menu's overlays.
 	_presentation.build_console(_game_menu)
-	PlaygroundClient.add_general_rows(_game_menu)
+	PlaylotClient.add_general_rows(_game_menu)
 	# The platform wires the stats columns and the Store page exactly as the client does.
 	var platform := DotGameClient.new()
 	platform.name = "Platform"
@@ -153,7 +153,7 @@ func _build() -> void:
 	# Without it the menu has no such tab, so the shot is dropped instead of indexing past the bar.
 	if _menu.describe().get("pack_tabs", []).is_empty():
 		_shots = _shots.filter(func(s: Dictionary) -> bool:
-			if s.has("tab") and int(s["tab"]) >= PlaygroundSpawnMenu.Tab.size():
+			if s.has("tab") and int(s["tab"]) >= PlaylotSpawnMenu.Tab.size():
 				print("screenshot_menus: skipping ", s["file"], ", no pack tab")
 				return false
 			return true)
@@ -172,37 +172,37 @@ func _build() -> void:
 func _shot_list() -> Array[Dictionary]:
 	return [
 		{"id": &"spawn_menu", "file": "menu_spawn.png"},
-		{"id": &"spawn_menu", "file": "menu_weapons.png", "tab": PlaygroundSpawnMenu.Tab.WEAPONS},
+		{"id": &"spawn_menu", "file": "menu_weapons.png", "tab": PlaylotSpawnMenu.Tab.WEAPONS},
 		# The model props: a category chip picked, so the thumbnails and their names are on screen.
-		{"id": &"spawn_menu", "file": "menu_props_models.png", "tab": PlaygroundSpawnMenu.Tab.PROPS, "category": &"furniture"},
+		{"id": &"spawn_menu", "file": "menu_props_models.png", "tab": PlaylotSpawnMenu.Tab.PROPS, "category": &"furniture"},
 		# The tools tab with a tool picked, so its settings panel is drawn: the balloon has
 		# all three kinds of control — two sliders and a row of colour swatches.
-		{"id": &"spawn_menu", "file": "menu_tools.png", "tab": PlaygroundSpawnMenu.Tab.TOOLS, "mode": &"balloon"},
+		{"id": &"spawn_menu", "file": "menu_tools.png", "tab": PlaylotSpawnMenu.Tab.TOOLS, "mode": &"balloon"},
 		# The edit mode with a prop selected: the panel holds what that prop IS, as the server
 		# sends it — a painted crate, half again as big, frozen, a little heavier.
-		{"id": &"spawn_menu", "file": "menu_tool_edit.png", "tab": PlaygroundSpawnMenu.Tab.TOOLS, "mode": &"edit",
+		{"id": &"spawn_menu", "file": "menu_tool_edit.png", "tab": PlaylotSpawnMenu.Tab.TOOLS, "mode": &"edit",
 			"settings": {"size": 1.5, "colour": "e05252", "frozen": true, "gravity": true, "weight": 2.0, "friction": 0.6, "bounce": 0.25}},
-		{"id": &"spawn_menu", "file": "menu_entities.png", "tab": PlaygroundSpawnMenu.Tab.ENTITIES},
+		{"id": &"spawn_menu", "file": "menu_entities.png", "tab": PlaylotSpawnMenu.Tab.ENTITIES},
 		# The Builds tab with a list as a server would send it: two builds and a custom prop.
-		{"id": &"spawn_menu", "file": "menu_builds.png", "tab": PlaygroundSpawnMenu.Tab.BUILDS, "builds": [
+		{"id": &"spawn_menu", "file": "menu_builds.png", "tab": PlaylotSpawnMenu.Tab.BUILDS, "builds": [
 			{"name": "bridge", "props": 6, "custom": false},
 			{"name": "watchtower", "props": 41, "custom": false},
 			{"name": "go_kart", "props": 9, "custom": true},
 		]},
 		# The Addons tab as the hook of natural-disasters fills it.
-		{"id": &"spawn_menu", "file": "menu_addons.png", "tab": PlaygroundSpawnMenu.Tab.ADDONS, "addons": [
+		{"id": &"spawn_menu", "file": "menu_addons.png", "tab": PlaylotSpawnMenu.Tab.ADDONS, "addons": [
 			{"key": "pg_natural_disasters/tornado", "label": "Tornado", "category": "Disasters", "hint": ""},
 			{"key": "pg_natural_disasters/thunderstorm", "label": "Thunderstorm", "category": "Disasters", "hint": ""},
 			{"key": "pg_natural_disasters/earthquake", "label": "Earthquake", "category": "Disasters", "hint": ""},
 			{"key": "pg_natural_disasters/blizzard", "label": "Blizzard", "category": "Disasters", "hint": ""},
 			{"key": "pg_natural_disasters/wind", "label": "Wind", "category": "Disasters", "hint": ""},
 		]},
-		{"id": &"spawn_menu", "file": "menu_provider_weapons.png", "tab": PlaygroundSpawnMenu.Tab.PACK_WEAPONS, "addons": PROVIDER_ROWS},
-		{"id": &"spawn_menu", "file": "menu_provider_npcs.png", "tab": PlaygroundSpawnMenu.Tab.NPCS, "addons": PROVIDER_ROWS},
-		{"id": &"spawn_menu", "file": "menu_real_packs_weapons.png", "tab": PlaygroundSpawnMenu.Tab.PACK_WEAPONS, "addons": _real_pack_rows()},
-		{"id": &"spawn_menu", "file": "menu_real_packs_npcs.png", "tab": PlaygroundSpawnMenu.Tab.NPCS, "addons": _real_pack_rows()},
-		{"id": &"spawn_menu", "file": "menu_tools_waypoint.png", "tab": PlaygroundSpawnMenu.Tab.TOOLS, "mode": &"waypoint"},
-		{"id": &"spawn_menu", "file": "menu_tools_npc.png", "tab": PlaygroundSpawnMenu.Tab.TOOLS, "mode": &"npc_spawn"},
+		{"id": &"spawn_menu", "file": "menu_provider_weapons.png", "tab": PlaylotSpawnMenu.Tab.PACK_WEAPONS, "addons": PROVIDER_ROWS},
+		{"id": &"spawn_menu", "file": "menu_provider_npcs.png", "tab": PlaylotSpawnMenu.Tab.NPCS, "addons": PROVIDER_ROWS},
+		{"id": &"spawn_menu", "file": "menu_real_packs_weapons.png", "tab": PlaylotSpawnMenu.Tab.PACK_WEAPONS, "addons": _real_pack_rows()},
+		{"id": &"spawn_menu", "file": "menu_real_packs_npcs.png", "tab": PlaylotSpawnMenu.Tab.NPCS, "addons": _real_pack_rows()},
+		{"id": &"spawn_menu", "file": "menu_tools_waypoint.png", "tab": PlaylotSpawnMenu.Tab.TOOLS, "mode": &"waypoint"},
+		{"id": &"spawn_menu", "file": "menu_tools_npc.png", "tab": PlaylotSpawnMenu.Tab.TOOLS, "mode": &"npc_spawn"},
 		{"id": &"game_menu", "file": "menu_general.png", "page": &"general"},
 		# The same page scrolled to its end: the sandbox's rows and the camera motion sliders.
 		{"id": &"game_menu", "file": "menu_general_end.png", "page": &"general", "scroll_end": true},
@@ -213,7 +213,7 @@ func _shot_list() -> Array[Dictionary]:
 		{"id": &"game_menu", "file": "menu_store.png", "page": &"store"},
 		# The console, open: DotConsoleKit's panel, on the layer it puts it on.
 		# The first pack tab, after Addons: zee's weapons grouped by the pack's own categories.
-		{"id": &"spawn_menu", "file": "menu_pack_weapons.png", "tab": PlaygroundSpawnMenu.Tab.size()},
+		{"id": &"spawn_menu", "file": "menu_pack_weapons.png", "tab": PlaylotSpawnMenu.Tab.size()},
 		{"id": &"console", "file": "console.png"},
 	]
 

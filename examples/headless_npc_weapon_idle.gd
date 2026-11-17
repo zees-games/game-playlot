@@ -1,7 +1,7 @@
 extends DotGameCheckSuite
 
-const Playground := preload("../game/playground.gd")
-const PlaygroundConfig := preload("../game/playground_config.gd")
+const Playlot := preload("../game/playlot.gd")
+const PlaylotConfig := preload("../game/playlot_config.gd")
 const NpcSoldier := preload("../game/entities/npc_soldier.gd")
 
 ## An armed NPC's idle weapon tick: the rig's own idle tick (no context, no wall probe) against
@@ -16,7 +16,7 @@ const CHECKS := 3 + 3 * 4 + 2
 
 var _entered := 0
 var _completed := 0
-var _game: Playground = null
+var _game: Playlot = null
 
 
 func _ready() -> void:
@@ -25,21 +25,21 @@ func _ready() -> void:
 
 
 func _run() -> void:
-	print("game-playground: armed NPC idle weapon tick")
+	print("game-playlot: armed NPC idle weapon tick")
 	_game = await _make_game()
 	await _test_parity()
 	NpcSoldier.idle_rig_ticks = true
 	_report_sections(_entered, _completed, SECTIONS, CHECKS)
 
 
-func _make_game() -> Playground:
-	var config := PlaygroundConfig.new()
+func _make_game() -> Playlot:
+	var config := PlaylotConfig.new()
 	config.records_directory = ""
 	config.map_seconds = 0.0
 	config.initial_map = &"pg_flatgrass"
 	config.authoritative = true
 	config.prop_spawn_interval = 0.0
-	var game := Playground.new()
+	var game := Playlot.new()
 	game.name = "Server"
 	game.config = config
 	game.service_scope = &"npc_idle_server"

@@ -6,7 +6,7 @@ func _test_party_does_not_migrate() -> void:
 
 	DotP2PSignallerLoopback.reset_all()
 
-	var party := PlaygroundParty.new()
+	var party := PlaylotParty.new()
 	party.name = "Party"
 	add_child(party)
 	_check(party.setup().ok, "a party sets up")
@@ -42,9 +42,9 @@ func _test_party_does_not_migrate() -> void:
 
 func _test_touch_buttons() -> void:
 	_section("A phone's on-screen buttons")
-	var list := PlaygroundTouch.touch_layout().buttons()
+	var list := PlaylotTouch.touch_layout().buttons()
 	var ids: Array = list.map(func(b: Dictionary) -> Variant: return b["id"])
-	for want: StringName in [PlaygroundTouch.PREV, PlaygroundTouch.NEXT, PlaygroundTouch.BOARD, PlaygroundTouch.CHAT, PlaygroundTouch.MENU]:
+	for want: StringName in [PlaylotTouch.PREV, PlaylotTouch.NEXT, PlaylotTouch.BOARD, PlaylotTouch.CHAT, PlaylotTouch.MENU]:
 		_check(ids.has(want), "the layout has the %s button" % want)
 	var probe := DotTouchButtons.new()
 	var m := probe.margin
@@ -61,12 +61,12 @@ func _test_touch_buttons() -> void:
 				clear = clear and a.distance_to(b) >= ra + float(list[j]["radius"])
 		_check(inside, "every button sits in the right half at %dx%d" % [size.x, size.y])
 		_check(clear, "and no two overlap at %dx%d" % [size.x, size.y])
-	var rows := PlaygroundTouch.layout()
+	var rows := PlaylotTouch.layout()
 	var held := {}
 	for row: Dictionary in rows:
 		if row.has("hold"):
 			held[row["id"]] = row["hold"]
-	_check(held == {PlaygroundTouch.JUMP: DotFpsCommand.BUTTON_JUMP, PlaygroundTouch.CROUCH: DotFpsCommand.BUTTON_CROUCH}, "jump and crouch are held on the sampler, nothing else", str(held))
+	_check(held == {PlaylotTouch.JUMP: DotFpsCommand.BUTTON_JUMP, PlaylotTouch.CROUCH: DotFpsCommand.BUTTON_CROUCH}, "jump and crouch are held on the sampler, nothing else", str(held))
 	_test_touch_overlay()
 	for phone: Vector2 in [Vector2(1170, 540), Vector2(2340, 1080)]:
 		var fit := DotGameScreenFit.new()
@@ -75,9 +75,9 @@ func _test_touch_buttons() -> void:
 		fit.attach(get_tree().root)
 		var host := Control.new()
 		add_child(host)
-		var touch := PlaygroundTouch.build(host, DotFpsTouchSampler.new(DotFpsTunables.new()), DotMobileRules.new(), {})
+		var touch := PlaylotTouch.build(host, DotFpsTouchSampler.new(DotFpsTunables.new()), DotMobileRules.new(), {})
 		var built: DotTouchButtons = touch.buttons
-		var k := fit.fit_buttons(built, PlaygroundTouch.touch_layout().buttons())
+		var k := fit.fit_buttons(built, PlaylotTouch.touch_layout().buttons())
 		var stretch := float(fit.plan.get("stretch", 0.0))
 		var smallest := INF
 		for b in list:
@@ -99,9 +99,9 @@ func _test_touch_overlay() -> void:
 	var sampler := DotFpsTouchSampler.new(DotFpsTunables.new())
 	var got: Array = []
 	var handlers := {}
-	for id: StringName in [PlaygroundTouch.FIRE, PlaygroundTouch.ALT, PlaygroundTouch.MENU, PlaygroundTouch.PREV, PlaygroundTouch.NEXT, PlaygroundTouch.BOARD, PlaygroundTouch.CHAT]:
+	for id: StringName in [PlaylotTouch.FIRE, PlaylotTouch.ALT, PlaylotTouch.MENU, PlaylotTouch.PREV, PlaylotTouch.NEXT, PlaylotTouch.BOARD, PlaylotTouch.CHAT]:
 		handlers[id] = func(down: bool) -> void: got.append([id, down])
-	var touch := PlaygroundTouch.build(host, sampler, DotMobileRules.new(), handlers)
+	var touch := PlaylotTouch.build(host, sampler, DotMobileRules.new(), handlers)
 	var controls: DotMobileControls = touch.controls
 	_check(controls != null and controls.touch and controls.sampler == sampler, "the overlay drives the client's own sampler", str(touch.describe()))
 	var tap := InputEventScreenTouch.new()
@@ -111,15 +111,15 @@ func _test_touch_overlay() -> void:
 	var real := InputEventMouseButton.new()
 	_check(touch.takes(tap) and touch.takes(fake), "it takes touches and the mouse emulated from them")
 	_check(not touch.takes(real), "and leaves a real mouse alone")
-	controls.buttons.button_down.emit(PlaygroundTouch.NEXT)
-	controls.buttons.button_up.emit(PlaygroundTouch.NEXT)
-	controls.buttons.button_down.emit(PlaygroundTouch.FIRE)
-	controls.buttons.button_up.emit(PlaygroundTouch.FIRE)
-	_check(got == [[PlaygroundTouch.NEXT, true], [PlaygroundTouch.NEXT, false], [PlaygroundTouch.FIRE, true], [PlaygroundTouch.FIRE, false]], "a press and a release reach the game's handler", str(got))
+	controls.buttons.button_down.emit(PlaylotTouch.NEXT)
+	controls.buttons.button_up.emit(PlaylotTouch.NEXT)
+	controls.buttons.button_down.emit(PlaylotTouch.FIRE)
+	controls.buttons.button_up.emit(PlaylotTouch.FIRE)
+	_check(got == [[PlaylotTouch.NEXT, true], [PlaylotTouch.NEXT, false], [PlaylotTouch.FIRE, true], [PlaylotTouch.FIRE, false]], "a press and a release reach the game's handler", str(got))
 	var finger := InputEventScreenTouch.new()
 	finger.index = 5
 	finger.pressed = true
-	finger.position = controls.buttons.centre_of(PlaygroundTouch.JUMP)
+	finger.position = controls.buttons.centre_of(PlaylotTouch.JUMP)
 	controls.buttons._input(finger)
 	var held_jump := (sampler.sample(1.0 / 60.0).buttons & DotFpsCommand.BUTTON_JUMP) != 0
 	finger.pressed = false
@@ -157,12 +157,12 @@ func _test_chat_box() -> void:
 	for entry in window.channels:
 		ids.append(String(entry.get("id", "")))
 	_check(
-		Array(ids).has(String(PlaygroundServices.CHANNEL_ALL))
-			and Array(ids).has(String(PlaygroundServices.CHANNEL_NEAR)),
+		Array(ids).has(String(PlaylotServices.CHANNEL_ALL))
+			and Array(ids).has(String(PlaylotServices.CHANNEL_NEAR)),
 		"offering the channels the server actually routes (%s)" % [ids]
 	)
 	_check(
-		not Array(ids).has(String(PlaygroundServices.CHANNEL_ADMIN)),
+		not Array(ids).has(String(PlaylotServices.CHANNEL_ADMIN)),
 		"and not the admin one, which a player cannot send on anyway"
 	)
 
@@ -211,16 +211,16 @@ func _test_chat_box() -> void:
 
 ## Every chat line is drawn once: in the box when there is one, on the notice line only when there is not.
 ## The client is never added to the tree (its `_ready` builds the netcode); only the handler and three fields are used.
-func _test_chat_drawn_once(p: PlaygroundPresentation) -> void:
-	var hud := PlaygroundHud.new()
+func _test_chat_drawn_once(p: PlaylotPresentation) -> void:
+	var hud := PlaylotHud.new()
 	hud.name = "ChatHud"
 	add_child(hud)
 	var notice: Label = hud.get_node("Notice")
 
 	var chat := DotChatClient.new()
-	chat.channels = PlaygroundServices.chat_channels()
+	chat.channels = PlaylotServices.chat_channels()
 
-	var client = PlaygroundClient.new()
+	var client = PlaylotClient.new()
 	client.hud = hud
 	client.chat = chat
 	client.presentation = p
@@ -228,8 +228,8 @@ func _test_chat_drawn_once(p: PlaygroundPresentation) -> void:
 	var window := p.chat_window
 	var before := window.line_count()
 	client._on_chat_message(
-		DotChatMessage.system(PlaygroundServices.CHANNEL_ALL, "Vote: Surf, Bhop, Lobby (30s)"),
-		PlaygroundServices.CHANNEL_ALL
+		DotChatMessage.system(PlaylotServices.CHANNEL_ALL, "Vote: Surf, Bhop, Lobby (30s)"),
+		PlaylotServices.CHANNEL_ALL
 	)
 	_check(
 		window.line_count() == before + 1 and notice.text == "",
@@ -239,8 +239,8 @@ func _test_chat_drawn_once(p: PlaygroundPresentation) -> void:
 
 	before = window.line_count()
 	client._on_chat_message(
-		DotChatMessage.say(PlaygroundServices.CHANNEL_ALL, "k1", "ada", "gg"),
-		PlaygroundServices.CHANNEL_ALL
+		DotChatMessage.say(PlaylotServices.CHANNEL_ALL, "k1", "ada", "gg"),
+		PlaylotServices.CHANNEL_ALL
 	)
 	_check(
 		window.line_count() == before + 1 and notice.text == "",
@@ -253,9 +253,9 @@ func _test_chat_drawn_once(p: PlaygroundPresentation) -> void:
 	# as a chat command echoed with its text stripped.
 	client._on_chat_message(
 		DotChatMessage.make(
-			DotChatMessage.Kind.JOIN, PlaygroundServices.CHANNEL_ALL, "k2", "Guest 435", ""
+			DotChatMessage.Kind.JOIN, PlaylotServices.CHANNEL_ALL, "k2", "Guest 435", ""
 		),
-		PlaygroundServices.CHANNEL_ALL
+		PlaylotServices.CHANNEL_ALL
 	)
 	var rows := window.history()
 	var drawn := ""
@@ -269,8 +269,8 @@ func _test_chat_drawn_once(p: PlaygroundPresentation) -> void:
 
 	client.presentation = null
 	client._on_chat_message(
-		DotChatMessage.say(PlaygroundServices.CHANNEL_ALL, "k1", "ada", "still here"),
-		PlaygroundServices.CHANNEL_ALL
+		DotChatMessage.say(PlaylotServices.CHANNEL_ALL, "k1", "ada", "still here"),
+		PlaylotServices.CHANNEL_ALL
 	)
 	_check(
 		notice.text.contains("ada") and notice.text.contains("still here"),
@@ -288,8 +288,8 @@ func _test_every_sound_has_a_voice() -> void:
 	# naming an id the catalogue lacks reaches nothing. A headless run cannot hear; audio_probe.sh is the other half.
 	_section("Every sound this game declares has a noise to make")
 
-	var cat := PlaygroundPresentation.sound_catalogue()
-	var recipes := PlaygroundPresentation.sound_recipes()
+	var cat := PlaylotPresentation.sound_catalogue()
+	var recipes := PlaylotPresentation.sound_recipes()
 
 	var uncovered: Array[String] = []
 	for id in cat.ids():
@@ -311,14 +311,14 @@ func _test_every_sound_has_a_voice() -> void:
 	# An administrator's beacon: positional and far-reaching, because its whole job is to
 	# say WHERE somebody is from across a two-hundred-metre sandbox; and pitched away from
 	# the vote's warning, whose voice it shares, so a ping is never heard as a ballot.
-	var ping := cat.find(PlaygroundPresentation.BEACON_SOUND)
+	var ping := cat.find(PlaylotPresentation.BEACON_SOUND)
 	_check(
 		ping != null and ping.kind == DotAudioDef.Kind.POSITIONAL_3D and ping.max_distance >= 100.0,
 		"the beacon's ping is positional and carries across the sandbox"
 	)
 	_check(
 		ping != null and ping.pitch_max < 1.0
-		and recipes.get(PlaygroundPresentation.BEACON_SOUND) == recipes.get(PlaygroundVote.CUE_WARNING),
+		and recipes.get(PlaylotPresentation.BEACON_SOUND) == recipes.get(PlaylotVote.CUE_WARNING),
 		"and is the vote warning's voice pitched down, so the two are not confused"
 	)
 

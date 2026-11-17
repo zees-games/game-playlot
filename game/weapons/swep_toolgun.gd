@@ -1,4 +1,4 @@
-extends "playground_weapon.gd"
+extends "playlot_weapon.gd"
 
 ## The tool gun: one weapon, many modes — inflate and deflate, paint, remove, weld, rope,
 ## no-collide, balloons, physical properties, arming an NPC, wiring, and editing a
@@ -21,8 +21,8 @@ extends "playground_weapon.gd"
 # [b]`game/toolgun/`, never `game/tools/`.[/b] dot-server-deploy's pack for this game excludes
 # directories named `tools` at ANY depth (it means the repository's dev scripts), and under
 # that name every mode below was left out of every delivered build: a tool gun with no modes,
-# then (once Playground preloaded one) a game that would not load. Found 2026-10-07 by
-# dot-server-deploy's examples/playground_client.tscn.
+# then (once Playlot preloaded one) a game that would not load. Found 2026-10-07 by
+# dot-server-deploy's examples/playlot_client.tscn.
 const ToolResize := preload("../toolgun/tool_resize.gd")
 const ToolColour := preload("../toolgun/tool_colour.gd")
 const ToolRemover := preload("../toolgun/tool_remover.gd")
@@ -37,7 +37,7 @@ const ToolEdit := preload("../toolgun/tool_edit.gd")
 const ToolWaypoint := preload("../toolgun/tool_waypoint.gd")
 const ToolNpcSpawn := preload("../toolgun/tool_npc_spawn.gd")
 const ToolSpawnPoint := preload("../toolgun/tool_spawnpoint.gd")
-const PlaygroundLimits := preload("../playground_limits.gd")
+const PlaylotLimits := preload("../playlot_limits.gd")
 
 ## Every mode, in the order the menu shows them.
 const MODES := [
@@ -196,7 +196,7 @@ func may_constrain() -> DotResult:
 	if game == null or game.constraints == null:
 		return DotResult.fail(DotError.CODE_STATE, "This world cannot tie things.")
 
-	var cap := game.spawn_limits.limit_for(wielder, PlaygroundLimits.CONSTRAINTS)
+	var cap := game.spawn_limits.limit_for(wielder, PlaylotLimits.CONSTRAINTS)
 	var have: int = game.constraints.count_owned(wielder)
 
 	if cap > 0 and have >= cap:

@@ -39,7 +39,7 @@ One line each; the detail is in [bugs-found.md](../../../docs/bugs-found.md) or 
 
 **Edit mode's outline was a translucent fill**, which showed a red crate as pink in the one mode whose sliders include colour.
 
-**A first-person view that was built and never ran** (found 2026-10-11, looking at dot-player-controller's new landing dip in this game). `_build_view` added a `DotFpsView` after the controller had looked for one, so `controller.view` was null: no landing dip, no strafe lean, no widening, no step smoothing, and the zee recoil handed to `view.external_angles` went nowhere, for as long as the client had existed. Every check passed, because the client writes the camera itself and nothing asked what the view did. The `field_of_view` setting was applied by nothing either. Camera motion is now `DotFpsViewMotion` in `PlaygroundPlayer.present_camera`, the one place the camera is written; `headless_playground` drops, hops, strafes and flies a player through it.
+**A first-person view that was built and never ran** (found 2026-10-11, looking at dot-player-controller's new landing dip in this game). `_build_view` added a `DotFpsView` after the controller had looked for one, so `controller.view` was null: no landing dip, no strafe lean, no widening, no step smoothing, and the zee recoil handed to `view.external_angles` went nowhere, for as long as the client had existed. Every check passed, because the client writes the camera itself and nothing asked what the view did. The `field_of_view` setting was applied by nothing either. Camera motion is now `DotFpsViewMotion` in `PlaylotPlayer.present_camera`, the one place the camera is written; `headless_playlot` drops, hops, strafes and flies a player through it.
 
 ## Netcode
 
@@ -47,7 +47,7 @@ One line each; the detail is in [bugs-found.md](../../../docs/bugs-found.md) or 
 
 `_apply_join` built every mirrored player with owner 0, the local one too, so `predicted()` was empty, `client_tick` simulated nobody, and the player moved only when a snapshot came back (3-5 ticks from key to motion on a 1 ms loopback; a real link adds its round trip). The local player was **interpolated like a remote one**, so the eye was smooth, just late, and nobody saw it. "The client moves under its own prediction", "the server agrees" and "the correction rate is low" all held for the wrong reason; the last read zero because the predictor never ran. The same line was in two other games ([bugs-found.md](../../../docs/bugs-found.md)). In this game's handshake JOIN used to arrive before HELLO, so the claim on HELLO was the path that made the player predicted, not a belt-and-braces extra.
 
-**Every client was playing offline.** `PlaygroundClient` became networked only through its `link` export, which the shell sets only on a built-in client scene; a delivered pack's scene is instantiated with nothing set. The server had both players and nobody had the server. Found only by running the real shell twice against a local server; every suite builds the bridge by hand. **And then both players stood inside each other** on the one-point spawn.
+**Every client was playing offline.** `PlaylotClient` became networked only through its `link` export, which the shell sets only on a built-in client scene; a delivered pack's scene is instantiated with nothing set. The server had both players and nobody had the server. Found only by running the real shell twice against a local server; every suite builds the bridge by hand. **And then both players stood inside each other** on the one-point spawn.
 
 **Every join logged "Failed to get path from RPC"** once: JOIN was broadcast to every socket at `client_spawn`, before the joiner had built `Server/Playground`. Reviewing the ready set then found that **nobody had ever been welcomed** (`_welcome` ran at spawn and returned unless READY, which it never is there), **a disconnected peer was never removed from dot-net** (`remove_peer` was gated on the ready set the disconnect had just cleared), and **voice went round the gate** (one error per frame while somebody joined).
 
@@ -57,13 +57,13 @@ One line each; the detail is in [bugs-found.md](../../../docs/bugs-found.md) or 
 
 **The client's weapon was never asked for**: the client armed itself and told the server nothing, so on a `pg_shop` server every weapon was free and nobody saw what anybody held; the server's WEAPON broadcast was read by a bare `pass`. **An encoder and a decoder that have never met** is the family's detector for it. A client that arms itself looks exactly like one that was given the weapon.
 
-**The bag was built by nothing but the presentation suite** (no `Playground` had an inventory, and the shop charged per spawn), and **a spawn the prop budget refused had already been charged for.**
+**The bag was built by nothing but the presentation suite** (no `Playlot` had an inventory, and the shop charged per spawn), and **a spawn the prop budget refused had already been charged for.**
 
 **The push mispredicted at every booster edge** because it read the timer's last sample instead of the state's position: one correction per launch.
 
 **A zee gun hung at the capsule's centre**: the held-weapon mount named the torso. `--zee=rifle` showed two pixels of barrel.
 
-**Without `PlaygroundPlayer.component()`** every zee shot left the feet pointing north and hit nothing.
+**Without `PlaylotPlayer.component()`** every zee shot left the feet pointing north and hit nothing.
 
 ## The world
 
@@ -71,7 +71,7 @@ One line each; the detail is in [bugs-found.md](../../../docs/bugs-found.md) or 
 
 **A barrel's blast reached the barrel**, still in the spawner while it exploded, and recursed until the stack ran out.
 
-**A grenade fuse flown as given went off in half the time**: the pack counts at 64 Hz and this server runs 128. `PlaygroundProjectiles.accept` rescaled fuses by hand, and nothing else in the pack was: every zee weapon fired, reloaded and deployed twice as fast here. Fixed 2026-10-11 at the source: dot-weapon scales a row by its `authored_tick_rate` (the pack sets 64), spawns arrive in this server's ticks, and the hand rescale is gone, because keeping it would halve every fuse again. The zee section of `headless_playground` counts a second of SMG fire against 64 Hz.
+**A grenade fuse flown as given went off in half the time**: the pack counts at 64 Hz and this server runs 128. `PlaylotProjectiles.accept` rescaled fuses by hand, and nothing else in the pack was: every zee weapon fired, reloaded and deployed twice as fast here. Fixed 2026-10-11 at the source: dot-weapon scales a row by its `authored_tick_rate` (the pack sets 64), spawns arrive in this server's ticks, and the hand rescale is gone, because keeping it would halve every fuse again. The zee section of `headless_playlot` counts a second of SMG fire against 64 Hz.
 
 **A player's soldiers and rebels were one squad**, so each side's fire-lane check found its own target in the lane and nobody fired. A probe printing every gate found it. **The turret counted as an NPC** because entities were grouped by script name. **A cost budget left over from an earlier section** refused a turret with a message about NPCs: the confusion per-kind limits remove.
 
@@ -103,7 +103,7 @@ One line each; the detail is in [bugs-found.md](../../../docs/bugs-found.md) or 
 
 **The server browser shipped against a server that answered nothing**: `dedicated` had `query_enabled = false`, no query host was attached and the module contributed no provider. dot-browser's own suite queries a server it built.
 
-**Nobody in the sandbox had an avatar**: `PlaygroundPlatform` was built only by `examples/dedicated.tscn`, and a module that is not a `DotGameModule` loads no dot-platform by itself.
+**Nobody in the sandbox had an avatar**: `PlaylotPlatform` was built only by `examples/dedicated.tscn`, and a module that is not a `DotGameModule` loads no dot-platform by itself.
 
 ## The suites
 
@@ -111,7 +111,7 @@ One line each; the detail is in [bugs-found.md](../../../docs/bugs-found.md) or 
 
 **`headless_net` order-sensitivity, measured**: one new test that spawns no body and only advances the world, moved through the sequence, five runs each. Not there: 4/5 clean. Before the vehicle test: 0/3. Between the vehicle and the timer: 3/5. After everything that reads physics: 5/5. Hence: add new tests at the end.
 
-**`headless_net`'s moving deck failed once at 14 corrections against 12, and it was not load sharing a physics space.** `PlaygroundPropNet` measured a mirror's velocity as its drawn position over `Time.get_ticks_usec()` between draws, and `_ride_prop` feeds that into the client's PREDICTED tick, so the same ticks predicted differently depending on how far apart in wall time two snapshots were handled. Fifteen runs idle gave 7 to 12, fifteen loaded (three suites in parallel beside ten busy loops) 8 to 16 with one failure; measured from the server's position at each snapshot tick instead, 4 in all thirty, idle and loaded, and the worst gap fell from 0.058-0.155 m to 0.049 m. The limit went down to 6, not up.
+**`headless_net`'s moving deck failed once at 14 corrections against 12, and it was not load sharing a physics space.** `PlaylotPropNet` measured a mirror's velocity as its drawn position over `Time.get_ticks_usec()` between draws, and `_ride_prop` feeds that into the client's PREDICTED tick, so the same ticks predicted differently depending on how far apart in wall time two snapshots were handled. Fifteen runs idle gave 7 to 12, fifteen loaded (three suites in parallel beside ten busy loops) 8 to 16 with one failure; measured from the server's position at each snapshot tick instead, 4 in all thirty, idle and loaded, and the worst gap fell from 0.058-0.155 m to 0.049 m. The limit went down to 6, not up.
 
 **`dedicated` printed "Attempt to call RPC with unknown peer ID: 8101" on every green run.** 8101 is a session the saved-builds section adopts with no socket behind it, and the Builds tab's click is answered with a NOTICE to the clicker, which went to the link as a real `rpc_id`. The section now catches that one call on the link's loopback and checks the clicker alone was told, so the line in its stderr would now be a real one.
 

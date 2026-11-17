@@ -1,4 +1,4 @@
-extends "playground_entity.gd"
+extends "playlot_entity.gd"
 
 ## An NPC spawn point: puts one of its kind in the world every [member interval] seconds
 ## while fewer than [member limit] of its own are alive.

@@ -2,22 +2,22 @@ extends DotGameCheckSuite
 ## The header, counts and helpers of the dedicated-server suite, and the first sections.
 
 
-const Playground := preload("../game/playground.gd")
-const PlaygroundArena := preload("../game/playground_arena.gd")
-const PlaygroundConfig := preload("../game/playground_config.gd")
-const PlaygroundDowns := preload("../game/playground_downs.gd")
-const PlaygroundEvent := preload("../game/net/playground_event.gd")
-const PlaygroundEvents := preload("../game/net/playground_events.gd")
-const PlaygroundNetBridge := preload("../game/net/playground_net_bridge.gd")
-const PlaygroundNetLink := preload("../game/net/playground_net_link.gd")
-const PlaygroundRequest := preload("../game/net/playground_request.gd")
-const PlaygroundPlatform := preload("../game/playground_platform.gd")
-const PlaygroundProgress := preload("../game/playground_progress.gd")
-const PlaygroundServices := preload("../game/playground_services.gd")
-const PlaygroundShop := preload("../game/playground_shop.gd")
-const PlaygroundSpectate := preload("../game/playground_spectate.gd")
-const PlaygroundVote := preload("../game/playground_vote.gd")
-const PlaygroundWaves := preload("../game/playground_waves.gd")
+const Playlot := preload("../game/playlot.gd")
+const PlaylotArena := preload("../game/playlot_arena.gd")
+const PlaylotConfig := preload("../game/playlot_config.gd")
+const PlaylotDowns := preload("../game/playlot_downs.gd")
+const PlaylotEvent := preload("../game/net/playlot_event.gd")
+const PlaylotEvents := preload("../game/net/playlot_events.gd")
+const PlaylotNetBridge := preload("../game/net/playlot_net_bridge.gd")
+const PlaylotNetLink := preload("../game/net/playlot_net_link.gd")
+const PlaylotRequest := preload("../game/net/playlot_request.gd")
+const PlaylotPlatform := preload("../game/playlot_platform.gd")
+const PlaylotProgress := preload("../game/playlot_progress.gd")
+const PlaylotServices := preload("../game/playlot_services.gd")
+const PlaylotShop := preload("../game/playlot_shop.gd")
+const PlaylotSpectate := preload("../game/playlot_spectate.gd")
+const PlaylotVote := preload("../game/playlot_vote.gd")
+const PlaylotWaves := preload("../game/playlot_waves.gd")
 
 
 ## Sections that ran to their last line, and the checks they ran between them. Both, because either
@@ -42,8 +42,8 @@ const SERVER_DIR := "user://pg_dedicated"
 var _sections_done := 0
 
 var server: DotServer = null
-var game: Playground = null
-var platform: PlaygroundPlatform = null
+var game: Playlot = null
+var platform: PlaylotPlatform = null
 
 ## The app's URL segment on the website, this game's code name. Display only: a listing prints it
 ## and nothing treats it as proof.
@@ -51,7 +51,7 @@ const APP_URL := "playground"
 
 
 ## The loaded module, looked up every time because `_test_module_unloads_cleanly` unloads it. Typed
-## as [DotModule]: `playground_module.gd` has no `class_name` (a pack-delivered module is loaded by
+## as [DotModule]: `playlot_module.gd` has no `class_name` (a pack-delivered module is loaded by
 ## path), so its fields come back through `get()`.
 func _module() -> DotModule:
 	return server.modules.get_module("playground")
@@ -196,7 +196,7 @@ func _test_tickrate_reaches_the_timer() -> void:
 	print("sv_tickrate reaches the record")
 
 	# The chain, end to end in one test, because every link is silent when it breaks: sv_tickrate,
-	# `Engine.physics_ticks_per_second`, the playground, the timer manager, the record.
+	# `Engine.physics_ticks_per_second`, the playlot, the timer manager, the record.
 	_check(
 		server.console.get_int("sv_tickrate") == 100,
 		"server.cfg set sv_tickrate to 100",
@@ -330,7 +330,7 @@ func _test_moderation() -> void:
 	print("")
 	print("moderation")
 
-	var services: PlaygroundServices = _module().get("services")
+	var services: PlaylotServices = _module().get("services")
 	var subject := DotPunishmentSubject.for_uid("uid-pg-test")
 
 	var gagged: DotResult = await services.moderation.issue(
@@ -371,7 +371,7 @@ func _test_arena_loadout() -> void:
 	print("")
 	print("the arena's loadout (B)")
 	var module := _module()
-	var arena: PlaygroundArena = module.get("arena")
+	var arena: PlaylotArena = module.get("arena")
 	var cmd: Object = module.get("loadout_command")
 	var on_cvar := server.console.find_cvar("pg_arena_on")
 	_check(cmd != null and server.console.find_command("loadout") != null and server.console.find_cvar("mp_loadout_menu") != null
@@ -418,7 +418,7 @@ func _test_waves() -> void:
 	print("")
 	print("waves")
 
-	var waves: PlaygroundWaves = _module().get("waves")
+	var waves: PlaylotWaves = _module().get("waves")
 
 	_check(waves != null, "the wave layer is built")
 	_check(not waves.is_enabled(), "and is off by default")
@@ -427,14 +427,14 @@ func _test_waves() -> void:
 		"its spawner is a 3D one"
 	)
 	_check(
-		PlaygroundWaves.shared_catalogue().size() == 3,
-		"with three kinds (%d)" % PlaygroundWaves.shared_catalogue().size()
+		PlaylotWaves.shared_catalogue().size() == 3,
+		"with three kinds (%d)" % PlaylotWaves.shared_catalogue().size()
 	)
 
 	# [b]Line of sight is ON here and off in the other two games, and that is the point of
 	# the flag.[/b] A sandbox has walls, pillars and whatever somebody built; an NPC that
 	# saw through all of it would make cover meaningless.
-	var runner := PlaygroundWaves.shared_catalogue().get_npc(&"runner")
+	var runner := PlaylotWaves.shared_catalogue().get_npc(&"runner")
 	_check(
 		runner != null and runner.require_line_of_sight,
 		"and they need to actually see you"
@@ -465,7 +465,7 @@ func _test_spectating() -> void:
 	print("")
 	print("spectating")
 
-	var spectate: PlaygroundSpectate = _module().get("spectate")
+	var spectate: PlaylotSpectate = _module().get("spectate")
 
 	_check(spectate != null, "the spectate layer is built")
 
@@ -502,8 +502,8 @@ func _test_downed() -> void:
 	print("")
 	print("down rather than dead")
 
-	var downs: PlaygroundDowns = _module().get("downs")
-	var arena: PlaygroundArena = _module().get("arena")
+	var downs: PlaylotDowns = _module().get("downs")
+	var arena: PlaylotArena = _module().get("arena")
 
 	_check(downs != null, "the downs layer is built")
 
@@ -579,7 +579,7 @@ func _test_progress() -> void:
 	print("")
 	print("statistics and achievements")
 
-	var progress: PlaygroundProgress = _module().get("progress")
+	var progress: PlaylotProgress = _module().get("progress")
 
 	_check(progress != null, "the progress layer is built")
 	_check(
@@ -590,7 +590,7 @@ func _test_progress() -> void:
 	_check(progress.link != null, "and a link from the stats to the achievements")
 
 	# Every stat an achievement watches must be declared, or it never unlocks and nothing errors.
-	var schema := PlaygroundProgress.stats_schema()
+	var schema := PlaylotProgress.stats_schema()
 	var missing := PackedStringArray()
 
 	for stat in progress.achievements.catalogue.watched_stats():
@@ -641,7 +641,7 @@ func _test_progress() -> void:
 
 
 ## A hit with a body zone is filed by zone, and the rank score builds on the stored lifetime.
-func _check_hit_zones_and_rank(progress: PlaygroundProgress) -> void:
+func _check_hit_zones_and_rank(progress: PlaylotProgress) -> void:
 	var zoned := DotDamage.make(1, 2, 5.0, _module().get("arena").combat.damage_type(&"kinetic"))
 	zoned.hit_group = DotHitGroup.NECK
 	zoned.weapon_id = &"probe"
@@ -655,7 +655,7 @@ func _check_hit_zones_and_rank(progress: PlaygroundProgress) -> void:
 	held.values = {"kills": 10.0}
 	progress.rank.seed_baseline(&"pg-test", held)
 	progress.note(&"pg-test", &"deaths", 2.0)
-	_check(progress.stats.session_values(&"pg-test").get_value(PlaygroundProgress.RANK_SCORE, 0.0) == 9.0,
+	_check(progress.stats.session_values(&"pg-test").get_value(PlaylotProgress.RANK_SCORE, 0.0) == 9.0,
 		"rank_score is built on the stored lifetime (10 kills) plus the session (2 deaths), not the session alone")
 
 
@@ -663,7 +663,7 @@ func _check_hit_zones_and_rank(progress: PlaygroundProgress) -> void:
 ## `pg_status`'s "time left" is the vote's clock, and an extend moves it. It once read the map
 ## session's clock after the vote took the map's end over. Through the console, asserting the
 ## session's clock did NOT move while the line did: that is the line reading the vote.
-func _test_status_clock(vote: PlaygroundVote) -> void:
+func _test_status_clock(vote: PlaylotVote) -> void:
 	var rules := vote.director.rules
 	var clock := vote.director.clock
 	var was_duration := rules.duration_sec
@@ -732,7 +732,7 @@ func _status_seconds(lines: PackedStringArray) -> int:
 
 ## Deletes any file the achievement store has written for [param player], so a run starts from
 ## nothing. A missing directory is not an error: the first run on a machine has none.
-func _forget_stored_progress(progress: PlaygroundProgress, player: String) -> void:
+func _forget_stored_progress(progress: PlaylotProgress, player: String) -> void:
 	var dir := DirAccess.open(progress.progress_dir)
 
 	if dir == null:

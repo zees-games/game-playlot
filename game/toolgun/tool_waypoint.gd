@@ -1,4 +1,4 @@
-extends "playground_tool.gd"
+extends "playlot_tool.gd"
 
 ## Lays patrol waypoints and links them: the route armed NPCs of yours walk when they have
 ## nothing to fight.

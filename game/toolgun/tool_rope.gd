@@ -1,4 +1,4 @@
-extends "playground_tool.gd"
+extends "playlot_tool.gd"
 
 ## Ties two points together: left click one end, left click the other — a prop or the world.
 ## The rope is as long as the gap between the clicks plus the slack setting. Reload unties

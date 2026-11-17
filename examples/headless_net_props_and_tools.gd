@@ -1,6 +1,6 @@
 extends "res://examples/headless_net_clock_builds_movement.gd"
 
-var _lip_mine: PlaygroundPlayer
+var _lip_mine: PlaylotPlayer
 var _lip_identity
 var _lip_server_from: Vector3
 
@@ -8,7 +8,7 @@ func _test_local_is_predicted() -> void:
 	_section("this client predicts its own player, and nobody else")
 
 	_lip_mine = _client_player()
-	var mine_net := _lip_mine.get_node_or_null("Net") as PlaygroundPlayerNet if _lip_mine != null else null
+	var mine_net := _lip_mine.get_node_or_null("Net") as PlaylotPlayerNet if _lip_mine != null else null
 
 	if mine_net == null or mine_net.identity == null:
 		_check(false, "the client has its own player, replicated")
@@ -33,8 +33,8 @@ func _test_local_is_predicted() -> void:
 	var session := SESSION + 3
 	var added := _server_bridge.add_player(CLIENT_PEER + 3, session, "Cy")
 	await _steps(4)
-	var theirs: PlaygroundPlayer = _client_game.players.get(&"u%d" % session)
-	var theirs_net := theirs.get_node_or_null("Net") as PlaygroundPlayerNet if theirs != null else null
+	var theirs: PlaylotPlayer = _client_game.players.get(&"u%d" % session)
+	var theirs_net := theirs.get_node_or_null("Net") as PlaylotPlayerNet if theirs != null else null
 	_check(
 		added.ok and theirs_net != null and theirs_net.identity != null
 			and theirs_net.identity.owner_peer_id == 0
@@ -137,8 +137,8 @@ func _test_local_is_predicted_2() -> void:
 func _test_local_is_predicted_3() -> void:
 
 	# HELLO first: the client forgets its mirror, as a LEAVE would, and is admitted again.
-	_client_bridge._on_event(PlaygroundEvent.new(
-		PlaygroundEvents.Kind.LEAVE, PlaygroundEvents.write_player(SESSION)
+	_client_bridge._on_event(PlaylotEvent.new(
+		PlaylotEvents.Kind.LEAVE, PlaylotEvents.write_player(SESSION)
 	))
 	await get_tree().process_frame
 	_check(_client_player() == null, "a client that forgot its own player has none")
@@ -146,7 +146,7 @@ func _test_local_is_predicted_3() -> void:
 	_exchange()
 	await _steps(4)
 	var rebuilt := _client_player()
-	var rebuilt_net := rebuilt.get_node_or_null("Net") as PlaygroundPlayerNet if rebuilt != null else null
+	var rebuilt_net := rebuilt.get_node_or_null("Net") as PlaylotPlayerNet if rebuilt != null else null
 	_check(
 		rebuilt_net != null and rebuilt_net.identity != null
 			and rebuilt_net.identity.owner_peer_id == _client_net.local_peer_id
@@ -291,7 +291,7 @@ func _test_prop_replication_2() -> void:
 ## Last on purpose: the vehicle check drops every third snapshot, so steps added before it move its phase.
 var _tlaan_crate: DotPropInstance
 var _tlaan_soldier: DotPropInstance
-var _tlaan_armed_mirror: PlaygroundNpcNet
+var _tlaan_armed_mirror: PlaylotNpcNet
 
 func _test_tool_look_and_armed_npcs() -> void:
 	_section("a resized, painted prop and an armed NPC reach the client")
@@ -300,7 +300,7 @@ func _test_tool_look_and_armed_npcs() -> void:
 	_tlaan_crate = _server_game.props.spawn(&"crate", &"u%d" % SESSION, Vector3(14.0, 3.0, -14.0))
 	_exchange()
 	await _steps(8)
-	var server_net: PlaygroundPropNet = _server_bridge.get("_prop_nets").get(_tlaan_crate.instance_id) if _tlaan_crate != null else null
+	var server_net: PlaylotPropNet = _server_bridge.get("_prop_nets").get(_tlaan_crate.instance_id) if _tlaan_crate != null else null
 	var server_node: Node3D = _tlaan_crate.node if _tlaan_crate != null else null
 	var client_node: Node3D = _client_bridge.call("_mirror_node", server_net.identity.net_id) if server_net != null else null
 
@@ -333,9 +333,9 @@ func _test_tool_look_and_armed_npcs() -> void:
 		crate_body.global_position, null, crate_body.global_position + Vector3(0, 4, 0), 0.0, false)
 	var second: DotResult = _server_game.constraints.rope(&"u%d" % SESSION, crate_body,
 		crate_body.global_position, null, crate_body.global_position + Vector3(3, 4, 0), 0.0, false)
-	var client_prop_net: PlaygroundPropNet = null
+	var client_prop_net: PlaylotPropNet = null
 	for net in _client_bridge.get("_prop_nets").values():
-		if net is PlaygroundPropNet and (net as PlaygroundPropNet).prop == client_node:
+		if net is PlaylotPropNet and (net as PlaylotPropNet).prop == client_node:
 			client_prop_net = net
 	for i in 128:
 		await _steps(1)
@@ -366,14 +366,14 @@ func _test_tool_look_and_armed_npcs_2() -> void:
 	for i in 128:
 		await _steps(1)
 		for net in _client_bridge.get("_prop_nets").values():
-			if net is PlaygroundNpcNet:
+			if net is PlaylotNpcNet:
 				_tlaan_armed_mirror = net
 		if _tlaan_armed_mirror != null and _tlaan_armed_mirror.net_weapon != "":
 			break
 	var server_side := ""
 	for net in _server_bridge.get("_prop_nets").values():
-		if net is PlaygroundNpcNet:
-			server_side = (net as PlaygroundNpcNet).net_weapon
+		if net is PlaylotNpcNet:
+			server_side = (net as PlaylotNpcNet).net_weapon
 	_check(_tlaan_armed_mirror != null and _tlaan_armed_mirror.net_weapon == "zee_smg",
 		"the client is told which weapon the NPC holds",
 		"client '%s', server '%s'" % [_tlaan_armed_mirror.net_weapon if _tlaan_armed_mirror != null else "(no mirror)", server_side])
@@ -383,14 +383,14 @@ func _test_tool_look_and_armed_npcs_2() -> void:
 	# so a connected player was hunted by a wave they could not see.
 	var waves := DotNpcSpawner.new()
 	waves.name = "TestWaves"
-	waves.catalogue = PlaygroundWaves.shared_catalogue()
+	waves.catalogue = PlaylotWaves.shared_catalogue()
 	var limits := DotNpcLimits.new()
 	limits.spawn_interval = 0.0
 	limits.require_navigable_spawn = false
 	waves.limits = limits
 	waves.authoritative = true
 	_server_game.world.add_child(waves)
-	_server_bridge.watch_npc_spawner(waves, PlaygroundWaves.shared_catalogue())
+	_server_bridge.watch_npc_spawner(waves, PlaylotWaves.shared_catalogue())
 
 	var props_before := int(_client_bridge.describe()["props"])
 	var wave := waves.spawn(&"walker", Vector3(-10.0, 1.0, 10.0))
@@ -407,7 +407,7 @@ func _test_tool_look_and_armed_npcs_2() -> void:
 		var mirror_of: Node3D = null
 		for i in 128:
 			await _steps(1)
-			var wave_net: PlaygroundPropNet = _server_bridge.get("_prop_nets").get(wave.instance_id)
+			var wave_net: PlaylotPropNet = _server_bridge.get("_prop_nets").get(wave.instance_id)
 			mirror_of = _client_bridge.call("_mirror_node", wave_net.identity.net_id) if wave_net != null else null
 			if mirror_of != null and mirror_of.global_position.distance_to(Vector3(-6.0, 1.0, 10.0)) < 0.3:
 				break
@@ -442,11 +442,11 @@ func _server_prop_node() -> Node3D:
 	return _find_prop_node(_server_game)
 
 
-func _find_prop_node(game: Playground) -> Node3D:
+func _find_prop_node(game: Playlot) -> Node3D:
 	var world: Node = game.world if game.world != null else game
 	for child in world.get_children():
 		for grandchild in child.get_children():
-			if grandchild is PlaygroundPropNet:
+			if grandchild is PlaylotPropNet:
 				return child as Node3D
 	return null
 
@@ -556,7 +556,7 @@ func _test_tools() -> void:
 	await _exchange_steps(4)
 
 	# The client selects the physics gun and holds the primary trigger, which is a
-	# BUTTON on the command rather than a request — see PlaygroundNetBridge._drive_tools.
+	# BUTTON on the command rather than a request — see PlaylotNetBridge._drive_tools.
 	_client_bridge.ask_tool(&"phys")
 	_exchange()
 	await _steps(2)
@@ -600,7 +600,7 @@ func _test_tools() -> void:
 ## Points [param command] at [param target] from [param player]'s eye.
 ##
 ## Written as the inverse of [method DotFpsMotor.aim_for] rather than copied, so the view convention lives in one place.
-func _aim_at(command: DotFpsCommand, player: PlaygroundPlayer, target: Vector3) -> void:
+func _aim_at(command: DotFpsCommand, player: PlaylotPlayer, target: Vector3) -> void:
 	var to := target - player.eye_position()
 
 	if to.length_squared() <= 0.0:
@@ -613,7 +613,7 @@ func _aim_at(command: DotFpsCommand, player: PlaygroundPlayer, target: Vector3) 
 
 ## A weapon is a purchase, and the client has to ask for it.
 ##
-## `PlaygroundClient._set_tool` once said nothing about a weapon, so `_give_weapon`, the only caller of `charge_fn`, ran for nobody and every weapon was free on a networked server. The server must also broadcast what each player holds, and the client must read it.
+## `PlaylotClient._set_tool` once said nothing about a weapon, so `_give_weapon`, the only caller of `charge_fn`, ran for nobody and every weapon was free on a networked server. The server must also broadcast what each player holds, and the client must read it.
 func _test_weapon_request() -> void:
 	_section("a weapon is asked for, paid for and announced")
 

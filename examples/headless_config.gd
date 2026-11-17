@@ -1,15 +1,15 @@
 extends DotGameCheckSuite
 
-## PlaygroundConfig through DotGameConfigBinder: fields, cvars, the arena and the shop reading them, strict refusal, the diff and the workbench round trip.
+## PlaylotConfig through DotGameConfigBinder: fields, cvars, the arena and the shop reading them, strict refusal, the diff and the workbench round trip.
 ##
 ## [codeblock]
 ## godot --headless --path . res://examples/headless_config.tscn
 ## [/codeblock]
 
-const PlaygroundConfig := preload("../game/playground_config.gd")
-const PlaygroundAmbience := preload("../game/playground_ambience.gd")
-const PlaygroundSpawnables := preload("../game/playground_spawnables.gd")
-const PlaygroundWaves := preload("../game/playground_waves.gd")
+const PlaylotConfig := preload("../game/playlot_config.gd")
+const PlaylotAmbience := preload("../game/playlot_ambience.gd")
+const PlaylotSpawnables := preload("../game/playlot_spawnables.gd")
+const PlaylotWaves := preload("../game/playlot_waves.gd")
 ## One directory per suite process (the probe child is handed its parent's): user:// is shared by
 ## every copy of this project on a box, and two suites at once wrote and deleted each other's cfg files.
 const ROOT_ARG := "--cfgroot="
@@ -38,10 +38,10 @@ func _run() -> void:
 	if OS.get_cmdline_user_args().has("--probe"):
 		_probe()
 		return
-	print("game-playground: config binder")
+	print("game-playlot: config binder")
 	_entered += 1
-	var config := PlaygroundConfig.new()
-	var binder := PlaygroundConfig.make_binder(config)
+	var config := PlaylotConfig.new()
+	var binder := PlaylotConfig.make_binder(config)
 	_check(DotAddonConfig.game_names("game-playlot") == PackedStringArray(["game-playground", "game-playlot"]), "the binder registers game-playground as game-playlot's former id", str(DotAddonConfig.game_names("game-playlot")))
 	binder.strict = true
 	_check(binder.load_layers().ok, "defaults load")
@@ -114,7 +114,7 @@ func _strict_refuses_unknown() -> void:
 	var bad := FileAccess.open(ROOT + "_config_bad.json", FileAccess.WRITE)
 	bad.store_string('{"no_such_field": 1}')
 	bad.close()
-	var strict := PlaygroundConfig.make_binder(PlaygroundConfig.new(), ROOT + "_config_bad.json")
+	var strict := PlaylotConfig.make_binder(PlaylotConfig.new(), ROOT + "_config_bad.json")
 	strict.strict = true
 	_check(not strict.load_layers().ok, "strict: an unknown key is refused")
 	DirAccess.remove_absolute(ROOT + "_config_bad.json")
@@ -122,7 +122,7 @@ func _strict_refuses_unknown() -> void:
 
 ## The ambience set offers only pg_ambient* cvars.
 func _ambience_cvars() -> void:
-	var ambient := PlaygroundAmbience.cvar_types()
+	var ambient := PlaylotAmbience.cvar_types()
 	var odd := PackedStringArray()
 	for name: String in ambient:
 		if not name.begins_with("pg_ambient"):
@@ -154,8 +154,8 @@ func _pack_floor() -> void:
 
 ## Child process: loads the layers strictly over the test root and prints what the live config holds.
 func _probe() -> void:
-	var config := PlaygroundConfig.new()
-	var binder := PlaygroundConfig.make_binder(config)
+	var config := PlaylotConfig.new()
+	var binder := PlaylotConfig.make_binder(config)
 	binder.strict = true
 	binder.roots = PackedStringArray([ProjectSettings.globalize_path(ROOT)])
 	var loaded := binder.load_layers()
@@ -201,7 +201,7 @@ func _layers() -> void:
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(ROOT.path_join("game/%s/%s/game.yml" % [GAME, f])))
 
 
-## The shipped cfg files hold every key, in step with PlaygroundConfig, and change nothing as they are.
+## The shipped cfg files hold every key, in step with PlaylotConfig, and change nothing as they are.
 func _templates(binder: DotGameConfigBinder) -> void:
 	var files := binder.template_files()
 	# One file per config set (server, props, arena, world and whatever an addon adds), counted off the binder so a new set does not leave a stale number here.
@@ -214,17 +214,17 @@ func _templates(binder: DotGameConfigBinder) -> void:
 
 
 func _npc_scales() -> void:
-	var cat := PlaygroundSpawnables.catalogue()
+	var cat := PlaylotSpawnables.catalogue()
 	var soldier := float(cat.get_prop(&"npc_soldier").meta["health"])
 	var elite := float(cat.get_prop(&"npc_soldier_elite").meta["health"])
 	var hunter := float(cat.get_prop(&"npc_hunter").meta["speed"])
-	PlaygroundSpawnables.apply_npc_scales(cat, 2.0, 1.5)
-	PlaygroundSpawnables.apply_npc_scales(cat, 2.0, 1.5)
+	PlaylotSpawnables.apply_npc_scales(cat, 2.0, 1.5)
+	PlaylotSpawnables.apply_npc_scales(cat, 2.0, 1.5)
 	_check(is_equal_approx(float(cat.get_prop(&"npc_soldier").meta["health"]), soldier * 2.0), "soldier_health_scale doubles a soldier, once")
 	_check(is_equal_approx(float(cat.get_prop(&"npc_soldier_elite").meta["health"]), elite * 2.0), "and the elite")
 	_check(is_equal_approx(float(cat.get_prop(&"npc_hunter").meta["speed"]), hunter * 1.5), "hunter_speed_scale scales a hunter, once")
-	PlaygroundSpawnables.apply_npc_scales(cat, 1.0, 1.0)
+	PlaylotSpawnables.apply_npc_scales(cat, 1.0, 1.0)
 	_check(is_equal_approx(float(cat.get_prop(&"npc_soldier").meta["health"]), soldier), "scale 1.0 restores the catalogue")
-	var base := PlaygroundWaves.catalogue()
-	var fast := PlaygroundWaves.catalogue(2.0)
+	var base := PlaylotWaves.catalogue()
+	var fast := PlaylotWaves.catalogue(2.0)
 	_check(is_equal_approx(float(fast.get_npc(&"runner").meta["speed"]), float(base.get_npc(&"runner").meta["speed"]) * 2.0), "wave_speed_scale scales the wave kinds")

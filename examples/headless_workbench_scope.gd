@@ -1,12 +1,12 @@
 extends DotGameCheckSuite
 
-## The playground's Workbench lists only what is loaded: the arena mode's settings while `pg_arena` is on, a heading per weapon pack that has profiles, addon cvar sets when their cvars exist, and every heading says which side it edits.
+## The playlot's Workbench lists only what is loaded: the arena mode's settings while `pg_arena` is on, a heading per weapon pack that has profiles, addon cvar sets when their cvars exist, and every heading says which side it edits.
 ## [codeblock] godot --headless --path . res://examples/headless_workbench_scope.tscn
 ## [/codeblock]
 
-const PlaygroundConfig := preload("../game/playground_config.gd")
-const PlaygroundProfiles := preload("../game/playground_profiles.gd")
-const PlaygroundWorkbenchSets := preload("../game/playground_workbench_sets.gd")
+const PlaylotConfig := preload("../game/playlot_config.gd")
+const PlaylotProfiles := preload("../game/playlot_profiles.gd")
+const PlaylotWorkbenchSets := preload("../game/playlot_workbench_sets.gd")
 const ROOT := "user://pg_wbscope"
 const PACK := "pg_scope_pack"
 const EMPTY_PACK := "pg_scope_empty"
@@ -14,7 +14,7 @@ const CHECKS := 17
 const SECTIONS := 3
 
 
-## What [PlaygroundWorkbenchSets] reads off a Playground, without the scene.
+## What [PlaylotWorkbenchSets] reads off a Playlot, without the scene.
 class FakeGame:
 	extends RefCounted
 	var profiles: Object = null
@@ -36,14 +36,14 @@ func _ready() -> void:
 
 
 func _run() -> void:
-	print("game-playground: workbench scope")
+	print("game-playlot: workbench scope")
 	_write("addons/%s/weapon/scope_pistol.yml" % PACK, "weight: 1.0\nmagazine: 7\n")
 	var root := ProjectSettings.globalize_path(ROOT)
-	var profiles := PlaygroundProfiles.new()
+	var profiles := PlaylotProfiles.new()
 	profiles.setup(PackedStringArray([root]))
 	var game := FakeGame.new()
 	game.profiles = profiles
-	game.config_binder = PlaygroundConfig.make_binder(PlaygroundConfig.new())
+	game.config_binder = PlaylotConfig.make_binder(PlaylotConfig.new())
 	game.config_binder.roots = PackedStringArray([root])
 	var _loaded := game.config_binder.load_layers()
 	var _early := profiles.refine_weapon_entries(EMPTY_PACK, [])
@@ -55,23 +55,23 @@ func _run() -> void:
 	wb.thread_cvars = false
 	wb.relevance_cvars = false
 	wb.npc_lod_cvars = false
-	PlaygroundWorkbenchSets.add_sets(wb, game, func() -> bool: return _arena)
+	PlaylotWorkbenchSets.add_sets(wb, game, func() -> bool: return _arena)
 	add_child(wb)
 	_check(wb.start(profiles.runtime).ok, "the workbench starts")
 
 	_entered += 1
 	var kinds := _kinds(wb)
-	_check(not kinds.has("config_arena"), "Playground only: no arena section", ", ".join(kinds))
-	_check(not _headings(wb).any(func(h: String) -> bool: return h.contains("Arena")), "Playground only: no heading says Arena", " | ".join(_headings(wb)))
-	_check(kinds.has("config_world") and kinds.has("config_server") and kinds.has("config_props"), "the playground's own settings are listed", ", ".join(kinds))
+	_check(not kinds.has("config_arena"), "Playlot only: no arena section", ", ".join(kinds))
+	_check(not _headings(wb).any(func(h: String) -> bool: return h.contains("Arena")), "Playlot only: no heading says Arena", " | ".join(_headings(wb)))
+	_check(kinds.has("config_world") and kinds.has("config_server") and kinds.has("config_props"), "the playlot's own settings are listed", ", ".join(kinds))
 	_check(kinds.has("npc"), "the NPC profiles are listed", ", ".join(kinds))
 	_check(not kinds.has("weapon"), "the weapon group is not a heading of its own")
-	_check(not DotWorkbenchScope.owners(wb.api, DotWorkbenchScope.sections(wb.api, wb._labels)).has(PlaygroundWorkbenchSets.ARENA_OWNER), "the arena mode is not among the loaded owners")
+	_check(not DotWorkbenchScope.owners(wb.api, DotWorkbenchScope.sections(wb.api, wb._labels)).has(PlaylotWorkbenchSets.ARENA_OWNER), "the arena mode is not among the loaded owners")
 	_arena = true
 	kinds = _kinds(wb)
 	var owners := DotWorkbenchScope.owners(wb.api, DotWorkbenchScope.sections(wb.api, wb._labels))
-	_check(kinds.has("config_arena") and kinds.has("config_world"), "both loaded: the arena and the playground sections show", ", ".join(kinds))
-	_check(owners.has(PlaygroundWorkbenchSets.GAME) and owners.has(PlaygroundWorkbenchSets.ARENA_OWNER), "both loaded: both owners are named", ", ".join(owners))
+	_check(kinds.has("config_arena") and kinds.has("config_world"), "both loaded: the arena and the playlot sections show", ", ".join(kinds))
+	_check(owners.has(PlaylotWorkbenchSets.GAME) and owners.has(PlaylotWorkbenchSets.ARENA_OWNER), "both loaded: both owners are named", ", ".join(owners))
 	_check(_headings(wb).has("Arena mode (pg_arena)  ·  server"), "the arena heading says it is server side", " | ".join(_headings(wb)))
 	_arena = false
 	_finished += 1
@@ -94,10 +94,10 @@ func _run() -> void:
 	add_child(console)
 	var _bounce := console.cvar("sv_grenade_bounce", "0.4", "how far a grenade bounces")
 	var _on := console.cvar("sv_grenade_trails", "1", "trails").with_range(0.0, 1.0)
-	var listed_sets := PlaygroundWorkbenchSets.add_cvar_sets(wb, console, profiles.runtime)
+	var listed_sets := PlaylotWorkbenchSets.add_cvar_sets(wb, console, profiles.runtime)
 	kinds = _kinds(wb)
 	_check(listed_sets == 1 and kinds.has("grenades") and not kinds.has("ragdolls"), "only the addon cvar sets whose cvars exist are listed", ", ".join(kinds))
-	var types := PlaygroundWorkbenchSets.cvar_types(console, "sv_grenade")
+	var types := PlaylotWorkbenchSets.cvar_types(console, "sv_grenade")
 	_check(types.get("sv_grenade_bounce") == "float" and types.get("sv_grenade_trails") == "bool", "cvar types follow the cvars", str(types))
 	_finished += 1
 

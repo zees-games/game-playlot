@@ -1,9 +1,9 @@
 extends DotGameCheckSuite
 
-const Playground := preload("../game/playground.gd")
-const PlaygroundConfig := preload("../game/playground_config.gd")
-const PlaygroundPlayer := preload("../game/playground_player.gd")
-const PlaygroundPlayerStack := preload("../game/playground_player_stack.gd")
+const Playlot := preload("../game/playlot.gd")
+const PlaylotConfig := preload("../game/playlot_config.gd")
+const PlaylotPlayer := preload("../game/playlot_player.gd")
+const PlaylotPlayerStack := preload("../game/playlot_player_stack.gd")
 
 ## The player stack, run against a real sandbox rather than against a stub.
 ##
@@ -29,7 +29,7 @@ var _section_count := 0
 
 const SECTIONS := 5
 
-var _game: Playground = null
+var _game: Playlot = null
 
 
 func _ready() -> void:
@@ -38,7 +38,7 @@ func _ready() -> void:
 
 
 func _run() -> void:
-	print("playground player stack")
+	print("playlot player stack")
 	print("")
 
 	if not await _build():
@@ -55,12 +55,12 @@ func _run() -> void:
 
 
 func _build() -> bool:
-	var config := PlaygroundConfig.new()
+	var config := PlaylotConfig.new()
 	config.records_directory = ""
 	config.initial_map = &"pg_flatgrass"
 	config.map_seconds = 0.0
 
-	_game = Playground.new()
+	_game = Playlot.new()
 	_game.name = "Playground"
 	_game.config = config
 	add_child(_game)
@@ -78,7 +78,7 @@ func _build() -> bool:
 	return true
 
 
-func _stack() -> PlaygroundPlayerStack:
+func _stack() -> PlaylotPlayerStack:
 	return _game.player_stack
 
 
@@ -199,7 +199,7 @@ func _test_spawn_director() -> void:
 	)
 
 	# And that spawning a player actually goes through it.
-	var player: PlaygroundPlayer = _game.players.get(&"ada")
+	var player: PlaylotPlayer = _game.players.get(&"ada")
 	_game.spawn_player(&"ada")
 	_check(
 		player.controller.state.position.distance_to(choice.transform.origin) < 0.01,
@@ -212,7 +212,7 @@ func _test_spawn_director() -> void:
 func _test_view_switch() -> void:
 	_section("first person, third person, and the handover")
 
-	var player: PlaygroundPlayer = _game.players.get(&"ada")
+	var player: PlaylotPlayer = _game.players.get(&"ada")
 	player.samples_input = true
 	_check(player.build_view_switch(), "a local player gets a view switch")
 	_check(player.tps != null, "with a third-person controller under it")
@@ -247,7 +247,7 @@ func _test_view_switch() -> void:
 func _test_character() -> void:
 	_section("the body other people see")
 
-	var player: PlaygroundPlayer = _game.players.get(&"ada")
+	var player: PlaylotPlayer = _game.players.get(&"ada")
 	_check(player.character != null, "a player has a character visual")
 
 	if player.character == null:

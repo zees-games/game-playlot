@@ -26,17 +26,17 @@ The files of [CLAUDE.md](../CLAUDE.md)'s layout, one by one.
 
 | Path | What |
 | --- | --- |
-| `game/playground.gd` | the simulation: maps, the optional run timer, props, entities, players, liquids, panes; headless |
-| `game/playground_player.gd`, `playground_player_stack.gd`, `playground_character.gd`, `playground_figure.gd`, `playground_avatars.gd` | the player bridge (movement, style, tools), its stack, its body and what it wears |
-| `game/playground_module.gd`, `playground_services.gd`, `playground_mod_tools.gd`, `playground_vote.gd`, `playground_platform.gd`, `playground_progress.gd` | the server: dot-server module and every console command, chat/voice/moderation, the vote, identity, stats |
-| `game/playground_prop.gd`, `playground_spawnables.gd`, `playground_limits.gd`, `playground_constraints.gd`, `playground_pickup.gd`, `playground_builds.gd`, `prop.tscn`, `entity.tscn`, `vehicle.tscn` | props: one scene for every prop, the catalogue, limits, constraints, picking players up, saved builds |
+| `game/playlot.gd` | the simulation: maps, the optional run timer, props, entities, players, liquids, panes; headless |
+| `game/playlot_player.gd`, `playlot_player_stack.gd`, `playlot_character.gd`, `playlot_figure.gd`, `playlot_avatars.gd` | the player bridge (movement, style, tools), its stack, its body and what it wears |
+| `game/playlot_module.gd`, `playlot_services.gd`, `playlot_mod_tools.gd`, `playlot_vote.gd`, `playlot_platform.gd`, `playlot_progress.gd` | the server: dot-server module and every console command, chat/voice/moderation, the vote, identity, stats |
+| `game/playlot_prop.gd`, `playlot_spawnables.gd`, `playlot_limits.gd`, `playlot_constraints.gd`, `playlot_pickup.gd`, `playlot_builds.gd`, `prop.tscn`, `entity.tscn`, `vehicle.tscn` | props: one scene for every prop, the catalogue, limits, constraints, picking players up, saved builds |
 | `game/entities/` | NPCs and other entities, each `extends` a path |
-| `game/weapons/`, `game/toolgun/`, `playground_weapons.gd`, `playground_zee.gd`, `playground_projectiles.gd` | the toys, the tool gun's modes, zee-dot-weapons, grenades and rockets |
-| `game/playground_arena.gd`, `playground_waves.gd`, `playground_downs.gd`, `playground_shop.gd`, `playground_spectate.gd`, `playground_party.gd`, `playground_npc_world.gd` | the modes |
-| `game/playground_inventory.gd` | the bag |
-| `game/playground_client.gd`, `playground_hud.gd`, `playground_spawn_menu.gd`, `playground_icons.gd`, `playground_presentation.gd`, `playground_rope_view.gd`, `game/client/` | the client: not headless |
+| `game/weapons/`, `game/toolgun/`, `playlot_weapons.gd`, `playlot_zee.gd`, `playlot_projectiles.gd` | the toys, the tool gun's modes, zee-dot-weapons, grenades and rockets |
+| `game/playlot_arena.gd`, `playlot_waves.gd`, `playlot_downs.gd`, `playlot_shop.gd`, `playlot_spectate.gd`, `playlot_party.gd`, `playlot_npc_world.gd` | the modes |
+| `game/playlot_inventory.gd` | the bag |
+| `game/playlot_client.gd`, `playlot_hud.gd`, `playlot_spawn_menu.gd`, `playlot_icons.gd`, `playlot_presentation.gd`, `playlot_rope_view.gd`, `game/client/` | the client: not headless |
 | `game/net/` | the dot-net bridge, link, per-kind net classes, events and requests, the bag's wire |
-| `game/playground_map.gd`, `playground_geometry.gd`, `playground_lighting.gd`, `playground_map_survey.gd`, `playground_materials.gd`, `playground_worldgen.gd` | the map base, box building and the palette, each map's dot-lighting, the survey, materials, the generator |
+| `game/playlot_map.gd`, `playlot_geometry.gd`, `playlot_lighting.gd`, `playlot_map_survey.gd`, `playlot_materials.gd`, `playlot_worldgen.gd` | the map base, box building and the palette, each map's dot-lighting, the survey, materials, the generator |
 | `maps/` | `pg_flatgrass` (hand-built, the default), `pg_generated`, `pg_data` (builds a JSON map), `custom/` (playlot-maps, linked) |
 | `examples/` | the five suites |
 | `tools/` | `map_props.gd`, `screenshot*.sh`, `render_feel.sh`, `audio_probe.sh`, `loudness_pilot.gd` |

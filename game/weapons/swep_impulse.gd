@@ -1,4 +1,4 @@
-extends "playground_weapon.gd"
+extends "playlot_weapon.gd"
 
 ## A shockwave. Left click shoves everything nearby away, right click pulls it in.
 ##
@@ -7,7 +7,7 @@ extends "playground_weapon.gd"
 ## [b]An impulse, not a velocity, and that is what makes it feel like it has weight.[/b]
 ## The solver divides an impulse by the mass, so a beach ball leaves at forty times a
 ## boulder's speed for the same push — free, and exactly what a shockwave should do.
-## `DotGravGun.punt` makes the same choice for the same reason; `PlaygroundWeapon.launch`
+## `DotGravGun.punt` makes the same choice for the same reason; `PlaylotWeapon.launch`
 ## deliberately makes the opposite one, because a launcher is aimed and a blast is not.
 ##
 ## [b]It walks the spawner's own list rather than casting a shape.[/b] The spawner

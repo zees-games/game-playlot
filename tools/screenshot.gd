@@ -1,11 +1,11 @@
 extends SceneTree
 
-const PlaygroundPresentation := preload("../game/playground_presentation.gd")
-const PlaygroundFigure := preload("../game/playground_figure.gd")
-const PlaygroundSpawnables := preload("../game/playground_spawnables.gd")
-const PlaygroundProjectiles := preload("../game/playground_projectiles.gd")
+const PlaylotPresentation := preload("../game/playlot_presentation.gd")
+const PlaylotFigure := preload("../game/playlot_figure.gd")
+const PlaylotSpawnables := preload("../game/playlot_spawnables.gd")
+const PlaylotProjectiles := preload("../game/playlot_projectiles.gd")
 
-## Renders a playground map to PNGs so a person can look at it.
+## Renders a playlot map to PNGs so a person can look at it.
 ##
 ## [b]A map is a rendered thing, and this family has shipped a 0 x 0 Control twice and a
 ## black screen once.[/b] Every other check on a map here is an assertion about a list of
@@ -33,7 +33,7 @@ var _shots: Array[Dictionary] = []
 var _map_node: Node = null
 var _index := 0
 var _camera: Camera3D = null
-var _blood_from: PlaygroundPresentation = null
+var _blood_from: PlaylotPresentation = null
 var _blood_delay := 0
 var _arms_pending := false
 var _arms: DotPlayerViewArms = null
@@ -44,9 +44,9 @@ var _map_pending: Callable = Callable()
 
 func _initialize() -> void:
 	# Settings to a scratch directory emptied first (see
-	# `PlaygroundPresentation.use_scratch_settings`): a render must not save into a player's
+	# `PlaylotPresentation.use_scratch_settings`): a render must not save into a player's
 	# file, nor draw from whatever the player last saved there.
-	var _scratch := PlaygroundPresentation.use_scratch_settings("screenshot")
+	var _scratch := PlaylotPresentation.use_scratch_settings("screenshot")
 	var args := OS.get_cmdline_user_args()
 	var index := args.find("--map")
 	var id := args[index + 1] if index >= 0 and index + 1 < args.size() else "pg_flatgrass"
@@ -94,7 +94,7 @@ func _build_map(scene: PackedScene, id: String, custom: String, args: PackedStri
 	root.add_child(map_node)
 	_draw_map_extras(map_node)
 
-	# The map brings its own sun, sky and fill light (`PlaygroundGeometry.light`), the same
+	# The map brings its own sun, sky and fill light (`PlaylotGeometry.light`), the same
 	# ones the client draws, so a second environment here would be the one ignored.
 
 	_camera = Camera3D.new()
@@ -199,7 +199,7 @@ func _views_from_args(args: PackedStringArray) -> Array[Dictionary]:
 ## A document map's props, drawn from the real prop scene and catalogue where the server
 ## would put them, frozen: a picture of the map without its doors and cars is not the map.
 func _draw_props(entries: Array) -> void:
-	var catalogue := PlaygroundSpawnables.catalogue()
+	var catalogue := PlaylotSpawnables.catalogue()
 	for entry: Dictionary in entries:
 		var def := catalogue.get_prop(StringName(str(entry.get("id", ""))))
 		if def == null:
@@ -496,7 +496,7 @@ func _stage_arms(id: String) -> Array[Dictionary]:
 ## `--action <kind> <id>` (`--action emote dance`): a person playing an avatar action from the
 ## front, early and later in the clip. The id goes through dot-user-avatar's own list.
 func _stage_action(id: String, kind: StringName, action: String) -> Array[Dictionary]:
-	var figure := PlaygroundFigure.build(1.8, PackedInt32Array(), "actor") as DotHumanoidFigure
+	var figure := PlaylotFigure.build(1.8, PackedInt32Array(), "actor") as DotHumanoidFigure
 	if figure == null:
 		push_error("no people art in this build")
 		return []
@@ -519,8 +519,8 @@ func _stage_action(id: String, kind: StringName, action: String) -> Array[Dictio
 # --- --fx -------------------------------------------------------------------
 
 ## A prop spawning and a prop on the end of the physics gun, drawn by the real presentation
-## layer: [method PlaygroundPresentation.on_prop_spawned] and
-## [method PlaygroundPresentation.on_tool_beam], from a player's eye on the field.
+## layer: [method PlaylotPresentation.on_prop_spawned] and
+## [method PlaylotPresentation.on_tool_beam], from a player's eye on the field.
 ##
 ## [b]The puff is slowed to a twentieth of real speed and restarted once spawned[/b], for
 ## game-fatal-contact's reason: it lives 420 ms and a software frame under xvfb is long enough that
@@ -528,7 +528,7 @@ func _stage_action(id: String, kind: StringName, action: String) -> Array[Dictio
 ## not affected. `present` is not called again, so dot-fx retires nothing while the
 ## frames are taken.
 func _stage_fx() -> Array[Dictionary]:
-	var presentation := PlaygroundPresentation.new()
+	var presentation := PlaylotPresentation.new()
 	presentation.name = "Presentation"
 	root.add_child(presentation)
 	var built := presentation.setup()
@@ -540,7 +540,7 @@ func _stage_fx() -> Array[Dictionary]:
 	var puff_at := Vector3(1.6, 1.0, 3.5)
 	var held_at := Vector3(-1.4, 1.6, 2.5)
 
-	# A crate on the end of the gun, as `PlaygroundProp` draws one: an unshaded box.
+	# A crate on the end of the gun, as `PlaylotProp` draws one: an unshaded box.
 	var crate := MeshInstance3D.new()
 	var box := BoxMesh.new()
 	box.size = Vector3(0.9, 0.9, 0.9)
@@ -586,16 +586,16 @@ func _stage_fx() -> Array[Dictionary]:
 
 	return [
 		# What the player sees: the beam from low right of the view to the crate.
-		{"name": "playground_fx", "from": eye, "at": eye + aim * 10.0},
+		{"name": "playlot_fx", "from": eye, "at": eye + aim * 10.0},
 		# From beside, which is the frame that says the beam ends on the crate and starts
 		# in front of the eye rather than in it.
-		{"name": "playground_fx_side", "from": Vector3(5.5, 2.6, 5.0), "at": Vector3(-0.5, 1.4, 4.0)},
+		{"name": "playlot_fx_side", "from": Vector3(5.5, 2.6, 5.0), "at": Vector3(-0.5, 1.4, 4.0)},
 	]
 
 
 ## `--grenades`: a grenade in the air over a smoke cloud and a fire zone, drawn by the real layer.
 func _stage_grenades() -> Array[Dictionary]:
-	var layer := PlaygroundProjectiles.new()
+	var layer := PlaylotProjectiles.new()
 	root.add_child(layer)
 	var spawn := DotWeaponSpawn.new()
 	spawn.id = &"aw_frag"
@@ -608,7 +608,7 @@ func _stage_grenades() -> Array[Dictionary]:
 	var fire := {"event": "fire", "position": Vector3(3.5, 0.5, -7), "radius": 2.5, "seconds": 20.0, "dps": 12.0}
 	var events: Array[Dictionary] = [smoke, fire]
 	layer.effects.blasted(events, &"shot")
-	return [{"name": "playground_grenades", "from": Vector3(0, 2.0, 3), "at": Vector3(0, 1.5, -6)}]
+	return [{"name": "playlot_grenades", "from": Vector3(0, 2.0, 3), "at": Vector3(0, 1.5, -6)}]
 
 
 ## [b]Frame-counted rather than awaited.[/b] `SceneTree._process` is expected to return a
@@ -704,7 +704,7 @@ func _process(_delta: float) -> bool:
 	if _index >= _shots.size():
 		return true
 
-	# A document naming a converted world draws it over frames (`PlaygroundData.load_world`); shoot it drawn.
+	# A document naming a converted world draws it over frames (`PlaylotData.load_world`); shoot it drawn.
 	if _map_node != null and _map_node.get(&"_world_loading") == true:
 		return false
 

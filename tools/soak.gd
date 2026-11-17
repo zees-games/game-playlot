@@ -1,11 +1,11 @@
 extends Node
 
-const Playground := preload("../game/playground.gd")
-const PlaygroundConfig := preload("../game/playground_config.gd")
-const PlaygroundPlayer := preload("../game/playground_player.gd")
-const PlaygroundPresentation := preload("../game/playground_presentation.gd")
+const Playlot := preload("../game/playlot.gd")
+const PlaylotConfig := preload("../game/playlot_config.gd")
+const PlaylotPlayer := preload("../game/playlot_player.gd")
+const PlaylotPresentation := preload("../game/playlot_presentation.gd")
 
-## Soak on the real sandbox: N players wander one map for M simulated minutes through dot-bot's DotBotSoak, fed by dot-spawn's DotSpawnWatch. The playground has no bot brain (a sandbox has nothing to chase), so each stand-in holds a random heading for a second or three and jumps now and then,
+## Soak on the real sandbox: N players wander one map for M simulated minutes through dot-bot's DotBotSoak, fed by dot-spawn's DotSpawnWatch. The playlot has no bot brain (a sandbox has nothing to chase), so each stand-in holds a random heading for a second or three and jumps now and then,
 ## which is what walks them into walls, water, ramps and every prop and pane a map has. Run `./game.sh soak [map] [minutes]`; DotBotSoakConfig flags are accepted too. Writes .godot/test-logs/soak-<map>.json, prints the SOAK line, exits 1 on failure. No navigation, goals or combat here: stuck is lenient (they bump walls on purpose).
 
 const DEFAULT_MAP := &"pg_flatgrass"
@@ -13,7 +13,7 @@ const DEFAULT_MINUTES := 1.0
 const DEFAULT_BOTS := 4
 const TICK_RATE := 64
 
-var _game: Playground
+var _game: Playlot
 var _tick := 0
 var _rng := RandomNumberGenerator.new()
 var _heading: Dictionary = {}
@@ -22,7 +22,7 @@ var _lost := 0
 
 func _ready() -> void:
 	DotLog.set_level(DotLog.Level.ERROR)
-	var _scratch := PlaygroundPresentation.use_scratch_settings("soak")
+	var _scratch := PlaylotPresentation.use_scratch_settings("soak")
 	_run.call_deferred()
 
 
@@ -47,11 +47,11 @@ func _run() -> void:
 	cfg.require_kills_after_sec = -1.0
 	_rng.seed = cfg.seed_value
 
-	var config := PlaygroundConfig.new()
+	var config := PlaylotConfig.new()
 	config.records_directory = ""
 	config.initial_map = map_id
 	config.map_seconds = 0.0
-	_game = Playground.new()
+	_game = Playlot.new()
 	_game.config = config
 	_game.tick_rate = TICK_RATE
 	_game.external_tick = true
@@ -112,7 +112,7 @@ func _run() -> void:
 func _step(_delta: float) -> void:
 	_tick += 1
 	for id: StringName in _game.players:
-		var body: PlaygroundPlayer = _game.players[id]
+		var body: PlaylotPlayer = _game.players[id]
 		var at := body.controller.state.position
 		if not at.is_finite() or absf(at.y) > 5000.0 or Vector2(at.x, at.z).length() > 20000.0:
 			_lost += 1
@@ -132,7 +132,7 @@ func _step(_delta: float) -> void:
 func _movers() -> Array:
 	var out: Array = []
 	for id: StringName in _game.players:
-		var body: PlaygroundPlayer = _game.players[id]
+		var body: PlaylotPlayer = _game.players[id]
 		out.append({"id": id, "position": body.controller.state.position, "kind": &"bot", "has_goal": false})
 	return out
 

@@ -1,9 +1,9 @@
 extends Node
 
-const PlaygroundClient := preload("../game/playground_client.gd")
-const PlaygroundConfig := preload("../game/playground_config.gd")
-const PlaygroundPresentation := preload("../game/playground_presentation.gd")
-const PlaygroundBindings := preload("../game/playground_bindings.gd")
+const PlaylotClient := preload("../game/playlot_client.gd")
+const PlaylotConfig := preload("../game/playlot_config.gd")
+const PlaylotPresentation := preload("../game/playlot_presentation.gd")
+const PlaylotBindings := preload("../game/playlot_bindings.gd")
 
 ## Renders the offline client placing spawn points with the tool gun, the markers showing, and a point's form open, into `screenshots/mapedit/`.
 ##
@@ -11,15 +11,15 @@ const PlaygroundBindings := preload("../game/playground_bindings.gd")
 
 const OUT_DIR := "res://screenshots/mapedit"
 
-var _client: PlaygroundClient = null
+var _client: PlaylotClient = null
 
 
 func _ready() -> void:
-	PlaygroundPresentation.use_scratch_settings("render_mapedit")
+	PlaylotPresentation.use_scratch_settings("render_mapedit")
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUT_DIR))
-	_client = PlaygroundClient.new()
+	_client = PlaylotClient.new()
 	_client.name = "Client"
-	var config := PlaygroundConfig.new()
+	var config := PlaylotConfig.new()
 	config.records_directory = ""
 	config.record_replays = false
 	_client.config = config
@@ -29,7 +29,7 @@ func _ready() -> void:
 
 func _key(action: StringName) -> void:
 	var event := InputEventKey.new()
-	var code: int = {PlaygroundBindings.MAP_EDIT: KEY_F7, PlaygroundBindings.MAP_EDIT_PICK: KEY_F8}[action]
+	var code: int = {PlaylotBindings.MAP_EDIT: KEY_F7, PlaylotBindings.MAP_EDIT_PICK: KEY_F8}[action]
 	event.physical_keycode = code as Key
 	event.keycode = code as Key
 	event.pressed = true
@@ -40,7 +40,7 @@ func _run() -> void:
 	await _seconds(2.0)
 	_client.mouse_capture_override = true
 	_client._on_tool_mode_chosen(&"spawnpoint", {"kind": "npc"})
-	_key(PlaygroundBindings.MAP_EDIT)
+	_key(PlaylotBindings.MAP_EDIT)
 	var view = _client.map_edit_view
 	var failed := 0
 
@@ -54,7 +54,7 @@ func _run() -> void:
 	forward.y = 0.0
 	forward = forward.normalized()
 	var right := forward.cross(Vector3.UP)
-	var space := _client.playground.world.get_world_3d().direct_space_state
+	var space := _client.playlot.world.get_world_3d().direct_space_state
 	var gun: Object = _client.weapon
 
 	for spec in [[Vector2(5.0, -2.5), "player"], [Vector2(6.0, 0.0), "npc"], [Vector2(8.0, 2.5), "both"]]:
@@ -65,7 +65,7 @@ func _run() -> void:
 		failed += 0 if placed.ok else 1
 		await _seconds(0.2)
 
-	var points: Array = _client.playground.map_edit.points.points
+	var points: Array = _client.playlot.map_edit.points.points
 	print("points in the set: %d, markers: %d" % [points.size(), view.overlay.marker_count()])
 	failed += 0 if points.size() == 3 and view.overlay.marker_count() == 3 else 1
 	await _seconds(0.5)
@@ -76,7 +76,7 @@ func _run() -> void:
 	for pitch in [-7.6, 7.6]:
 		_client.active_sampler().look_at_angles(0.0, pitch)
 		await _seconds(0.3)
-		_key(PlaygroundBindings.MAP_EDIT_PICK)
+		_key(PlaylotBindings.MAP_EDIT_PICK)
 		await _seconds(0.3)
 
 		if view.panel_open():

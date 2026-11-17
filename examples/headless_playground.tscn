@@ -1,6 +1,7 @@
 [gd_scene load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://examples/headless_playground.gd" id="1_hp"]
+; Alias of headless_playlot under the suite's old name, which nightly items still run.
+[ext_resource type="Script" path="res://examples/headless_playlot.gd" id="1_hp"]
 
-[node name="HeadlessPlayground" type="Node"]
+[node name="HeadlessPlaylot" type="Node"]
 script = ExtResource("1_hp")

@@ -1,22 +1,22 @@
 extends Node
 
-const PlaygroundClient := preload("../game/playground_client.gd")
-const PlaygroundConfig := preload("../game/playground_config.gd")
-const PlaygroundPresentation := preload("../game/playground_presentation.gd")
+const PlaylotClient := preload("../game/playlot_client.gd")
+const PlaylotConfig := preload("../game/playlot_config.gd")
+const PlaylotPresentation := preload("../game/playlot_presentation.gd")
 
 ## Renders the offline client's first-person camera pitched steeply down, to `screenshots/look_down.png`: what your own body looks like from inside it.
 ##
 ## Run: `xvfb-run -a godot --path . --resolution 1280x720 res://tools/render_look_down.tscn`
 
-var _client: PlaygroundClient = null
+var _client: PlaylotClient = null
 
 
 func _ready() -> void:
-	PlaygroundPresentation.use_scratch_settings("render_look_down")
+	PlaylotPresentation.use_scratch_settings("render_look_down")
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("res://screenshots"))
-	_client = PlaygroundClient.new()
+	_client = PlaylotClient.new()
 	_client.name = "Client"
-	var config := PlaygroundConfig.new()
+	var config := PlaylotConfig.new()
 	config.records_directory = ""
 	config.record_replays = false
 	_client.config = config

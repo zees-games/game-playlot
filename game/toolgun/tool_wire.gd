@@ -1,8 +1,8 @@
-extends "playground_tool.gd"
+extends "playlot_tool.gd"
 
 ## Wires a button or a lever to a door: left click what says something, then what hears it.
 ## Right click takes every wire off a prop. dot-props' [DotPropIO] keeps the wires; what an
-## input does is [Playground]'s.
+## input does is [Playlot]'s.
 ##
 ## [b]Which input is a setting, not a third click.[/b] A door has three (open, close,
 ## toggle), and a button wired to "toggle" is what almost everybody means, so that is the

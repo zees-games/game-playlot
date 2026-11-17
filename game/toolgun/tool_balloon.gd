@@ -1,4 +1,4 @@
-extends "playground_tool.gd"
+extends "playlot_tool.gd"
 
 ## Ties a balloon to whatever it points at — a prop, or the world — that pulls up with the
 ## lift setting. Right click lets one go untied. Each one counts against `balloons`.

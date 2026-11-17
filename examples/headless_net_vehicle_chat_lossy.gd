@@ -26,11 +26,11 @@ func _test_prop_removal() -> void:
 ## A vehicle spawned, driven and ridden with a real socket between the two ends.
 ##
 ## The only run of [DotVehicleNetSync] across a wire: a spec dot-net refuses, a wheel angle arriving as a body rotation, an unread seat mask, an unsent driver input, a rider drawn at the wrong spot.
-var _votw_driver: PlaygroundPlayer
+var _votw_driver: PlaylotPlayer
 var _votw_spawned: DotPropInstance
 var _votw_vehicle: DotVehicleInstance
-var _votw_mirror: PlaygroundVehicle
-var _votw_rider_body: PlaygroundCharacter
+var _votw_mirror: PlaylotVehicle
+var _votw_rider_body: PlaylotCharacter
 var _votw_head: Node3D
 
 func _test_vehicle_over_the_wire() -> void:
@@ -64,11 +64,11 @@ func _test_vehicle_over_the_wire() -> void:
 	_votw_mirror = _find_vehicle_node(_client_game)
 	_check(_votw_mirror != null, "the client builds its own copy of it")
 	_check(
-		_votw_mirror != null and _votw_mirror.get_node_or_null("Net") is PlaygroundVehicleNet,
+		_votw_mirror != null and _votw_mirror.get_node_or_null("Net") is PlaylotVehicleNet,
 		"replicating through DotVehicleNetSync rather than as a plain prop"
 	)
 	_check(
-		_votw_mirror != null and (_votw_mirror as PlaygroundVehicle).wheel_count() == 4,
+		_votw_mirror != null and (_votw_mirror as PlaylotVehicle).wheel_count() == 4,
 		"with its wheels built on the client too"
 	)
 
@@ -110,7 +110,7 @@ func _test_vehicle_over_the_wire_2() -> void:
 	# they look" — which is how this check first passed with the vehicle never sent.
 	if rider != null and _votw_mirror != null:
 		rider.controller.state.yaw = rad_to_deg(_votw_mirror.global_rotation.y) + 90.0
-	var _drawn := PlaygroundClient.present_frame(_client_net, _client_game, 0.0)
+	var _drawn := PlaylotClient.present_frame(_client_net, _client_game, 0.0)
 	_votw_rider_body = rider.character if rider != null else null
 	_votw_head = (
 		_votw_rider_body.rig.get_node_or_null("Body/Head") as Node3D
@@ -167,7 +167,7 @@ func _test_vehicle_over_the_wire_3() -> void:
 		)
 	)
 
-	var net_behaviour := _votw_mirror.get_node_or_null("Net") as PlaygroundVehicleNet
+	var net_behaviour := _votw_mirror.get_node_or_null("Net") as PlaylotVehicleNet
 	_check(
 		net_behaviour != null and net_behaviour.seat_occupied(0),
 		"the seat mask says the driving seat is full"
@@ -442,11 +442,11 @@ func _spread(values: Array[float], format: String = "%.2f") -> String:
 	])
 
 
-func _find_vehicle_node(game: Playground) -> PlaygroundVehicle:
+func _find_vehicle_node(game: Playlot) -> PlaylotVehicle:
 	var world: Node = game.world if game.world != null else game
 
 	for child in world.get_children():
-		var vehicle := child as PlaygroundVehicle
+		var vehicle := child as PlaylotVehicle
 
 		if vehicle != null:
 			return vehicle
@@ -456,9 +456,9 @@ func _find_vehicle_node(game: Playground) -> PlaygroundVehicle:
 
 ## A line typed on the client, through the real services layer, and back to the client.
 ##
-## The path rather than the codec: SAY over the link, the bridge's `say_requested`, [PlaygroundServices] with a real dot-chat router and moderation manager, the CHAT event and `chat_received`, then a gag. Armed: without `_subject_for_peer` the gagged line is delivered; without `_send_chat` the line carries no id.
+## The path rather than the codec: SAY over the link, the bridge's `say_requested`, [PlaylotServices] with a real dot-chat router and moderation manager, the CHAT event and `chat_received`, then a gag. Armed: without `_subject_for_peer` the gagged line is delivered; without `_send_chat` the line carries no id.
 var _cete_store: String
-var _cete_services: PlaygroundServices
+var _cete_services: PlaylotServices
 var _cete_heard: Array[Dictionary]
 var _cete_refused: Array[DotResult]
 var _cete_on_chat
@@ -470,7 +470,7 @@ func _test_chat_end_to_end() -> void:
 	_cete_store = ProjectSettings.globalize_path(NET_PUNISHMENTS)
 	DirAccess.remove_absolute(_cete_store)
 
-	_cete_services = PlaygroundServices.new()
+	_cete_services = PlaylotServices.new()
 	_cete_services.name = "Services"
 	_cete_services.service_scope = &"server"
 	_cete_services.bridge = _server_bridge
@@ -506,14 +506,14 @@ func _test_chat_end_to_end() -> void:
 	_client_bridge.chat_received.connect(_cete_on_chat)
 	_server_bridge.say_requested.connect(_cete_on_say)
 
-	_client_bridge.say(PlaygroundServices.CHANNEL_ALL, "hello from the client")
+	_client_bridge.say(PlaylotServices.CHANNEL_ALL, "hello from the client")
 	_exchange()
 
 	_check(_cete_heard.size() == 1, "the line comes back to the client, once", "%d" % _cete_heard.size())
 	var got: Dictionary = _cete_heard[0] if _cete_heard.size() > 0 else {}
 	_check(String(got.get("m", "")) == "hello from the client", "with the text")
 	_check(
-		String(got.get("c", "")) == String(PlaygroundServices.CHANNEL_ALL),
+		String(got.get("c", "")) == String(PlaylotServices.CHANNEL_ALL),
 		"on the channel it was said on"
 	)
 	_check(
@@ -545,7 +545,7 @@ func _test_chat_end_to_end_2() -> void:
 	_check(gagged.ok, "a gag is issued", str(gagged.error) if not gagged.ok else "")
 
 	_cete_heard.clear()
-	_client_bridge.say(PlaygroundServices.CHANNEL_ALL, "and now I am gagged")
+	_client_bridge.say(PlaylotServices.CHANNEL_ALL, "and now I am gagged")
 	_exchange()
 
 	var leaked := 0
@@ -616,7 +616,7 @@ func _test_lossy() -> void:
 ## An administrator's blind and beacon, through the real handlers, over the wire.
 ##
 ## The audience is the point: a blind on player 8 must not reach this client (peer 2, player 7), one on 7 must, a beacon is for everybody; asserted on the client's own copy of each player.
-var _bab_theirs: PlaygroundPlayer
+var _bab_theirs: PlaylotPlayer
 
 func _test_blind_and_beacon() -> void:
 	_section("an admin's blind and beacon: who is told")
@@ -629,7 +629,7 @@ func _test_blind_and_beacon() -> void:
 	_bab_theirs = _client_game.players.get(&"u%d" % (SESSION + 1))
 	_check(_bab_theirs != null, "and this client draws them")
 
-	var server_net := _server_player().get_node_or_null("Net") as PlaygroundPlayerNet
+	var server_net := _server_player().get_node_or_null("Net") as PlaylotPlayerNet
 	_check(
 		server_net != null
 		and server_net.find_var(&"net_blind").audience == DotNetVar.Audience.OWNER
@@ -637,7 +637,7 @@ func _test_blind_and_beacon() -> void:
 		"the blind is declared owner-only and the beacon for everybody"
 	)
 
-	var handlers := PlaygroundModTools.handlers(_server_game, null)
+	var handlers := PlaylotModTools.handlers(_server_game, null)
 	var blind: Callable = handlers[DotModTools.ACTION_BLIND]
 	var beacon: Callable = handlers[DotModTools.ACTION_BEACON]
 	var them := StringName(str(SESSION + 1))
@@ -650,7 +650,7 @@ func _test_blind_and_beacon() -> void:
 	# Several snapshots' worth, so an absence below is not a snapshot that had not come.
 	await _steps(12)
 
-	var their_net := _bab_theirs.get_node_or_null("Net") as PlaygroundPlayerNet \
+	var their_net := _bab_theirs.get_node_or_null("Net") as PlaylotPlayerNet \
 		if _bab_theirs != null else null
 	_check(
 		_bab_theirs != null and not _bab_theirs.blinded

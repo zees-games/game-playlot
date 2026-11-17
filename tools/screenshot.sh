@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Renders a playground map to screenshots/<map>_*.png so a person can look at it.
+# Renders a playlot map to screenshots/<map>_*.png so a person can look at it.
 #
 #   tools/screenshot.sh pg_flatgrass
 #   tools/screenshot.sh pg_flatgrass --action emote dance   # a person playing an avatar action

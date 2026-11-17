@@ -1,11 +1,11 @@
 extends DotGameCheckSuite
 
-const Playground := preload("../game/playground.gd")
-const PlaygroundArena := preload("../game/playground_arena.gd")
-const PlaygroundConfig := preload("../game/playground_config.gd")
-const PlaygroundEvents := preload("../game/net/playground_events.gd")
-const PlaygroundWeaponNet := preload("../game/net/playground_weapon_net.gd")
-const PlaygroundZee := preload("../game/playground_zee.gd")
+const Playlot := preload("../game/playlot.gd")
+const PlaylotArena := preload("../game/playlot_arena.gd")
+const PlaylotConfig := preload("../game/playlot_config.gd")
+const PlaylotEvents := preload("../game/net/playlot_events.gd")
+const PlaylotWeaponNet := preload("../game/net/playlot_weapon_net.gd")
+const PlaylotZee := preload("../game/playlot_zee.gd")
 
 ## Dropped zee guns: throw, pickup with ammunition, a kill's drop, floor clearing, the
 ## sv_weapon_drop* cvars, and the same floor on a client and a joiner.
@@ -16,17 +16,17 @@ const CHECKS := 28
 
 var _entered := 0
 var _completed := 0
-var _server: Playground = null
-var _client: Playground = null
-var _arena: PlaygroundArena = null
+var _server: Playlot = null
+var _client: Playlot = null
+var _arena: PlaylotArena = null
 var _bridge := FakeBridge.new()
-var _server_net := PlaygroundWeaponNet.new()
-var _client_net := PlaygroundWeaponNet.new()
+var _server_net := PlaylotWeaponNet.new()
+var _client_net := PlaylotWeaponNet.new()
 
 
 ## The few bridge calls the net layer makes, recorded instead of sent.
 class FakeBridge extends RefCounted:
-	var game: Playground = null
+	var game: Playlot = null
 	var wire: Array = []
 	var _tool_of := {}
 
@@ -43,7 +43,7 @@ class FakeBridge extends RefCounted:
 		pass
 
 	func _select_tool(_session: int, id: StringName, _tool: StringName) -> void:
-		PlaygroundZee.disarm(game.players[id])
+		PlaylotZee.disarm(game.players[id])
 
 
 func _ready() -> void:
@@ -52,10 +52,10 @@ func _ready() -> void:
 
 
 func _run() -> void:
-	print("game-playground: weapon drops")
+	print("game-playlot: weapon drops")
 	_server = await _make_game(true, &"drops_server")
 	_client = await _make_game(false, &"drops_client")
-	_arena = PlaygroundArena.new()
+	_arena = PlaylotArena.new()
 	_server.add_child(_arena)
 	var _ready_arena := _arena.setup(_server)
 	_arena.enabled = true
@@ -68,14 +68,14 @@ func _run() -> void:
 	_report_sections(_entered, _completed, SECTIONS, CHECKS)
 
 
-func _make_game(server: bool, scope: StringName) -> Playground:
-	var config := PlaygroundConfig.new()
+func _make_game(server: bool, scope: StringName) -> Playlot:
+	var config := PlaylotConfig.new()
 	config.records_directory = ""
 	config.map_seconds = 0.0
 	config.initial_map = &"pg_flatgrass"
 	config.authoritative = server
 	config.prop_spawn_interval = 0.0
-	var game := Playground.new()
+	var game := Playlot.new()
 	game.name = "Server" if server else "Client"
 	game.config = config
 	game.service_scope = scope
@@ -88,7 +88,7 @@ func _make_game(server: bool, scope: StringName) -> Playground:
 
 
 func _arm(player: Node) -> ZeeWeaponRig:
-	return PlaygroundZee.arm(player, _server.weapon_def(&"zee_pistol"), ZeeWeaponRig.Role.SERVER, true,
+	return PlaylotZee.arm(player, _server.weapon_def(&"zee_pistol"), ZeeWeaponRig.Role.SERVER, true,
 		_server.tick_rate, _server.current_tick())
 
 
@@ -100,10 +100,10 @@ func _test_wire() -> void:
 	_check(_client.weapon_layer != null and not _client.weapon_layer.drops.is_authority,
 		"the client game builds a mirror")
 	var pose := Transform3D(Basis(Quaternion(Vector3.UP, 0.7)), Vector3(12.5, 3.0, -40.0))
-	var settled := PlaygroundWeaponNet.read_settled(DotNetReader.new(PlaygroundWeaponNet.write_settled(9, pose)))
+	var settled := PlaylotWeaponNet.read_settled(DotNetReader.new(PlaylotWeaponNet.write_settled(9, pose)))
 	_check(bool(settled["ok"]) and int(settled["id"]) == 9 and (settled["at"] as Transform3D).origin.distance_to(pose.origin) < 0.05,
 		"a settled event round-trips")
-	_check(not _client_net.apply(PlaygroundEvents.Kind.CHAT, DotNetReader.new(PackedByteArray()), _client.weapon_layer),
+	_check(not _client_net.apply(PlaylotEvents.Kind.CHAT, DotNetReader.new(PackedByteArray()), _client.weapon_layer),
 		"an event that is not a weapon's is left to the bridge")
 	_completed += 1
 
@@ -207,7 +207,7 @@ func _test_replication() -> void:
 	_bridge.wire.clear()
 	var _rig := _arm(bea)
 	var id: int = layer.throw_for(&"u2")
-	_check(id > 0 and _kinds(PlaygroundEvents.Kind.WEAPON_DROP) == 1, "a throw sends one drop event to everybody")
+	_check(id > 0 and _kinds(PlaylotEvents.Kind.WEAPON_DROP) == 1, "a throw sends one drop event to everybody")
 	_pump()
 	var mirror = _client.weapon_layer.drops
 	_check(mirror.count() == 1 and mirror.has_drop(id), "the client draws the same drop under the same id")
@@ -219,7 +219,7 @@ func _test_replication() -> void:
 	body.angular_velocity = Vector3.ZERO
 	for i in 10:
 		layer.drops.tick(1.0)
-	_check(_kinds(PlaygroundEvents.Kind.WEAPON_SETTLED) >= 1, "a settled gun is announced")
+	_check(_kinds(PlaylotEvents.Kind.WEAPON_SETTLED) >= 1, "a settled gun is announced")
 	_pump()
 
 	var joined: Array = []

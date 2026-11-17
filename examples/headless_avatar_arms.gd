@@ -1,22 +1,22 @@
 extends DotGameCheckSuite
 
-const PlaygroundClient := preload("../game/playground_client.gd")
-const PlaygroundConfig := preload("../game/playground_config.gd")
-const PlaygroundViewGrip := preload("../game/playground_view_grip.gd")
-const PlaygroundZee := preload("../game/playground_zee.gd")
-const PlaygroundWeaponDef := preload("../game/weapons/playground_weapon_def.gd")
+const PlaylotClient := preload("../game/playlot_client.gd")
+const PlaylotConfig := preload("../game/playlot_config.gd")
+const PlaylotViewGrip := preload("../game/playlot_view_grip.gd")
+const PlaylotZee := preload("../game/playlot_zee.gd")
+const PlaylotWeaponDef := preload("../game/weapons/playlot_weapon_def.gd")
 
 ## The avatar owns the arms; a weapon brings only the gun and where to hold it. One arms rig per player, the same arms and body whatever is held (only the pose moves), a remote
 ## player's body unchanged by its gun, no second copy of the gun in first person, and a first-person model for every weapon in the catalogue, workshop and provider packs included.
 ## Run: godot --headless --path . res://examples/headless_avatar_arms.tscn
 
 const SECTIONS := 4
-## Where the avatar holds a gun's grip, in camera metres (PlaygroundClientBase.HAND_SEAT).
+## Where the avatar holds a gun's grip, in camera metres (PlaylotClientBase.HAND_SEAT).
 const HAND_SEAT := Vector3(0.16, -0.2, -0.36)
 
 var _entered := 0
 var _completed := 0
-var _client: PlaygroundClient = null
+var _client: PlaylotClient = null
 
 
 func _ready() -> void:
@@ -25,11 +25,11 @@ func _ready() -> void:
 
 
 func _run() -> void:
-	print("game-playground: avatar-owned arms")
-	_client = PlaygroundClient.new()
+	print("game-playlot: avatar-owned arms")
+	_client = PlaylotClient.new()
 	_client.name = "Client"
 	_client.fetch_content = false
-	var config := PlaygroundConfig.new()
+	var config := PlaylotConfig.new()
 	config.records_directory = ""
 	config.record_replays = false
 	_client.config = config
@@ -49,10 +49,10 @@ func _run() -> void:
 	_report_sections(_entered, _completed, SECTIONS)
 
 
-func _weapons() -> Array[PlaygroundWeaponDef]:
-	var out: Array[PlaygroundWeaponDef] = []
-	for def in _client.playground.weapons:
-		if PlaygroundZee.is_zee(def):
+func _weapons() -> Array[PlaylotWeaponDef]:
+	var out: Array[PlaylotWeaponDef] = []
+	for def in _client.playlot.weapons:
+		if PlaylotZee.is_zee(def):
 			out.append(def)
 	return out
 
@@ -89,9 +89,9 @@ func _meshes(root: Node, skip: Node = null) -> int:
 
 
 ## Bare hands are the one weapon with nothing to hold: zee's fists, which ship no model.
-func _bare(def: PlaygroundWeaponDef) -> bool:
-	var art: Variant = ZeeWeaponArtTable.table().get(PlaygroundZee.zee_id(def))
-	return PlaygroundZee.zee_id(def) == ZeeWeaponIds.FISTS and art is ZeeWeaponArt and not (art as ZeeWeaponArt).has_model()
+func _bare(def: PlaylotWeaponDef) -> bool:
+	var art: Variant = ZeeWeaponArtTable.table().get(PlaylotZee.zee_id(def))
+	return PlaylotZee.zee_id(def) == ZeeWeaponIds.FISTS and art is ZeeWeaponArt and not (art as ZeeWeaponArt).has_model()
 
 
 func _test_one_rig() -> void:
@@ -130,7 +130,7 @@ func _test_catalogue() -> void:
 		var wid := String(def.id)
 		if _bare(def):
 			bare += 1
-		elif _meshes(_client.zee_view) == 0 or _client.zee_view.equipped() != PlaygroundZee.zee_id(def):
+		elif _meshes(_client.zee_view) == 0 or _client.zee_view.equipped() != PlaylotZee.zee_id(def):
 			lacking.append(wid)
 		var now_arms: Node3D = arms_rig.arms() if arms_rig != null else null
 		if now_arms != arms or _count(_client, &"DotPlayerViewArms") != 1 \
@@ -183,7 +183,7 @@ func _test_view_modes() -> void:
 func _test_remote() -> void:
 	_entered += 1
 	print("A remote player")
-	var remote := _client.playground.add_player(&"u_remote", "Bea")
+	var remote := _client.playlot.add_player(&"u_remote", "Bea")
 	for _i in range(4):
 		await get_tree().process_frame
 	if not _check(remote != null and remote.character != null and remote.character.body() != null, "a remote player has a body"):
@@ -196,12 +196,12 @@ func _test_remote() -> void:
 	var changed: PackedStringArray = []
 	var missing: PackedStringArray = []
 	for def in _weapons():
-		PlaygroundZee.show_held(remote, def)
+		PlaylotZee.show_held(remote, def)
 		await get_tree().process_frame
 		var world := remote.zee_world as ZeeWorldModel
 		if _bare(def):
 			continue
-		if world == null or world.equipped() != PlaygroundZee.zee_id(def) or _meshes(world) == 0 or _count(remote, &"ZeeWorldModel") != 1:
+		if world == null or world.equipped() != PlaylotZee.zee_id(def) or _meshes(world) == 0 or _count(remote, &"ZeeWorldModel") != 1:
 			missing.append(String(def.id))
 		var own := _meshes(body, world)
 		if meshes < 0:

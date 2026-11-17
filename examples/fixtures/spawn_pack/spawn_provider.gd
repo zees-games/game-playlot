@@ -1,7 +1,7 @@
 extends RefCounted
 
 ## The test provider: shows the whole spawn-provider contract in one file (docs/spawn-providers.md).
-## Duck-typed on purpose, no class_name: a pack never names a type the playground owns.
+## Duck-typed on purpose, no class_name: a pack never names a type the playlot owns.
 
 ## Set by the suite so the weapon entry names a weapon the catalogue really has.
 static var weapon_id: String = ""

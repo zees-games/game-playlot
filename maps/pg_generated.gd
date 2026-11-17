@@ -1,7 +1,7 @@
-extends "../game/playground_map.gd"
+extends "../game/playlot_map.gd"
 
-const PlaygroundGeometry := preload("../game/playground_geometry.gd")
-const PlaygroundWorldGen := preload("../game/playground_worldgen.gd")
+const PlaylotGeometry := preload("../game/playlot_geometry.gd")
+const PlaylotWorldGen := preload("../game/playlot_worldgen.gd")
 
 ## `pg_generated` — the sandbox nobody wrote down.
 ##
@@ -24,7 +24,7 @@ const PlaygroundWorldGen := preload("../game/playground_worldgen.gd")
 ## There is deliberately no timed course on it, even with a run timer added: a generated
 ## jump course would be a course nobody could learn and a record nobody could beat.
 
-## The seed this map was built from. Set by [Playground] out of `pg_seed` before the
+## The seed this map was built from. Set by [Playlot] out of `pg_seed` before the
 ## scene is added, so that a map change with a chosen seed produces the chosen map.
 var seed_value: int = 0
 
@@ -43,7 +43,7 @@ var prop_points: Array[Vector3] = []
 ## [b]This map does not build itself in `_ready`, which every other one does.[/b] A
 ## generated map needs a seed, and dot-map's loader instantiates a scene and adds it --
 ## there is no moment between those two where anything could hand one over. So `_ready`
-## does nothing and [Playground] calls [method configure] from its `map_changed` handler,
+## does nothing and [Playlot] calls [method configure] from its `map_changed` handler,
 ## before it spawns anybody.
 ##
 ## The alternative was a static holding the pending seed, which is the shape this family
@@ -68,21 +68,21 @@ func configure(p_seed: int, p_source: Object = null) -> void:
 
 
 func _build() -> void:
-	PlaygroundGeometry.light(self)
+	PlaylotGeometry.light(self)
 
 	# A fallback first, so a failed generation still leaves somewhere to stand rather
 	# than dropping the player into nothing. A generated map that fails is rare -- ten
 	# seeds -- and "rare" is exactly when nobody has a fallback ready.
 	fallback_spawn = Vector3(120.0, 2.0, 120.0)
 
-	var res := PlaygroundWorldGen.generate(seed_value, seed_source)
+	var res := PlaylotWorldGen.generate(seed_value, seed_source)
 
 	if not res.ok:
 		# Refused rather than half-built. A partially generated sandbox is a room with no
 		# way out, which is worse than an empty plate -- and the plate is what a player
 		# gets, with the reason said out loud.
 		DotLog.warn(
-			"playground.map",
+			"playlot.map",
 			"the sandbox could not be generated; falling back to a plain plate",
 			{"why": res.error.message}
 		)
@@ -90,13 +90,13 @@ func _build() -> void:
 		return
 
 	document = res.value as DotProcGenDoc
-	var built := PlaygroundWorldGen.build(self, document)
+	var built := PlaylotWorldGen.build(self, document)
 
 	fallback_spawn = built["spawn"]
 	prop_points.assign(built["props"])
 
-	DotLog.info("playground.map", "pg_generated", {
-		"what": PlaygroundWorldGen.describe(document),
+	DotLog.info("playlot.map", "pg_generated", {
+		"what": PlaylotWorldGen.describe(document),
 		"walls": int(built["walls"]),
 		"props": prop_points.size(),
 	})
@@ -105,11 +105,11 @@ func _build() -> void:
 ## What a generation failure leaves behind: somewhere flat, with walls.
 func _plain_plate() -> void:
 	const SIZE := 240.0
-	PlaygroundGeometry.box(
+	PlaylotGeometry.box(
 		self,
 		Vector3(SIZE * 0.5, -0.5, SIZE * 0.5),
 		Vector3(SIZE, 1.0, SIZE),
-		PlaygroundGeometry.COLOUR_FLOOR
+		PlaylotGeometry.COLOUR_FLOOR
 	)
 	fallback_spawn = Vector3(SIZE * 0.5, 1.5, SIZE * 0.5)
 

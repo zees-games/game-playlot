@@ -1,4 +1,4 @@
-extends "playground_tool.gd"
+extends "playlot_tool.gd"
 
 ## Lets two props pass through each other: left click the first, then the second. Reload
 ## puts their collision back.

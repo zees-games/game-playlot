@@ -1,8 +1,8 @@
 extends Node
 
-const PlaygroundClient := preload("../game/playground_client.gd")
-const PlaygroundConfig := preload("../game/playground_config.gd")
-const PlaygroundPresentation := preload("../game/playground_presentation.gd")
+const PlaylotClient := preload("../game/playlot_client.gd")
+const PlaylotConfig := preload("../game/playlot_config.gd")
+const PlaylotPresentation := preload("../game/playlot_presentation.gd")
 
 ## Renders the Escape menu and the console through the real offline client (the platform owns
 ## the menu, the pointer and the console) into `screenshots/touch/`.
@@ -13,16 +13,16 @@ const PlaygroundPresentation := preload("../game/playground_presentation.gd")
 
 const OUT_DIR := "res://screenshots/touch"
 
-var _client: PlaygroundClient = null
+var _client: PlaylotClient = null
 
 
 func _ready() -> void:
 	DotPlatform.touch_override = 1
-	PlaygroundPresentation.use_scratch_settings("render_touch")
+	PlaylotPresentation.use_scratch_settings("render_touch")
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUT_DIR))
-	_client = PlaygroundClient.new()
+	_client = PlaylotClient.new()
 	_client.name = "Client"
-	var config := PlaygroundConfig.new()
+	var config := PlaylotConfig.new()
 	config.records_directory = ""
 	config.record_replays = false
 	_client.config = config

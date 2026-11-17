@@ -1,11 +1,11 @@
 extends SceneTree
 
-const Playground := preload("../game/playground.gd")
-const PlaygroundConfig := preload("../game/playground_config.gd")
-const PlaygroundPlayer := preload("../game/playground_player.gd")
+const Playlot := preload("../game/playlot.gd")
+const PlaylotConfig := preload("../game/playlot_config.gd")
+const PlaylotPlayer := preload("../game/playlot_player.gd")
 
 ## Frame sequences of the first-person camera's motion, to look at: the landing dip, the strafe
-## lean and the widening past a run, written by the client's own `PlaygroundPlayer.present_camera`
+## lean and the widening past a run, written by the client's own `PlaylotPlayer.present_camera`
 ## at 144 frames a second against the game's tick.
 ##
 ## [codeblock]
@@ -27,8 +27,8 @@ const PlaygroundPlayer := preload("../game/playground_player.gd")
 const OUT_DIR := "screenshots/feel"
 const BASE_FOV := 100.0
 
-var _game: Playground = null
-var _player: PlaygroundPlayer = null
+var _game: Playlot = null
+var _player: PlaylotPlayer = null
 var _camera: Camera3D = null
 var _home := Vector3.ZERO
 var _home_yaw := 0.0
@@ -52,12 +52,12 @@ func _initialize() -> void:
 	DotLog.set_level(DotLog.Level.ERROR)
 	DirAccess.make_dir_recursive_absolute(OUT_DIR)
 
-	var config := PlaygroundConfig.new()
+	var config := PlaylotConfig.new()
 	config.records_directory = ""
 	config.initial_map = &"pg_flatgrass"
 	config.map_seconds = 0.0
 
-	_game = Playground.new()
+	_game = Playlot.new()
 	_game.name = "Playground"
 	_game.config = config
 	root.add_child(_game)

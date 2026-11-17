@@ -1,0 +1,124 @@
+extends Node3D
+
+## The playlot's side of natural-disasters: one Addons-tab entry per disaster kind.
+##
+## [b]An adapter beside the addon, not a change to it.[/b] natural-disasters knows nothing of
+## the playlot and should not; this file is the only place that knows both. It lives in
+## its own folder so the addon itself can stay a symlink to its own repository
+## (`ln -s ../../natural-disasters/addons/natural_disasters addons/natural_disasters`), and
+## when that link is absent the hook registers nothing and the playlot starts as before.
+##
+## Paths are loaded rather than named: a script that mentioned `DotDisasterManager` would
+## not compile in a checkout without the addon.
+
+const MANAGER := "res://addons/natural_disasters/runtime/dot_disaster_manager.gd"
+
+## Bodies in this group are flung like props wherever they sit in the tree.
+const EXTRA_GROUP := &"disaster_bodies"
+
+var manager: Node = null
+var _host: Node = null
+
+
+func playlot_register(menu) -> void:
+	if not ResourceLoader.exists(MANAGER):
+		DotLog.info("pg.addons", "natural-disasters is not linked; no disasters in the menu")
+		return
+
+	_host = menu.host
+	manager = (load(MANAGER) as GDScript).new()
+	manager.set("authority", menu.authoritative)
+	# The sandbox's props are the bodies a tornado should throw, wherever they were put.
+	manager.set("bodies_fn", _bodies)
+	# Without these a tornado never reaches a player: they are not in the addon's group, and a
+	# controller overwrites a plain velocity write on its next tick.
+	manager.set("players_fn", _players)
+	manager.set("player_push_fn", _push_player)
+	manager.set("send_fn", menu.send_fn)
+	add_child(manager)
+
+	for kind_id in manager.call("kind_ids"):
+		var kind: Object = manager.call("get_kind", StringName(kind_id))
+		var label: String = str(kind.get("display_name"))
+		menu.add_item(
+			str(kind_id), label if label != "" else String(kind_id).capitalize(),
+			_start.bind(StringName(kind_id)), "Disasters",
+			"Starts a %s where you are looking." % String(kind_id)
+		)
+
+
+## The client half: draw what the authority announced.
+func playlot_receive(msg: Dictionary) -> void:
+	if manager != null:
+		var received: DotResult = manager.call("receive", msg)
+		DotLog.result("pg.addons", "a disaster message", received)
+
+
+func _start(ctx, kind_id: StringName) -> DotResult:
+	if manager == null:
+		return DotResult.fail(DotError.CODE_STATE, "natural-disasters is not linked")
+
+	var overrides := {"origin": ctx.at}
+	var started: DotResult = manager.call("start", kind_id, overrides)
+	if started.ok and started.value != null:
+		# One undo entry per spawn; stopping it sends the stop message every client's view obeys.
+		var event_id: int = int(started.value.get("id"))
+		ctx.push_undo(_stop.bind(event_id))
+	return started
+
+
+func _stop(event_id: int) -> void:
+	if manager != null:
+		manager.call("stop", event_id)
+
+
+func _players() -> Array:
+	var out: Array = []
+	var game: Variant = _host.get("players") if _host != null else null
+	if game is Dictionary:
+		for body in (game as Dictionary).values():
+			if body is Node3D and is_instance_valid(body):
+				out.append(body)
+	return out
+
+
+func _push_player(player: Node3D, dv: Vector3, _ev: Object) -> void:
+	var controller: Variant = player.get("controller")
+	if controller is Object and (controller as Object).has_method("apply_external_velocity"):
+		(controller as Object).call("apply_external_velocity", dv)
+
+
+func _bodies() -> Array:
+	var out: Array = []
+	var world: Variant = _host.get("world") if _host != null else null
+
+	if world is Node:
+		_collect(world as Node, out)
+
+	var cfg: Variant = _host.get("config") if _host != null else null
+	if cfg == null or cfg.get("disaster_fling_extra") != false:
+		_collect_extra(out)
+
+	return out
+
+
+func _collect_extra(out: Array) -> void:
+	if _host == null or not _host.is_inside_tree():
+		return
+	for node in _host.get_tree().get_nodes_in_group(EXTRA_GROUP):
+		if node is RigidBody3D and not out.has(node):
+			out.append(node)
+	var ragdolls: Variant = _host.get("ragdolls")
+	if ragdolls is Object and (ragdolls as Object).has_method("live"):
+		for body in (ragdolls as Object).call("live"):
+			if is_instance_valid(body):
+				for part in body.part_nodes():
+					if part is RigidBody3D and not out.has(part):
+						out.append(part)
+
+
+func _collect(node: Node, out: Array) -> void:
+	for child in node.get_children():
+		if child is RigidBody3D:
+			out.append(child)
+		_collect(child, out)

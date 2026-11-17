@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://game/playground.gd" id="1_game"]
+[ext_resource type="Script" path="res://game/playlot.gd" id="1_game"]
 
 [node name="PlaygroundServer" type="Node"]
 

@@ -1,7 +1,7 @@
-extends "../game/playground_map.gd"
+extends "../game/playlot_map.gd"
 
-const PlaygroundGeometry := preload("../game/playground_geometry.gd")
-const PlaygroundMaterials := preload("../game/playground_materials.gd")
+const PlaylotGeometry := preload("../game/playlot_geometry.gd")
+const PlaylotMaterials := preload("../game/playlot_materials.gd")
 
 ## `pg_flatgrass` — the default map: a big flat field of grass under an open sky.
 ##
@@ -23,31 +23,31 @@ const WALL_HEIGHT := 10.0
 
 
 func _build() -> void:
-	PlaygroundGeometry.light(self)
+	PlaylotGeometry.light(self)
 
 	fallback_spawn = Vector3(0.0, 1.0, 0.0)
 
-	var ground := PlaygroundGeometry.box(
+	var ground := PlaylotGeometry.box(
 		self,
 		Vector3(0.0, -0.5, 0.0),
 		Vector3(SIZE, 1.0, SIZE),
-		PlaygroundMaterials.look("grass", PlaygroundGeometry.COLOUR_FLOOR)
+		PlaylotMaterials.look("grass", PlaylotGeometry.COLOUR_FLOOR)
 	)
-	PlaygroundMaterials.apply(ground, "grass")
+	PlaylotMaterials.apply(ground, "grass")
 
 	# Walls, so props stay in and players do not walk off into nothing.
 	for side in [-1.0, 1.0]:
-		PlaygroundGeometry.box(
+		PlaylotGeometry.box(
 			self,
 			Vector3(side * SIZE * 0.5, WALL_HEIGHT * 0.4, 0.0),
 			Vector3(1.0, WALL_HEIGHT, SIZE),
-			PlaygroundGeometry.COLOUR_PLATFORM
+			PlaylotGeometry.COLOUR_PLATFORM
 		)
-		PlaygroundGeometry.box(
+		PlaylotGeometry.box(
 			self,
 			Vector3(0.0, WALL_HEIGHT * 0.4, side * SIZE * 0.5),
 			Vector3(SIZE, WALL_HEIGHT, 1.0),
-			PlaygroundGeometry.COLOUR_PLATFORM
+			PlaylotGeometry.COLOUR_PLATFORM
 		)
 
 	_build_movement_corner()
@@ -59,7 +59,7 @@ const STEEP_RAMP_SIZE := Vector3(20.0, 0.8, 30.0)
 const STEEP_RAMP_ANGLE := 55.0
 
 
-## What `PlaygroundMapSurvey` may find unreached here, and why.
+## What `PlaylotMapSurvey` may find unreached here, and why.
 ##
 ## - [b]The tops of the four walls.[/b] 9 m up, 1 m wide: they keep props in.
 ## - [b]The crest of the steep ramp.[/b] A 55-degree slab's upper edge is a strip of its
@@ -101,14 +101,14 @@ func survey_declared() -> Array:
 ## without loading a surf map.
 func _build_movement_corner() -> void:
 	for i in range(6):
-		PlaygroundGeometry.box(
+		PlaylotGeometry.box(
 			self,
 			Vector3(-24.0 + float(i) * 2.0, float(i) * 0.35 - 0.175, -24.0),
 			Vector3(2.0, 0.35 + float(i) * 0.7, 8.0),
-			PlaygroundGeometry.COLOUR_PLATFORM
+			PlaylotGeometry.COLOUR_PLATFORM
 		)
 
-	PlaygroundGeometry.ramp(
+	PlaylotGeometry.ramp(
 		self,
 		Vector3(24.0, 2.0, -20.0),
 		Vector3(14.0, 0.8, 20.0),
@@ -116,7 +116,7 @@ func _build_movement_corner() -> void:
 		Vector3.FORWARD
 	)
 
-	PlaygroundGeometry.ramp(
+	PlaylotGeometry.ramp(
 		self, STEEP_RAMP_AT, STEEP_RAMP_SIZE, STEEP_RAMP_ANGLE, Vector3.FORWARD
 	)
 

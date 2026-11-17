@@ -1,15 +1,15 @@
 extends Node
 
-const PlaygroundNetBridge := preload("../game/net/playground_net_bridge.gd")
-const PlaygroundNetCommand := preload("../game/net/playground_net_command.gd")
-const PlaygroundNetLink := preload("../game/net/playground_net_link.gd")
+const PlaylotNetBridge := preload("../game/net/playlot_net_bridge.gd")
+const PlaylotNetCommand := preload("../game/net/playlot_net_command.gd")
+const PlaylotNetLink := preload("../game/net/playlot_net_link.gd")
 
 ## N synthetic clients in one process against tools/load_server.tscn, each a real [DotClientLink]
 ## on its own ENet connection; sends acks and random-walk inputs at the tick rate, decodes nothing.
 ## Driver: tools/load100.sh.
 
 ## Stands in for the game bridge: acks the tick at the head of each snapshot, drops the rest.
-class Stub extends PlaygroundNetBridge:
+class Stub extends PlaylotNetBridge:
 	var ack_tick := 0
 	var snapshots := 0
 	var bytes := 0
@@ -30,7 +30,7 @@ class Stub extends PlaygroundNetBridge:
 class Client extends RefCounted:
 	var root: Node = null
 	var link: DotClientLink = null
-	var net_link: PlaygroundNetLink = null
+	var net_link: PlaylotNetLink = null
 	var stub: Stub = null
 	var last_tick := 0
 	var history: Array = []
@@ -86,7 +86,7 @@ func _run(count: int) -> void:
 		c.link.udp_address = "127.0.0.1:%d" % _port
 		holder.add_child(c.link)
 		c.stub = Stub.new()
-		c.net_link = PlaygroundNetLink.attached_to(c.link, c.stub, false)
+		c.net_link = PlaylotNetLink.attached_to(c.link, c.stub, false)
 		c.net_link.name = "Playground"
 		c.link.add_child(c.net_link)
 		# The game scene is what makes a real client expensive and is not what is measured.
@@ -168,7 +168,7 @@ func _send(c: Client) -> void:
 		c.retarget = randi_range(_hz / 4, _hz * 2)
 		c.move = Vector2.from_angle(randf() * TAU) if randf() < 0.8 else Vector2.ZERO
 	c.yaw = fmod(c.yaw + 1.5, 360.0)
-	var packet := PlaygroundNetCommand.new()
+	var packet := PlaylotNetCommand.new()
 	packet.tick = maxi(c.last_tick + 1, c.stub.ack_tick + 3)
 	c.last_tick = packet.tick
 	packet.delta = 1.0 / float(_hz)

@@ -1,7 +1,7 @@
 extends Node
 
-const PlaygroundMapSurvey := preload("../game/playground_map_survey.gd")
-const PlaygroundPlayer := preload("../game/playground_player.gd")
+const PlaylotMapSurvey := preload("../game/playlot_map_survey.gd")
+const PlaylotPlayer := preload("../game/playlot_player.gd")
 
 ## The vents of the custom maps: floor only a crouched player fits over, that no spawn leads
 ## to. The suite's survey asks about a standing player, so a crawlspace, a low attic or a
@@ -27,7 +27,7 @@ func _run() -> void:
 			if file.ends_with(".json"):
 				ids.append(file.get_basename())
 	var data_script := load("res://maps/pg_data.gd") as GDScript
-	var crouch_height: float = PlaygroundPlayer.movement_tunables().crouch_height
+	var crouch_height: float = PlaylotPlayer.movement_tunables().crouch_height
 	var failed := false
 	for id in ids:
 		var map: Node3D = data_script.new()
@@ -38,7 +38,7 @@ func _run() -> void:
 			map.free()
 			continue
 		var spawns: Array[Vector3] = [map.fallback_spawn]
-		var found: Dictionary = PlaygroundMapSurvey.crouch_cut_off(map, [], spawns, map.survey_declared(), crouch_height)
+		var found: Dictionary = PlaylotMapSurvey.crouch_cut_off(map, [], spawns, map.survey_declared(), crouch_height)
 		map.free()
 		print("%s: %d crouch-only cells, %d reached" % [id, int(found["crouch_only"]), int(found["crouch_reached"])])
 		for line in found["cut_off"]:

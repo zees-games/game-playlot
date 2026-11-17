@@ -1,5 +1,5 @@
 extends "res://examples/dedicated_rotation_vote_records.gd"
-## Boots a real [DotServer], loads the playground module into it, and runs the
+## Boots a real [DotServer], loads the playlot module into it, and runs the
 ## commands an operator and an admin would actually type.
 ##
 ## [codeblock]
@@ -25,7 +25,7 @@ func _on_log_record(rec: Dictionary) -> void:
 
 
 func _run() -> void:
-	print("playground — dedicated server")
+	print("playlot — dedicated server")
 	print("")
 
 	# The module turns on saving what the wave NPCs learn of each map, as a real server
@@ -88,7 +88,7 @@ func _run() -> void:
 	var checks := CHECKS - (EXIT_PROBE_CHECKS if _is_exit_probe() else 0) + (TIMER_CHECKS if _timer_linked() else 0)
 
 	_check(_stats_errors.is_empty(), "the stats layer logged no error", str(_stats_errors))
-	_check(PlaygroundProgress.stats_schema().validate().ok, "the stats schema, hitzones included, validates")
+	_check(PlaylotProgress.stats_schema().validate().ok, "the stats schema, hitzones included, validates")
 
 	_forget_learned_heat()
 
@@ -138,7 +138,7 @@ func _boot() -> void:
 
 	cfg.store_line("// written by examples/dedicated.gd")
 	cfg.store_line("sv_tickrate 100")
-	cfg.store_line("hostname \"playground test\"")
+	cfg.store_line("hostname \"playlot test\"")
 	cfg.close()
 
 	var config := DotServerConfig.new()
@@ -146,11 +146,11 @@ func _boot() -> void:
 	# And nothing in the after-the-listener file, so the test is unambiguous about
 	# which one set it.
 	config.autoexec_config = ""
-	config.hostname = "playground test"
+	config.hostname = "playlot test"
 	config.max_players = 16
 	config.hibernate_when_empty = false
 	config.rcon_password = ""
-	# On, and it used to be off. This game ships `PlaygroundBrowser` -- a real server
+	# On, and it used to be off. This game ships `PlaylotBrowser` -- a real server
 	# list with sources, filters and favourites -- against a server that answered
 	# nothing, so the half being exercised here was the half that already worked.
 	config.query_enabled = true
@@ -205,17 +205,17 @@ func _boot() -> void:
 	# The game, built AFTER the server so it reads the rate the server has set —
 	# which is the ordering a real deployment has, because the server is what boots
 	# first.
-	var pg_config := PlaygroundConfig.new()
+	var pg_config := PlaylotConfig.new()
 	pg_config.records_directory = ""
 	pg_config.initial_map = &"pg_flatgrass"
 	pg_config.map_seconds = 0.0
 
-	game = Playground.new()
+	game = Playlot.new()
 	game.name = "Playground"
 	game.config = pg_config
 	add_child(game)
 
-	# Two frames: the playground's own `_ready` awaits its first map change.
+	# Two frames: the playlot's own `_ready` awaits its first map change.
 	await get_tree().process_frame
 	await get_tree().process_frame
 
@@ -226,7 +226,7 @@ func _boot() -> void:
 	# without a [DotPlatformHub] in the registry, and building the hub is awaited work —
 	# which is why it is here, in the application, rather than inside a module's
 	# `_module_load`, which dot-server's module host does not await.
-	platform = PlaygroundPlatform.new()
+	platform = PlaylotPlatform.new()
 	platform.name = "Identity"
 	platform.directory = "%s/identity" % SERVER_DIR
 	add_child(platform)
@@ -243,15 +243,15 @@ func _boot() -> void:
 	#
 	# Loaded here, not preloaded at the top: a preload would load the module long before the host
 	# does, and script load order decides whether Godot 4.7.2 leaks them at exit.
-	(load("res://game/playground_module.gd") as GDScript).set(
+	(load("res://game/playlot_module.gd") as GDScript).set(
 		"punishments_path", "%s/punishments.json" % SERVER_DIR
 	)
 
 	var loaded: DotResult = await server.modules.load_module(
-		"res://game/playground_module.gd"
+		"res://game/playlot_module.gd"
 	)
 
-	_check(loaded.ok, "the playground module loads into the server",
+	_check(loaded.ok, "the playlot module loads into the server",
 		loaded.error.message if not loaded.ok else "")
 
 	if not loaded.ok:
@@ -260,7 +260,7 @@ func _boot() -> void:
 	# [b]The store, and that it is empty.[/b] The second is what says the first worked on
 	# THIS run: a path that is right and a directory that was not wiped is a suite carrying
 	# the last run's gag into this one.
-	var services: PlaygroundServices = _module().get("services")
+	var services: PlaylotServices = _module().get("services")
 	var moderation: DotModerationManager = services.moderation if services != null else null
 	_check(services != null and services.punishments_path.begins_with(SERVER_DIR),
 		"punishments go to this run's own store, not the one a real server enforces",
@@ -376,7 +376,7 @@ func _test_map_commands() -> void:
 
 	# The ballot's clock, which is the one that ends a map on a server with a vote. It
 	# extended the map session's, which on this server decides nothing.
-	var clock := (_module().get("vote") as PlaygroundVote).director.clock
+	var clock := (_module().get("vote") as PlaylotVote).director.clock
 	var before := clock.remaining
 
 	var extended := _run_command("pg_extend 300")
@@ -402,7 +402,7 @@ func _test_services() -> void:
 	print("")
 	print("chat and voice")
 
-	var services: PlaygroundServices = _module().get("services")
+	var services: PlaylotServices = _module().get("services")
 
 	_check(services != null, "the services are up")
 	_check(
@@ -411,12 +411,12 @@ func _test_services() -> void:
 			% (services.chat.channel_ids().size() if services.chat != null else -1)
 	)
 	_check(
-		services.chat.channel(PlaygroundServices.CHANNEL_NEAR).scope
+		services.chat.channel(PlaylotServices.CHANNEL_NEAR).scope
 			== DotChatChannel.Scope.RADIUS,
 		"one of which is a radius, so a build is a conversation"
 	)
 	_check(
-		services.chat.channel(PlaygroundServices.CHANNEL_NEAR).backlog == 0,
+		services.chat.channel(PlaylotServices.CHANNEL_NEAR).backlog == 0,
 		"and has no backlog, because a line said quietly beside a build must not be "
 		+ "replayed to a stranger who was not standing there"
 	)
@@ -443,7 +443,7 @@ func _test_services() -> void:
 	)
 	_check(
 		services.voice.config.format_fingerprint()
-			== PlaygroundServices.voice_config().format_fingerprint(),
+			== PlaylotServices.voice_config().format_fingerprint(),
 		"and its format is the one a client builds from the same file"
 	)
 
@@ -471,20 +471,20 @@ func _test_services() -> void:
 	# The wire, both directions. Every encoder against its decoder, because the two have
 	# to be exact inverses and nothing can check that for you.
 	var line := DotChatMessage.make(
-		DotChatMessage.Kind.SAY, PlaygroundServices.CHANNEL_NEAR, "7", "Ada", "over here"
+		DotChatMessage.Kind.SAY, PlaylotServices.CHANNEL_NEAR, "7", "Ada", "over here"
 	)
 	line.seq = 3
 
 	var wire := line.to_dictionary()
 	wire["x"] = {"p": 7}
 
-	var back := PlaygroundEvents.read_chat(
-		DotNetReader.new(PlaygroundEvents.write_chat(wire))
+	var back := PlaylotEvents.read_chat(
+		DotNetReader.new(PlaylotEvents.write_chat(wire))
 	)
 	_check(bool(back["ok"]), "a chat line round-trips")
 	_check(String(back["m"]) == "over here", "with the text")
 	_check(
-		String(back["c"]) == String(PlaygroundServices.CHANNEL_NEAR),
+		String(back["c"]) == String(PlaylotServices.CHANNEL_NEAR),
 		"and the channel it was said on"
 	)
 	_check(
@@ -500,10 +500,10 @@ func _test_services() -> void:
 
 	for kind in DotChatMessage.Kind.values():
 		var one := DotChatMessage.make(
-			kind as DotChatMessage.Kind, PlaygroundServices.CHANNEL_ALL, "1", "Ada", "x"
+			kind as DotChatMessage.Kind, PlaylotServices.CHANNEL_ALL, "1", "Ada", "x"
 		)
-		var round_trip := PlaygroundEvents.read_chat(
-			DotNetReader.new(PlaygroundEvents.write_chat(one.to_dictionary()))
+		var round_trip := PlaylotEvents.read_chat(
+			DotNetReader.new(PlaylotEvents.write_chat(one.to_dictionary()))
 		)
 
 		if String(round_trip["k"]) != one.kind_name():
@@ -518,7 +518,7 @@ func _test_arena() -> void:
 	print("")
 	print("the arena")
 
-	var arena: PlaygroundArena = _module().get("arena")
+	var arena: PlaylotArena = _module().get("arena")
 
 	_check(arena != null, "the arena is built")
 	_check(
@@ -558,7 +558,7 @@ func _test_arena() -> void:
 	arena.admit(&"u901", "Bob")
 
 	var alice := arena.health_of(&"u900")
-	_check(alice != null and alice.health == PlaygroundArena.MAX_HEALTH,
+	_check(alice != null and alice.health == PlaylotArena.MAX_HEALTH,
 		"somebody admitted starts on full health")
 
 	# [b]Spawn protection is counted in ticks, and this is what it is for.[/b] A player
@@ -581,7 +581,7 @@ func _test_arena() -> void:
 	var hit := arena.hurt(&"u901", &"u900", 30.0, 5.0)
 	_check(hit != null and not hit.refused, "a hit lands", str(hit))
 	_check(
-		alice.health < PlaygroundArena.MAX_HEALTH,
+		alice.health < PlaylotArena.MAX_HEALTH,
 		"and takes health off (%.0f)" % alice.health
 	)
 
@@ -650,7 +650,7 @@ func _test_shop() -> void:
 	print("")
 	print("the shop")
 
-	var shop: PlaygroundShop = _module().get("shop")
+	var shop: PlaylotShop = _module().get("shop")
 
 	_check(shop != null, "the shop is built")
 
@@ -690,7 +690,7 @@ func _test_shop() -> void:
 	var buyer := &"shopper"
 	shop.on_player_added(buyer)
 	_check(
-		shop.balance(buyer) == PlaygroundShop.START_CREDITS,
+		shop.balance(buyer) == PlaylotShop.START_CREDITS,
 		"a player starts with credits",
 		str(shop.balance(buyer))
 	)
@@ -700,7 +700,7 @@ func _test_shop() -> void:
 	var bought := shop.charge(buyer, cheapest.id)
 	_check(bought.ok, "and can buy the cheapest thing", str(bought.error))
 	_check(
-		shop.balance(buyer) == PlaygroundShop.START_CREDITS - cheapest.price,
+		shop.balance(buyer) == PlaylotShop.START_CREDITS - cheapest.price,
 		"which costs what it says",
 		str(shop.balance(buyer))
 	)
@@ -719,7 +719,7 @@ func _test_shop() -> void:
 
 	shop.on_wave_kill(buyer)
 	_check(
-		shop.balance(buyer) == PlaygroundShop.WAVE_KILL,
+		shop.balance(buyer) == PlaylotShop.WAVE_KILL,
 		"killing something the director sent pays",
 		str(shop.balance(buyer))
 	)

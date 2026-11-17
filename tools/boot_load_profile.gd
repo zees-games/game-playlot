@@ -1,5 +1,5 @@
 extends SceneTree
-## Boot-compile profile: loads the playground scene headless and reports the load time and the scripts
+## Boot-compile profile: loads the playlot scene headless and reports the load time and the scripts
 ## it pulled in (game and addons, by count and bytes); compile is the whole cost, so compare counts.
 ## Run: godot --headless --path . --script res://tools/boot_load_profile.gd
 
@@ -35,7 +35,7 @@ func _report(label: String, root: String) -> void:
 
 func _init() -> void:
 	var t0 := Time.get_ticks_msec()
-	load("res://game/playground.tscn")
+	load("res://game/playlot.tscn")
 	print("PROFILE load_ms=", Time.get_ticks_msec() - t0)
 	_report("game", "res://game")
 	_report("addons", "res://addons")

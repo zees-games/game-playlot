@@ -4,14 +4,14 @@ This game is the only place dot-player-controller, dot-map, dot-props, dot-npc a
 
 ## The game owns the tick loop
 
-`DotFpsController.Drive.EXTERNAL`, not `LOCAL`, even in single player. In `LOCAL` the controller accumulates frame time and ticks itself, so a run timer would be fed from a signal fired inside somebody else's loop, and a bot could not be driven at all. `Playground._simulate_tick` owns it, which makes the order explicit:
+`DotFpsController.Drive.EXTERNAL`, not `LOCAL`, even in single player. In `LOCAL` the controller accumulates frame time and ticks itself, so a run timer would be fed from a signal fired inside somebody else's loop, and a bot could not be driven at all. `Playlot._simulate_tick` owns it, which makes the order explicit:
 
 1. `props.advance`, `maps.advance`, then the vehicles are driven and ticked
 2. the NPC candidate list is rebuilt once, then the NPC world and every entity tick (see [sandbox.md](sandbox.md#perception-is-dot-npcs-being-a-prop-is-still-dot-props))
-3. every player: sample (if local), then `controller.simulate_tick` (`PlaygroundPlayer.simulate`)
+3. every player: sample (if local), then `controller.simulate_tick` (`PlaylotPlayer.simulate`)
 4. pickup, projectiles, debris, doors, liquids, pane impacts
-5. `Playground._carry_riders` copies each rider's seat position into `controller.state.position` (a run timer, the NPC list, the HUD and `PlaygroundPlayerNet` all read it, and nothing else writes it while seated)
-6. the run timer, if a server has one (`Playground.run_timer.tick`), with the position the move **just produced**
+5. `Playlot._carry_riders` copies each rider's seat position into `controller.state.position` (a run timer, the NPC list, the HUD and `PlaylotPlayerNet` all read it, and nothing else writes it while seated)
+6. the run timer, if a server has one (`Playlot.run_timer.tick`), with the position the move **just produced**
 
 **A run timer must come after the move.** The timer works out whether the player crossed a line during this tick from where they were and where they now are; ticking it first shifts every run by exactly one tick, and by a different amount at each tick rate, which is the tick-rate dependence dot-timer's sub-tick fractions exist to remove. It is also the shape a dot-net bridge and a dedicated server use.
 
@@ -23,25 +23,25 @@ This game is the only place dot-player-controller, dot-map, dot-props, dot-npc a
 
 ## A style is movement, and a timer's ranking half follows it
 
-`DotFpsStyle` transforms the tunables and filters the command. `PlaygroundPlayer.set_style` applies it and emits `style_changed`, which is how `addons/pg_timer` puts the matching `DotTimerStyle` (whether a run counts and what it is worth) on the player's timer when a server has one ([timer.md](timer.md)). `DotFpsController.set_style` **rebuilds the motor**, which assigning the property does not; the suite checks that specifically.
+`DotFpsStyle` transforms the tunables and filters the command. `PlaylotPlayer.set_style` applies it and emits `style_changed`, which is how `addons/pg_timer` puts the matching `DotTimerStyle` (whether a run counts and what it is worth) on the player's timer when a server has one ([timer.md](timer.md)). `DotFpsController.set_style` **rebuilds the motor**, which assigning the property does not; the suite checks that specifically.
 
 A style rebuilds the tunables from the controller's base copy, so anything written into the live tunables (a collision mask) is lost on the next style change. Go through the controller's setters (`set_collision_mask`).
 
 ## After the move: `post_move_fn`
 
-`PlaygroundPlayer._on_simulated` calls `post_move_fn` (unset by default) on every simulated tick, a prediction replay's included, after the move and before toys and riding. It is the one place an addon can change where the player ends up on the same tick on every end; `addons/pg_timer` uses it for the timer's zone effects (prespeed clamp, speed limit, PUSH, GRAVITY), read at the state's own position. A signal would put it a tick late.
+`PlaylotPlayer._on_simulated` calls `post_move_fn` (unset by default) on every simulated tick, a prediction replay's included, after the move and before toys and riding. It is the one place an addon can change where the player ends up on the same tick on every end; `addons/pg_timer` uses it for the timer's zone effects (prespeed clamp, speed limit, PUSH, GRAVITY), read at the state's own position. A signal would put it a tick late.
 
 ## Teleport and the spawn yaw
 
-`PlaygroundPlayer.teleport` goes through `DotFpsController.teleport` (drops the smoothing and puts the player in the air), tells `PlaygroundPlayer.sampler` the new angles, and leaves a player that nothing samples **holding still and facing where it was put**. A `DotFpsCommand` carries **absolute** view angles, so writing `controller.state.yaw` directly lasts until the next tick: the client's sampler, or a bot's last command, turns it straight back. A bot holding forward when it fell off a course was otherwise respawned already running off the pad.
+`PlaylotPlayer.teleport` goes through `DotFpsController.teleport` (drops the smoothing and puts the player in the air), tells `PlaylotPlayer.sampler` the new angles, and leaves a player that nothing samples **holding still and facing where it was put**. A `DotFpsCommand` carries **absolute** view angles, so writing `controller.state.yaw` directly lasts until the next tick: the client's sampler, or a bot's last command, turns it straight back. A bot holding forward when it fell off a course was otherwise respawned already running off the pad.
 
 Facing a direction is `atan2(-dx, -dz)`: `DotFpsMotor._view_basis` builds forward as `(-sin(yaw), 0, -cos(yaw))`. The obvious `atan2(dx, dz)` is 180 degrees out and mirrored.
 
-**A teleport stops a run, if there is one** (`PlaygroundPlayer.stop_run`, a no-op without a timer). A teleport that kept the clock running is the simplest cheat on a timed map; only a map's own TELEPORT zone keeps it, and that is the adapter's.
+**A teleport stops a run, if there is one** (`PlaylotPlayer.stop_run`, a no-op without a timer). A teleport that kept the clock running is the simplest cheat on a timed map; only a map's own TELEPORT zone keeps it, and that is the adapter's.
 
-**A respawn here is a teleport of the same body** (`Playground.spawn_player`), so nothing a handler set is lost and `DotModTools.respawned` is never called: blind, beacon, noclip and freeze all survive a respawn (game-fatal-contact ends the last two with the body).
+**A respawn here is a teleport of the same body** (`Playlot.spawn_player`), so nothing a handler set is lost and `DotModTools.respawned` is never called: blind, beacon, noclip and freeze all survive a respawn (game-fatal-contact ends the last two with the body).
 
-`Playground.spawn_player` steps a spawn to the nearest free point on two rings of eight at `SPAWN_SPACING` (1.5 m) (`_clear_of_players`), which stays on the smallest start pad; past seventeen people the centre is shared. Every start here is one point, and without this two players joining stood inside each other's heads.
+`Playlot.spawn_player` steps a spawn to the nearest free point on two rings of eight at `SPAWN_SPACING` (1.5 m) (`_clear_of_players`), which stays on the smallest start pad; past seventeen people the centre is shared. Every start here is one point, and without this two players joining stood inside each other's heads.
 
 ## A map change happens with everything in flight
 
@@ -49,13 +49,13 @@ Facing a direction is `atan2(-dx, -dz)`: `DotFpsMotor._view_basis` builds forwar
 
 A generated or document map needs configuring before anybody spawns: `_on_map_changed` calls `configure()` / `configure_doc()` first, then map props, then spawns.
 
-## The randomness manager is built before the playground
+## The randomness manager is built before the playlot
 
-`Playground._ready` loads its first map inside `add_child`, and a generated map asks the registry for a seed source at that moment. A manager registered afterwards is one the map did not use, and nothing errors, because a fixed-seed fallback is a legitimate configuration.
+`Playlot._ready` loads its first map inside `add_child`, and a generated map asks the registry for a seed source at that moment. A manager registered afterwards is one the map did not use, and nothing errors, because a fixed-seed fallback is a legitimate configuration.
 
 ## The movement is a bhop server's, not the addon's defaults
 
-`PlaygroundPlayer._tunables` (the static builder behind `movement_tunables()`) differs from `DotFpsTunables` in the genre's direction:
+`PlaylotPlayer._tunables` (the static builder behind `movement_tunables()`) differs from `DotFpsTunables` in the genre's direction:
 
 | | Default | Here | Why |
 | --- | --- | --- | --- |
@@ -65,13 +65,13 @@ A generated or document map needs configuring before anybody spawns: `_on_map_ch
 | `coyote_time` | 0.1 | **0** | free speed on a timed map; a run set with it is not comparable |
 | `jump_buffer_time` | 0.1 | **0** | the same |
 
-`PlaygroundMap.jump_reach(rise)` and `climb_limit()` ask the same tunables (`DotFpsTunables.jump_reach` / `climb_limit`, apex × `CLIMB_MARGIN` 0.9 = 1.035 m) so maps with no player in the tree ask the movement itself. `MOVE_SPEED`, `JUMP_HEIGHT` and `MOVE_GRAVITY` stay on `PlaygroundMap` for laying out geometry and are asserted against the tunables the server applies. `PlaygroundConfig` (Movement group, `config_world`) carries `move_speed`, `jump_height` and `move_gravity` at the same defaults; `Playground.apply_movement()` puts them on every player and the toys, and the server bridge sends them in HELLO (appended) and in a `MOVEMENT` event on change, so a client predicts with the server's numbers (`headless_net`: `_test_movement_over_the_wire`). The map constants and `jump_reach` stay the defaults: a changed value does not re-size a built-in map. Never measure a reach off `DotFpsTunables.new()`: the addon's defaults are not this server's.
+`PlaylotMap.jump_reach(rise)` and `climb_limit()` ask the same tunables (`DotFpsTunables.jump_reach` / `climb_limit`, apex × `CLIMB_MARGIN` 0.9 = 1.035 m) so maps with no player in the tree ask the movement itself. `MOVE_SPEED`, `JUMP_HEIGHT` and `MOVE_GRAVITY` stay on `PlaylotMap` for laying out geometry and are asserted against the tunables the server applies. `PlaylotConfig` (Movement group, `config_world`) carries `move_speed`, `jump_height` and `move_gravity` at the same defaults; `Playlot.apply_movement()` puts them on every player and the toys, and the server bridge sends them in HELLO (appended) and in a `MOVEMENT` event on change, so a client predicts with the server's numbers (`headless_net`: `_test_movement_over_the_wire`). The map constants and `jump_reach` stay the defaults: a changed value does not re-size a built-in map. Never measure a reach off `DotFpsTunables.new()`: the addon's defaults are not this server's.
 
 ## The tick rate comes from `server.cfg`, and every link is silent
 
 ```
 server.cfg: sv_tickrate 100 -> dot-server _apply_tickrate() -> Engine.physics_ticks_per_second
-  -> Playground._resolve_tick_rate() -> Playground.tick_rate
+  -> Playlot._resolve_tick_rate() -> Playlot.tick_rate
   -> (with dot-timer linked) the run timer's manager -> every record it files
 ```
 
@@ -79,7 +79,7 @@ A timer counting 128 a second on a server stepping 100 reports every run 28% lon
 
 ## The server module
 
-`game/playground_module.gd` is the only file that names dot-server. It extends `DotModule`, **not `DotGameModule`, deliberately for now**: `DotGameModule`'s `game`, `bridge`, `net` and `services` are untyped fields a subclass cannot redeclare and this module reads them typed throughout; its `_build_extras` builds services, the arena, the waves, the mod tools, the vote and progress in an order each depends on; and it keeps its own `_joined` table and spawn path rather than a `DotGameRoster`. That is a conversion of its own. Consequences: the module wires things `DotGameModule` would do itself (identity and dot-platform, hibernation; see [services.md](services.md)).
+`game/playlot_module.gd` is the only file that names dot-server. It extends `DotModule`, **not `DotGameModule`, deliberately for now**: `DotGameModule`'s `game`, `bridge`, `net` and `services` are untyped fields a subclass cannot redeclare and this module reads them typed throughout; its `_build_extras` builds services, the arena, the waves, the mod tools, the vote and progress in an order each depends on; and it keeps its own `_joined` table and spawn path rather than a `DotGameRoster`. That is a conversion of its own. Consequences: the module wires things `DotGameModule` would do itself (identity and dot-platform, hibernation; see [services.md](services.md)).
 
 | Commands | |
 | --- | --- |

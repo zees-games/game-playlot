@@ -1,4 +1,4 @@
-extends "playground_tool.gd"
+extends "playlot_tool.gd"
 
 ## Places and removes authored spawn points and navigation links by pointing at the map.
 ##

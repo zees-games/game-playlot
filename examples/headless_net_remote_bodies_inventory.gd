@@ -2,11 +2,11 @@ extends "res://examples/headless_net_vehicle_chat_lossy.gd"
 
 ## Another player has a body on this client, it stands where the server has them, and it moves every frame rather than every snapshot.
 ##
-## Every section passed while remote bodies were hidden and sat at the origin, because each reads the simulation, not the screen. Bodies run well away from the spawn, which is the origin. Driven through `PlaygroundClient.present_frame`.
+## Every section passed while remote bodies were hidden and sat at the origin, because each reads the simulation, not the screen. Bodies run well away from the spawn, which is the origin. Driven through `PlaylotClient.present_frame`.
 var _seid_session: int
-var _seid_server_bea: PlaygroundPlayer
-var _seid_theirs: PlaygroundPlayer
-var _seid_bea_net: PlaygroundPlayerNet
+var _seid_server_bea: PlaylotPlayer
+var _seid_theirs: PlaylotPlayer
+var _seid_bea_net: PlaylotPlayerNet
 var _seid_server_track: Array[Vector3]
 var _seid_drawn: Array[Vector3]
 
@@ -27,13 +27,13 @@ func _test_somebody_else_is_drawn() -> void:
 		return
 
 	# The real client's manager is RUNNING (`present_frame` asks) and has told its player it is
-	# the local one, which hides the first-person body (`PlaygroundClient._build_view_switch`).
+	# the local one, which hides the first-person body (`PlaylotClient._build_view_switch`).
 	if not _client_net.is_running():
 		var _started := _client_net.start()
 	mine.samples_input = true
 	var _switch := mine.build_view_switch()
 
-	var shown := PlaygroundClient.present_frame(_client_net, _client_game, 0.0, mine)
+	var shown := PlaylotClient.present_frame(_client_net, _client_game, 0.0, mine)
 
 	# Your own player is drawn at the clock's render alpha (dot-player-controller's
 	# `render_clock`), so a clock slip does not stall or double the eye.
@@ -63,7 +63,7 @@ func _test_somebody_else_is_drawn() -> void:
 
 	# Running, with the client drawing FRAMES_PER_TICK frames between ticks. Driven the way a
 	# peer drives them: the command their input would have carried, applied by the server.
-	_seid_bea_net = _seid_server_bea.get_node("Net") as PlaygroundPlayerNet
+	_seid_bea_net = _seid_server_bea.get_node("Net") as PlaylotPlayerNet
 	var run := DotFpsCommand.new()
 	run.move = Vector2(0.0, 1.0)
 	run.yaw = 90.0
@@ -81,7 +81,7 @@ func _test_somebody_else_is_drawn_2() -> void:
 		_seid_server_track.append(_seid_server_bea.controller.state.position)
 
 		for f in range(FRAMES_PER_TICK):
-			var _n := PlaygroundClient.present_frame(
+			var _n := PlaylotClient.present_frame(
 				_client_net, _client_game, float(f) / float(FRAMES_PER_TICK)
 			)
 			if _seid_theirs.character != null and i >= 60:
@@ -164,12 +164,12 @@ func _test_inventory_wire() -> void:
 
 	var sent := DotInvOp.move(BACKPACK, 12, BACKPACK, Vector2i(3, 4), true).to_dictionary()
 	sent["state"] = {"serial": "forged"}
-	var r := DotNetReader.new(PlaygroundEvents.write_inv_op(41, sent))
-	var sub := PlaygroundEvents.read_inv_ask(r)
-	var got := PlaygroundEvents.read_inv_op(r)
+	var r := DotNetReader.new(PlaylotEvents.write_inv_op(41, sent))
+	var sub := PlaylotEvents.read_inv_ask(r)
+	var got := PlaylotEvents.read_inv_op(r)
 	var back := DotInvOp.from_dictionary(got["op"])
 	_check(
-		sub == PlaygroundEvents.InvAsk.OP and bool(got["ok"]) and int(got["seq"]) == 41,
+		sub == PlaylotEvents.InvAsk.OP and bool(got["ok"]) and int(got["seq"]) == 41,
 		"an op arrives with its sequence number"
 	)
 	_check(
@@ -180,20 +180,20 @@ func _test_inventory_wire() -> void:
 	)
 	_check(back.state.is_empty(), "but not a state the client wrote into it", str(back.state))
 
-	var add := DotNetReader.new(PlaygroundEvents.write_inv_op(2, DotInvOp.add(&"crate", 1, BACKPACK).to_dictionary()))
-	PlaygroundEvents.read_inv_ask(add)
-	var add_got := PlaygroundEvents.read_inv_op(add)
+	var add := DotNetReader.new(PlaylotEvents.write_inv_op(2, DotInvOp.add(&"crate", 1, BACKPACK).to_dictionary()))
+	PlaylotEvents.read_inv_ask(add)
+	var add_got := PlaylotEvents.read_inv_op(add)
 	var add_back := DotInvOp.from_dictionary(add_got["op"])
 	_check(
 		add_back.kind == DotInvOp.Kind.ADD and add_back.to_cell == Vector2i(-1, -1) and add_back.item == &"crate",
 		"an ADD's 'anywhere' cell survives, so a refusal matches what was predicted"
 	)
 
-	var ack_r := DotNetReader.new(PlaygroundEvents.write_inv_ack(9, false, "no room"))
-	var ack_sub := PlaygroundEvents.read_inv_tell(ack_r)
-	var ack := PlaygroundEvents.read_inv_ack(ack_r)
+	var ack_r := DotNetReader.new(PlaylotEvents.write_inv_ack(9, false, "no room"))
+	var ack_sub := PlaylotEvents.read_inv_tell(ack_r)
+	var ack := PlaylotEvents.read_inv_ack(ack_r)
 	_check(
-		ack_sub == PlaygroundEvents.InvTell.ACK and bool(ack["ok"]) and int(ack["seq"]) == 9
+		ack_sub == PlaylotEvents.InvTell.ACK and bool(ack["ok"]) and int(ack["seq"]) == 9
 			and not bool(ack["accepted"]) and str(ack["reason"]) == "no room",
 		"an answer round-trips: which op, yes or no, and why"
 	)
@@ -205,14 +205,14 @@ func _test_inventory_wire() -> void:
 		}},
 		"parents": {}, "max_depth": 3, "next_child": 1,
 	}
-	var doc_r := DotNetReader.new(PlaygroundEvents.write_inv_doc(17, doc))
-	var doc_sub := PlaygroundEvents.read_inv_tell(doc_r)
-	var doc_got := PlaygroundEvents.read_inv_doc(doc_r)
+	var doc_r := DotNetReader.new(PlaylotEvents.write_inv_doc(17, doc))
+	var doc_sub := PlaylotEvents.read_inv_tell(doc_r)
+	var doc_got := PlaylotEvents.read_inv_doc(doc_r)
 	var entry: Dictionary = {}
 	if bool(doc_got.get("ok", false)):
 		entry = ((doc_got["doc"]["containers"][String(BACKPACK)]["entries"] as Dictionary).get("3", {}))
 	_check(
-		doc_sub == PlaygroundEvents.InvTell.DOC and bool(doc_got.get("ok", false))
+		doc_sub == PlaylotEvents.InvTell.DOC and bool(doc_got.get("ok", false))
 			and int(doc_got["through"]) == 17 and str(entry.get("item", "")) == "crate",
 		"a whole bag round-trips as the JSON dot-inventory writes, with what it already includes"
 	)
@@ -222,18 +222,18 @@ func _test_inventory_wire() -> void:
 		huge_entries[str(i)] = {"item": "a_long_item_name_%d" % i, "count": 1, "cell": [i, 0], "rotated": false, "state": {}}
 	var huge := {"containers": {"x": {"entries": huge_entries}}}
 	_check(
-		PlaygroundEvents.write_inv_doc(1, huge).is_empty(),
+		PlaylotEvents.write_inv_doc(1, huge).is_empty(),
 		"a bag too big to send is refused rather than truncated into JSON nobody can read"
 	)
 
-	var rs := DotNetReader.new(PlaygroundEvents.write_inv_resync(5))
-	var rs_sub := PlaygroundEvents.read_inv_ask(rs)
-	var buy := DotNetReader.new(PlaygroundEvents.write_inv_buy(&"barrel"))
-	var buy_sub := PlaygroundEvents.read_inv_ask(buy)
+	var rs := DotNetReader.new(PlaylotEvents.write_inv_resync(5))
+	var rs_sub := PlaylotEvents.read_inv_ask(rs)
+	var buy := DotNetReader.new(PlaylotEvents.write_inv_buy(&"barrel"))
+	var buy_sub := PlaylotEvents.read_inv_ask(buy)
 	_check(
-		rs_sub == PlaygroundEvents.InvAsk.RESYNC and int(PlaygroundEvents.read_inv_resync(rs)["seq"]) == 5
-			and buy_sub == PlaygroundEvents.InvAsk.BUY
-			and StringName(PlaygroundEvents.read_inv_buy(buy)["item"]) == &"barrel",
+		rs_sub == PlaylotEvents.InvAsk.RESYNC and int(PlaylotEvents.read_inv_resync(rs)["seq"]) == 5
+			and buy_sub == PlaylotEvents.InvAsk.BUY
+			and StringName(PlaylotEvents.read_inv_buy(buy)["item"]) == &"barrel",
 		"a request for the whole bag and a purchase round-trip"
 	)
 	_done()
@@ -310,7 +310,7 @@ static func _free_cells(m: DotInvManager) -> int:
 
 func _request_bytes(kind: int, body: PackedByteArray = PackedByteArray()) -> PackedByteArray:
 	var writer := DotNetWriter.new()
-	var _encoded := _client_net.messages.encode(PlaygroundRequest.new(kind, body), writer)
+	var _encoded := _client_net.messages.encode(PlaylotRequest.new(kind, body), writer)
 	return writer.to_bytes()
 
 
@@ -323,13 +323,13 @@ func _inventory_events(peer_id: int) -> Array[Dictionary]:
 		var decoded := _client_net.messages.decode(DotNetReader.new(sent["payload"]), 1, false)
 		if not decoded.ok:
 			continue
-		var event := decoded.value as PlaygroundEvent
-		if event == null or event.kind != PlaygroundEvents.Kind.INVENTORY:
+		var event := decoded.value as PlaylotEvent
+		if event == null or event.kind != PlaylotEvents.Kind.INVENTORY:
 			continue
 		var r := event.reader()
-		var entry := {"sub": PlaygroundEvents.read_inv_tell(r)}
-		if int(entry["sub"]) == PlaygroundEvents.InvTell.DOC:
-			entry.merge(PlaygroundEvents.read_inv_doc(r))
+		var entry := {"sub": PlaylotEvents.read_inv_tell(r)}
+		if int(entry["sub"]) == PlaylotEvents.InvTell.DOC:
+			entry.merge(PlaylotEvents.read_inv_doc(r))
 		out.append(entry)
 	return out
 
@@ -435,7 +435,7 @@ func _test_inventory_refused() -> void:
 
 	_ir_mine = _client_bag()
 	_ir_server = _server_bag()
-	var net_half: PlaygroundInventoryNet = _client_bridge.inventory_net
+	var net_half: PlaylotInventoryNet = _client_bridge.inventory_net
 	var reasons: Array[String] = []
 	_ir_on_refused = func(reason: String) -> void: reasons.append(reason)
 	_client_bridge.inventory_refused.connect(_ir_on_refused)
@@ -520,7 +520,7 @@ func _test_inventory_lost() -> void:
 
 	var mine := _client_bag()
 	var server := _server_bag()
-	var net_half: PlaygroundInventoryNet = _client_bridge.inventory_net
+	var net_half: PlaylotInventoryNet = _client_bridge.inventory_net
 
 	# In the middle: the answer to the op behind it is what says it never arrived.
 	var ball_was := _cell_of(mine, &"beach_ball")
@@ -555,7 +555,7 @@ func _test_inventory_lost() -> void:
 		tail and net_half.in_flight_count() == 1 and _cell_of(mine, &"beach_ball") == Vector2i(2, 2),
 		"a last op lost on the way is still waiting, a few ticks later, with nothing to say so"
 	)
-	var clock := [Time.get_ticks_msec() + PlaygroundInventoryNet.RESYNC_AFTER_MS + 1000]
+	var clock := [Time.get_ticks_msec() + PlaylotInventoryNet.RESYNC_AFTER_MS + 1000]
 	net_half.now_fn = func() -> int: return int(clock[0])
 	await _steps(2)
 	_check(
@@ -576,7 +576,7 @@ func _test_inventory_lost() -> void:
 ## reaches its owner as the whole bag.
 var _ifts_charged: Array[StringName]
 var _ifts_bag: StringName
-var _ifts_inv: PlaygroundInventory
+var _ifts_inv: PlaylotInventory
 var _ifts_balls: int
 
 func _test_inventory_from_the_server() -> void:
@@ -696,14 +696,14 @@ func _test_inventory_is_private() -> void:
 	_server_events.clear()
 	_recording = true
 	var added := _server_bridge.add_player(other_peer, other, "Cy")
-	_server_bridge.link.deliver(&"request", other_peer, _request_bytes(PlaygroundEvents.Ask.READY))
+	_server_bridge.link.deliver(&"request", other_peer, _request_bytes(PlaylotEvents.Ask.READY))
 	var bot_added := _server_bridge.add_player(0, bot, "Bot")
 	await _steps(2)
 	_check(added.ok and bot_added.ok, "a second player joins on a peer of their own, and a bot on none")
 
 	var theirs := _inventory_events(other_peer)
 	_check(
-		theirs.size() == 1 and int(theirs[0]["sub"]) == PlaygroundEvents.InvTell.DOC
+		theirs.size() == 1 and int(theirs[0]["sub"]) == PlaylotEvents.InvTell.DOC
 			and bool(theirs[0].get("ok", false)) and _doc_count(theirs[0]["doc"], "crate") == 0,
 		"the second player is sent their own bag on admission, and it is empty",
 		str(theirs)
@@ -711,7 +711,7 @@ func _test_inventory_is_private() -> void:
 
 	_server_events.clear()
 	var inv := _server_game.inventory
-	var net_half: PlaygroundInventoryNet = _server_bridge.inventory_net
+	var net_half: PlaylotInventoryNet = _server_bridge.inventory_net
 	var gave := inv.give(net_half.bag_key(SESSION), &"die").ok \
 		and inv.give(net_half.bag_key(other), &"can").ok \
 		and inv.give(net_half.bag_key(bot), &"ball").ok
@@ -769,6 +769,6 @@ func _event_kinds(peer_id: int) -> Array[int]:
 		if int(sent["peer"]) != peer_id:
 			continue
 		var decoded := _client_net.messages.decode(DotNetReader.new(sent["payload"]), 1, false)
-		if decoded.ok and decoded.value is PlaygroundEvent:
-			out.append((decoded.value as PlaygroundEvent).kind)
+		if decoded.ok and decoded.value is PlaylotEvent:
+			out.append((decoded.value as PlaylotEvent).kind)
 	return out

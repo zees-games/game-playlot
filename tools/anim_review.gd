@@ -1,10 +1,10 @@
 extends Node
 
-const PlaygroundClient := preload("../game/playground_client.gd")
-const PlaygroundConfig := preload("../game/playground_config.gd")
-const PlaygroundViewGrip := preload("../game/playground_view_grip.gd")
-const PlaygroundPresentation := preload("../game/playground_presentation.gd")
-const PlaygroundZee := preload("../game/playground_zee.gd")
+const PlaylotClient := preload("../game/playlot_client.gd")
+const PlaylotConfig := preload("../game/playlot_config.gd")
+const PlaylotViewGrip := preload("../game/playlot_view_grip.gd")
+const PlaylotPresentation := preload("../game/playlot_presentation.gd")
+const PlaylotZee := preload("../game/playlot_zee.gd")
 
 ## The animation review (docs/anim-review.md): the offline client plays each zee weapon's clips and the avatar's locomotion
 ## at --fps, and every frame is saved three times: first person (the root viewport), behind-right, and an opponent's view
@@ -39,7 +39,7 @@ const MISSING_FRAMES := 3
 ## Clips whose hands legitimately leave the grip (a magazine change, the draw's reach).
 const HANDS_FREE: PackedStringArray = ["draw", "reload"]
 
-var _client: PlaygroundClient = null
+var _client: PlaylotClient = null
 var _fps := 60
 var _out := "screenshots/anim_review"
 var _only: PackedStringArray = []
@@ -58,10 +58,10 @@ func _ready() -> void:
 	if not _parse_args(OS.get_cmdline_user_args()):
 		get_tree().quit(2)
 		return
-	PlaygroundPresentation.use_scratch_settings("anim_review")
-	_client = PlaygroundClient.new()
+	PlaylotPresentation.use_scratch_settings("anim_review")
+	_client = PlaylotClient.new()
 	_client.name = "Client"
-	var config := PlaygroundConfig.new()
+	var config := PlaylotConfig.new()
 	config.records_directory = ""
 	config.record_replays = false
 	_client.config = config
@@ -249,8 +249,8 @@ func _stage_views() -> void:
 	if me.character != null:
 		if not me.character.is_body_visible():
 			me.character.set_shown(true)
-		if me.zee_world == null and _client.playground != null:
-			PlaygroundZee.show_held(me, _client.playground.weapon_def(_client.tool))
+		if me.zee_world == null and _client.playlot != null:
+			PlaylotZee.show_held(me, _client.playlot.weapon_def(_client.tool))
 		_tag(me.character, BODY_LAYER)
 		if me.zee_world != null and is_instance_valid(me.zee_world):
 			for mesh in me.zee_world.find_children("*", "GeometryInstance3D", true, false):
@@ -291,7 +291,7 @@ func _sample(time: float, body: DotClipMetrics) -> Dictionary:
 
 
 func _hand_limit(art: ZeeWeaponArt) -> float:
-	if art.pose in PlaygroundViewGrip.ONE_HAND:
+	if art.pose in PlaylotViewGrip.ONE_HAND:
 		return 0.05
 	return 0.13 if art.pose == &"heavy" else 0.10
 

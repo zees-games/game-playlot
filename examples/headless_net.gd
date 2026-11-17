@@ -17,7 +17,7 @@ func _run() -> void:
 	var errors := EngineErrors.new()
 	OS.add_logger(errors)
 
-	print("game-playground — headless netcode")
+	print("game-playlot — headless netcode")
 	print("")
 
 	_test_command_wire()

@@ -1,6 +1,6 @@
 extends SceneTree
 
-const PlaygroundPresentation := preload("../game/playground_presentation.gd")
+const PlaylotPresentation := preload("../game/playlot_presentation.gd")
 
 ## Asks whether this game actually makes a noise, on a machine that has a sound card.
 ##
@@ -37,9 +37,9 @@ var _failed := 0
 
 func _initialize() -> void:
 	# Settings to a scratch directory emptied first (see
-	# `PlaygroundPresentation.use_scratch_settings`): a render must not save into a player's
+	# `PlaylotPresentation.use_scratch_settings`): a render must not save into a player's
 	# file, nor draw from whatever the player last saved there.
-	var _scratch := PlaygroundPresentation.use_scratch_settings("audio_probe")
+	var _scratch := PlaylotPresentation.use_scratch_settings("audio_probe")
 	DotLog.set_level(DotLog.Level.WARN)
 	print("driver:  %s" % AudioServer.get_driver_name())
 
@@ -64,7 +64,7 @@ func _process(_delta: float) -> bool:
 
 
 func _build() -> bool:
-	var p := PlaygroundPresentation.new()
+	var p := PlaylotPresentation.new()
 	p.name = "AudioProbe"
 	root.add_child(p)
 

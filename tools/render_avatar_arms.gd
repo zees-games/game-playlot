@@ -1,9 +1,9 @@
 extends Node
 
-const PlaygroundClient := preload("../game/playground_client.gd")
-const PlaygroundConfig := preload("../game/playground_config.gd")
-const PlaygroundPresentation := preload("../game/playground_presentation.gd")
-const PlaygroundZee := preload("../game/playground_zee.gd")
+const PlaylotClient := preload("../game/playlot_client.gd")
+const PlaylotConfig := preload("../game/playlot_config.gd")
+const PlaylotPresentation := preload("../game/playlot_presentation.gd")
+const PlaylotZee := preload("../game/playlot_zee.gd")
 
 ## Renders the offline client in first person holding each listed weapon, then in third person,
 ## and prints what draws for the local player: arms rigs, weapon models, meshes in view.
@@ -11,14 +11,14 @@ const PlaygroundZee := preload("../game/playground_zee.gd")
 
 const DEFAULT_IDS: Array[StringName] = [&"pistol", &"sniper", &"smg", &"lmg", &"shotgun", &"crowbar"]
 
-var _client: PlaygroundClient = null
+var _client: PlaylotClient = null
 
 
 func _ready() -> void:
-	PlaygroundPresentation.use_scratch_settings("render_avatar_arms")
-	_client = PlaygroundClient.new()
+	PlaylotPresentation.use_scratch_settings("render_avatar_arms")
+	_client = PlaylotClient.new()
 	_client.name = "Client"
-	var config := PlaygroundConfig.new()
+	var config := PlaylotConfig.new()
 	config.records_directory = ""
 	config.record_replays = false
 	_client.config = config
@@ -36,8 +36,8 @@ func _run() -> void:
 		ids = DEFAULT_IDS
 	if ids == [&"all"]:
 		ids = []
-		for def in _client.playground.weapons:
-			if PlaygroundZee.is_zee(def):
+		for def in _client.playlot.weapons:
+			if PlaylotZee.is_zee(def):
 				ids.append(def.id)
 	DirAccess.make_dir_recursive_absolute(out)
 	await get_tree().create_timer(2.0).timeout
@@ -46,7 +46,7 @@ func _run() -> void:
 		_client.player.set_view_mode(third)
 		var view := "tp" if third else "fp"
 		for id in ids:
-			var full := id if _client.playground.weapon_def(id) != null else StringName("zee_%s" % id)
+			var full := id if _client.playlot.weapon_def(id) != null else StringName("zee_%s" % id)
 			_client._set_tool(full)
 			await get_tree().create_timer(1.2).timeout
 			await RenderingServer.frame_post_draw

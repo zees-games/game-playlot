@@ -1,9 +1,9 @@
 extends Node
 
-const PlaygroundArena := preload("../game/playground_arena.gd")
-const PlaygroundClient := preload("../game/playground_client.gd")
-const PlaygroundConfig := preload("../game/playground_config.gd")
-const PlaygroundPresentation := preload("../game/playground_presentation.gd")
+const PlaylotArena := preload("../game/playlot_arena.gd")
+const PlaylotClient := preload("../game/playlot_client.gd")
+const PlaylotConfig := preload("../game/playlot_config.gd")
+const PlaylotPresentation := preload("../game/playlot_presentation.gd")
 
 ## Renders a zee gun at the hip and down its sights (an iron sight and a scope), solo B outside
 ## the arena, and the arena's B menu open, through the real offline client, into
@@ -13,21 +13,21 @@ const PlaygroundPresentation := preload("../game/playground_presentation.gd")
 ## xvfb-run -a godot --path . --resolution 1280x720 res://tools/render_loadout.tscn
 ## [/codeblock]
 ##
-## [b]The B menu is opened on the arena's own offer[/b] (`PlaygroundArena.loadout_schema` through
+## [b]The B menu is opened on the arena's own offer[/b] (`PlaylotArena.loadout_schema` through
 ## a `DotLoadoutManager`'s `offer_for`, the dictionary the server's `/loadout` notice carries):
 ## solo there is no arena, so B there only says so, which is the second frame.
 
 const OUT_DIR := "res://screenshots/loadout"
 
-var _client: PlaygroundClient = null
+var _client: PlaylotClient = null
 
 
 func _ready() -> void:
-	PlaygroundPresentation.use_scratch_settings("render_loadout")
+	PlaylotPresentation.use_scratch_settings("render_loadout")
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUT_DIR))
-	_client = PlaygroundClient.new()
+	_client = PlaylotClient.new()
 	_client.name = "Client"
-	var config := PlaygroundConfig.new()
+	var config := PlaylotConfig.new()
 	config.records_directory = ""
 	config.record_replays = false
 	_client.config = config
@@ -40,7 +40,7 @@ func _run() -> void:
 	_client.mouse_capture_override = true
 
 	for id in [&"zee_carbine", &"zee_bullpup"]:
-		if _client.playground.weapon_def(id) == null:
+		if _client.playlot.weapon_def(id) == null:
 			print("no %s here" % id)
 			continue
 		_client._set_tool(id)
@@ -66,7 +66,7 @@ func _run() -> void:
 
 	# The arena's B: its offer, as the server sends it.
 	var loadouts := DotLoadoutManager.new()
-	loadouts.schema = PlaygroundArena.loadout_schema(_client.playground.weapons)
+	loadouts.schema = PlaylotArena.loadout_schema(_client.playlot.weapons)
 	loadouts.register_service = false
 	add_child(loadouts)
 	var offer: DotResult = await loadouts.offer_for("pg-player-00000001")

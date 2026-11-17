@@ -1,8 +1,8 @@
 extends Node
 
-const PlaygroundClient := preload("../game/playground_client.gd")
-const PlaygroundConfig := preload("../game/playground_config.gd")
-const PlaygroundPresentation := preload("../game/playground_presentation.gd")
+const PlaylotClient := preload("../game/playlot_client.gd")
+const PlaylotConfig := preload("../game/playlot_config.gd")
+const PlaylotPresentation := preload("../game/playlot_presentation.gd")
 
 ## Renders a crate and a pane breaking in front of the offline client into `screenshots/break/`.
 ##
@@ -10,15 +10,15 @@ const PlaygroundPresentation := preload("../game/playground_presentation.gd")
 
 const OUT_DIR := "res://screenshots/break"
 
-var _client: PlaygroundClient = null
+var _client: PlaylotClient = null
 
 
 func _ready() -> void:
-	PlaygroundPresentation.use_scratch_settings("render_break")
+	PlaylotPresentation.use_scratch_settings("render_break")
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUT_DIR))
-	_client = PlaygroundClient.new()
+	_client = PlaylotClient.new()
 	_client.name = "Client"
-	var config := PlaygroundConfig.new()
+	var config := PlaylotConfig.new()
 	config.records_directory = ""
 	config.record_replays = false
 	_client.config = config
@@ -34,7 +34,7 @@ func _run() -> void:
 	await get_tree().create_timer(2.5).timeout
 	var cam := _client.camera.global_transform
 	var ahead := cam.origin - cam.basis.z * 3.0
-	_client.playground.prop_shattered.emit(ahead + cam.basis.x * -0.8, 1)
+	_client.playlot.prop_shattered.emit(ahead + cam.basis.x * -0.8, 1)
 	_client.presentation.on_pane_broken(ahead + cam.basis.x * 0.8)
 	await get_tree().create_timer(0.25).timeout
 	await RenderingServer.frame_post_draw

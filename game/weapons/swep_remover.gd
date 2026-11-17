@@ -1,4 +1,4 @@
-extends "playground_weapon.gd"
+extends "playlot_weapon.gd"
 
 ## Points at a prop and removes it. Right click removes everything you own.
 ##

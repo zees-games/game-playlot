@@ -1,4 +1,4 @@
-extends "playground_entity.gd"
+extends "playlot_entity.gd"
 
 ## Spins in place and shoves whatever comes near it. A hazard, and a toy.
 ##

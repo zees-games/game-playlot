@@ -1,8 +1,8 @@
 extends Node
 
-const PlaygroundClient := preload("../game/playground_client.gd")
-const PlaygroundConfig := preload("../game/playground_config.gd")
-const PlaygroundPresentation := preload("../game/playground_presentation.gd")
+const PlaylotClient := preload("../game/playlot_client.gd")
+const PlaylotConfig := preload("../game/playlot_config.gd")
+const PlaylotPresentation := preload("../game/playlot_presentation.gd")
 
 ## Renders the offline client with a smoke cloud, a fire and then a flash going off into `screenshots/grenades/`.
 ##
@@ -10,15 +10,15 @@ const PlaygroundPresentation := preload("../game/playground_presentation.gd")
 
 const OUT_DIR := "res://screenshots/grenades"
 
-var _client: PlaygroundClient = null
+var _client: PlaylotClient = null
 
 
 func _ready() -> void:
-	PlaygroundPresentation.use_scratch_settings("render_grenades")
+	PlaylotPresentation.use_scratch_settings("render_grenades")
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUT_DIR))
-	_client = PlaygroundClient.new()
+	_client = PlaylotClient.new()
 	_client.name = "Client"
-	var config := PlaygroundConfig.new()
+	var config := PlaylotConfig.new()
 	config.records_directory = ""
 	config.record_replays = false
 	_client.config = config
@@ -28,7 +28,7 @@ func _ready() -> void:
 
 func _run() -> void:
 	await get_tree().create_timer(2.5).timeout
-	var layer := _client.playground.projectiles
+	var layer := _client.playlot.projectiles
 	var eye := _client.camera.global_position
 	var ahead := -_client.camera.global_basis.z
 	layer.launch(_spawn(&"aw_smoke", eye + ahead * 7.0 + Vector3.DOWN * 1.0), &"render")

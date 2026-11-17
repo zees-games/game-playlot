@@ -1,9 +1,9 @@
-extends "playground_tool.gd"
+extends "playlot_tool.gd"
 
 ## Inflate and deflate: left click grows a prop, right click shrinks it, reload puts it back.
 ##
 ## By a factor rather than by a step in metres, so a die and a boulder both grow in a few
-## clicks; and from the definition each time (`PlaygroundProp.set_size_scale`), so ten
+## clicks; and from the definition each time (`PlaylotProp.set_size_scale`), so ten
 ## inflates and ten deflates land exactly where they started.
 
 

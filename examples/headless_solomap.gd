@@ -4,8 +4,8 @@ extends DotGameCheckSuite
 ## first map is `initial_map` as before. [codeblock]
 ## godot --headless --path . res://examples/headless_solomap.tscn [/codeblock]
 
-const Playground := preload("../game/playground.gd")
-const PlaygroundConfig := preload("../game/playground_config.gd")
+const Playlot := preload("../game/playlot.gd")
+const PlaylotConfig := preload("../game/playlot_config.gd")
 
 const CHECKS := 9
 const SECTIONS := 1
@@ -36,8 +36,8 @@ func _ready() -> void:
 
 
 func _run() -> void:
-	print("game-playground: the shell's start map")
-	_check(Playground.solo_start_map() == &"" and Playground.solo_map_dirs("maps").is_empty(),
+	print("game-playlot: the shell's start map")
+	_check(Playlot.solo_start_map() == &"" and Playlot.solo_map_dirs("maps").is_empty(),
 		"with no solo host there is no start map and no mounted pack")
 	_check(await _first_map(null) == "pg_flatgrass", "and the first map is initial_map")
 
@@ -69,17 +69,17 @@ func _first_map(host: Object) -> String:
 	return (await _boot(host))[0]
 
 
-## Boots a playground with [param host] as the `dot_solo` service (none when null) and returns
+## Boots a playlot with [param host] as the `dot_solo` service (none when null) and returns
 ## [first map id, whether the pack map is in its catalogue].
 func _boot(host: Object) -> Array:
 	if host != null:
-		DotRegistry.register(Playground.SOLO_SERVICE, host)
-	var config := PlaygroundConfig.new()
+		DotRegistry.register(Playlot.SOLO_SERVICE, host)
+	var config := PlaylotConfig.new()
 	config.records_directory = ""
 	config.map_seconds = 0.0
 	config.initial_map = &"pg_flatgrass"
 	config.authoritative = true
-	var game := Playground.new()
+	var game := Playlot.new()
 	game.config = config
 	game.service_scope = &"solomap"
 	add_child(game)
@@ -92,6 +92,6 @@ func _boot(host: Object) -> Array:
 	remove_child(game)
 	game.free()
 	if host != null:
-		DotRegistry.unregister_instance(Playground.SOLO_SERVICE, host)
+		DotRegistry.unregister_instance(Playlot.SOLO_SERVICE, host)
 	await get_tree().process_frame
 	return [first, listed]

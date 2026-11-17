@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="Zee's Playlot"
-run/main_scene="res://game/playground.tscn"
+run/main_scene="res://game/playlot.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 config/icon="res://icon.svg"
 

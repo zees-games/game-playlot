@@ -1,9 +1,9 @@
 extends DotGameCheckSuite
 
-const Playground := preload("../game/playground.gd")
-const PlaygroundConfig := preload("../game/playground_config.gd")
-const PlaygroundMapEdit := preload("../game/playground_map_edit.gd")
-const PlaygroundWeapons := preload("../game/playground_weapons.gd")
+const Playlot := preload("../game/playlot.gd")
+const PlaylotConfig := preload("../game/playlot_config.gd")
+const PlaylotMapEdit := preload("../game/playlot_map_edit.gd")
+const PlaylotWeapons := preload("../game/playlot_weapons.gd")
 
 ## The spawn-point tool gun mode: it sends dot-game's map-edit commands and decides nothing itself.
 ## Run: godot --headless --path . res://examples/headless_spawntool.tscn
@@ -13,7 +13,7 @@ const CHECKS := 21
 
 var _entered := 0
 var _completed := 0
-var _game: Playground = null
+var _game: Playlot = null
 
 
 ## The navigation half of the command contract, recorded.
@@ -34,7 +34,7 @@ func _ready() -> void:
 
 
 func _run() -> void:
-	print("game-playground: spawn point tool")
+	print("game-playlot: spawn point tool")
 	_game = await _make_game()
 	var gun := _gun()
 	await _test_refusals(gun)
@@ -44,14 +44,14 @@ func _run() -> void:
 	_report_sections(_entered, _completed, SECTIONS, CHECKS)
 
 
-func _make_game() -> Playground:
-	var config := PlaygroundConfig.new()
+func _make_game() -> Playlot:
+	var config := PlaylotConfig.new()
 	config.records_directory = ""
 	config.map_seconds = 0.0
 	config.initial_map = &"pg_flatgrass"
 	config.authoritative = true
 	config.prop_spawn_interval = 0.0
-	var game := Playground.new()
+	var game := Playlot.new()
 	game.config = config
 	game.service_scope = &"spawntool"
 	add_child(game)
@@ -64,7 +64,7 @@ func _make_game() -> Playground:
 
 func _gun() -> Object:
 	var def := _game.weapon_def(&"toolgun")
-	var gun := PlaygroundWeapons.make(def)
+	var gun := PlaylotWeapons.make(def)
 	gun.equip(_game, def)
 	gun.wielder = &"admin"
 	return gun
@@ -134,7 +134,7 @@ func _test_links(gun: Object) -> void:
 
 func _test_real_editor(gun: Object) -> void:
 	_entered += 1
-	var edit: DotGameMapEdit = PlaygroundMapEdit.make(_game, DotMapDataMemory.new())
+	var edit: DotGameMapEdit = PlaylotMapEdit.make(_game, DotMapDataMemory.new())
 	_check(edit != null and edit.points != null and edit.store != null, "the game builds its editor over a point set and a store")
 	_game.map_edit = edit
 	gun.call("set_mode", &"spawnpoint", {"action": "spawn", "kind": "player"})
@@ -143,7 +143,7 @@ func _test_real_editor(gun: Object) -> void:
 	var saved: DotResult = await _at_ground(gun, 0.0, 0.0, &"reload")
 	_check(saved.ok and not edit.dirty, "and saved to the store", saved.error.message if not saved.ok else str(saved.value))
 	edit.points.points.clear()
-	await PlaygroundMapEdit.reload_saved(edit)
+	await PlaylotMapEdit.reload_saved(edit)
 	_check(edit.points.points.size() == 1, "a map change reloads the saved points")
 	gun.call("set_mode", &"spawnpoint", {"action": "link"})
 	var marked: DotResult = await _at_ground(gun, 12.0, 8.0, &"primary")

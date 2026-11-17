@@ -1,13 +1,13 @@
 extends SceneTree
 
-const Playground := preload("../game/playground.gd")
-const PlaygroundConfig := preload("../game/playground_config.gd")
-const PlaygroundPlayer := preload("../game/playground_player.gd")
-const PlaygroundHud := preload("../game/playground_hud.gd")
-const PlaygroundClient := preload("../game/playground_client.gd")
-const PlaygroundPresentation := preload("../game/playground_presentation.gd")
-const PlaygroundServices := preload("../game/playground_services.gd")
-const PlaygroundZee := preload("../game/playground_zee.gd")
+const Playlot := preload("../game/playlot.gd")
+const PlaylotConfig := preload("../game/playlot_config.gd")
+const PlaylotPlayer := preload("../game/playlot_player.gd")
+const PlaylotHud := preload("../game/playlot_hud.gd")
+const PlaylotClient := preload("../game/playlot_client.gd")
+const PlaylotPresentation := preload("../game/playlot_presentation.gd")
+const PlaylotServices := preload("../game/playlot_services.gd")
+const PlaylotZee := preload("../game/playlot_zee.gd")
 
 ## Renders the sandbox in first person and in third, so a person can look at both.
 ##
@@ -39,20 +39,20 @@ const OUT_DIR := "res://screenshots"
 ## time, so a capture on the tick of the switch is a picture of the camera mid-flight.
 const SETTLE := 12
 
-var _game: Playground = null
-var _player: PlaygroundPlayer = null
+var _game: Playlot = null
+var _player: PlaylotPlayer = null
 
 ## The other player the admin frames beacon. See [method _arrange_admin].
-var _other: PlaygroundPlayer = null
+var _other: PlaylotPlayer = null
 
 ## A wall between the camera and [member _other], for `admin_beacon_wall`. Visual only:
 ## the beacon's column is drawn without a depth test, and a mesh is all that needs.
 var _wall: MeshInstance3D = null
-var _hud: PlaygroundHud = null
+var _hud: PlaylotHud = null
 
 ## `chat_ballot`'s pieces: the client's presentation (its chat box), a client never added to
 ## the tree whose chat handler draws the ballot's line, and the shell's ballot panel.
-var _presentation: PlaygroundPresentation = null
+var _presentation: PlaylotPresentation = null
 var _chat_client = null
 var _ballot: DotBallotPanel = null
 var _shots: Array[Dictionary] = []
@@ -67,12 +67,12 @@ func _initialize() -> void:
 	DirAccess.make_dir_recursive_absolute(OUT_DIR)
 	DotFpsSampler.register_default_actions()
 
-	var config := PlaygroundConfig.new()
+	var config := PlaylotConfig.new()
 	config.records_directory = ""
 	config.initial_map = &"pg_flatgrass"
 	config.map_seconds = 0.0
 
-	_game = Playground.new()
+	_game = Playlot.new()
 	_game.name = "Playground"
 	_game.config = config
 	root.add_child(_game)
@@ -121,7 +121,7 @@ func _process(_delta: float) -> bool:
 			_done = true
 			return true
 
-		_hud = PlaygroundHud.new()
+		_hud = PlaylotHud.new()
 		_hud.name = "Hud"
 		root.add_child(_hud)
 		_hud.bind(_game, &"local")
@@ -130,7 +130,7 @@ func _process(_delta: float) -> bool:
 		_shots = _shot_list()
 		return false
 
-	# The first-person camera at the simulated eye, as `PlaygroundClient._process` puts it.
+	# The first-person camera at the simulated eye, as `PlaylotClient._process` puts it.
 	var eye_camera := _player.get_node_or_null("Camera") as Camera3D
 	if eye_camera != null and eye_camera.current:
 		eye_camera.global_position = _player.eye_position()
@@ -140,8 +140,8 @@ func _process(_delta: float) -> bool:
 			0.0
 		)
 
-	# Every frame, as `PlaygroundClient._present_beacons` does: the ripple is an animation.
-	for body: PlaygroundPlayer in [_player, _other]:
+	# Every frame, as `PlaylotClient._present_beacons` does: the ripple is an animation.
+	for body: PlaylotPlayer in [_player, _other]:
 		if body != null:
 			var _pinged := body.present_beacon(_delta, body == _player)
 
@@ -188,7 +188,7 @@ func _process(_delta: float) -> bool:
 		# The hits a few frames before the capture: the marker fades in a quarter of a second.
 		if _wait == 3 and bool(shot.get("hits", false)) and _other != null:
 			var on_her := _other.controller.state.position + Vector3.UP * 1.3
-			var her := Playground.hit_victim_id(DotEntity.KIND_PLAYER, 2)
+			var her := Playlot.hit_victim_id(DotEntity.KIND_PLAYER, 2)
 			_hud.confirm_hit(her, 18.0, on_her, false, false)
 			_hud.confirm_hit(her, 24.0, on_her, true, true)
 		_wait -= 1
@@ -299,20 +299,20 @@ func _arrange_edit() -> void:
 			picked.call("set_tint", Color.html("e05252"))
 			picked.global_position += Vector3.UP * 0.25
 	if picked != null:
-		var box := PlaygroundClient.selection_box()
+		var box := PlaylotClient.selection_box()
 		picked.add_child(box)
-		PlaygroundClient.fit_selection_box(box, picked)
+		PlaylotClient.fit_selection_box(box, picked)
 
 
 ## The `hud_hits` frame's weapon: a zee SMG in the hands under the first-person camera, as
-## `PlaygroundClient._arm_zee` builds it, with a magazine a third gone.
+## `PlaylotClient._arm_zee` builds it, with a magazine a third gone.
 func _arm_for_hits() -> void:
-	PlaygroundZee.use_this_games_art()
+	PlaylotZee.use_this_games_art()
 	var camera := _player.get_node("Camera") as Camera3D
 	var hands := ZeeViewModel.new()
 	hands.name = "ZeeViewModel"
 	camera.add_child(hands)
-	var rig := PlaygroundZee.arm(_player, _game.weapon_def(&"zee_smg"), ZeeWeaponRig.Role.LOCAL, true,
+	var rig := PlaylotZee.arm(_player, _game.weapon_def(&"zee_smg"), ZeeWeaponRig.Role.LOCAL, true,
 		_game.tick_rate, 0, hands)
 	if rig != null and rig.arsenal.current() != null:
 		rig.arsenal.current().magazine = 21
@@ -321,11 +321,11 @@ func _arm_for_hits() -> void:
 
 
 ## The `chat_ballot` frame: the presentation's chat box, the ballot's line through
-## `PlaygroundClient._on_chat_message` (the handler a connected client runs), and the drawn
+## `PlaylotClient._on_chat_message` (the handler a connected client runs), and the drawn
 ## panel where a client shell's notice overlay puts it.
 func _arrange_ballot() -> void:
-	PlaygroundPresentation.use_scratch_settings("screenshot_views")
-	_presentation = PlaygroundPresentation.new()
+	PlaylotPresentation.use_scratch_settings("screenshot_views")
+	_presentation = PlaylotPresentation.new()
 	_presentation.name = "Presentation"
 	root.add_child(_presentation)
 	var _built := _presentation.setup()
@@ -334,16 +334,16 @@ func _arrange_ballot() -> void:
 	_presentation.apply_all()
 
 	var chat := DotChatClient.new()
-	chat.channels = PlaygroundServices.chat_channels()
-	_chat_client = PlaygroundClient.new()
+	chat.channels = PlaylotServices.chat_channels()
+	_chat_client = PlaylotClient.new()
 	_chat_client.hud = _hud
 	_chat_client.chat = chat
 	_chat_client.presentation = _presentation
 
 	var maps := ["Surf: Introduction", "Bhop: Introduction", "Lobby", "Canyon"]
 	_chat_client._on_chat_message(
-		DotChatMessage.system(PlaygroundServices.CHANNEL_ALL, "Vote: %s (30s)" % ", ".join(maps)),
-		PlaygroundServices.CHANNEL_ALL
+		DotChatMessage.system(PlaylotServices.CHANNEL_ALL, "Vote: %s (30s)" % ", ".join(maps)),
+		PlaylotServices.CHANNEL_ALL
 	)
 
 	var options := []

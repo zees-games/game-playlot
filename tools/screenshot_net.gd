@@ -1,12 +1,12 @@
 extends Node
 
-const Playground := preload("../game/playground.gd")
-const PlaygroundClient := preload("../game/playground_client.gd")
-const PlaygroundPresentation := preload("../game/playground_presentation.gd")
-const PlaygroundConfig := preload("../game/playground_config.gd")
-const PlaygroundNetBridge := preload("../game/net/playground_net_bridge.gd")
-const PlaygroundPlayer := preload("../game/playground_player.gd")
-const PlaygroundPlayerNet := preload("../game/net/playground_player_net.gd")
+const Playlot := preload("../game/playlot.gd")
+const PlaylotClient := preload("../game/playlot_client.gd")
+const PlaylotPresentation := preload("../game/playlot_presentation.gd")
+const PlaylotConfig := preload("../game/playlot_config.gd")
+const PlaylotNetBridge := preload("../game/net/playlot_net_bridge.gd")
+const PlaylotPlayer := preload("../game/playlot_player.gd")
+const PlaylotPlayerNet := preload("../game/net/playlot_player_net.gd")
 
 ## Renders a CONNECTED client looking at another player, and measures how smoothly that
 ## player moves on screen. The view `tools/screenshot_views.sh` cannot give: offline there is
@@ -23,7 +23,7 @@ const PlaygroundPlayerNet := preload("../game/net/playground_player_net.gd")
 ##
 ## A server and a client in one process, joined by the loopback `headless_net` uses: the
 ## server's world is in a SubViewport with its own physics space that is never drawn, and
-## the client's is the one on screen. Every frame calls `PlaygroundClient.present_frame`,
+## the client's is the one on screen. Every frame calls `PlaylotClient.present_frame`,
 ## the function the real client's `_process` calls.
 ##
 ## [b]The probe.[/b] Once a rendered frame, the other player's drawn position is divided by
@@ -39,7 +39,7 @@ const PlaygroundPlayerNet := preload("../game/net/playground_player_net.gd")
 ## and the eye's apparent speed per rendered frame while the server has them at full speed.
 ## Until 2026-09-25 the client predicted nobody — every mirror was owner 0 — and this is where
 ## that shows as a number: 3 ticks from key to motion, and an eye that moved only on the
-## frames a snapshot landed. Snapshots at 32 a second in this mode, as `PlaygroundClient`
+## frames a snapshot landed. Snapshots at 32 a second in this mode, as `PlaylotClient`
 ## asks for; the remote-player probe keeps the 20 its figures were taken at.
 ##
 ## xvfb-run, never --headless: headless gives a null renderer and saves a frame of nothing.
@@ -57,12 +57,12 @@ const RENDER_FPS := 144
 const AHEAD := 7.0
 const SWING := 5.0
 
-var _server_game: Playground = null
-var _client_game: Playground = null
+var _server_game: Playlot = null
+var _client_game: Playlot = null
 var _server_net: DotNetManager = null
 var _client_net: DotNetManager = null
-var _server_bridge: PlaygroundNetBridge = null
-var _client_bridge: PlaygroundNetBridge = null
+var _server_bridge: PlaylotNetBridge = null
+var _client_bridge: PlaylotNetBridge = null
 var _to_client: Array = []
 var _to_server: Array = []
 var _tick := 0
@@ -96,28 +96,28 @@ const WALK_RUN := 90
 
 
 ## `--zee=<id>`: the other player is handed that zee weapon and holds fire, so the frames
-## show the gun a client draws in somebody else's hands (`PlaygroundZee.show_held`).
+## show the gun a client draws in somebody else's hands (`PlaylotZee.show_held`).
 var _zee: StringName = &""
 
 ## `--hold`: the other player carries a crate on the physics gun, holding fire on the SERVER's
 ## tools as a connected player would, so the frames show the beam a client draws for somebody
-## else from what `Kind.HELD` told it (`PlaygroundClient.present_beams`).
+## else from what `Kind.HELD` told it (`PlaylotClient.present_beams`).
 var _hold := false
 ## The other player stands in front, downed on the server, instead of running.
 var _downed := false
 ## `--died`: with `--downed`, the server's downs layer then reports the bleed-out. The client
-## does what `PlaygroundClient.fall` does (the death rides `Kind.COMBAT`): a ragdoll copied
+## does what `PlaylotClient.fall` does (the death rides `Kind.COMBAT`): a ragdoll copied
 ## from the crawling figure. Frames are saved the instant it spawns and again once it settles.
 var _died := false
 var _ragdolls: DotPlayerRagdolls = null
-var _presentation: PlaygroundPresentation = null
+var _presentation: PlaylotPresentation = null
 
 
 func _ready() -> void:
 	# Settings to a scratch directory emptied first (see
-	# `PlaygroundPresentation.use_scratch_settings`): a render must not save into a player's
+	# `PlaylotPresentation.use_scratch_settings`): a render must not save into a player's
 	# file, nor draw from whatever the player last saved there.
-	var _scratch := PlaygroundPresentation.use_scratch_settings("screenshot_net")
+	var _scratch := PlaylotPresentation.use_scratch_settings("screenshot_net")
 	DotLog.set_level(DotLog.Level.ERROR)
 	Engine.max_fps = RENDER_FPS
 	_run.call_deferred()
@@ -181,10 +181,10 @@ func _run() -> void:
 
 
 ## The downed player bleeds out: the client copies a ragdoll from the figure it draws (the
-## crawl pose), exactly `PlaygroundClient.fall`. Saves `<base>_died_0` on the spawn frame and
+## crawl pose), exactly `PlaylotClient.fall`. Saves `<base>_died_0` on the spawn frame and
 ## `_died_1`..`_3` as it falls.
 func _bleed_out(base: String) -> void:
-	var theirs: PlaygroundPlayer = _client_game.players.get(&"u%d" % OTHER_SESSION)
+	var theirs: PlaylotPlayer = _client_game.players.get(&"u%d" % OTHER_SESSION)
 	var body := theirs.character.body() if theirs != null and theirs.character != null else null
 	if body == null:
 		print("died: no body drawn")
@@ -238,10 +238,10 @@ func _build() -> void:
 	var lead_bit := int((DotNetMessageRegistry as Script).get_script_constant_map().get("FEATURE_INPUT_LEAD", 0))
 	_client_net.messages.features &= ~lead_bit
 
-	_server_bridge = PlaygroundNetBridge.new()
+	_server_bridge = PlaylotNetBridge.new()
 	_server_bridge.name = "Bridge"
 	server_side.add_child(_server_bridge)
-	_client_bridge = PlaygroundNetBridge.new()
+	_client_bridge = PlaylotNetBridge.new()
 	_client_bridge.name = "Bridge"
 	client_side.add_child(_client_bridge)
 
@@ -271,14 +271,14 @@ func _build() -> void:
 	add_child(_camera)
 
 
-func _make_game(server: bool, scope: StringName, parent: Node) -> Playground:
-	var config := PlaygroundConfig.new()
+func _make_game(server: bool, scope: StringName, parent: Node) -> Playlot:
+	var config := PlaylotConfig.new()
 	config.records_directory = ""
 	config.map_seconds = 0.0
 	config.initial_map = &"pg_flatgrass"
 	config.authoritative = server
 
-	var game := Playground.new()
+	var game := Playlot.new()
 	game.name = "Game"
 	game.config = config
 	game.service_scope = scope
@@ -362,7 +362,7 @@ func _local_command() -> DotFpsCommand:
 		command.move = Vector2(1.0 if east else -1.0, 0.0)
 
 		if at == WALK_IDLE:
-			var mine: PlaygroundPlayer = _client_game.players.get(&"u%d" % SESSION)
+			var mine: PlaylotPlayer = _client_game.players.get(&"u%d" % SESSION)
 			if mine != null:
 				_pressed_at = _tick
 				_pressed_from = mine.global_position
@@ -382,7 +382,7 @@ func _watch_the_press() -> void:
 	if _pressed_at < 0:
 		return
 
-	var mine: PlaygroundPlayer = _client_game.players.get(&"u%d" % SESSION)
+	var mine: PlaylotPlayer = _client_game.players.get(&"u%d" % SESSION)
 	if mine == null:
 		return
 
@@ -394,8 +394,8 @@ func _watch_the_press() -> void:
 ## Bea runs back and forth across Ada's view, driven the way her client would drive her: the
 ## command her input would have carried, applied by the server.
 func _drive_other() -> void:
-	var ada: PlaygroundPlayer = _server_game.players.get(&"u%d" % SESSION)
-	var bea: PlaygroundPlayer = _server_game.players.get(&"u%d" % OTHER_SESSION)
+	var ada: PlaylotPlayer = _server_game.players.get(&"u%d" % SESSION)
+	var bea: PlaylotPlayer = _server_game.players.get(&"u%d" % OTHER_SESSION)
 
 	if ada == null or bea == null:
 		return
@@ -413,9 +413,9 @@ func _drive_other() -> void:
 			var _crate := _server_game.props.spawn(&"crate", bea.player_id, bea.eye_position() + bea.aim_direction() * 2.5)
 
 	if _downed:
-		# What `PlaygroundDowns.tick` sets every tick on the server; still, as a downed player is.
+		# What `PlaylotDowns.tick` sets every tick on the server; still, as a downed player is.
 		bea.downed = true
-		(bea.get_node("Net") as PlaygroundPlayerNet).last_move = DotFpsCommand.new()
+		(bea.get_node("Net") as PlaylotPlayerNet).last_move = DotFpsCommand.new()
 		return
 
 	var offset := bea.controller.state.position.x - _home.x
@@ -429,35 +429,35 @@ func _drive_other() -> void:
 	run.yaw = _heading
 	if _zee != &"" or (_hold and _settle < 26):
 		run.set_button(DotFpsCommand.BUTTON_USER_0, true)
-	(bea.get_node("Net") as PlaygroundPlayerNet).last_move = run
+	(bea.get_node("Net") as PlaylotPlayerNet).last_move = run
 
 
 func _process(delta: float) -> void:
 	if _client_game == null or _client_net == null:
 		return
 
-	var mine: PlaygroundPlayer = _client_game.players.get(&"u%d" % SESSION)
+	var mine: PlaylotPlayer = _client_game.players.get(&"u%d" % SESSION)
 
 	if mine != null and not mine.samples_input:
-		# What `PlaygroundClient._build_view_switch` does the moment the client knows which
+		# What `PlaylotClient._build_view_switch` does the moment the client knows which
 		# player is its own: that one is looked out of, so its body is hidden.
 		mine.samples_input = true
 		var _switch := mine.build_view_switch()
 
-	var _shown := PlaygroundClient.present_frame(_client_net if _interp else null, _client_game)
+	var _shown := PlaylotClient.present_frame(_client_net if _interp else null, _client_game)
 
 	if _hold:
 		if _presentation == null:
-			_presentation = PlaygroundPresentation.new()
+			_presentation = PlaylotPresentation.new()
 			_presentation.name = "Presentation"
 			add_child(_presentation)
 			_presentation.setup()
 		var eye_at := _camera.global_position if _camera != null else Vector3.ZERO
 		_presentation.present(delta, eye_at, -_camera.global_transform.basis.z if _camera != null else Vector3.FORWARD)
-		var _beams := PlaygroundClient.present_beams(_client_bridge, _presentation, mine, eye_at, Vector3.FORWARD)
+		var _beams := PlaylotClient.present_beams(_client_bridge, _presentation, mine, eye_at, Vector3.FORWARD)
 
 	if mine != null:
-		# Where the real client draws its eye (`PlaygroundClient._process`).
+		# Where the real client draws its eye (`PlaylotClient._process`).
 		var eye := mine.render_eye_position()
 		_camera.global_position = eye
 		_camera.look_at(eye + Vector3(0.0, -0.2, -1.0), Vector3.UP)
@@ -465,7 +465,7 @@ func _process(delta: float) -> void:
 		# The eye's apparent speed while the SERVER has this player strafing flat out: the
 		# same measurement as the other probe, on the one player nobody sees from outside.
 		if _walk and delta > 0.0:
-			var server_mine: PlaygroundPlayer = _server_game.players.get(&"u%d" % SESSION)
+			var server_mine: PlaylotPlayer = _server_game.players.get(&"u%d" % SESSION)
 			var flat := 0.0
 			if server_mine != null:
 				flat = Vector2(
@@ -475,8 +475,8 @@ func _process(delta: float) -> void:
 				_eye_speeds.append(eye.distance_to(_last_eye) / delta)
 			_last_eye = eye
 
-	var theirs: PlaygroundPlayer = _client_game.players.get(&"u%d" % OTHER_SESSION)
-	var bea: PlaygroundPlayer = _server_game.players.get(&"u%d" % OTHER_SESSION)
+	var theirs: PlaylotPlayer = _client_game.players.get(&"u%d" % OTHER_SESSION)
+	var bea: PlaylotPlayer = _server_game.players.get(&"u%d" % OTHER_SESSION)
 
 	if theirs == null or theirs.character == null or bea == null or delta <= 0.0:
 		return

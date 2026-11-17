@@ -1,0 +1,333 @@
+extends DotConfig
+
+## Everything the playlot is configured with, layered like every [DotConfig]:
+## exported defaults, then a JSON file, then [code]PLAYGROUND_*[/code] environment
+## variables, then [code]--pg-*[/code] arguments.
+##
+## [b]The tick rate is the one that matters, and it is deliberately not here.[/b] It
+## is taken from the engine ([method Playlot._resolve_tick_rate]), which on a
+## dot-server is whatever [code]sv_tickrate[/code] was set to, and a run timer a server
+## added is handed the same number. One number, in
+## [code]server.cfg[/code], with everything else — rather than a second copy in a
+## second file that can disagree with the first and produce plausible, wrong,
+## permanently-filed times.
+##
+## [codeblock]
+## ./game --pg-initial-map=pg_generated --pg-map-seed=42 --pg-records-directory=/srv/records
+## [/codeblock]
+
+@export_group("Content")
+
+## The map to load on boot.
+@export var initial_map: StringName = &"pg_flatgrass"
+
+## A map catalogue JSON file. Empty uses the maps this build ships.
+##
+## The seam between "a game with its own maps" and "a server with a map pool": an
+## operator points this at a file and the built-in list is not used at all.
+@export var catalogue_path: String = ""
+
+## The seed a generated map is built from. Zero picks one and announces it.
+##
+## [b]A generated world nobody can name the seed of is a world nobody can share[/b], and
+## "play the map I played" is the single most-requested feature every generated game gets.
+## It is a setting rather than a debugging affordance for exactly that reason, and the
+## seed actually used is logged whichever way it arrived.
+##
+## Zero takes the seed from dot-randomness when the deployment has one, so a generated map
+## and everything else random in the session come out of one number rather than two.
+@export var map_seed: int = 0
+
+## A prop catalogue JSON file. Empty uses the fourteen props this build ships.
+##
+## Loaded INSTEAD of the built-in list, not layered over it. A catalogue that merged
+## would give every server these fourteen whether it wanted them or not, and there
+## would be no way to remove one. See [method Playlot.built_in_props].
+@export var props_path: String = ""
+
+## A folder of loose models (.glb or .gltf, each with an optional same-named .json sidecar for
+## name, category, scale and mass) that become props with no code. Read at start and by
+## [method Playlot.rescan_props]. A server sets it to its content directory
+## ([code]PLAYGROUND_PROPS_DIR[/code]); a missing folder is not an error. A connected client
+## needs the same model to draw a prop the server added, so drop-ins that should be seen by
+## everyone belong in the game's pack instead.
+@export var props_dir: String = "user://props"
+
+@export_group("Rules")
+
+## Whether this instance times, ranks and spawns — the authority.
+##
+## A client sets this false; with a run timer added, it times its own run for its HUD and
+## files nothing.
+@export var authoritative: bool = true
+
+## Seconds a map runs before the session asks for the next one. 0 disables it.
+@export_range(0.0, 86400.0, 30.0) var map_seconds: float = 2700.0
+
+## The file that says which maps a server ROTATES: `cfg/maps.yml`, layered over the game's own
+## shipped `res://maps.yml` (dot-map's `DotMapRotationFile`: named rotations, `random` or
+## `cycle`, wildcards, command names). Empty, or no such file, rotates every map. A map the
+## active rotation leaves out stays installed (`pg_map <id>` loads it); it is only never
+## chosen, balloted or nominated. `sv_map_rotation_file`.
+@export var map_rotation_file: String = "cfg/maps.yml"
+
+## Fraction of the players who must rock the vote to end a map early.
+@export_range(0.0, 1.0, 0.05) var rtv_fraction: float = 0.6
+
+## Who may toggle noclip with V: `off` nobody, `permission` a player holding [member noclip_flag] (or `cheats`, or root) on a server and everybody in solo, `everyone` every player.
+@export var noclip: String = "permission"
+
+## The admin flag (cfg groups.yml) that grants noclip under `permission`.
+@export var noclip_flag: String = "noclip"
+
+@export_group("Undo")
+
+## Whether undoing something plays a cue for the player who undid it.
+@export var undo_sound: bool = true
+
+## Volume of that cue, 0 to 2 (1 is the catalogue's level).
+@export_range(0.0, 2.0, 0.05) var undo_sound_volume: float = 1.0
+
+## Whether the cue comes from where the undone thing was instead of the player's own ears.
+@export var undo_sound_spatial: bool = false
+
+@export_group("Disasters")
+
+## Whether a tornado also throws ragdoll parts and bodies in the `disaster_bodies` group, not only props.
+@export var disaster_fling_extra: bool = true
+
+@export_group("Records")
+
+## Where records are kept. Empty keeps them in memory only.
+@export var records_directory: String = "user://playground/records"
+
+@export var record_replays: bool = true
+
+## Whether published boards are reported to the TMC backbone.
+##
+## Off by default: publishing sends player names and times off the server, and that
+## is an operator's decision rather than something that happens because a default was
+## permissive.
+@export var report_to_backbone: bool = false
+
+@export_group("Props")
+
+## Props one saved build may hold. 0 = unlimited.
+@export_range(0, 100000, 1, "or_greater") var build_max_props: int = 200
+
+## Whether props can be spawned at all. Off makes it a pure movement server.
+@export var allow_props: bool = true
+
+## Props one player may have at once, counted in COST. 0 = unlimited, and 0 is the default.
+##
+## [b]Off by default since the per-kind limits arrived[/b] ([code]pg_max_props[/code],
+## [code]pg_max_npcs[/code] and the rest, in `PlaylotLimits`). Both apply when both are
+## set, and a cost budget of 64 under a count of 200 props meant the count was never the
+## one a player met — an NPC costs six, so the budget refused the eleventh NPC before
+## [code]pg_max_npcs[/code] could say anything, with a message about props.
+@export_range(0, 1000, 1, "or_greater") var prop_budget: int = 0
+
+## Whether a player may move, freeze or remove somebody else's props.
+##
+## [b]dot-props deliberately refuses to decide this[/b] — "a build server says no, a
+## sandbox says yes, a competitive one says only for admins, and hard-coding either
+## answer means the other needs a fork" — so it is passed to every tool call as
+## `can_touch_others`. On by default, because this is a sandbox.
+@export var touch_others_props: bool = true
+
+## Whether a player may switch on creative mode (`!creative`): their props refuse
+## everybody else's tools and harm, nobody can pick them up, and they neither take nor
+## deal damage from other players. What a building server offers somebody who wants to
+## build while the rest of it plays. Falls, pits and their own props still reach them.
+@export var allow_creative: bool = true
+
+## Whether standing on a moving prop carries you with it: a crate somebody else swings with
+## the physics gun, a plank sliding down a ramp, or the one you are holding yourself under
+## your own feet (which is prop surfing). dot-props' DotPropCarry; the prop also takes some
+## of your weight. Off leaves a crate exactly as solid and as still as the floor.
+@export var prop_surfing: bool = true
+
+## Whether shots and blasts break props that have health (`PlaylotSpawnables.BREAKABLE`):
+## a crate shot apart into debris, a barrel that goes up. Off by default: a sandbox where
+## somebody can shoot your build to pieces is a different server, and an operator chooses
+## it (`pg_destruction`). Creative mode protects a builder's props either way.
+@export var destruction: bool = false
+
+## Whether a map's breakable boxes (glass) break from shots, blasts and fast impacts. On by
+## default and separate from [member destruction], which is about props: glass in a map is
+## put there to be broken (`pg_breakable_glass`).
+@export var breakable_glass: bool = true
+
+## Pieces a broken prop leaves, and how long they lie there.
+@export_range(0, 12) var debris_pieces: int = 4
+@export_range(0.5, 60.0, 0.5) var debris_seconds: float = 6.0
+
+## Props in the world at once, from everybody. 0 = unlimited.
+@export_range(0, 10000, 1, "or_greater") var prop_world_budget: int = 1024
+
+## Seconds between one player's spawns.
+##
+## [b]A budget alone does not stop a held key.[/b] Reach the cap, remove one, spawn
+## another — that is a spawn and a free every frame, which costs the server more than
+## the props do. dot-props' own default is 0.15 s; this is looser because a sandwich
+## of planks is built by spawning a dozen quickly, and it is a [DotConfig] field so an
+## operator who is being spammed can tighten it without a build.
+@export_range(0.0, 10.0, 0.01) var prop_spawn_interval: float = 0.1
+
+## Whether a client builds every NPC, weapon, effect and menu icon once under the loading cover,
+## so the first spawn, shot and menu open do not stall. A presentation choice; the server ignores it.
+@export var prewarm: bool = true
+
+## Whether that warm-up also loads every model prop's scene: one file load each, so it lengthens
+## the cover by as many loads as the catalogue has models. Off by default: on software GL it pushed the
+## warm-up past the gate's time-out, so the weapon phase ran in play instead.
+@export var prewarm_model_props: bool = false
+
+## Whether that warm-up also draws dot-fx's muzzle flashes on the camera and holds an omni light there until the
+## gate opens, so the first shot compiles neither the flash nor its lit variants in play. On a real GPU (RTX 2070,
+## Compatibility renderer, tools/load_probe.gd --first-use, 3 runs against 3) the first SMG shot's worst frame went
+## from 124-220 ms to 4-8 ms and the first pistol shot's from 32-36 ms to 10-12 ms, for about 1.5 s more cover (map to
+## open 4.1-5.0 s against 3.1-3.2 s): a freeze in play traded for time under the cover. A software rasteriser skips
+## it unless [member prewarm_shot_effects_software] is on.
+@export var prewarm_shot_effects: bool = true
+
+## Whether [member prewarm_shot_effects] runs on a software rasteriser too (llvmpipe, SwiftShader): there it kept the
+## cover up about 10 s longer (PH, 3 runs against 3: map to open 43 s against 33 s), a worse trade than one slow shot.
+@export var prewarm_shot_effects_software: bool = false
+
+## Whether the 3D world is left undrawn while that warm-up holds the cover. The cover hides it anyway, and on
+## software GL each frame of it cost about 0.7 s: most of the warm-up's time under the cover went to drawing a map
+## nobody could see. Off draws it, as before.
+@export var prewarm_hide_world: bool = true
+
+## Whether the NPCs' animation clip sets start building on a worker thread before the first map loads, rather than on
+## the main thread when the warm-up dresses its first NPC (the shared set alone is over 100 ms in one frame). Where there
+## are no threads, or the worker is not done by then, the warm-up builds them as before. Off builds them there.
+@export var prewarm_figure_clips_early: bool = true
+
+## Whether the catalogue's entity scripts start compiling on the loader's worker threads before the first map loads,
+## rather than on the main thread when the warm-up loads each (about 150 ms under the cover, most of it the soldier's
+## brain). Where there are no threads they load as before. Off loads them there.
+@export var prewarm_entity_scripts_early: bool = true
+
+@export_group("Arena")
+
+## Seconds one arena round lasts.
+@export_range(10.0, 7200.0, 10.0) var arena_round_sec: float = 240.0
+
+## Kills that end an arena round.
+@export_range(1, 1000, 1, "or_greater") var arena_score_limit: int = 25
+
+## Health an arena player spawns with, and the ceiling.
+@export_range(1.0, 1000.0, 1.0) var arena_health: float = 100.0
+
+## Armour ceiling in the arena.
+@export_range(0.0, 1000.0, 1.0) var arena_armour: float = 100.0
+
+## Seconds a killed arena player waits before respawning.
+@export_range(0.0, 60.0, 0.5) var arena_respawn_sec: float = 3.0
+
+## Seconds of protection after an arena spawn.
+@export_range(0.0, 30.0, 0.5) var arena_spawn_protection_sec: float = 3.0
+
+## Whether arena shots hurt everybody (true) or only players on other teams (false, once teams exist).
+@export var arena_friendly_fire: bool = true
+
+## Credits for an arena kill.
+@export_range(0, 10000, 1) var arena_kill_reward: int = 100
+
+@export_group("Economy")
+
+## Credits for killing something the wave director sent.
+@export_range(0, 10000, 1) var wave_kill_reward: int = 60
+
+@export_group("Npcs")
+
+## Multiplies the health of every built-in soldier, elite and rebel (`npc_soldier.gd`). Read when the catalogue is built, so a change applies to the next map load; an NPC already standing keeps what it spawned with. A catalogue from [member props_path] is the operator's own and is left alone.
+@export_range(0.1, 20.0, 0.05) var soldier_health_scale: float = 1.0
+
+## Multiplies the speed of both built-in hunters (`npc_hunter.gd`). Same timing and exception as [member soldier_health_scale].
+@export_range(0.1, 5.0, 0.05) var hunter_speed_scale: float = 1.0
+
+## Multiplies the speed of the wave director's runners, walkers and brutes. Read when the wave catalogue is built (a restart).
+@export_range(0.1, 5.0, 0.05) var wave_speed_scale: float = 1.0
+
+@export_group("Movement")
+
+## Ground speed, m/s (`DotFpsTunables.max_speed`). Sent to every client in HELLO and again when it changes, so a client predicts with the number the server simulates. Map layouts stay sized against `PlaylotMap.MOVE_SPEED` (7.0).
+@export_range(1.0, 30.0, 0.1) var move_speed: float = 7.0
+
+## Jump height, metres (`DotFpsTunables.jump_height`). Replicated like [member move_speed].
+@export_range(0.2, 5.0, 0.05) var jump_height: float = 1.15
+
+## Gravity, m/s² (`DotFpsTunables.gravity`, and the map toys'). Replicated like [member move_speed].
+@export_range(2.0, 60.0, 0.5) var move_gravity: float = 20.0
+
+@export_group("Server")
+
+## Player slots. Read when the roster is built, so a change takes a restart.
+@export_range(1, 4095, 1, "or_greater") var max_players: int = 32
+
+
+## `@export_group` -> the cfg file it lives in: `cfg/game/game-playground/config_<file>/game.yml`.
+## `config_arena` is the arena mode's alone (`pg_arena`), so the Workbench can leave it out while the mode is off;
+## the waves, NPCs and movement that every session uses are `config_world`.
+const CFG_FILES := {
+	"Content": "server", "Rules": "server", "Undo": "props", "Records": "server", "Server": "server",
+	"Props": "props",
+	"Arena": "arena",
+	"Economy": "world", "Npcs": "world", "Movement": "world",
+}
+
+
+## The game's own id since the rename, and the ids it had before (oldest first).
+const GAME_ID := "game-playlot"
+const FORMER_IDS: PackedStringArray = ["game-playground"]
+
+
+## Declares the rename to dot-core (API 31), so a deployment's `cfg/game/game-playground/` tiers and
+## rotation `games:` keys keep applying to the game under its new id. Idempotent.
+static func register_ids() -> void:
+	DotAddonConfig.register_former_game(GAME_ID, FORMER_IDS)
+
+
+## The binder every entry point uses: [param config] layered, one cfg file per [constant CFG_FILES] entry.
+static func make_binder(config: DotConfig, json_path := "") -> DotGameConfigBinder:
+	register_ids()
+	var b := DotGameConfigBinder.create(config, "game-playground", "pg", json_path)
+	b.grouped = true
+	b.group_files = CFG_FILES
+	return b
+
+
+func env_prefix() -> String:
+	return "PLAYGROUND_"
+
+
+func cli_prefix() -> String:
+	return "--pg-"
+
+
+func validate() -> DotResult:
+	if initial_map == &"":
+		return DotResult.fail(
+			DotError.CODE_INVALID, "There has to be a map to start on."
+		)
+
+	if rtv_fraction <= 0.0 or rtv_fraction > 1.0:
+		return DotResult.fail(
+			DotError.CODE_INVALID,
+			"rtv_fraction must be above 0 and at most 1.",
+			"%.2f" % rtv_fraction
+		)
+
+	return DotResult.success(null)
+
+
+func describe_summary() -> String:
+	return "map %s, %s, props %s" % [
+		String(initial_map),
+		("records " + (records_directory if records_directory != "" else "in memory")),
+		(("on, %s" % (props_path if props_path != "" else "built in"))
+			if allow_props else "off"),
+	]

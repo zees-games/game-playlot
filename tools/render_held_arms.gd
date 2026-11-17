@@ -1,22 +1,22 @@
 extends Node
 
-const PlaygroundClient := preload("../game/playground_client.gd")
-const PlaygroundConfig := preload("../game/playground_config.gd")
-const PlaygroundViewGrip := preload("../game/playground_view_grip.gd")
-const PlaygroundPresentation := preload("../game/playground_presentation.gd")
+const PlaylotClient := preload("../game/playlot_client.gd")
+const PlaylotConfig := preload("../game/playlot_config.gd")
+const PlaylotViewGrip := preload("../game/playlot_view_grip.gd")
+const PlaylotPresentation := preload("../game/playlot_presentation.gd")
 
 ## Renders the offline client holding one weapon of each pose, the first-person arms on the grip, and prints the hand error.
 ##
 ## Run: `xvfb-run -a godot --path . --resolution 1280x720 res://tools/render_held_arms.tscn -- <out dir>`
 
-var _client: PlaygroundClient = null
+var _client: PlaylotClient = null
 
 
 func _ready() -> void:
-	PlaygroundPresentation.use_scratch_settings("render_held_arms")
-	_client = PlaygroundClient.new()
+	PlaylotPresentation.use_scratch_settings("render_held_arms")
+	_client = PlaylotClient.new()
 	_client.name = "Client"
-	var config := PlaygroundConfig.new()
+	var config := PlaylotConfig.new()
 	config.records_directory = ""
 	config.record_replays = false
 	_client.config = config
@@ -44,7 +44,7 @@ func _run() -> void:
 		await RenderingServer.frame_post_draw
 		var err := (_client.view_arms as DotPlayerViewArms).hand_error(_client.held_grip)
 		print("%s (%s): hand error %.3f m" % [pose, chosen[pose], err])
-		failed += 0 if err >= 0.0 and err < (0.05 if pose in PlaygroundViewGrip.ONE_HAND else (0.13 if pose == &"heavy" else 0.10)) else 1
+		failed += 0 if err >= 0.0 and err < (0.05 if pose in PlaylotViewGrip.ONE_HAND else (0.13 if pose == &"heavy" else 0.10)) else 1
 		get_viewport().get_texture().get_image().save_png("%s/held_%s.png" % [out, pose])
 		await _seq.record(get_tree(), "%s/held_%s.png" % [out, pose])
 	print("held arms: %d failed" % failed)

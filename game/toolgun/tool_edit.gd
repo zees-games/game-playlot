@@ -1,4 +1,4 @@
-extends "playground_tool.gd"
+extends "playlot_tool.gd"
 
 ## Select a prop, then change it: left click picks one, and from then on the Q menu's
 ## settings ARE that prop — its size, its paint, whether it is frozen, its gravity, weight,
@@ -22,7 +22,7 @@ extends "playground_tool.gd"
 ## neither, as there. A refusal leaves the prop as it was and is said in the report, so
 ## the client's tick box springs back.
 
-const PlaygroundProp := preload("../playground_prop.gd")
+const PlaylotProp := preload("../playlot_prop.gd")
 const ToolColour := preload("tool_colour.gd")
 const ToolPhysprop := preload("tool_physprop.gd")
 
@@ -50,7 +50,7 @@ func _init() -> void:
 func schema() -> Array[Dictionary]:
 	return [
 		{"key": "size", "label": "Size ×", "type": "float", "default": 1.0,
-			"min": PlaygroundProp.MIN_SCALE, "max": PlaygroundProp.MAX_SCALE, "step": 0.05},
+			"min": PlaylotProp.MIN_SCALE, "max": PlaylotProp.MAX_SCALE, "step": 0.05},
 		{"key": "colour", "label": "Colour", "type": "colour", "default": "", "options": _palette()},
 		{"key": "frozen", "label": "Frozen", "type": "bool", "default": false},
 		{"key": "gravity", "label": "Gravity", "type": "bool", "default": true},

@@ -1,4 +1,4 @@
-extends "playground_entity.gd"
+extends "playlot_entity.gd"
 
 ## A patrol waypoint: a flat marker an armed NPC of the same owner walks to when it has
 ## nothing to fight, and on from it along its [member links].
@@ -6,7 +6,7 @@ extends "playground_entity.gd"
 ## [b]A prop, so it replicates, is undone, is counted and is cleaned up with its owner for
 ## free.[/b] A separate waypoint system would have needed its own wire message to be seen on a
 ## client; a frozen prop is drawn by the path every other prop takes. The link between two
-## points is a rope in [PlaygroundConstraints] (not counted, and between two frozen bodies it
+## points is a rope in [PlaylotConstraints] (not counted, and between two frozen bodies it
 ## moves nothing), which is what gets a line drawn on every screen; the routes the NPCs
 ## walk are read from [member links], never from the ropes.
 ##

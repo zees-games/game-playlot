@@ -10,7 +10,7 @@
 # neither of which this file can know. What is written here for them is a placeholder.
 #
 # Paths are relative to the pack's mount point, which is also this repository's root.
-# Keep scene, client_scene and module in step with dot-server-deploy/content/playground/game.yml,
+# Keep scene, client_scene and module in step with dot-server-deploy/content/playlot/game.yml,
 # which describes the same game for a deployment that publishes it itself;
 # dot-server-deploy's examples/install_descriptor suite fails when the two disagree.
 
@@ -22,8 +22,8 @@ name: "Zee's Playlot"
 max_players: 32
 
 scene: scenes/pg_server.tscn
-client_scene: game/playground.tscn
-module: game/playground_module.gd
+client_scene: game/playlot.tscn
+module: game/playlot_module.gd
 
 cvars:
   pg_map_seconds: "0"

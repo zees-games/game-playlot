@@ -1,6 +1,6 @@
-extends "playground_tool.gd"
+extends "playlot_tool.gd"
 
-const PlaygroundZee := preload("../playground_zee.gd")
+const PlaylotZee := preload("../playlot_zee.gd")
 
 ## Spawns NPCs where it points, armed with the weapon chosen here, or lays a spawn point that
 ## keeps making them.
@@ -45,8 +45,8 @@ func schema() -> Array[Dictionary]:
 static func npc_weapon_ids() -> Array:
 	var out: Array = []
 
-	for def in PlaygroundZee.defs():
-		if PlaygroundZee.npc_can_use(def):
+	for def in PlaylotZee.defs():
+		if PlaylotZee.npc_can_use(def):
 			out.append(String(def.id))
 
 	return out

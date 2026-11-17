@@ -6,7 +6,7 @@ Hold **Q** in game to open the spawn menu.
 
 ![Preview](https://github.com/zees-games/game-playlot/blob/main/images/preview.gif?raw=true)
 
-[Play on the test server](https://moddingcommunity.com/playground/s/pg01/play).
+[Play on the test server](https://moddingcommunity.com/playlot/s/pg01/play).
 
 It is built on [Godot 4](https://godotengine.org/), the [Gamespice](https://gamespice.net) platform and addon collection. Everything in this repository is open source under the MIT license. The only closed part is the website back-end it can sign in through. If you do not want to use Gamespice, you can plug in your own sign-in back-end.
 
@@ -41,7 +41,7 @@ Things you can do:
 | --- | --- |
 | `pg_flatgrass` | The default sandbox: a walled 200-metre plate of grass, with a corner of ramps and steps and the map's toys near the spawn |
 | `pg_generated` | Built from a seed each time it loads: rooms joined by corridors, with props scattered through them. Start with `--pg-map-seed=<n>` to pick the seed and share a layout. |
-| Map pack | More maps come from the Playlot map pack (game-playground-maps in the repository layout) |
+| Map pack | More maps come from the Playlot map pack (the pack id `gamemann/game-playground-maps` keeps the old name) |
 
 ## Controls
 
@@ -156,7 +156,7 @@ With fights on, a round lasts 240 seconds or until someone reaches 25 kills. The
 
 ### The map vote
 
-Players vote on the next map with [dot-vote](https://github.com/gamespice-platform/vote). The defaults are in `game/playground_vote.gd`. To change them, put a file at `user://cfg/playground_vote.json`, or use `DOT_VOTE_*` environment variables or `--vote-*` arguments:
+Players vote on the next map with [dot-vote](https://github.com/gamespice-platform/vote). The defaults are in `game/playlot_vote.gd`. To change them, put a file at `user://cfg/playground_vote.json`, or use `DOT_VOTE_*` environment variables or `--vote-*` arguments:
 
 ```json
 { "end_vote": true, "vote_lead_sec": 120, "include_extend": true, "extend_seconds": 900, "max_extends": 4 }
@@ -180,14 +180,14 @@ An optional pack can add weapons, NPCs and bots to the Q menu by shipping `addon
 
 ```bash
 ./game.sh test                         # every script parses, then every suite runs
-./game.sh test headless_playground     # one suite
+./game.sh test headless_playlot     # one suite
 ```
 
 | Suite | What it covers |
 | --- | --- |
 | `headless_config`, `headless_workbench`, `headless_mapcfg` | Settings, the workbench and per-map config |
 | `headless_mapdrop` | Maps dropped on the window or the executable, a dropped Garry's Mod map as its PLAYLOT conversion (gm_fork is pgc_fork), and the refusal of anything else |
-| `headless_playground` | The whole game: props, NPCs, weapons, every tool, limits, the menu, map changes, and the run timer when linked |
+| `headless_playlot` | The whole game: props, NPCs, weapons, every tool, limits, the menu, map changes, and the run timer when linked |
 | `headless_net` | A server and a client in one process, over the network code |
 | `headless_presentation` | What a client draws and plays |
 | `headless_stack` | All the addons together |

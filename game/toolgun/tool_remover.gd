@@ -1,4 +1,4 @@
-extends "playground_tool.gd"
+extends "playlot_tool.gd"
 
 ## Removes what it points at. Right click removes it and everything welded or roped to it —
 ## a whole contraption in one click, which is what anybody who built one wants when it is

@@ -1,9 +1,9 @@
 extends SceneTree
 
-const PlaygroundClient := preload("../game/playground_client.gd")
-const PlaygroundPresentation := preload("../game/playground_presentation.gd")
-const PlaygroundConfig := preload("../game/playground_config.gd")
-const PlaygroundZee := preload("../game/playground_zee.gd")
+const PlaylotClient := preload("../game/playlot_client.gd")
+const PlaylotPresentation := preload("../game/playlot_presentation.gd")
+const PlaylotConfig := preload("../game/playlot_config.gd")
+const PlaylotZee := preload("../game/playlot_zee.gd")
 
 ## Boots the solo client and prints, per rendered frame, what a player would see: whether the
 ## map, the player and the camera exist, where the body is and whether the load gate (if any)
@@ -14,14 +14,14 @@ const PlaygroundZee := preload("../game/playground_zee.gd")
 ## its first draw): no per-frame lines, a quit 10 frames after the gate opens, and one line
 ## "load_probe cover: map_ms=.. open_ms=.. map_to_open_ms=.. frames=.." (ms from boot; frames rendered map to open).
 ## --prewarm-profile also waits for the warm-up and prints its per-step and per-item times.
-## --draw-world keeps the 3D world drawn under the warm-up's cover (PlaygroundConfig.prewarm_hide_world off), for A/B.
-## --config:name=value sets one PlaygroundConfig field (an A/B: --config:prewarm_shot_effects=true).
+## --draw-world keeps the 3D world drawn under the warm-up's cover (PlaylotConfig.prewarm_hide_world off), for A/B.
+## --config:name=value sets one PlaylotConfig field (an A/B: --config:prewarm_shot_effects=true).
 ## --first-use (with --cover) times what a player does first once the cover lifts and the warm-up is done: equip a gun,
 ## fire it, spawn an NPC, then the same with a second gun. One line per step, "load_probe first-use: <step> worst_ms=..
 ## over50=.. call_ms=.." (the worst frame and the frames over 50 ms in the STEP_FRAMES after it, and the step's own
 ## call); "idle" is the line before any step.
 ## --weapons=zee_a,zee_b picks the guns (default the first primary and the first sidearm of the pack).
-var _client: PlaygroundClient = null
+var _client: PlaylotClient = null
 var _frame := 0
 var _frames := 90
 var _shot := -1
@@ -64,7 +64,7 @@ var _trace_line: Callable = _print_trace
 
 
 func _initialize() -> void:
-	var _scratch := PlaygroundPresentation.use_scratch_settings("load_probe")
+	var _scratch := PlaylotPresentation.use_scratch_settings("load_probe")
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--frames="):
 			_frames = int(a.get_slice("=", 1))
@@ -86,18 +86,18 @@ func _initialize() -> void:
 		process_frame.connect(func() -> void: _nodes_us = Time.get_ticks_usec())
 		physics_frame.connect(func() -> void: _physics_us = Time.get_ticks_usec())
 	DirAccess.make_dir_recursive_absolute("res://screenshots")
-	_client = PlaygroundClient.new()
+	_client = PlaylotClient.new()
 	_client.link = null
 	for flag: String in OS.get_cmdline_user_args():
 		if flag.begins_with("--config:"):
-			# --config:name=value sets one PlaygroundConfig field, for an A/B (--config:prewarm_shot_effects=true).
+			# --config:name=value sets one PlaylotConfig field, for an A/B (--config:prewarm_shot_effects=true).
 			if _client.config == null:
-				_client.config = PlaygroundConfig.new()
+				_client.config = PlaylotConfig.new()
 			var pair := flag.trim_prefix("--config:")
 			_client.config.set(pair.get_slice("=", 0), str_to_var(pair.get_slice("=", 1)))
 	if OS.get_cmdline_user_args().has("--draw-world"):
 		if _client.config == null:
-			_client.config = PlaygroundConfig.new()
+			_client.config = PlaylotConfig.new()
 		_client.config.prewarm_hide_world = false
 	root.add_child(_client)
 
@@ -106,7 +106,7 @@ func _process(_delta: float) -> bool:
 	_frame += 1
 	var gate: Object = _client.get("gate") if _client != null else null
 	var covered: bool = gate != null and not gate.is_open()
-	var map_up: bool = _client.playground != null and _client.playground.maps.current != null
+	var map_up: bool = _client.playlot != null and _client.playlot.maps.current != null
 	var pos := Vector3.ZERO
 	var has_player: bool = _client.player != null
 	if has_player:
@@ -186,7 +186,7 @@ func _run_first_use() -> bool:
 func _plan_first_use() -> void:
 	if _weapons.is_empty():
 		for slot in [3, 2]:
-			for def in PlaygroundZee.defs():
+			for def in PlaylotZee.defs():
 				if int(def.meta.get("slot", 0)) == slot:
 					_weapons.append(def.id)
 					break
@@ -204,14 +204,14 @@ func _plan_first_use() -> void:
 
 ## Spawns [param id] five metres in front of the player, as the spawn menu does for this player.
 func _spawn_ahead(id: StringName) -> void:
-	if _client.playground == null or _client.playground.props == null or _client.player == null:
+	if _client.playlot == null or _client.playlot.props == null or _client.player == null:
 		print("load_probe first-use: no spawner for ", id)
 		return
 	var ahead: Vector3 = _client.player.aim_direction()
 	ahead.y = 0.0
 	ahead = ahead.normalized() if ahead.length() > 0.01 else Vector3.FORWARD
 	var at: Vector3 = _client.player.global_position + ahead * 5.0 + Vector3.UP
-	if _client.playground.props.spawn(id, _client.player_id, at) == null:
+	if _client.playlot.props.spawn(id, _client.player_id, at) == null:
 		print("load_probe first-use: spawn refused ", id)
 
 

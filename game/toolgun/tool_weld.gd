@@ -1,4 +1,4 @@
-extends "playground_tool.gd"
+extends "playlot_tool.gd"
 
 ## Welds two props into one: left click the first, left click the second. Right click welds
 ## a prop to the world where it stands. Reload undoes every weld on a prop.

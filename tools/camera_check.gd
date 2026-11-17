@@ -9,22 +9,22 @@ extends SceneTree
 ## The two views themselves are drawn by `tools/screenshot_views.sh` (view_first_person,
 ## view_third_person).
 
-const Playground := preload("../game/playground.gd")
-const PlaygroundConfig := preload("../game/playground_config.gd")
-const PlaygroundPlayer := preload("../game/playground_player.gd")
+const Playlot := preload("../game/playlot.gd")
+const PlaylotConfig := preload("../game/playlot_config.gd")
+const PlaylotPlayer := preload("../game/playlot_player.gd")
 
-var _game: Playground = null
+var _game: Playlot = null
 var _failed := false
 
 
 func _initialize() -> void:
 	DotLog.set_level(DotLog.Level.ERROR)
 	DotFpsSampler.register_default_actions()
-	var config := PlaygroundConfig.new()
+	var config := PlaylotConfig.new()
 	config.records_directory = ""
 	config.initial_map = &"pg_flatgrass"
 	config.map_seconds = 0.0
-	_game = Playground.new()
+	_game = Playlot.new()
 	_game.name = "Playground"
 	_game.config = config
 	root.add_child(_game)
@@ -66,7 +66,7 @@ func _run() -> void:
 
 
 ## A walks at B, held still, for a second and a half; the closest their axes came.
-func _walk(a: PlaygroundPlayer, b: PlaygroundPlayer, solid: bool) -> float:
+func _walk(a: PlaylotPlayer, b: PlaylotPlayer, solid: bool) -> float:
 	_game.body_rules.solid = solid
 	var spot := b.controller.state.position
 	var from := spot + Vector3(0.0, 0.0, 2.6)

@@ -1,10 +1,10 @@
-extends "playground_entity.gd"
+extends "playlot_entity.gd"
 
 ## A balloon: a light sphere that pulls upward with [member lift] newtons, forever.
 ##
 ## A force rather than negative gravity, so the lift is the same number whatever the
 ## balloon weighs and "enough of them lift a car" is arithmetic a player can do — a car of
-## 900 kg needs about 9000 N of balloons. Its string is a rope in [PlaygroundConstraints].
+## 900 kg needs about 9000 N of balloons. Its string is a rope in [PlaylotConstraints].
 
 var lift: float = 400.0
 

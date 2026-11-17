@@ -1,4 +1,4 @@
-extends "playground_tool.gd"
+extends "playlot_tool.gd"
 
 ## A prop's physics: whether gravity pulls it, how heavy it is, how slippery. Left click
 ## applies the settings, reload puts the prop's own back.

@@ -1,6 +1,6 @@
 extends DotGameCheckSuite
 
-const PlaygroundMapConfig := preload("../game/playground_map_config.gd")
+const PlaylotMapConfig := preload("../game/playlot_map_config.gd")
 
 ## A map gets its file's values and the next map has them back; a key off the whitelist is refused.
 ##
@@ -18,7 +18,7 @@ func _ready() -> void:
 
 
 func _run() -> void:
-	print("game-playground: per-map cvars")
+	print("game-playlot: per-map cvars")
 	var entered := 1
 	var file := "res://cfg/game/game-playground/dot_map/map/pgt_mapcfg.yml"
 	var out := FileAccess.open(file, FileAccess.WRITE)
@@ -30,7 +30,7 @@ func _run() -> void:
 	console.cvar("pg_destruction", "0", "", DotConVar.FLAG_ARCHIVE)
 	console.cvar("pg_prop_surf", "1", "", DotConVar.FLAG_ARCHIVE)
 	console.cvar("pg_other", "5", "", DotConVar.FLAG_ARCHIVE)
-	var cfg := PlaygroundMapConfig.build(console)
+	var cfg := PlaylotMapConfig.build(console)
 	_check(out != null, "the test map file was written")
 
 	var got := cfg.apply("pgt_mapcfg")

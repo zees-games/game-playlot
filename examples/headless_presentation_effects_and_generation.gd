@@ -1,25 +1,25 @@
 extends DotGameCheckSuite
 
-const PlaygroundAmbience := preload("../game/playground_ambience.gd")
-const PlaygroundInventory := preload("../game/playground_inventory.gd")
-const PlaygroundParty := preload("../game/playground_party.gd")
-const PlaygroundPresentation := preload("../game/playground_presentation.gd")
-const PlaygroundTouch := preload("../game/client/playground_touch.gd")
-const PlaygroundVote := preload("../game/playground_vote.gd")
-const PlaygroundServices := preload("../game/playground_services.gd")
-const PlaygroundSpawnables := preload("../game/playground_spawnables.gd")
-const PlaygroundWorldGen := preload("../game/playground_worldgen.gd")
-const PlaygroundHud := preload("../game/playground_hud.gd")
-const PlaygroundClient := preload("../game/playground_client.gd")
-const Playground := preload("../game/playground.gd")
-const PlaygroundZee := preload("../game/playground_zee.gd")
+const PlaylotAmbience := preload("../game/playlot_ambience.gd")
+const PlaylotInventory := preload("../game/playlot_inventory.gd")
+const PlaylotParty := preload("../game/playlot_party.gd")
+const PlaylotPresentation := preload("../game/playlot_presentation.gd")
+const PlaylotTouch := preload("../game/client/playlot_touch.gd")
+const PlaylotVote := preload("../game/playlot_vote.gd")
+const PlaylotServices := preload("../game/playlot_services.gd")
+const PlaylotSpawnables := preload("../game/playlot_spawnables.gd")
+const PlaylotWorldGen := preload("../game/playlot_worldgen.gd")
+const PlaylotHud := preload("../game/playlot_hud.gd")
+const PlaylotClient := preload("../game/playlot_client.gd")
+const Playlot := preload("../game/playlot.gd")
+const PlaylotZee := preload("../game/playlot_zee.gd")
 
 var _entered := 0
 var _completed := 0
 
 
-func _make() -> PlaygroundPresentation:
-	var p := PlaygroundPresentation.new()
+func _make() -> PlaylotPresentation:
+	var p := PlaylotPresentation.new()
 	p.name = "P%d" % _entered
 	add_child(p)
 	p.setup()
@@ -56,18 +56,18 @@ func _test_ambience_is_quiet_and_obeys_settings() -> void:
 	_check(a.ambient.target_level() < 0.5, "and the layer's target level is under half (%.2f)" % a.ambient.target_level())
 
 	var _r1 := p.settings.set_value(&"ambient_volume", 0.5)
-	_check(is_equal_approx(a.ambient.config.volume, PlaygroundAmbience.LEVEL * 0.5), "the player's slider turns it down")
+	_check(is_equal_approx(a.ambient.config.volume, PlaylotAmbience.LEVEL * 0.5), "the player's slider turns it down")
 	var _r2 := p.settings.set_value(&"ambient", false)
 	_check(not a.ambient.config.enabled, "the player's switch turns it off")
 	var _r3 := p.settings.set_value(&"ambient", true)
 	var _r4 := p.settings.set_value(&"master_volume", 0.0)
 	_check(p.audio.mixer.master == 0.0 and a.ambient.bus == &"Ambience", "the master volume reaches it through the Ambience bus")
 
-	var rules := PlaygroundAmbience.make_rules()
+	var rules := PlaylotAmbience.make_rules()
 	var names: Array = []
 	for row: Array in DotAmbienceRules.VARS.values():
 		names.append(rules.cvar_of(row))
-	_check(names.has("pg_ambient") and names.has("pg_ambient_volume") and rules.volume == PlaygroundAmbience.LEVEL, "the cvars are pg_ambient* with the quiet defaults")
+	_check(names.has("pg_ambient") and names.has("pg_ambient_volume") and rules.volume == PlaylotAmbience.LEVEL, "the cvars are pg_ambient* with the quiet defaults")
 	_check(str(p.describe_lines()).contains("ambience"), "describe says what plays")
 
 	p.queue_free()
@@ -117,7 +117,7 @@ func _test_one_seed() -> void:
 func _test_generated_map_is_walkable() -> void:
 	_section("A generated sandbox nobody could cross is not shipped")
 
-	var res := PlaygroundWorldGen.generate(4242)
+	var res := PlaylotWorldGen.generate(4242)
 	_check(res.ok, "a sandbox generates")
 	if not res.ok:
 		_done()
@@ -151,12 +151,12 @@ func _test_generated_map_is_walkable() -> void:
 
 	# Two runs of one seed are one map, which is what lets a server and a client agree
 	# without sending a map.
-	var again := PlaygroundWorldGen.generate(4242)
+	var again := PlaylotWorldGen.generate(4242)
 	_check(
 		(again.value as DotProcGenDoc).fingerprint() == doc.fingerprint(),
 		"two runs of one seed produce the same map, to the byte"
 	)
-	var other := PlaygroundWorldGen.generate(4243)
+	var other := PlaylotWorldGen.generate(4243)
 	_check(
 		(other.value as DotProcGenDoc).fingerprint() != doc.fingerprint(),
 		"and a different seed a different one"
@@ -170,7 +170,7 @@ func _test_generation_refuses_rather_than_ships() -> void:
 
 	# Too small for the rooms the pipeline asks for. A generator that shipped this anyway
 	# would produce one room and call it a sandbox.
-	var tiny := PlaygroundWorldGen.pipeline(12, 12)
+	var tiny := PlaylotWorldGen.pipeline(12, 12)
 	tiny.max_attempts = 2
 	var res := tiny.generate(1)
 	_check(not res.ok, "a map too small to satisfy the pipeline fails rather than shipping")
@@ -201,8 +201,8 @@ func _test_generation_refuses_rather_than_ships() -> void:
 func _test_the_backpack_is_the_prop_catalogue() -> void:
 	_section("What you can carry is what this server can make")
 
-	var props := PlaygroundSpawnables.catalogue()
-	var items := PlaygroundInventory.build_catalogue(props)
+	var props := PlaylotSpawnables.catalogue()
+	var items := PlaylotInventory.build_catalogue(props)
 	_check(items.validate().ok, "the item catalogue validates")
 
 	# One list. A second table of what can be carried would go stale the first time
@@ -233,10 +233,10 @@ func _test_the_backpack_is_the_prop_catalogue() -> void:
 func _test_carrying_is_a_refusal() -> void:
 	_section("Buying holds something; spawning takes it out")
 
-	var inv := PlaygroundInventory.new()
+	var inv := PlaylotInventory.new()
 	inv.name = "Inventory"
 	add_child(inv)
-	var res := inv.setup(PlaygroundSpawnables.catalogue())
+	var res := inv.setup(PlaylotSpawnables.catalogue())
 	_check(res.ok, "the inventory sets up")
 	if not res.ok:
 		_done()
@@ -493,7 +493,7 @@ func _test_the_vote_is_heard() -> void:
 
 	var p := _make()
 	var sink := p.audio.sink as DotAudioSinkNull
-	var rules := PlaygroundVote.vote_rules()
+	var rules := PlaylotVote.vote_rules()
 
 	var named: Array[StringName] = []
 	for id in [
@@ -538,7 +538,7 @@ func _test_console() -> void:
 	)
 
 	var missing := PackedStringArray()
-	for key in PlaygroundPresentation.schema().keys():
+	for key in PlaylotPresentation.schema().keys():
 		if not p.console.all_names().has(String(key)):
 			missing.append(String(key))
 	_check(missing.is_empty(), "every setting is reachable (%s)" % ", ".join(missing))

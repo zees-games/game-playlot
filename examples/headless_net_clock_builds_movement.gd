@@ -3,7 +3,7 @@ extends "res://examples/headless_net_command_and_event_wire.gd"
 ## The map's time left, from the server's vote to what the client's HUD draws.
 ##
 ## The HUD drew the client's own map session, which hears nothing the server decides, so an extend must reach the screen.
-var _cw_vote: PlaygroundVote
+var _cw_vote: PlaylotVote
 var _cw_arrived: Array[Dictionary]
 var _cw_on_clock
 var _cw_dt
@@ -15,8 +15,8 @@ var _cw_after
 func _test_clock_wire() -> void:
 	_section("the vote's clock over the link")
 
-	var round_trip := PlaygroundEvents.read_clock(DotNetReader.new(
-		PlaygroundEvents.write_clock({"has_clock": true, "seconds_left": 1234, "running": true})
+	var round_trip := PlaylotEvents.read_clock(DotNetReader.new(
+		PlaylotEvents.write_clock({"has_clock": true, "seconds_left": 1234, "running": true})
 	))
 	_check(
 		bool(round_trip["ok"]) and bool(round_trip["has_clock"])
@@ -26,7 +26,7 @@ func _test_clock_wire() -> void:
 
 	# A real vote on the server's game, on this game's own rules. `setup` does not apply
 	# or register anything; the module is what would.
-	_cw_vote = PlaygroundVote.new()
+	_cw_vote = PlaylotVote.new()
 	_cw_vote.name = "ClockVote"
 	_cw_vote.game = _server_game
 	_cw_vote.config_path = ""
@@ -57,10 +57,10 @@ func _test_clock_wire() -> void:
 		]
 	)
 	_check(
-		PlaygroundHud.time_left_text(_client_bridge.clock_view, "9:59", _cw_now)
+		PlaylotHud.time_left_text(_client_bridge.clock_view, "9:59", _cw_now)
 			== _client_bridge.clock_view.formatted_at(_cw_now),
 		"and the HUD draws that rather than the client's own map clock (%s)" % (
-			PlaygroundHud.time_left_text(_client_bridge.clock_view, "9:59", _cw_now)
+			PlaylotHud.time_left_text(_client_bridge.clock_view, "9:59", _cw_now)
 		)
 	)
 
@@ -103,11 +103,11 @@ func _test_clock_wire_2() -> void:
 		"an rtv-only vote with no limit tells the client there is no clock"
 	)
 	_check(
-		PlaygroundHud.time_left_text(_client_bridge.clock_view, "29:59", _cw_now) == "",
+		PlaylotHud.time_left_text(_client_bridge.clock_view, "29:59", _cw_now) == "",
 		"and the HUD shows none, rather than the local session's thirty minutes"
 	)
 	_check(
-		PlaygroundHud.time_left_text(null, "29:59", _cw_now) == "29:59",
+		PlaylotHud.time_left_text(null, "29:59", _cw_now) == "29:59",
 		"while a HUD nothing has told (offline) keeps the local session's, which is the real one there"
 	)
 
@@ -201,7 +201,7 @@ func _test_edit_over_the_wire() -> void:
 	_exchange()
 	await _steps(6)
 
-	var server_net: PlaygroundPropNet = _server_bridge._prop_nets.get(crate.instance_id)
+	var server_net: PlaylotPropNet = _server_bridge._prop_nets.get(crate.instance_id)
 	var net_id: int = server_net.identity.net_id if server_net != null and server_net.identity != null else -1
 	var first: Dictionary = got[0] if not got.is_empty() else {}
 	_check(not got.is_empty() and int(first.get("net_id", 0)) == net_id,
@@ -241,7 +241,7 @@ func _test_edit_over_the_wire() -> void:
 
 ## A map document's props over the wire: the server puts them down, a client draws the server's and spawns none of its own, and changing back takes them away on both ends.
 ##
-## "None of its own" is held by dot-props; Playground's guard stays to avoid a false per-map log line.
+## "None of its own" is held by dot-props; Playlot's guard stays to avoid a false per-map log line.
 func _test_map_props_over_the_wire() -> void:
 	_section("a map's own props over the wire")
 
@@ -303,7 +303,7 @@ func _test_held_over_the_wire() -> void:
 	var grabbed := crate.held_by == theirs.player_id
 
 	var session := SESSION
-	var server_net: PlaygroundPropNet = _server_bridge._prop_nets.get(crate.instance_id)
+	var server_net: PlaylotPropNet = _server_bridge._prop_nets.get(crate.instance_id)
 	var net_id: int = server_net.identity.net_id if server_net != null and server_net.identity != null else -1
 	_check(grabbed and int(_client_bridge.held_props.get(session, 0)) == net_id,
 		"the client is told this player holds the crate, by its net id",
@@ -378,7 +378,7 @@ func _test_glass_over_the_wire() -> void:
 	_done()
 
 
-func _toy_of(game: Playground, id: String) -> DotPropBody:
+func _toy_of(game: Playlot, id: String) -> DotPropBody:
 	if game.toys == null:
 		return null
 	for t in game.toys.toys:
@@ -469,7 +469,7 @@ func _test_map_toys_over_the_wire_2() -> void:
 
 
 ## A connected client predicts its own player swimming (pgc_harbour's basin): the swim mode
-## is entered from `PlaygroundPlayer._on_simulated`, which a prediction replay runs too.
+## is entered from `PlaylotPlayer._on_simulated`, which a prediction replay runs too.
 ## Armed by entering the mode on the server only, it still passes: this asserts the swim agrees.
 func _test_swimming_over_the_wire() -> void:
 	_section("swimming, predicted by a connected client")
@@ -547,7 +547,7 @@ func _forward() -> DotFpsCommand:
 	return c
 
 
-func _server_player() -> PlaygroundPlayer:
+func _server_player() -> PlaylotPlayer:
 	return _server_game.players.get(&"u%d" % SESSION)
 
 
@@ -560,28 +560,28 @@ func _test_avatars_over_the_wire() -> void:
 	site.set_part(&"face", &"face.skin-b")
 	site.set_part(&"top", &"top.skin-k")
 	site.set_part(&"legs", &"legs.skin-r")
-	var translated := PlaygroundAvatars.from_site(site)
+	var translated := PlaylotAvatars.from_site(site)
 	_check(
-		PlaygroundAvatars.skins_of(translated) == PackedInt32Array([1, 10, 17]),
-		"a site avatar is three skins, face, top and legs", str(PlaygroundAvatars.skins_of(translated))
+		PlaylotAvatars.skins_of(translated) == PackedInt32Array([1, 10, 17]),
+		"a site avatar is three skins, face, top and legs", str(PlaylotAvatars.skins_of(translated))
 	)
 	var other := DotAvatar.new()
 	other.schema_id = &"some_game"
-	_check(PlaygroundAvatars.from_site(other) == null, "and somebody else's document is not guessed at")
+	_check(PlaylotAvatars.from_site(other) == null, "and somebody else's document is not guessed at")
 
 	# The wire: skins after the style byte, and a JOIN without them still reads.
-	var with_skins := PlaygroundEvents.write_join(7, 9, "Ada", 1, PackedInt32Array([1, 10, 17]))
-	var read := PlaygroundEvents.read_join(DotNetReader.new(with_skins))
+	var with_skins := PlaylotEvents.write_join(7, 9, "Ada", 1, PackedInt32Array([1, 10, 17]))
+	var read := PlaylotEvents.read_join(DotNetReader.new(with_skins))
 	_check(bool(read["ok"]) and read["skins"] == PackedInt32Array([1, 10, 17]), "JOIN carries them", str(read["skins"]))
 	var old := with_skins.slice(0, with_skins.size() - 3)
-	var read_old := PlaygroundEvents.read_join(DotNetReader.new(old))
+	var read_old := PlaylotEvents.read_join(DotNetReader.new(old))
 	_check(bool(read_old["ok"]) and (read_old["skins"] as PackedInt32Array).is_empty() and int(read_old["style_index"]) == 1,
 		"and a JOIN from before them reads with none", str(read_old))
 
 	# The server dresses its player and tells everybody; the client's body changes with it.
 	# A face that cannot be the stock one this player's id picks, or the figure check below
 	# passes on the stock look -- which it did, the first time this was armed.
-	var face := (PlaygroundAvatars.stock_index("u%d" % SESSION) + 7) % PlaygroundAvatars.LETTERS.length()
+	var face := (PlaylotAvatars.stock_index("u%d" % SESSION) + 7) % PlaylotAvatars.LETTERS.length()
 	var dressed := PackedInt32Array([face, 10, 17])
 	_server_bridge.skin_fn = func(_session: int) -> PackedInt32Array: return dressed
 	_server_bridge.refresh_skins(SESSION)
@@ -592,7 +592,7 @@ func _test_avatars_over_the_wire() -> void:
 	var figure: Node = mine.character.rig.find_child("Figure", true, false) if mine != null and mine.character != null else null
 	# The figure is one of the family's people: the face's skin is its skin colour.
 	var person := figure as DotHumanoidFigure
-	var wanted_skin := Color(DotHumanoidLook.SITE_SKINS[PlaygroundAvatars.LETTERS[face]][0])
+	var wanted_skin := Color(DotHumanoidLook.SITE_SKINS[PlaylotAvatars.LETTERS[face]][0])
 	_check(person != null and person.look != null and person.look.skin.is_equal_approx(wanted_skin),
 		"and draws the member's face on the figure", str(person.look.to_dict()) if person != null and person.look != null else "no person")
 	if person != null and DotAddonApi.build_level("dot_player_char") >= 11:
@@ -611,7 +611,7 @@ func _test_avatars_over_the_wire() -> void:
 	_done()
 
 
-func _client_player() -> PlaygroundPlayer:
+func _client_player() -> PlaylotPlayer:
 	return _client_game.players.get(&"u%d" % SESSION)
 
 
@@ -665,7 +665,7 @@ func _test_handshake() -> void:
 
 	# Build the style table from a DECLARED order, not a sort of the ids: StringNames compare by
 	# interned pointer, so two peers sort differently, and one process cannot see that. Assert the
-	# SOURCE (`Playground.style_order`) instead.
+	# SOURCE (`Playlot.style_order`) instead.
 	var declared := PackedStringArray()
 	for style_id in _server_game.style_order:
 		declared.append(String(style_id))

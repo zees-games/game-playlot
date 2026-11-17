@@ -2,9 +2,9 @@ extends "res://examples/headless_net_join_riding_grenades.gd"
 
 ## The gun a connected client draws takes the server's count once it has gone quiet.
 ##
-## The drawn rig fires shots the server never hears, then both fire and the gun is refilled; armed without `PlaygroundPlayerNet._correct_drawn`, the "takes the server's count" and refill checks fail.
+## The drawn rig fires shots the server never hears, then both fire and the gun is refilled; armed without `PlaylotPlayerNet._correct_drawn`, the "takes the server's count" and refill checks fail.
 
-## A downed player is the server's (`PlaygroundDowns` sets `PlaygroundPlayer.downed` every
+## A downed player is the server's (`PlaylotDowns` sets `PlaylotPlayer.downed` every
 ## tick); the client draws them crawling.
 func _test_downed_over_the_wire() -> void:
 	_section("a downed player is drawn down on the client, and up again")
@@ -41,8 +41,8 @@ func _test_downed_over_the_wire() -> void:
 	_done()
 
 
-var _dac_theirs: PlaygroundPlayer
-var _dac_mirror: PlaygroundPlayer
+var _dac_theirs: PlaylotPlayer
+var _dac_mirror: PlaylotPlayer
 var _dac_server_rig: ZeeWeaponRig
 var _dac_drawn: ZeeWeaponRig
 var _dac_settle: int
@@ -62,8 +62,8 @@ func _test_drawn_ammo_corrected() -> void:
 	await _steps(4)
 
 	_dac_server_rig = _dac_theirs.zee_rig as ZeeWeaponRig if _dac_theirs != null else null
-	# The client's drawn gun, as PlaygroundClient._arm_zee builds it: LOCAL, no authority.
-	_dac_drawn = PlaygroundZee.arm(_dac_mirror, _client_game.weapon_def(&"zee_smg"),
+	# The client's drawn gun, as PlaylotClient._arm_zee builds it: LOCAL, no authority.
+	_dac_drawn = PlaylotZee.arm(_dac_mirror, _client_game.weapon_def(&"zee_smg"),
 		ZeeWeaponRig.Role.LOCAL, false, _client_game.tick_rate, _tick) if _dac_mirror != null else null
 	_check(_dac_server_rig != null and _dac_drawn != null, "a gun on the server and one drawn on the client")
 	if _dac_server_rig == null or _dac_drawn == null:
@@ -72,14 +72,14 @@ func _test_drawn_ammo_corrected() -> void:
 
 	var full := _dac_drawn.arsenal.current().magazine
 	var tick_sec := 1.0 / float(maxi(_client_game.tick_rate, 1))
-	_dac_settle = int(ceil(PlaygroundZee.SETTLE_SEC / tick_sec)) + 24
+	_dac_settle = int(ceil(PlaylotZee.SETTLE_SEC / tick_sec)) + 24
 
-	# One tick on both ends, the drawn gun driven the way PlaygroundClient._net_physics does.
+	# One tick on both ends, the drawn gun driven the way PlaylotClient._net_physics does.
 	_dac_drive = func(drawn_fire: bool) -> void:
 		var buttons := DotFpsCommand.BUTTON_USER_0 if drawn_fire else 0
-		var command := PlaygroundZee.command_for(buttons, 0.0, 0.0, PlaygroundZee.slot_of(_dac_drawn))
+		var command := PlaylotZee.command_for(buttons, 0.0, 0.0, PlaylotZee.slot_of(_dac_drawn))
 		var _outcome := _dac_drawn.simulate_tick(command, _tick)
-		PlaygroundZee.note_drawn(_dac_mirror, _dac_drawn, command, tick_sec)
+		PlaylotZee.note_drawn(_dac_mirror, _dac_drawn, command, tick_sec)
 
 	# Shots the server never hears.
 	for _i in range(40):
@@ -132,7 +132,7 @@ func _test_drawn_ammo_corrected_2() -> void:
 		"and the refill reaches the drawn gun",
 		"drawn %d / %d" % [_dac_drawn.arsenal.current().magazine, _dac_drawn.arsenal.ammo().count(_dac_def.ammo_type)])
 
-	PlaygroundZee.disarm(_dac_mirror)
+	PlaylotZee.disarm(_dac_mirror)
 	_client_bridge.ask_tool(&"phys")
 	_exchange()
 	await _steps(4)
@@ -242,7 +242,7 @@ func _test_leave() -> void:
 
 
 ## The claim: the aim bit a client sends is the server rig's BUTTON_AIM and the pace of the motor on both ends.
-## Armed: with `last_aim` not reaching `PlaygroundZee.command_for` in the bridge, the aimed checks fail.
+## Armed: with `last_aim` not reaching `PlaylotZee.command_for` in the bridge, the aimed checks fail.
 func _test_the_aim_bit_crosses() -> void:
 	_section("the aim bit crosses the wire, slows the player and the prediction agrees")
 
@@ -254,8 +254,8 @@ func _test_the_aim_bit_crosses() -> void:
 	_exchange()
 	await _steps(4)
 	var rig: ZeeWeaponRig = theirs.zee_rig as ZeeWeaponRig if theirs != null else null
-	# The client's drawn gun, as PlaygroundClient._arm_zee builds it, driven with the aim as `_net_physics` does.
-	var drawn: ZeeWeaponRig = PlaygroundZee.arm(mirror, _client_game.weapon_def(&"zee_smg"),
+	# The client's drawn gun, as PlaylotClient._arm_zee builds it, driven with the aim as `_net_physics` does.
+	var drawn: ZeeWeaponRig = PlaylotZee.arm(mirror, _client_game.weapon_def(&"zee_smg"),
 		ZeeWeaponRig.Role.LOCAL, false, _client_game.tick_rate, _tick, null, _client_game.ads_rules) if mirror != null else null
 	var armed := rig != null and rig.current_def() != null and drawn != null
 	_check(armed, "a gun on the server and one drawn on the client")
@@ -266,7 +266,7 @@ func _test_the_aim_bit_crosses() -> void:
 	var paced := _server_game.ads_rules.move_speed_for(rig.current_def().id)
 	var start := theirs.global_position
 	var walk_step := func(command: DotFpsCommand, aim: bool) -> void:
-		var _o := drawn.simulate_tick(PlaygroundZee.command_for(0, 0.0, 0.0, PlaygroundZee.slot_of(drawn), aim), _tick)
+		var _o := drawn.simulate_tick(PlaylotZee.command_for(0, 0.0, 0.0, PlaylotZee.slot_of(drawn), aim), _tick)
 		await _step(command, aim)
 
 	var run := func(direction: Vector2, aim: bool) -> float:
@@ -301,7 +301,7 @@ func _test_the_aim_bit_crosses() -> void:
 	_check(rig.ads_move_scale() == 1.0, "let go, the pace comes back")
 	theirs.teleport(start, 0.0)
 	await _steps(INPUT_LEAD + 8)
-	PlaygroundZee.disarm(mirror)
+	PlaylotZee.disarm(mirror)
 	_done()
 
 

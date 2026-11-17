@@ -21,7 +21,7 @@ const SECTIONS := 19
 
 ## The player's own settings directory as it was before this run: every file's name,
 ## modification time and digest. Checked at the end; see
-## [method PlaygroundPresentation.use_scratch_settings].
+## [method PlaylotPresentation.use_scratch_settings].
 var _player_files_were: String = ""
 
 
@@ -31,7 +31,7 @@ func _ready() -> void:
 	# the next real session started nearly silent. Everything goes to a scratch directory
 	# emptied first, never the player's.
 	_player_files_were = _player_files_stamp()
-	var _scratch := PlaygroundPresentation.use_scratch_settings("headless_presentation")
+	var _scratch := PlaylotPresentation.use_scratch_settings("headless_presentation")
 	DotLog.set_level(
 		DotLog.Level.DEBUG if "--verbose" in OS.get_cmdline_user_args()
 		else DotLog.Level.ERROR
@@ -40,7 +40,7 @@ func _ready() -> void:
 
 
 func _run() -> void:
-	print("game-playground: the presentation layer")
+	print("game-playlot: the presentation layer")
 
 	_test_one_seed()
 	_test_generated_map_is_walkable()
@@ -73,7 +73,7 @@ func _run() -> void:
 	_check(
 		_player_files_stamp() == _player_files_were,
 		"the player's own settings files were not touched",
-		PlaygroundPresentation.PLAYER_SETTINGS
+		PlaylotPresentation.PLAYER_SETTINGS
 	)
 	_report_sections(_entered, _completed, SECTIONS, CHECKS)
 
@@ -82,7 +82,7 @@ func _run() -> void:
 ## or "" when there is no directory. A digest as well as a time, because a write within
 ## the same second as the stamp leaves the time where it was.
 static func _player_files_stamp() -> String:
-	var dir := ProjectSettings.globalize_path(PlaygroundPresentation.PLAYER_SETTINGS)
+	var dir := ProjectSettings.globalize_path(PlaylotPresentation.PLAYER_SETTINGS)
 	if not DirAccess.dir_exists_absolute(dir):
 		return ""
 	var lines := PackedStringArray()
@@ -94,7 +94,7 @@ static func _player_files_stamp() -> String:
 
 func _test_escape_menu() -> void:
 	_section("Escape reaches a setting, which it could not before")
-	var p := PlaygroundPresentation.new()
+	var p := PlaylotPresentation.new()
 	p.name = "MenuP"
 	add_child(p)
 	if not _check(p.setup().ok, "a presentation layer to read the settings from"):
@@ -103,9 +103,9 @@ func _test_escape_menu() -> void:
 	# This section writes through the real file store (the menu's Apply is what it is
 	# about), so the store must be the scratch one `_ready` chose, not the player's.
 	_check(
-		PlaygroundPresentation.settings_directory.begins_with("user://scratch/"),
+		PlaylotPresentation.settings_directory.begins_with("user://scratch/"),
 		"its settings are a scratch document, not the player's",
-		PlaygroundPresentation.settings_directory
+		PlaylotPresentation.settings_directory
 	)
 	var stack := DotScreenStack.new()
 	stack.name = "Stack"
@@ -133,7 +133,7 @@ func _test_escape_menu() -> void:
 	gm.manage_pointer = false
 	add_child(gm)
 	var gm_set: DotResult = gm.setup()
-	PlaygroundClient.add_general_rows(gm)
+	PlaylotClient.add_general_rows(gm)
 	var gm_image := gm.page(&"video").find_section(&"image")
 	var gm_gore: DotMenuRow = gm_image.find_row(&"gore") if gm_image != null else null
 	_check(gm_gore != null and gm_gore.row_id() == &"gore" and p.settings.schema.has(&"gore"),
@@ -191,7 +191,7 @@ func _test_escape_menu() -> void:
 func _test_glance_pieces() -> void:
 	_section("What is in hand, and what a shot did")
 	var p := _make()
-	var hud := PlaygroundHud.new()
+	var hud := PlaylotHud.new()
 	hud.name = "GlanceHud"
 	add_child(hud)
 	# A real rig, holding the first zee weapon with a magazine, on a stand-in body.
@@ -199,10 +199,10 @@ func _test_glance_pieces() -> void:
 	body.name = "Holder"
 	add_child(body)
 	var rig: ZeeWeaponRig = null
-	for def in PlaygroundZee.defs():
-		var weapon := PlaygroundZee.catalogue().get_def(PlaygroundZee.zee_id(def)) if PlaygroundZee.is_zee(def) else null
+	for def in PlaylotZee.defs():
+		var weapon := PlaylotZee.catalogue().get_def(PlaylotZee.zee_id(def)) if PlaylotZee.is_zee(def) else null
 		if weapon != null and weapon.magazine > 0 and weapon.ammo_type != &"":
-			rig = PlaygroundZee.arm(body, def, ZeeWeaponRig.Role.SERVER, true, 64, 0)
+			rig = PlaylotZee.arm(body, def, ZeeWeaponRig.Role.SERVER, true, 64, 0)
 			break
 	_check(rig != null, "a zee weapon is armed for the counter to read")
 	var stock_problems := DotWeaponSound.check_stock()
@@ -226,7 +226,7 @@ func _test_glance_pieces() -> void:
 		"and nothing at all with a toy or empty hands", hud.ammo.count_text())
 	hud.show_weapon(rig)
 
-	hud.confirm_hit(Playground.hit_victim_id(DotEntity.KIND_NPC, 41), 26.0, Vector3(0, 1, -5), true, false)
+	hud.confirm_hit(Playlot.hit_victim_id(DotEntity.KIND_NPC, 41), 26.0, Vector3(0, 1, -5), true, false)
 	_check(
 		hud.hit_marker.alpha() > 0.0 and hud.hit_marker.kill and Array(hud.damage_numbers.texts()).has("26"),
 		"a confirmed hit flashes the marker and puts the number up",
@@ -278,7 +278,7 @@ func _test_glance_pieces() -> void:
 
 
 ## The camera motion settings reach the player they are bound to, live.
-func _check_camera_motion(p: PlaygroundPresentation) -> void:
+func _check_camera_motion(p: PlaylotPresentation) -> void:
 	var stub := GDScript.new()
 	stub.source_code = "extends Node\nvar got: Array = []\nfunc set_camera_motion_scales(a: float, b: float, c: float) -> void:\n\tgot = [a, b, c]\n"
 	var _compiled := stub.reload()
@@ -319,7 +319,7 @@ func _check_ui_floor() -> void:
 
 
 ## `[p2p-await-games]`: a party over the HTTP rendezvous, host and join, each awaited end to end through
-## `PlaygroundParty`, `DotP2PSession` and `DotP2PSignallerHttp`. The caller's answer must be the stub's, arriving at
+## `PlaylotParty`, `DotP2PSession` and `DotP2PSignallerHttp`. The caller's answer must be the stub's, arriving at
 ## least [member RendezvousStub.delay] frames after the call: a link that dropped its `await` fails here.
 func _test_party_over_http() -> void:
 	_section("A party that meets over HTTP waits for the answer")
@@ -336,11 +336,11 @@ func _test_party_over_http() -> void:
 		return
 
 	var url := "http://127.0.0.1:%d/p2p" % stub.port
-	var ada := PlaygroundParty.new()
+	var ada := PlaylotParty.new()
 	ada.name = "PartyAda"
 	ada.signalling_url = url
 	add_child(ada)
-	var bob := PlaygroundParty.new()
+	var bob := PlaylotParty.new()
 	bob.name = "PartyBob"
 	bob.signalling_url = url
 	add_child(bob)
@@ -399,7 +399,7 @@ func _test_party_over_http() -> void:
 
 	# A refusal arrives as a failure the caller can read, not as null and not as success.
 	bob.leave()
-	var carol := PlaygroundParty.new()
+	var carol := PlaylotParty.new()
 	carol.name = "PartyCarol"
 	carol.signalling_url = url
 	add_child(carol)

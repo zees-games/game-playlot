@@ -1,7 +1,7 @@
-extends "../game/playground_map.gd"
+extends "../game/playlot_map.gd"
 
-const PlaygroundGeometry := preload("../game/playground_geometry.gd")
-const PlaygroundMaterials := preload("../game/playground_materials.gd")
+const PlaylotGeometry := preload("../game/playlot_geometry.gd")
+const PlaylotMaterials := preload("../game/playlot_materials.gd")
 
 ## A map that is a document: the one scene every custom sandbox map is built by.
 ##
@@ -32,10 +32,10 @@ const PlaygroundMaterials := preload("../game/playground_materials.gd")
 ##
 ## `lighting` (optional) is a dot-lighting document, the keys `DotLightDocument` reads plus
 ## this game's `sky_top`; a map without one gets the game's daylight
-## (`PlaygroundLighting.DAYLIGHT`).
+## (`PlaylotLighting.DAYLIGHT`).
 ##
 ## A box's `material` (optional, 2026-10-07) is one of dot-physics' standard surfaces
-## (`PlaygroundMaterials`): concrete, metal, wood, glass, dirt, grass, sand, snow, ice, rock,
+## (`PlaylotMaterials`): concrete, metal, wood, glass, dirt, grass, sand, snow, ice, rock,
 ## mud, rubber, and the liquids water and lava. A solid one is drawn in its material's look
 ## unless it names a colour, slides and bounces as that material, and is that material to a
 ## player walking on it. A LIQUID is built with no collider at all, as a see-through volume
@@ -59,23 +59,28 @@ const PlaygroundMaterials := preload("../game/playground_materials.gd")
 ##
 ## `props` and `wires` are optional (2026-10-07), so every older document still reads. A prop
 ## is a catalogue id, put down by the SERVER when the map loads ([method map_props]) and owned
-## by nobody in particular (`Playground.MAP_OWNER`): a door with a button beside it, a stack
+## by nobody in particular (`Playlot.MAP_OWNER`): a door with a button beside it, a stack
 ## of barrels, planks at the top of a slope. Frozen unless it says otherwise, because map
 ## furniture that falls over on load is not furniture. A wire joins two of them by index
 ## through dot-props' DotPropIO, exactly as the tool gun's Wire mode does.
 ##
-## A box is centred on `at` (the [method PlaygroundGeometry.box] convention) and turned
+## A box is centred on `at` (the [method PlaylotGeometry.box] convention) and turned
 ## about its own centre. `declared` is [method survey_declared]: ground only a noclip
 ## reaches, with the reason.
 ##
 ## [b]Built by [method configure_doc], not in `_ready`[/b], for `pg_generated`'s reason:
 ## dot-map instantiates the shared scene and adds it, and the document is only known from
-## the catalogue entry, which [Playground] hands over from its `map_changed` handler before
+## the catalogue entry, which [Playlot] hands over from its `map_changed` handler before
 ## anybody is spawned.
 
-const CHANNEL := "playground.maps"
+const CHANNEL := "playlot.maps"
 
 const FORMAT := 1
+## The document kind a map is written with. It keeps the name from before the Playlot rename,
+## because documents already shared and game-murder-mystery's reader carry it.
+const KIND := "playground_map"
+## Every kind a reader takes: [constant KIND], and the Playlot name a document may be written with next.
+const KINDS: Array[String] = [KIND, "playlot_map"]
 
 ## The most boxes one map may hold, or 0 for no bound (the default: a whole converted map holds
 ## tens of thousands). A host that loads strangers' documents sets one; a document past it fails
@@ -89,13 +94,13 @@ const MAX_EXTENT := 2000.0
 const MAX_PROPS := 300
 
 const NAMED_COLOURS := {
-	"floor": PlaygroundGeometry.COLOUR_FLOOR,
-	"ramp": PlaygroundGeometry.COLOUR_RAMP,
-	"start": PlaygroundGeometry.COLOUR_START,
-	"end": PlaygroundGeometry.COLOUR_END,
-	"platform": PlaygroundGeometry.COLOUR_PLATFORM,
-	"boost": PlaygroundGeometry.COLOUR_BOOST,
-	"float": PlaygroundGeometry.COLOUR_FLOAT,
+	"floor": PlaylotGeometry.COLOUR_FLOOR,
+	"ramp": PlaylotGeometry.COLOUR_RAMP,
+	"start": PlaylotGeometry.COLOUR_START,
+	"end": PlaylotGeometry.COLOUR_END,
+	"platform": PlaylotGeometry.COLOUR_PLATFORM,
+	"boost": PlaylotGeometry.COLOUR_BOOST,
+	"float": PlaylotGeometry.COLOUR_FLOAT,
 }
 
 ## The folder beside a document its world packs sit in. [method add_map_docs] reads only the
@@ -286,7 +291,7 @@ func hide_box_meshes() -> int:
 	for child in get_children():
 		if not (child is StaticBody3D and child.has_meta(&"pg_box")):
 			continue
-		if PlaygroundMaterials.look(String(PlaygroundMaterials.material_of(child)), Color.WHITE).a < 0.999:
+		if PlaylotMaterials.look(String(PlaylotMaterials.material_of(child)), Color.WHITE).a < 0.999:
 			continue
 		for part in child.get_children():
 			if part is GeometryInstance3D and (part as GeometryInstance3D).visible:
@@ -295,7 +300,7 @@ func hide_box_meshes() -> int:
 	return hidden
 
 
-## The yaw a player spawns facing, in degrees. Read by [Playground] beside the spawn.
+## The yaw a player spawns facing, in degrees. Read by [Playlot] beside the spawn.
 func spawn_yaw() -> float:
 	return float(doc.get("spawn_yaw", 0.0))
 
@@ -309,12 +314,12 @@ func survey_declared() -> Array:
 
 
 ## The liquids in this map: `[{box: AABB, material, index}]`, world space (a map's node is
-## at the origin). What Playground asks for lava and water.
+## at the origin). What Playlot asks for lava and water.
 func liquid_volumes() -> Array:
 	return _liquids
 
 
-## The props this map puts down when it loads. See the class note; spawned by [Playground].
+## The props this map puts down when it loads. See the class note; spawned by [Playlot].
 func map_props() -> Array:
 	return doc.get("props", [])
 
@@ -329,8 +334,8 @@ func map_toys() -> Array:
 
 
 func _build_fallback() -> void:
-	PlaygroundGeometry.light(self)
-	PlaygroundGeometry.box(self, Vector3(0.0, -0.5, 0.0), Vector3(40.0, 1.0, 40.0))
+	PlaylotGeometry.light(self)
+	PlaylotGeometry.box(self, Vector3(0.0, -0.5, 0.0), Vector3(40.0, 1.0, 40.0))
 	fallback_spawn = Vector3(0.0, 1.0, 0.0)
 
 
@@ -356,9 +361,9 @@ static func is_original(spec: Dictionary) -> bool:
 ## Whether a document is one this builds. Every field is checked before anything is built,
 ## so a bad map is refused whole rather than half drawn.
 static func validate(d: Dictionary) -> DotResult:
-	if int(d.get("format", 0)) != FORMAT or str(d.get("kind", "")) != "playground_map":
+	if int(d.get("format", 0)) != FORMAT or not KINDS.has(str(d.get("kind", ""))):
 		return DotResult.fail(DotError.CODE_VERSION,
-			"Not a playground map document of format %d." % FORMAT)
+			"Not a playlot map document of format %d." % FORMAT)
 	var id := str(d.get("id", ""))
 	if not id.is_valid_identifier():
 		return DotResult.fail(DotError.CODE_INVALID, "A map id must be an identifier, not \"%s\"." % id)
@@ -386,13 +391,13 @@ static func validate(d: Dictionary) -> DotResult:
 			var ok := DotMapBrush.validate(spec)
 			if not ok.ok:
 				return DotResult.fail(DotError.CODE_INVALID, "Map %s: box %d's brush: %s" % [id, i, ok.error.message])
-			if PlaygroundMaterials.is_volume(str(b.get("material", ""))):
+			if PlaylotMaterials.is_volume(str(b.get("material", ""))):
 				return DotResult.fail(DotError.CODE_INVALID, "Map %s: box %d is a brush and a liquid; a brush is solid." % [id, i])
 		if b.has("material"):
 			var material := str(b["material"])
-			if not PlaygroundMaterials.is_known(material):
+			if not PlaylotMaterials.is_known(material):
 				return DotResult.fail(DotError.CODE_INVALID, "Map %s: box %d is made of %s, which is not a material." % [id, i, material])
-			if PlaygroundMaterials.is_liquid(material) and b.has("turn"):
+			if PlaylotMaterials.is_liquid(material) and b.has("turn"):
 				return DotResult.fail(DotError.CODE_INVALID, "Map %s: box %d is %s and turned; a liquid is an axis-aligned volume." % [id, i, material])
 	if d.has("lighting") and not (d["lighting"] is Dictionary):
 		return DotResult.fail(DotError.CODE_INVALID, "Map %s: lighting is a dot-lighting document (an object)." % id)
@@ -425,20 +430,20 @@ static func validate(d: Dictionary) -> DotResult:
 ## Builds a checked document's boxes under [param parent], and returns its liquid volumes:
 ## `[{box: AABB, material: StringName, index: int}]`.
 static func build_into(parent: Node3D, d: Dictionary) -> Array:
-	PlaygroundGeometry.light(parent, d.get("lighting", {}))
+	PlaylotGeometry.light(parent, d.get("lighting", {}))
 	var liquids: Array = []
 	var boxes: Array = d.get("boxes", [])
 	for i in boxes.size():
 		var b: Dictionary = boxes[i]
 		var material := str(b.get("material", ""))
 		var colour := colour_of(b.get("colour", "floor")) if b.has("colour") or material == "" \
-			else PlaygroundMaterials.look(material, PlaygroundGeometry.COLOUR_FLOOR)
-		if material != "" and b.has("colour") and PlaygroundMaterials.look(material, Color.WHITE).a < 0.999:
+			else PlaylotMaterials.look(material, PlaylotGeometry.COLOUR_FLOOR)
+		if material != "" and b.has("colour") and PlaylotMaterials.look(material, Color.WHITE).a < 0.999:
 			# A see-through material keeps its transparency in a mapper's own colour.
-			colour.a = PlaygroundMaterials.look(material, Color.WHITE).a
+			colour.a = PlaylotMaterials.look(material, Color.WHITE).a
 		var at := _vec(b["at"])
 		var size := _vec(b["size"])
-		if material != "" and PlaygroundMaterials.is_volume(material):
+		if material != "" and PlaylotMaterials.is_volume(material):
 			var mesh := _liquid_mesh(at, size, colour, i)
 			if b.has("turn"):
 				var t: Array = b["turn"]
@@ -446,7 +451,7 @@ static func build_into(parent: Node3D, d: Dictionary) -> Array:
 				if axis.length() > 0.0:
 					mesh.basis = Basis(axis.normalized(), deg_to_rad(float(t[3])))
 			parent.add_child(mesh)
-			if PlaygroundMaterials.is_liquid(material):
+			if PlaylotMaterials.is_liquid(material):
 				liquids.append({"box": AABB(at - size * 0.5, size), "material": StringName(material), "index": i})
 			continue
 		var basis := Basis.IDENTITY
@@ -458,14 +463,14 @@ static func build_into(parent: Node3D, d: Dictionary) -> Array:
 		var body: StaticBody3D
 		if b.has("brush"):
 			body = DotMapBrush.build_body({"kind": str(b["brush"]), "size": b["size"],
-				"params": b.get("params", {})}, PlaygroundGeometry._material(colour))
+				"params": b.get("params", {})}, PlaylotGeometry._material(colour))
 			body.transform = Transform3D(basis, at)
 			parent.add_child(body)
 		else:
-			body = PlaygroundGeometry.box(parent, at, size, colour, basis)
+			body = PlaylotGeometry.box(parent, at, size, colour, basis)
 		body.set_meta(&"pg_box", i)
 		if material != "":
-			PlaygroundMaterials.apply(body, material)
+			PlaylotMaterials.apply(body, material)
 	return liquids
 
 
@@ -478,7 +483,7 @@ static func _liquid_mesh(at: Vector3, size: Vector3, colour: Color, index: int) 
 	box_mesh.size = size
 	mesh.mesh = box_mesh
 	mesh.position = at
-	mesh.material_override = PlaygroundGeometry._material(colour)
+	mesh.material_override = PlaylotGeometry._material(colour)
 	mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	# Water, lava and foliage have no collider by design: a body is swum or pushed through,
 	# not stood on, and the bed under it is solid. The audit's lenient pass would pass it on
@@ -526,7 +531,7 @@ static func colour_of(value: Variant) -> Color:
 		return NAMED_COLOURS[name]
 	if name.begins_with("#") and Color.html_is_valid(name):
 		return Color.html(name)
-	return PlaygroundGeometry.COLOUR_FLOOR
+	return PlaylotGeometry.COLOUR_FLOOR
 
 
 static func _is_vec(v: Variant) -> bool:

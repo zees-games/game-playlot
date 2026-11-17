@@ -13,7 +13,7 @@ func _test_identity() -> void:
 		"and its module is loaded beside the game's"
 	)
 
-	var schema := PlaygroundPlatform.avatar_schema()
+	var schema := PlaylotPlatform.avatar_schema()
 	var problems := schema.validate_schema()
 
 	# [b]A schema that validates is not a formality.[/b] game-hungario shipped a part that
@@ -49,11 +49,11 @@ func _test_identity() -> void:
 		# The key a statistic is filed under, and the reason dot-platform is here: dot-stats refuses an
 		# account id as a player key before it leaves the server, so the one function that decides gives
 		# a scoped id with an identity stack and something honest without.
-	var key := PlaygroundPlatform.key_for_session(server, null)
+	var key := PlaylotPlatform.key_for_session(server, null)
 	_check(key == "", "no session is no key rather than a guessed one")
 
 	_check(
-		PlaygroundProgress.stats_schema().has(&"props"),
+		PlaylotProgress.stats_schema().has(&"props"),
 		"the stats schema declares what the game reports"
 	)
 	_section_done()
@@ -206,7 +206,7 @@ func _test_creative() -> void:
 		net.call("pull")
 	_check(net != null and bool(net.get("net_creative")), "and it is on the entity everybody is sent")
 
-	var arena: PlaygroundArena = _module().get("arena")
+	var arena: PlaylotArena = _module().get("arena")
 	_run_command("pg_arena on")
 	arena.admit(&"u79", "Builder")
 	arena.admit(&"u80", "Other")
@@ -279,7 +279,7 @@ func _test_saved_builds() -> void:
 	_check(_said(said, "no build called"), "a build they never saved is refused by name", " | ".join(said))
 
 	# The Q menu's Builds tab asks over the wire; the module answers the same as the commands.
-	var summaries: Array = module.get("builds").call("summaries", PlaygroundPlatform.key_for_session(server, session))
+	var summaries: Array = module.get("builds").call("summaries", PlaylotPlatform.key_for_session(server, session))
 	_check(summaries.size() == 1 and summaries[0]["name"] == "tower" and int(summaries[0]["props"]) == 2,
 		"the Builds tab is sent what pg_builds lists", str(summaries))
 	game.props.clear_player(&"u81")
@@ -374,15 +374,15 @@ func _test_inventory_commands() -> void:
 func _test_welcome_waits_for_ready() -> void:
 	print("a joiner is welcomed when it says READY, and not before")
 
-	var bridge: PlaygroundNetBridge = _module().get("bridge")
-	var services: PlaygroundServices = _module().get("services")
+	var bridge: PlaylotNetBridge = _module().get("bridge")
+	var services: PlaylotServices = _module().get("services")
 	var peer := 7909
 	var session := DotClientSession.new()
 	session.peer_id = peer
 	session.userid = 79
 	session.display_name = "Wren"
 	var _adopted := server.adopt_session(session)
-	var _said: Variant = services.chat.announce("said before Wren came", PlaygroundServices.CHANNEL_ALL)
+	var _said: Variant = services.chat.announce("said before Wren came", PlaylotServices.CHANNEL_ALL)
 
 	var kinds: Array[int] = []
 	var old_send: Callable = bridge.net.send_fn
@@ -390,8 +390,8 @@ func _test_welcome_waits_for_ready() -> void:
 		if peer_id != peer:
 			return
 		var decoded: DotResult = bridge.net.messages.decode(DotNetReader.new(payload), 1, false)
-		if decoded.ok and decoded.value is PlaygroundEvent:
-			kinds.append((decoded.value as PlaygroundEvent).kind)
+		if decoded.ok and decoded.value is PlaylotEvent:
+			kinds.append((decoded.value as PlaylotEvent).kind)
 
 	var _spawned: DotEvent = server.events.fire("client_spawn", {"userid": 79})
 	_check(game.players.has(&"u79"), "client_spawn puts the joiner in the game")
@@ -403,12 +403,12 @@ func _test_welcome_waits_for_ready() -> void:
 
 	var writer := DotNetWriter.new()
 	var _encoded: DotResult = bridge.net.messages.encode(
-		PlaygroundRequest.new(PlaygroundEvents.Ask.READY, PackedByteArray()), writer
+		PlaylotRequest.new(PlaylotEvents.Ask.READY, PackedByteArray()), writer
 	)
 	var _ready: DotResult = bridge.receive_request(peer, writer.to_bytes())
-	var chats := kinds.count(PlaygroundEvents.Kind.CHAT)
+	var chats := kinds.count(PlaylotEvents.Kind.CHAT)
 	_check(
-		kinds.has(PlaygroundEvents.Kind.HELLO) and chats >= 2,
+		kinds.has(PlaylotEvents.Kind.HELLO) and chats >= 2,
 		"READY sends HELLO and then the welcome: the backlog and the join line (%d chat)" % chats,
 		str(kinds)
 	)
@@ -416,7 +416,7 @@ func _test_welcome_waits_for_ready() -> void:
 	kinds.clear()
 	var _again: DotResult = bridge.receive_request(peer, writer.to_bytes())
 	_check(
-		kinds.count(PlaygroundEvents.Kind.CHAT) == 0,
+		kinds.count(PlaylotEvents.Kind.CHAT) == 0,
 		"a READY said twice does not welcome them twice",
 		str(kinds)
 	)
@@ -494,7 +494,7 @@ func _test_module_unloads_cleanly() -> void:
 	)
 
 	var reloaded: DotResult = await server.modules.load_module(
-		"res://game/playground_module.gd"
+		"res://game/playlot_module.gd"
 	)
 	_check(reloaded.ok, "and it can be loaded again")
 
@@ -511,16 +511,16 @@ func _test_a_module_reload() -> void:
 
 	for _i in range(2):
 		_check(server.modules.unload_module("playground").ok, "the module unloads")
-		var back: DotResult = await server.modules.load_module("res://game/playground_module.gd")
+		var back: DotResult = await server.modules.load_module("res://game/playlot_module.gd")
 		_check(back.ok, "and loads again", back.error.message if not back.ok else "")
 	for _i in range(5):
 		await get_tree().process_frame
 
 	var links := 0
 	for child in server.get_children():
-		if child.get_script() == PlaygroundNetLink:
+		if child.get_script() == PlaylotNetLink:
 			links += 1
-	_check(links == 1 and server.has_node(NodePath(String(PlaygroundNetLink.NODE_NAME))),
+	_check(links == 1 and server.has_node(NodePath(String(PlaylotNetLink.NODE_NAME))),
 		"exactly one link, under the name the client routes to", "%d" % links)
 
 	var side := Node.new()
@@ -540,9 +540,9 @@ func _test_a_module_reload() -> void:
 	# DotClientLink clears its children while connecting. Heard is what any of them counted.
 	var heard := [0]
 	var attach := func(_a: Variant = null, _b: Variant = null) -> void:
-		if link.get_node_or_null(NodePath(String(PlaygroundNetLink.NODE_NAME))) == null:
-			var sink := PlaygroundNetLink.attached_to(link, null, false)
-			sink.name = PlaygroundNetLink.NODE_NAME
+		if link.get_node_or_null(NodePath(String(PlaylotNetLink.NODE_NAME))) == null:
+			var sink := PlaylotNetLink.attached_to(link, null, false)
+			sink.name = PlaylotNetLink.NODE_NAME
 			link.add_child(sink)
 	attach.call()
 	link.phase_changed.connect(attach)
@@ -553,14 +553,14 @@ func _test_a_module_reload() -> void:
 	# The server's side of the wire is the bridge's own link, told to send to the newcomer:
 	# real snapshots wait for the client's READY, which needs a client-side bridge, and the
 	# route (Server/Playground to the client's same path) is all this is about.
-	var live: PlaygroundNetLink = _module().get("bridge").link
+	var live: PlaylotNetLink = _module().get("bridge").link
 	_check(live.get_parent() == server, "the bridge's link is the one under the server")
 	for _i in 1800:
 		await get_tree().physics_frame
 		for each in server.playing_sessions():
 			if not known.has(each.userid) and heard[0] == 0:
 				live.send_event(each.peer_id, PackedByteArray([0]))
-		var sink := link.get_node_or_null(NodePath(String(PlaygroundNetLink.NODE_NAME)))
+		var sink := link.get_node_or_null(NodePath(String(PlaylotNetLink.NODE_NAME)))
 		if sink != null:
 			heard[0] = maxi(heard[0], sink.snapshots_received + sink.events_received)
 		if heard[0] > 0:

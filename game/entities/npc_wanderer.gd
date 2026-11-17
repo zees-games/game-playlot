@@ -1,4 +1,4 @@
-extends "playground_entity.gd"
+extends "playlot_entity.gd"
 
 ## Walks about, turns when it is bored or stuck, and hops if the catalogue asks it to.
 ##
@@ -12,7 +12,7 @@ extends "playground_entity.gd"
 ##
 ## [b]Two catalogue entries run this file.[/b] `npc_wanderer` is the default and
 ## `npc_hopper` is the same script at a lower speed with `hop` set, which is what
-## [method PlaygroundEntity.tune] exists for — the alternative is a second script that
+## [method PlaylotEntity.tune] exists for — the alternative is a second script that
 ## differs by two numbers and drifts from this one.
 
 ## How far off course a turn may be, in degrees either way.

@@ -1,7 +1,7 @@
 extends SceneTree
 
-const Playground := preload("../game/playground.gd")
-const PlaygroundConfig := preload("../game/playground_config.gd")
+const Playlot := preload("../game/playlot.gd")
+const PlaylotConfig := preload("../game/playlot_config.gd")
 
 ## Loads custom maps through the real game and says what their props did: how many of each
 ## the server put down, and every one that moved more than half a metre or fell out of the
@@ -13,7 +13,7 @@ const PlaygroundConfig := preload("../game/playground_config.gd")
 
 const SETTLE_TICKS := 128 * 5
 
-var _game: Playground
+var _game: Playlot
 var _maps: Array = []
 var _i := 0
 var _f := 0
@@ -27,11 +27,11 @@ func _initialize() -> void:
 		for file in DirAccess.get_files_at("res://maps/custom"):
 			if file.ends_with(".json"):
 				_maps.append(file.get_basename())
-	var config := PlaygroundConfig.new()
+	var config := PlaylotConfig.new()
 	config.records_directory = ""
 	config.initial_map = &"pg_flatgrass"
 	config.map_seconds = 0.0
-	_game = Playground.new()
+	_game = Playlot.new()
 	_game.config = config
 	root.add_child(_game)
 

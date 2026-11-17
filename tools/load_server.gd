@@ -1,19 +1,19 @@
 extends Node
 
-const PlaygroundNetBridge := preload("../game/net/playground_net_bridge.gd")
-const Playground := preload("../game/playground.gd")
-const PlaygroundConfig := preload("../game/playground_config.gd")
-const PlaygroundPlatform := preload("../game/playground_platform.gd")
+const PlaylotNetBridge := preload("../game/net/playlot_net_bridge.gd")
+const Playlot := preload("../game/playlot.gd")
+const PlaylotConfig := preload("../game/playlot_config.gd")
+const PlaylotPlatform := preload("../game/playlot_platform.gd")
 
-## Headless dedicated playground with sv_maxplayers raised; prints one STAT line per second
+## Headless dedicated playlot with sv_maxplayers raised; prints one STAT line per second
 ## for tools/load_swarm.gd's clients to be measured against (driver: tools/load100.sh).
 ## [code]phys_ms[/code] is the whole physics frame, so phys minus tick is physics and the rest.
 
 const CHANNEL := "load_server"
 
 var server: DotServer = null
-var game: Playground = null
-var platform: PlaygroundPlatform = null
+var game: Playlot = null
+var platform: PlaylotPlatform = null
 var module: Object = null
 
 var _samples: PackedFloat64Array = PackedFloat64Array()
@@ -78,25 +78,25 @@ func _run() -> void:
 	if slots_cvar != null:
 		slots_cvar.set_value(str(slots))
 
-	var pg_config := PlaygroundConfig.new()
+	var pg_config := PlaylotConfig.new()
 	pg_config.records_directory = ""
 	pg_config.initial_map = &"pg_flatgrass"
 	pg_config.map_seconds = 0.0
-	game = Playground.new()
+	game = Playlot.new()
 	game.name = "Playground"
 	game.config = pg_config
 	add_child(game)
 	await get_tree().process_frame
 	await get_tree().process_frame
 
-	platform = PlaygroundPlatform.new()
+	platform = PlaylotPlatform.new()
 	platform.name = "Identity"
 	platform.directory = "%s/identity" % dir
 	add_child(platform)
 	var _identity: DotResult = await platform.setup()
 	var _p: DotResult = await server.modules.load_module("res://addons/dot_platform/dot_platform_module.gd")
-	(load("res://game/playground_module.gd") as GDScript).set("punishments_path", "%s/punishments.json" % dir)
-	var loaded: DotResult = await server.modules.load_module("res://game/playground_module.gd")
+	(load("res://game/playlot_module.gd") as GDScript).set("punishments_path", "%s/punishments.json" % dir)
+	var loaded: DotResult = await server.modules.load_module("res://game/playlot_module.gd")
 	for n in server.modules.loaded_names():
 		var m: Object = server.modules.get_module(n)
 		if m != null and m.get("net") != null:
@@ -165,7 +165,7 @@ func _physics_process(_delta: float) -> void:
 		return
 	# The swarm cannot say READY (that needs the game's message schema on its end), so the
 	# harness admits each seated peer, which is all the request does.
-	var bridge: PlaygroundNetBridge = module.get("bridge")
+	var bridge: PlaylotNetBridge = module.get("bridge")
 	if bridge != null:
 		for pid in bridge._player_of_peer.keys():
 			if not bridge._ready_peers.has(pid):

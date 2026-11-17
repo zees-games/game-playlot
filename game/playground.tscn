@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://game/playground_client.gd" id="1_client"]
+; Compat shim: the client scene under the old Playlot path, which dot-server-deploy content/playlot/game.yml still names.
+[ext_resource type="PackedScene" path="res://game/playlot.tscn" id="1"]
 
-[node name="PlaygroundClient" type="Node"]
-script = ExtResource("1_client")
+[node name="PlaygroundClient" instance=ExtResource("1")]

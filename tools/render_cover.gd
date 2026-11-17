@@ -1,10 +1,10 @@
 extends Node
 
-const PlaygroundPresentation := preload("../game/playground_presentation.gd")
+const PlaylotPresentation := preload("../game/playlot_presentation.gd")
 
 ## Frames of a real client on a real server, to look at: the loading cover while the server
 ## still holds the seat as loading, and the first frames after the cover lifts. A dedicated
-## playground (tools/cover_server) runs in a second process.
+## playlot (tools/cover_server) runs in a second process.
 ##
 ## [codeblock]
 ## xvfb-run -a godot --path . --resolution 1280x720 res://tools/render_cover.tscn
@@ -21,7 +21,7 @@ var _seq := DotShotSeq.new()
 
 
 func _ready() -> void:
-	var _scratch := PlaygroundPresentation.use_scratch_settings("render_cover")
+	var _scratch := PlaylotPresentation.use_scratch_settings("render_cover")
 	DotLog.set_level(DotLog.Level.ERROR)
 	_run.call_deferred()
 
@@ -54,7 +54,7 @@ func _run() -> void:
 		t += 0.25
 	print("render_cover: playing=%s after %.1f s" % [link.is_playing(), t])
 
-	var client: Node = (load("res://game/playground.tscn") as PackedScene).instantiate()
+	var client: Node = (load("res://game/playlot.tscn") as PackedScene).instantiate()
 	add_child(client)
 	for i in 3:
 		await get_tree().process_frame

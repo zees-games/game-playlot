@@ -1,4 +1,4 @@
-extends "playground_tool.gd"
+extends "playlot_tool.gd"
 
 ## Paints a prop. Right click copies a prop's colour into the tool; reload takes the paint
 ## off and gives the prop back its catalogue colour.

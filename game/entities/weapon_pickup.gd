@@ -1,4 +1,4 @@
-extends "playground_entity.gd"
+extends "playlot_entity.gd"
 
 ## A weapon lying in the world. Walk over it and it is yours.
 ##

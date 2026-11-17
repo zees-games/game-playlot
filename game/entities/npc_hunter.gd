@@ -1,4 +1,4 @@
-extends "playground_entity.gd"
+extends "playlot_entity.gd"
 
 ## A chaser with a **decision** rather than an `if`: dot-npc-ai's state machine and
 ## characteristics table, on top of dot-npc's senses.
@@ -20,7 +20,7 @@ extends "playground_entity.gd"
 ## - **A character per NPC, which the server moves rather than replaces.** Each one gets its
 ##   own seed from its spawn (`npc.seed`), so twenty of them do not all react at the same moment —
 ##   which reads as a firing squad and is the bug the seeding exists to prevent. `npc_skill`
-##   and `npc_reaction_scale` ([member Playground.npc_skill]) shift it live.
+##   and `npc_reaction_scale` ([member Playlot.npc_skill]) shift it live.
 ## - **Separation.** Twelve of these converging on one player climb each other, and the one
 ##   on top has a horizontal offset of nothing from the one below: it chases perfectly at a
 ##   dead stop with every number about it correct. `steer_with_spacing` is the fix and
@@ -103,7 +103,7 @@ func _entity_ready() -> void:
 	var started := machine.go_to(context, STATE_PATROL)
 
 	if not started.ok:
-		DotLog.warn("playground.npc", "a hunter could not start patrolling", {
+		DotLog.warn("playlot.npc", "a hunter could not start patrolling", {
 			"why": started.error.message,
 		})
 

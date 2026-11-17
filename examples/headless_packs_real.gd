@@ -1,13 +1,13 @@
 extends DotGameCheckSuite
 
-const Playground := preload("../game/playground.gd")
-const PlaygroundConfig := preload("../game/playground_config.gd")
-const PlaygroundPlayer := preload("../game/playground_player.gd")
-const PlaygroundProfiles := preload("../game/playground_profiles.gd")
-const PlaygroundZee := preload("../game/playground_zee.gd")
-const PlaygroundWeaponDef := preload("../game/weapons/playground_weapon_def.gd")
-const PlaygroundPresentation := preload("../game/playground_presentation.gd")
-const PlaygroundSpawnMenu := preload("../game/playground_spawn_menu.gd")
+const Playlot := preload("../game/playlot.gd")
+const PlaylotConfig := preload("../game/playlot_config.gd")
+const PlaylotPlayer := preload("../game/playlot_player.gd")
+const PlaylotProfiles := preload("../game/playlot_profiles.gd")
+const PlaylotZee := preload("../game/playlot_zee.gd")
+const PlaylotWeaponDef := preload("../game/weapons/playlot_weapon_def.gd")
+const PlaylotPresentation := preload("../game/playlot_presentation.gd")
+const PlaylotSpawnMenu := preload("../game/playlot_spawn_menu.gd")
 
 ## The three real optional packs (zz-modern-weapons, zz-medieval-weapons, zz-historical-monsters) in
 ## the Q menu, not the fixture the main suite uses.
@@ -19,7 +19,7 @@ const PlaygroundSpawnMenu := preload("../game/playground_spawn_menu.gd")
 ## [b]Skips, visibly, when a pack is not linked[/b] (`addons/zz_*` is a gitignored symlink, see
 ## docs/development-setup.md): exit 0 with a SKIP line and no checks. Why it exists: a fixture's
 ## weapon spawn is a string; the real weapon packs hand a Dictionary and the definition behind a
-## static `weapon_defs()`, and nothing but running them showed the playground refused every one.
+## static `weapon_defs()`, and nothing but running them showed the playlot refused every one.
 
 const PACKS: Array[String] = ["zz_modern_weapons", "zz_medieval_weapons", "zz_historical_monsters"]
 const MONSTERS: Array[String] = ["trex", "allosaurus", "raptor", "tiger", "thylacine", "bear"]
@@ -29,19 +29,19 @@ const SECTIONS := 10
 var _entered := 0
 var _completed := 0
 var _skipped := 0
-var _game: Playground = null
+var _game: Playlot = null
 var _weapon_rows: Array = []
 var _npc_rows: Array = []
 
 
 func _ready() -> void:
 	DotLog.set_level(DotLog.Level.ERROR)
-	var _scratch := PlaygroundPresentation.use_scratch_settings("headless_packs_real")
+	var _scratch := PlaylotPresentation.use_scratch_settings("headless_packs_real")
 	_run.call_deferred()
 
 
 func _run() -> void:
-	print("playground - the real spawn packs")
+	print("playlot - the real spawn packs")
 	var missing: Array[String] = []
 	for pack in PACKS:
 		if not FileAccess.file_exists("res://addons/%s/spawn_provider.gd" % pack):
@@ -51,11 +51,11 @@ func _run() -> void:
 		get_tree().quit(0)
 		return
 
-	var config := PlaygroundConfig.new()
+	var config := PlaylotConfig.new()
 	config.records_directory = ""
 	config.initial_map = &"pg_flatgrass"
 	config.map_seconds = 0.0
-	_game = Playground.new()
+	_game = Playlot.new()
 	_game.config = config
 	add_child(_game)
 	for _i in 120:
@@ -96,7 +96,7 @@ func _test_menu() -> void:
 	_check(declared > 0 and _weapon_rows.size() == declared, "one weapon row per entry the weapon packs declare", "%d of %d" % [_weapon_rows.size(), declared])
 	_check(_npc_rows.size() == MONSTERS.size(), "one NPC row per species the monster pack ships", str(_npc_rows.size()))
 
-	var menu := PlaygroundSpawnMenu.new()
+	var menu := PlaylotSpawnMenu.new()
 	menu.catalogue = _game.props.catalogue
 	menu.weapons = _game.weapons
 	add_child(menu)
@@ -107,7 +107,7 @@ func _test_menu() -> void:
 	stack.push(menu.screen_id())
 	await get_tree().process_frame
 	menu.addon_items = rows.filter(func(r: Dictionary) -> bool: return not str(r["key"]).begins_with("fc_weapons/"))
-	menu.show_tab(PlaygroundSpawnMenu.Tab.PACK_WEAPONS)
+	menu.show_tab(PlaylotSpawnMenu.Tab.PACK_WEAPONS)
 	await get_tree().process_frame
 	var shown := menu.shown()
 	_check(shown.size() == _weapon_rows.size(), "Pack Weapons shows all of them", str(shown.size()))
@@ -115,7 +115,7 @@ func _test_menu() -> void:
 	for row in _weapon_rows:
 		all_cards = all_cards and menu.card_for(StringName(row["key"])) != null
 	_check(all_cards, "each has a card")
-	menu.show_tab(PlaygroundSpawnMenu.Tab.NPCS)
+	menu.show_tab(PlaylotSpawnMenu.Tab.NPCS)
 	await get_tree().process_frame
 	_check(menu.shown().size() == MONSTERS.size(), "NPCs shows every monster", str(menu.shown()))
 	for row in _npc_rows:
@@ -127,7 +127,7 @@ func _test_menu() -> void:
 
 func _test_weapons() -> void:
 	_section("every weapon entry gives the player that weapon")
-	var bot: PlaygroundPlayer = _game.players[&"bot"]
+	var bot: PlaylotPlayer = _game.players[&"bot"]
 	bot.teleport(Vector3(0, 1, 0), 0.0)
 	await get_tree().physics_frame
 	var at := bot.global_position + Vector3(0, 0, -3)
@@ -145,24 +145,24 @@ func _test_weapons() -> void:
 			print("    refused %s: %s" % [row["key"], res.error.message if not res.ok else "no pickup"])
 			continue
 		var def := _game.weapon_def(picked[0][1])
-		defined = defined and def != null and PlaygroundZee.is_zee(def)
+		defined = defined and def != null and PlaylotZee.is_zee(def)
 		if def != null:
-			var rig := PlaygroundZee.arm(bot, def, ZeeWeaponRig.Role.SERVER, true, 64, 0)
-			var held: bool = rig != null and rig.arsenal.catalogue.has(PlaygroundZee.zee_id(def))
+			var rig := PlaylotZee.arm(bot, def, ZeeWeaponRig.Role.SERVER, true, 64, 0)
+			var held: bool = rig != null and rig.arsenal.catalogue.has(PlaylotZee.zee_id(def))
 			rigs = rigs and held
 			if not held:
 				print("    no rig for %s" % row["key"])
 	_check(gave_all, "all %d activations go through the pickup path" % _weapon_rows.size())
 	_check(defined, "and the id picked up is one the game's catalogue defines")
 	_check(rigs, "and a rig built over it holds the real definition")
-	PlaygroundZee.disarm(bot)
+	PlaylotZee.disarm(bot)
 	_check(not _game.activate_addon_item("zz_medieval_weapons/nope", 0, at, &"bot").ok, "an unknown entry is still refused")
 	_done()
 
 
 func _test_alive_and_undo() -> void:
 	_section("a spawned monster hunts, animates, and the undo removes it")
-	var bot: PlaygroundPlayer = _game.players[&"bot"]
+	var bot: PlaylotPlayer = _game.players[&"bot"]
 	bot.teleport(Vector3(0, 1, 0), 0.0)
 	await get_tree().physics_frame
 	var row: Dictionary = {}
@@ -202,7 +202,7 @@ func _test_alive_and_undo() -> void:
 
 func _test_monsters() -> void:
 	_section("every monster spawns in front of the player")
-	var bot: PlaygroundPlayer = _game.players[&"bot"]
+	var bot: PlaylotPlayer = _game.players[&"bot"]
 	var at := bot.global_position + Vector3(0, 0, -6)
 	var spawned_all := true
 	var near := true
@@ -228,7 +228,7 @@ func _test_monsters() -> void:
 
 func _test_map_change_clears() -> void:
 	_section("a map change despawns the monsters and clears the undo history")
-	var bot: PlaygroundPlayer = _game.players[&"bot"]
+	var bot: PlaylotPlayer = _game.players[&"bot"]
 	var row: Dictionary = {}
 	for r in _npc_rows:
 		if str(r["key"]).ends_with("raptor"):
@@ -270,7 +270,7 @@ func _bodies() -> Array:
 ## shot used to land on it as on a wall.
 func _test_monster_damage() -> void:
 	_section("a player's weapons hurt every monster, and kill it")
-	var bot: PlaygroundPlayer = _game.players[&"bot"]
+	var bot: PlaylotPlayer = _game.players[&"bot"]
 	bot.teleport(Vector3(0, 1, 40), 0.0)
 	_game.addons.despawn_all(_game.world)  # the earlier section left the pack's monster cap full
 	await get_tree().physics_frame
@@ -420,13 +420,13 @@ func _test_live_edit() -> void:
 		_skipped += 10
 		_done()
 		return
-	var bot: PlaygroundPlayer = _game.players[&"bot"]
+	var bot: PlaylotPlayer = _game.players[&"bot"]
 	var rt := _game.profiles.runtime
 	var old_permit := rt.permit
 	rt.permit = func(actor: Variant, _flag: String) -> bool: return actor == "uid-admin"
 
 	var m4 := _game_def("zz_m4")
-	var rig := PlaygroundZee.arm(bot, m4, ZeeWeaponRig.Role.SERVER, true, 64, 0) if m4 != null else null
+	var rig := PlaylotZee.arm(bot, m4, ZeeWeaponRig.Role.SERVER, true, 64, 0) if m4 != null else null
 	_check(rig != null, "a rig holds the modern M4")
 	if rig == null:
 		rt.permit = old_permit
@@ -453,7 +453,7 @@ func _test_live_edit() -> void:
 	rt.handle_request("uid-admin", DotProfileRuntime.make_request("reset", "weapon", "mace"))
 	_check(_shot_damage(rig, tick) == before, "a reset puts the shot back")
 	_check((_pack_def(mace).tuning as DotWeaponBallistics).damage == mace_was, "and the other pack's too")
-	PlaygroundZee.disarm(bot)
+	PlaylotZee.disarm(bot)
 	rt.permit = old_permit
 	_done()
 
@@ -477,9 +477,9 @@ func _test_workbench() -> void:
 	var wb := _new_workbench({"enabled": true, "port": 0, "token_file": dir + "/workbench.token"})
 	var res := wb.start(_game.profiles.runtime)
 	_check(res.ok and wb.running_http, "enabled with a token file listens", "" if res.ok else res.error.message)
-	var bot: PlaygroundPlayer = _game.players[&"bot"]
+	var bot: PlaylotPlayer = _game.players[&"bot"]
 	var m4 := _game_def("zz_m4")
-	var rig := PlaygroundZee.arm(bot, m4, ZeeWeaponRig.Role.SERVER, true, 64, 0) if m4 != null else null
+	var rig := PlaylotZee.arm(bot, m4, ZeeWeaponRig.Role.SERVER, true, 64, 0) if m4 != null else null
 	if not res.ok or rig == null:
 		_check(false, "a rig holds the M4 and the server runs")
 		wb.queue_free()
@@ -502,8 +502,8 @@ func _test_workbench() -> void:
 		var _bad := _http(wb, "POST", "/api", "wrong", body)
 	var locked := _http(wb, "POST", "/api", "wrong", body)
 	_check(locked["status"] == 429, "repeated bad tokens are 429", str(locked["status"]))
-	_game.profiles.runtime.handle_request(PlaygroundProfiles.LOCAL_ACTOR, DotProfileRuntime.make_request("reset", "weapon", "m4"))
-	PlaygroundZee.disarm(bot)
+	_game.profiles.runtime.handle_request(PlaylotProfiles.LOCAL_ACTOR, DotProfileRuntime.make_request("reset", "weapon", "m4"))
+	PlaylotZee.disarm(bot)
 	wb.queue_free()
 	DirAccess.remove_absolute(dir + "/workbench.token")
 	DirAccess.remove_absolute(dir)
@@ -599,14 +599,14 @@ func _http(wb: DotGameWorkbench, method: String, path: String, token: String, bo
 	return {"status": int(text.split(" ")[1]) if text.length() > 12 else -1, "json": parsed if parsed is Dictionary else {}, "text": payload}
 
 
-func _game_def(zee_id: String) -> PlaygroundWeaponDef:
-	for def: PlaygroundWeaponDef in _game.weapons:
+func _game_def(zee_id: String) -> PlaylotWeaponDef:
+	for def: PlaylotWeaponDef in _game.weapons:
 		if String(def.meta.get("zee", "")) == zee_id and def.meta.has("pack_def"):
 			return def
 	return null
 
 
-func _pack_def(def: PlaygroundWeaponDef) -> DotWeaponDef:
+func _pack_def(def: PlaylotWeaponDef) -> DotWeaponDef:
 	return def.meta["pack_def"]
 
 

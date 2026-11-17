@@ -37,7 +37,7 @@
 GAME_NAME="Playlot"
 PACK="playlot"
 EXTRA_PACKS=""
-SUITES="headless_config headless_mapdrop headless_workbench headless_workbench_scope headless_playground headless_net headless_presentation headless_stack headless_packs_real dedicated headless_mapcfg headless_weapondrop headless_npc_weapon_idle headless_spawntool headless_avatar_arms headless_avatar_library"
+SUITES="headless_config headless_mapdrop headless_workbench headless_workbench_scope headless_playlot headless_net headless_presentation headless_stack headless_packs_real dedicated headless_mapcfg headless_weapondrop headless_npc_weapon_idle headless_spawntool headless_avatar_arms headless_avatar_library"
 # --------------------------------------------------------------------------------
 
 set -uo pipefail
@@ -264,7 +264,7 @@ case "$cmd" in
         check_addons
         [ -z "${1:-}" ] || [ "$1" = "--check" ] || die "usage: ./game.sh defs [--check]" 2
         rc=0
-        defs_run dot_achievements "res://game/playground_progress.gd:catalogue" deployment/achievement-defs.json "$@" || rc=1
+        defs_run dot_achievements "res://game/playlot_progress.gd:catalogue" deployment/achievement-defs.json "$@" || rc=1
         defs_run dot_leaderboard "" deployment/leaderboard-defs.json "$@" || rc=1
         exit "$rc"
         ;;

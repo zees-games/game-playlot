@@ -1,8 +1,8 @@
 extends Node
 
-const PlaygroundClient := preload("../game/playground_client.gd")
-const PlaygroundConfig := preload("../game/playground_config.gd")
-const PlaygroundPresentation := preload("../game/playground_presentation.gd")
+const PlaylotClient := preload("../game/playlot_client.gd")
+const PlaylotConfig := preload("../game/playlot_config.gd")
+const PlaylotPresentation := preload("../game/playlot_presentation.gd")
 
 ## Renders the offline client with each toy and tool in hand, first person, one PNG each.
 ##
@@ -10,14 +10,14 @@ const PlaygroundPresentation := preload("../game/playground_presentation.gd")
 
 const TOYS: Array[StringName] = [&"phys", &"grav", &"launcher", &"toolgun", &"remover", &"impulse"]
 
-var _client: PlaygroundClient = null
+var _client: PlaylotClient = null
 
 
 func _ready() -> void:
-	PlaygroundPresentation.use_scratch_settings("render_toys")
-	_client = PlaygroundClient.new()
+	PlaylotPresentation.use_scratch_settings("render_toys")
+	_client = PlaylotClient.new()
 	_client.name = "Client"
-	var config := PlaygroundConfig.new()
+	var config := PlaylotConfig.new()
 	config.records_directory = ""
 	config.record_replays = false
 	_client.config = config

@@ -3,7 +3,7 @@ extends SceneTree
 ##   xvfb-run -a godot --path . --resolution 1280x720 --script tools/screenshot_props.gd
 ## Written to screenshots/props_models.png.
 
-const PlaygroundSpawnables := preload("../game/playground_spawnables.gd")
+const PlaylotSpawnables := preload("../game/playlot_spawnables.gd")
 
 const IDS: Array[StringName] = [
 	&"sofa", &"table_coffee", &"bookcase", &"fridge", &"lamp_floor", &"potted_plant",
@@ -35,7 +35,7 @@ func _initialize() -> void:
 	sun.rotation_degrees = Vector3(-50, -30, 0)
 	root.add_child(sun)
 
-	var catalogue := PlaygroundSpawnables.with_models(PlaygroundSpawnables.catalogue(), "")
+	var catalogue := PlaylotSpawnables.with_models(PlaylotSpawnables.catalogue(), "")
 	for i in range(IDS.size()):
 		var def := catalogue.get_prop(IDS[i])
 		if def == null:

@@ -1,29 +1,29 @@
 extends DotGameCheckSuite
 
-const Playground := preload("../game/playground.gd")
-const PlaygroundConfig := preload("../game/playground_config.gd")
-const PlaygroundEvent := preload("../game/net/playground_event.gd")
-const PlaygroundEvents := preload("../game/net/playground_events.gd")
-const PlaygroundAvatars := preload("../game/playground_avatars.gd")
-const PlaygroundNetBridge := preload("../game/net/playground_net_bridge.gd")
-const PlaygroundNetCommand := preload("../game/net/playground_net_command.gd")
-const PlaygroundPlayer := preload("../game/playground_player.gd")
-const PlaygroundNpcNet := preload("../game/net/playground_npc_net.gd")
-const PlaygroundWaves := preload("../game/playground_waves.gd")
-const PlaygroundPropNet := preload("../game/net/playground_prop_net.gd")
-const PlaygroundServices := preload("../game/playground_services.gd")
-const PlaygroundVehicle := preload("../game/playground_vehicle.gd")
-const PlaygroundVehicleNet := preload("../game/net/playground_vehicle_net.gd")
-const PlaygroundVote := preload("../game/playground_vote.gd")
-const PlaygroundHud := preload("../game/playground_hud.gd")
-const PlaygroundModTools := preload("../game/playground_mod_tools.gd")
-const PlaygroundPlayerNet := preload("../game/net/playground_player_net.gd")
-const PlaygroundZee := preload("../game/playground_zee.gd")
-const PlaygroundClient := preload("../game/playground_client.gd")
-const PlaygroundCharacter := preload("../game/playground_character.gd")
-const PlaygroundInventory := preload("../game/playground_inventory.gd")
-const PlaygroundInventoryNet := preload("../game/net/playground_inventory_net.gd")
-const PlaygroundRequest := preload("../game/net/playground_request.gd")
+const Playlot := preload("../game/playlot.gd")
+const PlaylotConfig := preload("../game/playlot_config.gd")
+const PlaylotEvent := preload("../game/net/playlot_event.gd")
+const PlaylotEvents := preload("../game/net/playlot_events.gd")
+const PlaylotAvatars := preload("../game/playlot_avatars.gd")
+const PlaylotNetBridge := preload("../game/net/playlot_net_bridge.gd")
+const PlaylotNetCommand := preload("../game/net/playlot_net_command.gd")
+const PlaylotPlayer := preload("../game/playlot_player.gd")
+const PlaylotNpcNet := preload("../game/net/playlot_npc_net.gd")
+const PlaylotWaves := preload("../game/playlot_waves.gd")
+const PlaylotPropNet := preload("../game/net/playlot_prop_net.gd")
+const PlaylotServices := preload("../game/playlot_services.gd")
+const PlaylotVehicle := preload("../game/playlot_vehicle.gd")
+const PlaylotVehicleNet := preload("../game/net/playlot_vehicle_net.gd")
+const PlaylotVote := preload("../game/playlot_vote.gd")
+const PlaylotHud := preload("../game/playlot_hud.gd")
+const PlaylotModTools := preload("../game/playlot_mod_tools.gd")
+const PlaylotPlayerNet := preload("../game/net/playlot_player_net.gd")
+const PlaylotZee := preload("../game/playlot_zee.gd")
+const PlaylotClient := preload("../game/playlot_client.gd")
+const PlaylotCharacter := preload("../game/playlot_character.gd")
+const PlaylotInventory := preload("../game/playlot_inventory.gd")
+const PlaylotInventoryNet := preload("../game/net/playlot_inventory_net.gd")
+const PlaylotRequest := preload("../game/net/playlot_request.gd")
 
 ## game-playlot over the wire: a real server, a real client, and a lossy loopback between them.
 ##
@@ -44,12 +44,12 @@ const NET_PUNISHMENTS := "user://headless_net_punishments.json"
 var _entered := 0
 var _completed := 0
 
-var _server_game: Playground = null
-var _client_game: Playground = null
+var _server_game: Playlot = null
+var _client_game: Playlot = null
 var _server_net: DotNetManager = null
 var _client_net: DotNetManager = null
-var _server_bridge: PlaygroundNetBridge = null
-var _client_bridge: PlaygroundNetBridge = null
+var _server_bridge: PlaylotNetBridge = null
+var _client_bridge: PlaylotNetBridge = null
 
 var _to_client: Array[Dictionary] = []
 var _to_server: Array[Dictionary] = []
@@ -74,7 +74,7 @@ var _tick: int = 0
 
 
 ## One-way transit the round-trip measurement puts on the loopback: three ticks at 128 is
-## 23 ms, a 47 ms round trip — the 40 ms [member PlaygroundNetBridge.rtt_source] this suite
+## 23 ms, a 47 ms round trip — the 40 ms [member PlaylotNetBridge.rtt_source] this suite
 ## feeds the clock, rounded up to a whole tick.
 const VEHICLE_TRANSIT_TICKS := 3
 ## Every third snapshot dropped, the same loss [method _test_lossy] drives a player through.
@@ -94,7 +94,7 @@ const CONVERGE_LIMIT_TICKS := 64
 const FRAMES_PER_TICK := 4
 
 
-const BACKPACK := PlaygroundInventory.BACKPACK
+const BACKPACK := PlaylotInventory.BACKPACK
 
 
 ## Counts the engine's own errors while installed (mg-smash-copter's dedicated suite has the
@@ -119,13 +119,13 @@ class EngineErrors extends Logger:
 		var out := _seen.duplicate()
 		_lock.unlock()
 		return out
-## sv_workbench_remote over the real frames, in the order PlaygroundModule and PlaygroundClient register them: an admin gets a
+## sv_workbench_remote over the real frames, in the order PlaylotModule and PlaylotClient register them: an admin gets a
 ## panel and an edit that applies and replicates; a guest, a non-admin, a revoked admin and the cvar off are refused.
 var _trw_flags: Dictionary
 var _trw_state: Dictionary
 var _trw_snet: DotNetManager
 var _trw_cnet: DotNetManager
-var _trw_sconfig: PlaygroundConfig
+var _trw_sconfig: PlaylotConfig
 var _trw_sbinder: DotGameConfigBinder
 var _trw_swb: DotGameWorkbench
 var _trw_slink: DotNetProfileLink
@@ -149,10 +149,10 @@ func _test_the_remote_workbench() -> void:
 	_trw_state = {"on": false, "uid": "", "now": 100000}
 	_trw_snet = _make_manager(true, &"wbserver", 1, self, 60)
 	_trw_cnet = _make_manager(false, &"wbclient", 5, self, 60)
-	_trw_sconfig = PlaygroundConfig.new()
-	var cconfig := PlaygroundConfig.new()
-	_trw_sbinder = PlaygroundConfig.make_binder(_trw_sconfig)
-	var cbinder := PlaygroundConfig.make_binder(cconfig)
+	_trw_sconfig = PlaylotConfig.new()
+	var cconfig := PlaylotConfig.new()
+	_trw_sbinder = PlaylotConfig.make_binder(_trw_sconfig)
+	var cbinder := PlaylotConfig.make_binder(cconfig)
 	var _l1 := _trw_sbinder.load_layers()
 	var _l2 := cbinder.load_layers()
 	var set: DotProfileSet = null
@@ -280,13 +280,13 @@ func _test_command_wire() -> void:
 	command.pitch = -12.0
 	command.buttons = 5
 
-	var sent := PlaygroundNetCommand.new()
+	var sent := PlaylotNetCommand.new()
 	sent.move = command
 
 	var writer := DotNetWriter.new()
 	sent.write(writer)
 
-	var got := PlaygroundNetCommand.new()
+	var got := PlaylotNetCommand.new()
 	got.read(DotNetReader.new(writer.to_bytes()))
 
 	_check(absf(got.move.yaw - 42.5) < 1.0, "the yaw arrives", "%.2f" % got.move.yaw)
@@ -296,7 +296,7 @@ func _test_command_wire() -> void:
 	# The aim bit rides after the move, in a batch with commands that do not carry it.
 	var batch: Array = []
 	for i in range(3):
-		var one := PlaygroundNetCommand.new()
+		var one := PlaylotNetCommand.new()
 		one.tick = 40 + i
 		one.delta = 1.0 / 64.0
 		one.aim = i != 1
@@ -306,20 +306,20 @@ func _test_command_wire() -> void:
 		batch.append(one)
 	var batch_writer := DotNetWriter.new()
 	DotNetInput.write_batch(batch_writer, batch)
-	var back := DotNetInput.read_batch(batch_writer.to_reader(), func() -> DotNetInput: return PlaygroundNetCommand.new())
+	var back := DotNetInput.read_batch(batch_writer.to_reader(), func() -> DotNetInput: return PlaylotNetCommand.new())
 	var round_trip := back.size() == 3
 	for i in range(mini(back.size(), 3)):
-		var one_back := back[i] as PlaygroundNetCommand
+		var one_back := back[i] as PlaylotNetCommand
 		round_trip = round_trip and one_back != null and one_back.aim == (i != 1) \
 			and one_back.move.is_pressed(DotFpsCommand.BUTTON_USER_0) == (i == 2) and absf(one_back.move.yaw - 10.0 * float(i)) < 1.0
 	_check(round_trip, "a batch of commands keeps each one's aim bit and buttons", "%d back" % back.size())
-	var plain := PlaygroundNetCommand.new()
+	var plain := PlaylotNetCommand.new()
 	var bits_plain := DotNetWriter.new()
 	plain._write(bits_plain)
 	plain.aim = true
 	var bits_aim := DotNetWriter.new()
 	plain._write(bits_aim)
-	_check(bits_plain.to_bytes().size() == bits_aim.to_bytes().size() and plain._equals(plain) and not plain._equals(PlaygroundNetCommand.new()),
+	_check(bits_plain.to_bytes().size() == bits_aim.to_bytes().size() and plain._equals(plain) and not plain._equals(PlaylotNetCommand.new()),
 		"the bit costs no byte, and a command with it is not equal to one without", "%d bytes" % bits_aim.to_bytes().size())
 	_done()
 
@@ -332,8 +332,8 @@ var _ew_wire: Dictionary
 func _test_event_wire() -> void:
 	_section("every event round-trips")
 
-	var hello := PlaygroundEvents.read_hello(
-		DotNetReader.new(PlaygroundEvents.write_hello(9, 128, 4242, &"pg_flatgrass"))
+	var hello := PlaylotEvents.read_hello(
+		DotNetReader.new(PlaylotEvents.write_hello(9, 128, 4242, &"pg_flatgrass"))
 	)
 	_check(int(hello["player_id"]) == 9, "hello: the player id")
 	_check(int(hello["tick_rate"]) == 128, "hello: the tick rate", str(hello["tick_rate"]))
@@ -341,24 +341,24 @@ func _test_event_wire() -> void:
 	_check(hello["map_id"] == &"pg_flatgrass", "hello: the map")
 	_check(bool(hello["ok"]), "hello: the reader was not exhausted")
 	_check(hello["movement"] == Vector3(7.0, 1.15, 20.0), "hello: the default movement numbers", str(hello["movement"]))
-	var odd := PlaygroundEvents.read_hello(DotNetReader.new(PlaygroundEvents.write_hello(9, 128, 1, &"x", Vector3(4.5, 2.0, 12.0))))
+	var odd := PlaylotEvents.read_hello(DotNetReader.new(PlaylotEvents.write_hello(9, 128, 1, &"x", Vector3(4.5, 2.0, 12.0))))
 	_check(odd["movement"] == Vector3(4.5, 2.0, 12.0), "hello: the movement numbers round-trip")
-	var old := PackedByteArray(PlaygroundEvents.write_hello(9, 128, 1, &"x"))
+	var old := PackedByteArray(PlaylotEvents.write_hello(9, 128, 1, &"x"))
 	old.resize(old.size() - 12)
-	var older := PlaygroundEvents.read_hello(DotNetReader.new(old))
+	var older := PlaylotEvents.read_hello(DotNetReader.new(old))
 	_check(bool(older["ok"]) and older["movement"] == Vector3.ZERO, "hello: a server without the movement numbers still reads")
-	_check(PlaygroundEvents.read_movement(DotNetReader.new(PlaygroundEvents.write_movement(Vector3(9999.0, 1.0, 20.0)))) == Vector3.ZERO, "movement: an absurd value is refused")
+	_check(PlaylotEvents.read_movement(DotNetReader.new(PlaylotEvents.write_movement(Vector3(9999.0, 1.0, 20.0)))) == Vector3.ZERO, "movement: an absurd value is refused")
 
-	var join := PlaygroundEvents.read_join(
-		DotNetReader.new(PlaygroundEvents.write_join(9, 31, "Ada", 2))
+	var join := PlaylotEvents.read_join(
+		DotNetReader.new(PlaylotEvents.write_join(9, 31, "Ada", 2))
 	)
 	_check(int(join["player_id"]) == 9 and int(join["net_id"]) == 31, "join: the ids")
 	_check(str(join["name"]) == "Ada", "join: the name")
 	_check(int(join["style_index"]) == 2, "join: the style")
 
-	var prop := PlaygroundEvents.read_prop(
+	var prop := PlaylotEvents.read_prop(
 		DotNetReader.new(
-			PlaygroundEvents.write_prop(77, &"crate", 9, false, Vector3(1.5, 2.5, -3.5))
+			PlaylotEvents.write_prop(77, &"crate", 9, false, Vector3(1.5, 2.5, -3.5))
 		)
 	)
 	_check(int(prop["net_id"]) == 77, "prop: the net id")
@@ -370,31 +370,31 @@ func _test_event_wire() -> void:
 		"prop: the position", str(prop["position"])
 	)
 
-	var gone := PlaygroundEvents.read_prop_gone(
-		DotNetReader.new(PlaygroundEvents.write_prop_gone(77, &"undo"))
+	var gone := PlaylotEvents.read_prop_gone(
+		DotNetReader.new(PlaylotEvents.write_prop_gone(77, &"undo"))
 	)
 	_check(int(gone["net_id"]) == 77 and gone["reason"] == &"undo" and not gone.has("death"),
 		"prop_gone: id and reason, and no fall for a prop that was not killed")
 	var npc_fall := DotPlayerDeath.new()
 	npc_fall.reaction = DotPlayerDeathReactions.CRUMPLE
 	npc_fall.roll_seed = 31
-	var killed_npc := PlaygroundEvents.read_prop_gone(
-		DotNetReader.new(PlaygroundEvents.write_prop_gone(78, &"killed", npc_fall))
+	var killed_npc := PlaylotEvents.read_prop_gone(
+		DotNetReader.new(PlaylotEvents.write_prop_gone(78, &"killed", npc_fall))
 	)
 	_check(bool(killed_npc["ok"]) and killed_npc.get("death") != null
 			and (killed_npc["death"] as DotPlayerDeath).reaction == DotPlayerDeathReactions.CRUMPLE
 			and (killed_npc["death"] as DotPlayerDeath).roll_seed == 31,
 		"prop_gone: a killed NPC carries how it falls", str(killed_npc))
 
-	var notice := PlaygroundEvents.read_notice(
-		DotNetReader.new(PlaygroundEvents.write_notice(9, "Budget reached."))
+	var notice := PlaylotEvents.read_notice(
+		DotNetReader.new(PlaylotEvents.write_notice(9, "Budget reached."))
 	)
 	_check(str(notice["text"]) == "Budget reached.", "notice: the text")
 
 	# --- chat, and the one meta field this wire carries ---
 	# Every encoder against its decoder: they must be exact inverses and nothing else checks it.
 	var line := DotChatMessage.make(
-		DotChatMessage.Kind.SAY, PlaygroundServices.CHANNEL_NEAR, "7", "Ada", "over here"
+		DotChatMessage.Kind.SAY, PlaylotServices.CHANNEL_NEAR, "7", "Ada", "over here"
 	)
 	line.seq = 5
 	line.sent_at = 1700000000
@@ -407,13 +407,13 @@ func _test_event_wire() -> void:
 
 func _test_event_wire_2() -> void:
 
-	var chat := PlaygroundEvents.read_chat(
-		DotNetReader.new(PlaygroundEvents.write_chat(_ew_wire))
+	var chat := PlaylotEvents.read_chat(
+		DotNetReader.new(PlaylotEvents.write_chat(_ew_wire))
 	)
 	_check(bool(chat["ok"]), "chat: the reader was not exhausted")
 	_check(String(chat["m"]) == "over here", "chat: the text")
 	_check(
-		String(chat["c"]) == String(PlaygroundServices.CHANNEL_NEAR), "chat: the channel"
+		String(chat["c"]) == String(PlaylotServices.CHANNEL_NEAR), "chat: the channel"
 	)
 	_check(String(chat["d"]) == "Ada", "chat: the name")
 	_check(
@@ -428,10 +428,10 @@ func _test_event_wire_2() -> void:
 
 	for kind in DotChatMessage.Kind.values():
 		var one := DotChatMessage.make(
-			kind as DotChatMessage.Kind, PlaygroundServices.CHANNEL_ALL, "1", "A", "x"
+			kind as DotChatMessage.Kind, PlaylotServices.CHANNEL_ALL, "1", "A", "x"
 		)
-		var back := PlaygroundEvents.read_chat(
-			DotNetReader.new(PlaygroundEvents.write_chat(one.to_dictionary()))
+		var back := PlaylotEvents.read_chat(
+			DotNetReader.new(PlaylotEvents.write_chat(one.to_dictionary()))
 		)
 
 		if String(back["k"]) != one.kind_name():
@@ -439,20 +439,20 @@ func _test_event_wire_2() -> void:
 
 	_check(kinds_ok, "chat: every kind survives, not just the common one")
 
-	var said := PlaygroundEvents.read_say(
+	var said := PlaylotEvents.read_say(
 		DotNetReader.new(
-			PlaygroundEvents.write_say(PlaygroundServices.CHANNEL_NEAR, "anybody?")
+			PlaylotEvents.write_say(PlaylotServices.CHANNEL_NEAR, "anybody?")
 		)
 	)
 	_check(
 		bool(said["ok"]) and String(said["text"]) == "anybody?"
-			and String(said["channel"]) == String(PlaygroundServices.CHANNEL_NEAR),
+			and String(said["channel"]) == String(PlaylotServices.CHANNEL_NEAR),
 		"say: a client's own line, with the channel it chose"
 	)
 
 	# --- combat, the match clock and progress ---
-	var hit := PlaygroundEvents.read_combat(
-		DotNetReader.new(PlaygroundEvents.write_combat(9, 63, 25, 12, false))
+	var hit := PlaylotEvents.read_combat(
+		DotNetReader.new(PlaylotEvents.write_combat(9, 63, 25, 12, false))
 	)
 	_check(
 		bool(hit["ok"]) and int(hit["health"]) == 63 and int(hit["armour"]) == 25
@@ -463,8 +463,8 @@ func _test_event_wire_2() -> void:
 	player_fall.reaction = DotPlayerDeathReactions.HEADSHOT_LAUNCH
 	player_fall.headshot = true
 	player_fall.direction = Vector3(0.0, 0.0, 1.0)
-	var died := PlaygroundEvents.read_combat(
-		DotNetReader.new(PlaygroundEvents.write_combat(9, 0, 0, 12, true, player_fall))
+	var died := PlaylotEvents.read_combat(
+		DotNetReader.new(PlaylotEvents.write_combat(9, 0, 0, 12, true, player_fall))
 	)
 	var carried: DotPlayerDeath = died.get("death")
 	_check(
@@ -476,8 +476,8 @@ func _test_event_wire_2() -> void:
 
 func _test_event_wire_3() -> void:
 
-	var clock := PlaygroundEvents.read_match(
-		DotNetReader.new(PlaygroundEvents.write_match(2, 96.0, 3, "Live"))
+	var clock := PlaylotEvents.read_match(
+		DotNetReader.new(PlaylotEvents.write_match(2, 96.0, 3, "Live"))
 	)
 	_check(
 		bool(clock["ok"]) and int(clock["state"]) == 2 and int(clock["round"]) == 3
@@ -490,8 +490,8 @@ func _test_event_wire_3() -> void:
 		"%.1f" % float(clock["seconds_left"])
 	)
 
-	var earned := PlaygroundEvents.read_progress(
-		DotNetReader.new(PlaygroundEvents.write_progress(9, &"build_50", "Getting started", 10))
+	var earned := PlaylotEvents.read_progress(
+		DotNetReader.new(PlaylotEvents.write_progress(9, &"build_50", "Getting started", 10))
 	)
 	_check(
 		bool(earned["ok"]) and String(earned["id"]) == "build_50"
@@ -500,8 +500,8 @@ func _test_event_wire_3() -> void:
 	)
 
 	# --- the map vote's cue, which is the other direction's vote traffic ---
-	var cue := PlaygroundEvents.read_vote_cue(
-		DotNetReader.new(PlaygroundEvents.write_vote_cue("vote_count", 7, true))
+	var cue := PlaylotEvents.read_vote_cue(
+		DotNetReader.new(PlaylotEvents.write_vote_cue("vote_count", 7, true))
 	)
 	_check(
 		bool(cue["ok"]) and String(cue["cue"]) == "vote_count"
@@ -509,21 +509,21 @@ func _test_event_wire_3() -> void:
 		"vote cue: the cue, the countdown second and the runoff flag round-trip"
 	)
 	_check(
-		PlaygroundEvent.new(PlaygroundEvents.Kind.VOTE, PackedByteArray([1])).validate().ok,
+		PlaylotEvent.new(PlaylotEvents.Kind.VOTE, PackedByteArray([1])).validate().ok,
 		"and VOTE is a kind the message validates"
 	)
 
 	# --- votes and loadouts ---
 	_check(
-		PlaygroundEvents.read_vote(
-			DotNetReader.new(PlaygroundEvents.write_vote("nominate pg_flatgrass"))
+		PlaylotEvents.read_vote(
+			DotNetReader.new(PlaylotEvents.write_vote("nominate pg_flatgrass"))
 		) == "nominate pg_flatgrass",
 		"vote: a token, which is a token because what an id MEANS is a source's business"
 	)
 
-	var loadout := PlaygroundEvents.read_loadout(
+	var loadout := PlaylotEvents.read_loadout(
 		DotNetReader.new(
-			PlaygroundEvents.write_loadout([["primary", "impulse"], ["tool", "physgun"]])
+			PlaylotEvents.write_loadout([["primary", "impulse"], ["tool", "physgun"]])
 		)
 	)
 	_check(
@@ -537,8 +537,8 @@ func _test_event_wire_3() -> void:
 	)
 
 	# A truncated packet must NOT decode as a valid message about nothing.
-	var truncated := PlaygroundEvents.write_join(9, 31, "Ada", 2)
-	var short := PlaygroundEvents.read_join(DotNetReader.new(truncated.slice(0, 2)))
+	var truncated := PlaylotEvents.write_join(9, 31, "Ada", 2)
+	var short := PlaylotEvents.read_join(DotNetReader.new(truncated.slice(0, 2)))
 	_check(not bool(short["ok"]), "a truncated join is reported as exhausted, not as zeros")
 
 func _test_event_wire_4() -> void:
@@ -546,8 +546,8 @@ func _test_event_wire_4() -> void:
 	# And a truncated chat line. [b]dot-timer found the general shape[/b]: a
 	# `StreamPeerBuffer` reads past its end by returning zeros rather than failing, so a
 	# replay truncated inside its header parsed as a valid replay of nothing.
-	var short_chat := PlaygroundEvents.read_chat(
-		DotNetReader.new(PlaygroundEvents.write_chat(_ew_wire).slice(0, 3))
+	var short_chat := PlaylotEvents.read_chat(
+		DotNetReader.new(PlaylotEvents.write_chat(_ew_wire).slice(0, 3))
 	)
 	_check(
 		not bool(short_chat["ok"]),
@@ -556,35 +556,35 @@ func _test_event_wire_4() -> void:
 
 	# A kind goes out in a fixed field the writer masks without a word, so one past it aliases a
 	# smaller kind: game-zombie-zone sent HURT and AMMO as HELLO and MAP that way.
-	_check(PlaygroundEvent.fits(), "every event kind fits the event's kind field",
-		"%d kinds in %d bits" % [PlaygroundEvents.Kind.size(), PlaygroundEvent.KIND_BITS])
-	var landed := PlaygroundEvents.read_hit(DotNetReader.new(PlaygroundEvents.write_hit(
-		Playground.hit_victim_id(DotEntity.KIND_NPC, 26491176217), 17.5, Vector3(1.0, 1.4, -6.0), true, true)))
+	_check(PlaylotEvent.fits(), "every event kind fits the event's kind field",
+		"%d kinds in %d bits" % [PlaylotEvents.Kind.size(), PlaylotEvent.KIND_BITS])
+	var landed := PlaylotEvents.read_hit(DotNetReader.new(PlaylotEvents.write_hit(
+		Playlot.hit_victim_id(DotEntity.KIND_NPC, 26491176217), 17.5, Vector3(1.0, 1.4, -6.0), true, true)))
 	_check(bool(landed["ok"]) and DotEntity.kind_of(int(landed["victim"])) == DotEntity.KIND_NPC
 		and absf(float(landed["amount"]) - 17.5) < 0.1 and bool(landed["killed"]) and bool(landed["headshot"])
 		and (landed["point"] as Vector3).distance_to(Vector3(1.0, 1.4, -6.0)) < 0.01,
 		"HIT keeps the victim's kind, the amount, the point and both flags", str(landed))
-	var shattered := PlaygroundEvents.read_shatter(DotNetReader.new(PlaygroundEvents.write_shatter(Vector3(4.0, 1.0, -9.0), 2)))
+	var shattered := PlaylotEvents.read_shatter(DotNetReader.new(PlaylotEvents.write_shatter(Vector3(4.0, 1.0, -9.0), 2)))
 	_check(bool(shattered["ok"]) and int(shattered["material"]) == 2
 		and (shattered["at"] as Vector3).distance_to(Vector3(4.0, 1.0, -9.0)) < 0.05,
 		"SHATTER keeps where a prop broke and what it was made of", str(shattered))
-	_check(PlaygroundRequest.fits(), "every request kind fits the request's kind field",
-		"%d kinds in %d bits" % [PlaygroundEvents.Ask.size(), PlaygroundRequest.KIND_BITS])
-	_check(PlaygroundEvents.chat_kinds_fit(), "every chat kind fits the chat line's kind field",
-		"%d kinds in %d bits" % [DotChatMessage.KIND_NAMES.size(), PlaygroundEvents.CHAT_KIND_BITS])
-	_check(PlaygroundEvents.sub_kinds_fit(), "every inventory and projectile sub-kind fits its field",
+	_check(PlaylotRequest.fits(), "every request kind fits the request's kind field",
+		"%d kinds in %d bits" % [PlaylotEvents.Ask.size(), PlaylotRequest.KIND_BITS])
+	_check(PlaylotEvents.chat_kinds_fit(), "every chat kind fits the chat line's kind field",
+		"%d kinds in %d bits" % [DotChatMessage.KIND_NAMES.size(), PlaylotEvents.CHAT_KIND_BITS])
+	_check(PlaylotEvents.sub_kinds_fit(), "every inventory and projectile sub-kind fits its field",
 		"inv asks %d, tells %d in %d bits; ops %d in %d; projectile %d in %d" % [
-			PlaygroundEvents.InvAsk.size(), PlaygroundEvents.InvTell.size(), PlaygroundEvents.INV_SUB_BITS,
-			DotInvOp.Kind.size(), PlaygroundEvents.INV_OP_KIND_BITS,
-			PlaygroundEvents.ProjectileTell.size(), PlaygroundEvents.PROJECTILE_SUB_BITS])
+			PlaylotEvents.InvAsk.size(), PlaylotEvents.InvTell.size(), PlaylotEvents.INV_SUB_BITS,
+			DotInvOp.Kind.size(), PlaylotEvents.INV_OP_KIND_BITS,
+			PlaylotEvents.ProjectileTell.size(), PlaylotEvents.PROJECTILE_SUB_BITS])
 
 	_done()
 
 
 # Bringing both halves up
 
-func _make_game(server: bool, scope: StringName, parent: Node) -> Playground:
-	var config := PlaygroundConfig.new()
+func _make_game(server: bool, scope: StringName, parent: Node) -> Playlot:
+	var config := PlaylotConfig.new()
 	# Records in memory: a headless run must not write into the user's data directory.
 	config.records_directory = ""
 	config.map_seconds = 0.0
@@ -595,7 +595,7 @@ func _make_game(server: bool, scope: StringName, parent: Node) -> Playground:
 	# add up to, which is a flaky test rather than a strict one.
 	config.prop_spawn_interval = 0.0
 
-	var game := Playground.new()
+	var game := Playlot.new()
 	game.name = "Game"
 	game.config = config
 	game.service_scope = scope
@@ -703,10 +703,10 @@ func _build_2() -> bool:
 	var lead_bit := int((DotNetMessageRegistry as Script).get_script_constant_map().get("FEATURE_INPUT_LEAD", 0))
 	_client_net.messages.features &= ~lead_bit
 
-	_server_bridge = PlaygroundNetBridge.new()
+	_server_bridge = PlaylotNetBridge.new()
 	_server_bridge.name = "Bridge"
 	_b_server_side.add_child(_server_bridge)
-	_client_bridge = PlaygroundNetBridge.new()
+	_client_bridge = PlaylotNetBridge.new()
 	_client_bridge.name = "Bridge"
 	_b_client_side.add_child(_client_bridge)
 
@@ -718,7 +718,7 @@ func _build_2() -> bool:
 		str(client_attached.error) if not client_attached.ok else ""
 	)
 
-	var wrong := PlaygroundNetBridge.new()
+	var wrong := PlaylotNetBridge.new()
 	add_child(wrong)
 	var refused := wrong.attach(_client_game, _server_net, self)
 	_check(

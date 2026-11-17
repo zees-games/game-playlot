@@ -1,21 +1,21 @@
 extends Node
 
-const PlaygroundClient := preload("../game/playground_client.gd")
-const PlaygroundConfig := preload("../game/playground_config.gd")
-const PlaygroundPresentation := preload("../game/playground_presentation.gd")
+const PlaylotClient := preload("../game/playlot_client.gd")
+const PlaylotConfig := preload("../game/playlot_config.gd")
+const PlaylotPresentation := preload("../game/playlot_presentation.gd")
 
 ## Renders the offline client holding one weapon at the hip and then with the Aim key held (hip_<id>.png, aim_<id>.png), and prints what the command said and what the rig made of it.
 ##
 ## Run: `xvfb-run -a godot --path . --resolution 1280x720 res://tools/render_aim.tscn -- <out dir> [weapon ids, default zee_smg zee_rifle zee_marksman]`
 
-var _client: PlaygroundClient = null
+var _client: PlaylotClient = null
 
 
 func _ready() -> void:
-	PlaygroundPresentation.use_scratch_settings("render_aim")
-	_client = PlaygroundClient.new()
+	PlaylotPresentation.use_scratch_settings("render_aim")
+	_client = PlaylotClient.new()
 	_client.name = "Client"
-	var config := PlaygroundConfig.new()
+	var config := PlaylotConfig.new()
 	config.records_directory = ""
 	config.record_replays = false
 	_client.config = config

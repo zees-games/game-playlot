@@ -7,7 +7,7 @@ func _test_map_rotation_file() -> void:
 	print("maps.yml")
 
 	var module := _module()
-	var vote: PlaygroundVote = module.get("vote")
+	var vote: PlaylotVote = module.get("vote")
 
 	_check(game.maps != null and vote != null and vote.director != null, "the game has maps and a vote")
 	if game.maps == null or vote == null or vote.director == null:
@@ -138,7 +138,7 @@ func _test_vote() -> void:
 	print("")
 	print("the vote")
 
-	var vote: PlaygroundVote = _module().get("vote")
+	var vote: PlaylotVote = _module().get("vote")
 
 	_check(vote != null, "the vote is built")
 	_check(
@@ -153,7 +153,7 @@ func _test_vote() -> void:
 	_check(options.size() > 0, "a ballot has something on it (%d)" % options.size())
 
 	# Hibernation: both map clocks wait while the server is empty and restart on a join.
-	var game_for_clocks: Playground = _module().get("game")
+	var game_for_clocks: Playlot = _module().get("game")
 	_check(server.hibernation_changed.is_connected(vote.director.set_hibernating)
 		and game_for_clocks != null and server.hibernation_changed.is_connected(game_for_clocks.maps.set_hibernating),
 		"the vote's clock and the map's follow the server's hibernation")
@@ -264,7 +264,7 @@ func _test_vote() -> void:
 		vote.director.close_vote()
 	vote.cue_due.disconnect(probe)
 	_check(
-		heard.has([String(PlaygroundVote.CUE_START), 0]) and heard.has([String(PlaygroundVote.CUE_END), 0]),
+		heard.has([String(PlaylotVote.CUE_START), 0]) and heard.has([String(PlaylotVote.CUE_END), 0]),
 		"a ballot's start and end cues are handed on for the wire (%s)" % str(heard),
 		"" if opened.ok else opened.error.message
 	)
@@ -333,7 +333,7 @@ func _test_live_tools() -> void:
 		player.timer.get("run_stopped").disconnect(on_stop)
 		player.timer.call("stop")
 
-	var arena: PlaygroundArena = _module().get("arena")
+	var arena: PlaylotArena = _module().get("arena")
 	var was_on := arena.enabled
 	_run_command("pg_arena off")
 	var no_arena := await _run_command_later("god Pat")
@@ -398,7 +398,7 @@ func _test_loading_cover() -> void:
 	print("")
 	print("a client behind its loading cover is not harmed")
 
-	var arena: PlaygroundArena = _module().get("arena")
+	var arena: PlaylotArena = _module().get("arena")
 	var roster: DotGameRoster = _module().get("loading")
 	var was_on := arena.enabled
 	arena.enabled = true
@@ -501,7 +501,7 @@ func _test_records_follow_the_account() -> void:
 	var store: Object = manager.get("store")
 
 	# No socket stands behind these peers: swallow what the bridge would send them.
-	var bridge: PlaygroundNetBridge = _module().get("bridge")
+	var bridge: PlaylotNetBridge = _module().get("bridge")
 	var kept_send: Callable = bridge.net.send_fn
 	bridge.net.send_fn = func(_peer: int, _payload: PackedByteArray, _delivery: int) -> void: pass
 
@@ -588,7 +588,7 @@ func _test_records_follow_the_account() -> void:
 	var one: DotClientSession = join.call(9204, 8803, "acct:carol", "Carol")
 	var two: DotClientSession = join.call(9205, 8804, "acct:carol", "Carol")
 	_check(game.record_key(&"u8803") == &"acct:carol" and game.record_key(&"u8804") == &"u8804"
-		and Playground.is_legacy_key(game.record_key(&"u8804")),
+		and Playlot.is_legacy_key(game.record_key(&"u8804")),
 		"a duplicate concurrent account keeps its session number, which is never ranked")
 	leave.call(two)
 	leave.call(one)
@@ -603,8 +603,8 @@ func _test_records_follow_the_account() -> void:
 	old.set("player_name", "Old")
 	old.set("time", 31.0)
 	var _put: DotResult = await store.put(old)
-	_check(Playground.is_legacy_key(&"u12") and not Playground.is_legacy_key(&"acct:alice")
-		and not Playground.is_legacy_key(&"local") and not Playground.is_legacy_key(&"user"),
+	_check(Playlot.is_legacy_key(&"u12") and not Playlot.is_legacy_key(&"acct:alice")
+		and not Playlot.is_legacy_key(&"local") and not Playlot.is_legacy_key(&"user"),
 		"a session-number key is recognised by its shape and an account's is not")
 	var moved: int = await game.run_timer.call("retire_legacy_records")
 	var after: DotResult = await store.top(map_id, 0, &"normal", 20)

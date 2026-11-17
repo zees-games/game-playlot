@@ -1,9 +1,9 @@
 extends DotGamePerfBench
 
-const PlaygroundConfig := preload("../game/playground_config.gd")
-const PlaygroundPresentation := preload("../game/playground_presentation.gd")
+const PlaylotConfig := preload("../game/playlot_config.gd")
+const PlaylotPresentation := preload("../game/playlot_presentation.gd")
 
-## The offline sandbox benchmark: dot-game's DotGamePerfBench (flags, recording, sidecar; see it) on the playground client. Run it windowed with `tools/perf_bench.sh --box staging02` (gamedev, from a checkout).
+## The offline sandbox benchmark: dot-game's DotGamePerfBench (flags, recording, sidecar; see it) on the playlot client. Run it windowed with `tools/perf_bench.sh --box staging02` (gamedev, from a checkout).
 ## `--bots N` NPCs (wanderers, chasers, soldiers) and `--props N` props (crates, barrels, balls) dropped in a pile in front of the player, so the run has physics, NPC brains and draw work; `--map ID` another map first (default pg_flatgrass).
 
 const NPC_IDS: Array[StringName] = [&"npc_wanderer", &"npc_chaser", &"npc_soldier"]
@@ -13,15 +13,15 @@ var _scratch: Variant = null
 
 
 func _configure() -> void:
-	client_scene = "res://game/playground.tscn"
+	client_scene = "res://game/playlot.tscn"
 	map = "pg_flatgrass"
 	mode = "sandbox"
 	bots = 8
-	_scratch = PlaygroundPresentation.use_scratch_settings("perf_bench")
+	_scratch = PlaylotPresentation.use_scratch_settings("perf_bench")
 
 
 func _setup_client(c: Node) -> void:
-	var config := PlaygroundConfig.new()
+	var config := PlaylotConfig.new()
 	config.records_directory = ""
 	config.record_replays = false
 	c.set("config", config)
@@ -30,10 +30,10 @@ func _setup_client(c: Node) -> void:
 
 
 func _select(_game: Object) -> void:
-	var pg: Node = client.get("playground")
+	var pg: Node = client.get("playlot")
 	var player: Node3D = client.get("player")
 	if pg == null or player == null:
-		say("no playground or player")
+		say("no playlot or player")
 		return
 	if map != "" and map != "pg_flatgrass":
 		var changed: DotResult = pg.call("change_map", StringName(map))
@@ -48,7 +48,7 @@ func _select(_game: Object) -> void:
 	var side := ahead.cross(Vector3.UP)
 	var centre := eye + ahead * 10.0
 	var spawner: Object = pg.get("props")
-	# The spawn rate limit is for players clicking; the pile arrives in one frame, as a map's props do (PlaygroundWorld.spawn_map_props).
+	# The spawn rate limit is for players clicking; the pile arrives in one frame, as a map's props do (PlaylotWorld.spawn_map_props).
 	var limits: Object = spawner.get("limits")
 	var interval: float = limits.get("spawn_interval") if limits != null else 0.0
 	if limits != null:

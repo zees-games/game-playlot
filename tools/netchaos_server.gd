@@ -1,14 +1,14 @@
 extends DotGameNetchaosServer
 
-const Playground := preload("../game/playground.gd")
-const PlaygroundConfig := preload("../game/playground_config.gd")
-const PlaygroundPlatform := preload("../game/playground_platform.gd")
-const PlaygroundPresentation := preload("../game/playground_presentation.gd")
+const Playlot := preload("../game/playlot.gd")
+const PlaylotConfig := preload("../game/playlot_config.gd")
+const PlaylotPlatform := preload("../game/playlot_platform.gd")
+const PlaylotPresentation := preload("../game/playlot_presentation.gd")
 
-## Playground's side of `tools/netchaos.sh` (dot-game's DotGameNetchaosServer): the flat sandbox, the platform layer and the module.
+## Playlot's side of `tools/netchaos.sh` (dot-game's DotGameNetchaosServer): the flat sandbox, the platform layer and the module.
 
-var _game: Playground = null
-var _platform: PlaygroundPlatform = null
+var _game: Playlot = null
+var _platform: PlaylotPlatform = null
 
 
 func _configure() -> void:
@@ -16,30 +16,30 @@ func _configure() -> void:
 
 
 func _prepare(label: String) -> Variant:
-	return PlaygroundPresentation.use_scratch_settings(label)
+	return PlaylotPresentation.use_scratch_settings(label)
 
 
 func _boot_world() -> void:
 	if not (await boot_server()).ok:
 		return
-	var pg_config := PlaygroundConfig.new()
+	var pg_config := PlaylotConfig.new()
 	pg_config.records_directory = ""
 	pg_config.initial_map = StringName(map_id)
 	pg_config.map_seconds = 0.0
-	_game = Playground.new()
+	_game = Playlot.new()
 	_game.name = "Playground"
 	_game.config = pg_config
 	add_child(_game)
 	await get_tree().process_frame
 	await get_tree().process_frame
-	_platform = PlaygroundPlatform.new()
+	_platform = PlaylotPlatform.new()
 	_platform.name = "Identity"
 	_platform.directory = "%s/identity" % data_dir
 	add_child(_platform)
 	var _identity: DotResult = await _platform.setup()
 	var _p: DotResult = await server.modules.load_module("res://addons/dot_platform/dot_platform_module.gd")
-	(load("res://game/playground_module.gd") as GDScript).set("punishments_path", "%s/punishments.json" % data_dir)
-	var loaded: DotResult = await server.modules.load_module("res://game/playground_module.gd")
+	(load("res://game/playlot_module.gd") as GDScript).set("punishments_path", "%s/punishments.json" % data_dir)
+	var loaded: DotResult = await server.modules.load_module("res://game/playlot_module.gd")
 	if not loaded.ok:
 		printerr("netchaos server: ", loaded.error)
 		return

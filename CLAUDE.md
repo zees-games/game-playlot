@@ -2,9 +2,9 @@
 
 A physics sandbox first: hold Q, pick a prop, an NPC or a weapon, click it and it is yours; hold it with a physics gun, freeze it, throw it, wire it, weld it, undo it. With map support. Networked over dot-net and delivered as a signed dot-cloud pack.
 
-The game is **Zee's Playlot** (it was Playground; the repository was game-playground). **Wire and storage ids keep the old name on purpose**: the pack ids `gamemann/game-playground` and `gamemann/game-playground-maps`, the cfg game id `game-playground` (`cfg/game/game-playground/`), the dot-server-deploy pack `playground`, the site app slug `playground`, `user://playground_*` paths, the map document kind `playground_map`, node names, log channels and the `Playground*` class and file names. Change one only together with dot-server-deploy, website-city and dot-cloud.
+The game is **Zee's Playlot**; it and its repository had an older name, and the code (classes, files, suites, hooks, docs) now says Playlot. **Wire and storage ids keep the old name on purpose**: the pack ids `gamemann/game-playground` and `gamemann/game-playground-maps`, the cfg game id `game-playground` (`cfg/game/game-playground/`), the module, app and service id `playground` (`SITE_APP`, `APP_URL`, `server:playground`), the `PLAYGROUND_*` environment prefix, `user://playground_*` paths, input actions `playground_chat*`, the map document kind `playground_map` (`playlot_map` is accepted too), the RPC node `Server/Playground` and the scene roots `PlaygroundClient` / `PlaygroundServer`. Shims keep the old paths working for delivered packs and dot-server-deploy: `game/playground.tscn`, `game/playground_module.gd`, `game/entities/playground_entity.gd`, `game/weapons/playground_weapon.gd`, the client member `playground`, the suite alias `headless_playground` and hooks named `playground_hook.gd`. Change a kept id only together with dot-server-deploy, website-city and dot-cloud.
 
-It is the only place dot-player-controller, dot-map, dot-props, dot-npc and dot-leaderboard run together, and the bugs that cost days here were all in the seams between them. `examples/headless_playground.tscn` is the point of the repository.
+It is the only place dot-player-controller, dot-map, dot-props, dot-npc and dot-leaderboard run together, and the bugs that cost days here were all in the seams between them. `examples/headless_playlot.tscn` is the point of the repository.
 
 Read the family [CLAUDE.md](../../CLAUDE.md) first, and each addon's own `CLAUDE.md` before working in it. **The detail is in [docs/](docs/README.md)**: open the file for what you are touching.
 
@@ -30,7 +30,7 @@ Read the family [CLAUDE.md](../../CLAUDE.md) first, and each addon's own `CLAUDE
 
 | Path | What |
 | --- | --- |
-| `game/` | `playground.gd` (the simulation, headless), the player, the server module and services, props, `entities/`, `weapons/` and `toolgun/`, the modes, the bag, the client (not headless), `net/`, the maps' base, geometry and lighting. File by file: [docs](docs/README.md#where-the-code-is) |
+| `game/` | `playlot.gd` (the simulation, headless), the player, the server module and services, props, `entities/`, `weapons/` and `toolgun/`, the modes, the bag, the client (not headless), `net/`, the maps' base, geometry and lighting. File by file: [docs](docs/README.md#where-the-code-is) |
 | `maps/` | `pg_flatgrass` (hand-built, the default), `pg_generated`, `pg_data` (a JSON map), `custom/` (playlot-maps, linked) |
 | `examples/` | the suites (`headless_mapcfg`: per-map cvars; `headless_mapdrop`: dropped maps; `headless_config`: the config binder and workbench) |
 | `tools/` | `map_props.gd`, `screenshot*.sh`, `render_feel.sh`, `audio_probe.sh`, `loudness_pilot.gd`, `publish.sh` (the CDN pack: `tools/publish.sh VERSION`, dev lock in `content.lock.json`) |
@@ -41,9 +41,9 @@ Read the family [CLAUDE.md](../../CLAUDE.md) first, and each addon's own `CLAUDE
 ## Running and testing
 
 - `./game.sh` plays offline (`godot --path .` also works); `./game.sh online` runs a local server and client; `./game.sh test` parses everything and runs all eight suites; `./game.sh help` lists the rest.
-- `headless_playground -- --only=<method>` runs one section; it is then on whatever map the boot left. [testing](docs/testing.md#the-suites)
+- `headless_playlot -- --only=<method>` runs one section; it is then on whatever map the boot left. [testing](docs/testing.md#the-suites)
 - **Add a `headless_net` test at the end of the connected-player sequence**: both halves share one physics space and the suite is order-sensitive. [testing](docs/testing.md#traps-the-suites-have-hit)
-- A suite or tool that builds a presentation or client calls `PlaygroundPresentation.use_scratch_settings` first: never the player's file. [testing](docs/testing.md#traps-the-suites-have-hit)
+- A suite or tool that builds a presentation or client calls `PlaylotPresentation.use_scratch_settings` first: never the player's file. [testing](docs/testing.md#traps-the-suites-have-hit)
 - After touching a camera, the view key or player collision: `godot --headless --path . --script tools/camera_check.gd` (the rig round pg_flatgrass's walls, armed; `mp_solidplayers` both ways). [client](docs/client.md#third-person-and-the-body)
 - **Render after touching the client, a menu or a map** (`tools/screenshot*.sh`, under `xvfb-run`). No assertion sees the screen. [client](docs/client.md#looking-at-it)
 
@@ -53,19 +53,19 @@ Short forms; the reasoning is in the linked file.
 
 **Simulation**
 
-- Config is dot-game's `DotGameConfigBinder` over `PlaygroundConfig` (game id `game-playground`, prefix `pg`): every field is a `pg_<field>` cvar, a key in one of three `cfg/game/game-playground/config_<server|props|arena>/game.yml` files (`PlaygroundConfig.CFG_FILES` maps each `@export_group`; `PlaygroundConfig.make_binder` is what the simulation and the suites use; every key is shipped commented out at its default by `addons/dot_game/qa/dot_game_cfg_templates.gd`, which `headless_config` holds in step; a key in the wrong file fails a dedicated boot) and a workbench set per file, plus an "ambience" set for the `pg_ambient*` cvars (started once the module has bound them). Noblock is `DotGameNoblock` (`mp_teamblock`, `!block`, `!noblock`). Suite: `headless_config`.
+- Config is dot-game's `DotGameConfigBinder` over `PlaylotConfig` (game id `game-playground`, prefix `pg`): every field is a `pg_<field>` cvar, a key in one of three `cfg/game/game-playground/config_<server|props|arena>/game.yml` files (`PlaylotConfig.CFG_FILES` maps each `@export_group`; `PlaylotConfig.make_binder` is what the simulation and the suites use; every key is shipped commented out at its default by `addons/dot_game/qa/dot_game_cfg_templates.gd`, which `headless_config` holds in step; a key in the wrong file fails a dedicated boot) and a workbench set per file, plus an "ambience" set for the `pg_ambient*` cvars (started once the module has bound them). Noblock is `DotGameNoblock` (`mp_teamblock`, `!block`, `!noblock`). Suite: `headless_config`.
 
-- Per-map cvars: `cfg/game/game-playground/dot_map/map/<map or glob>.yml` through dot-game's `DotGameMapConfig`, keys whitelisted in `game/playground_map_config.gd` (applied in `PlaygroundModule._report_map`, restored on the next map and on unload; server only, the client reads replicated cvars). Operators override under `cfg/server/`.
-- Aim-down-sights rules are zee-dot-weapons' `ZeeAdsRules`: one per game (`playground.ads_rules`, `ZeeAdsRules.load_config()`), passed to `PlaygroundZee.arm` for the server rigs and the client's, bound by the module as the REPLICATED `zee_ads_rules` cvar and followed by the client. `cfg/addon/zee_weapons/ads.yml` ships the view numbers at the art's own size. The command carries the aim bit (`PlaygroundNetCommand.aim`, after the move; `PlaygroundBindings.AIM`): the client sends the view model's own aim state, the server builds the rig's weapon command from `PlaygroundPlayerNet.last_aim` (`PlaygroundZee.command_for(..., aim)`), and `PlaygroundPlayer.step_controller` scales the motor by `rig.ads_move_scale()` on the server, offline and in prediction. [netcode](docs/netcode.md#aim-on-the-wire)
+- Per-map cvars: `cfg/game/game-playground/dot_map/map/<map or glob>.yml` through dot-game's `DotGameMapConfig`, keys whitelisted in `game/playlot_map_config.gd` (applied in `PlaylotModule._report_map`, restored on the next map and on unload; server only, the client reads replicated cvars). Operators override under `cfg/server/`.
+- Aim-down-sights rules are zee-dot-weapons' `ZeeAdsRules`: one per game (`playlot.ads_rules`, `ZeeAdsRules.load_config()`), passed to `PlaylotZee.arm` for the server rigs and the client's, bound by the module as the REPLICATED `zee_ads_rules` cvar and followed by the client. `cfg/addon/zee_weapons/ads.yml` ships the view numbers at the art's own size. The command carries the aim bit (`PlaylotNetCommand.aim`, after the move; `PlaylotBindings.AIM`): the client sends the view model's own aim state, the server builds the rig's weapon command from `PlaylotPlayerNet.last_aim` (`PlaylotZee.command_for(..., aim)`), and `PlaylotPlayer.step_controller` scales the motor by `rig.ads_move_scale()` on the server, offline and in prediction. [netcode](docs/netcode.md#aim-on-the-wire)
 
 - Footsteps and per-map beds are dot-audio's stock (a step's surface is the box's `dot_fps_surface`); measure levels with its `loudness.sh`, and check the pilot walked and spawned. [client](docs/client.md#footsteps-and-the-bed)
 - `Drive.EXTERNAL` always; the game ticks the controllers and **feeds a run timer after the move**. [simulation](docs/simulation.md#the-game-owns-the-tick-loop)
 - Leave the controller's `body_ref` unset; `of_self()` is the controller, a plain `Node`, and the player never moves. [simulation](docs/simulation.md#body_ref-must-not-be-of_self)
-- **dot-timer does not ship.** No script outside `addons/pg_timer/` names a `DotTimer*` class (the parse pass runs without the addon); the game calls `Playground.run_timer` duck-typed and null-checked, and the adapter loads dot-timer by path. [timer](docs/timer.md)
-- Set a style through `PlaygroundPlayer.set_style` (it emits `style_changed`, which a timer follows); never write the live tunables (a style rebuild drops it). [simulation](docs/simulation.md#a-style-is-movement-and-a-timers-ranking-half-follows-it)
+- **dot-timer does not ship.** No script outside `addons/pg_timer/` names a `DotTimer*` class (the parse pass runs without the addon); the game calls `Playlot.run_timer` duck-typed and null-checked, and the adapter loads dot-timer by path. [timer](docs/timer.md)
+- Set a style through `PlaylotPlayer.set_style` (it emits `style_changed`, which a timer follows); never write the live tunables (a style rebuild drops it). [simulation](docs/simulation.md#a-style-is-movement-and-a-timers-ranking-half-follows-it)
 - An addon that moves a player does it on the tick through `post_move_fn`, read at the state's own position. [simulation](docs/simulation.md#after-the-move-post_move_fn)
-- Teleport through `PlaygroundPlayer.teleport`; a yaw written into the state lasts until the next command. Facing is `atan2(-dx, -dz)`. It stops a run, if there is one. [simulation](docs/simulation.md#teleport-and-the-spawn-yaw)
-- Reach comes from `PlaygroundMap.jump_reach` / `climb_limit`, never from `DotFpsTunables.new()`. [simulation](docs/simulation.md#the-movement-is-a-bhop-servers-not-the-addons-defaults)
+- Teleport through `PlaylotPlayer.teleport`; a yaw written into the state lasts until the next command. Facing is `atan2(-dx, -dz)`. It stops a run, if there is one. [simulation](docs/simulation.md#teleport-and-the-spawn-yaw)
+- Reach comes from `PlaylotMap.jump_reach` / `climb_limit`, never from `DotFpsTunables.new()`. [simulation](docs/simulation.md#the-movement-is-a-bhop-servers-not-the-addons-defaults)
 - `sv_tickrate` goes in `server.cfg`; no `pg_tickrate`. [simulation](docs/simulation.md#the-tick-rate-comes-from-servercfg-and-every-link-is-silent)
 
 **Sandbox**
@@ -73,15 +73,15 @@ Short forms; the reasoning is in the linked file.
 - One prop scene; the body is built by `configure`, never `_ready`; a resize rebuilds, never `scale`s. [sandbox](docs/sandbox.md#one-scene-every-prop)
 - Entity and weapon scripts are named by **path**, never `class_name` (pack delivery). [sandbox](docs/sandbox.md#an-entity-is-a-prop-with-a-script-named-by-a-path)
 - An entity is a prop first (budget, undo, liftable); a wave NPC is the server's and is not. [sandbox](docs/sandbox.md#perception-is-dot-npcs-being-a-prop-is-still-dot-props), [modes](docs/modes.md#waves-pg_waves)
-- An NPC brain and debris seed from `npc.seed` / `Playground.next_seed`, never `instance_id` (an object id moves with every allocation). dot-npc `docs/runtime.md`
+- An NPC brain and debris seed from `npc.seed` / `Playlot.next_seed`, never `instance_id` (an object id moves with every allocation). dot-npc `docs/runtime.md`
 - Weapons are not `DotPropDef`s. The toys and zee guns run on the server; client arming is prediction. [sandbox](docs/sandbox.md#a-weapon-is-a-script-too-and-not-in-the-prop-catalogue)
 - Connected, the drawn zee gun takes the server's count only after `SETTLE_SEC` quiet; the gun in hand picked again is a refill. [sandbox](docs/sandbox.md#zee-dot-weapons-beside-the-toys)
-- A zee shot hurts only with `pg_arena` on; NPC shots reach players only through `arena_hurt`. `PlaygroundPlayer.component()` is load-bearing. [sandbox](docs/sandbox.md#zee-dot-weapons-beside-the-toys)
+- A zee shot hurts only with `pg_arena` on; NPC shots reach players only through `arena_hurt`. `PlaylotPlayer.component()` is load-bearing. [sandbox](docs/sandbox.md#zee-dot-weapons-beside-the-toys)
 - One catalogue: icons, items, prices, the loadout and vehicle prop rows are all **derived**, never a second list. [sandbox](docs/sandbox.md#the-icons-are-drawn-from-the-definition)
 - The menu never spawns; it emits. The first card takes focus, not the search. `TabBar.clip_tabs` off. [sandbox](docs/sandbox.md#the-q-menu)
 - Switching tools or opening the menu lets go of everything. F is use, then vehicle. [sandbox](docs/sandbox.md#the-tools)
 - Creative mode is protection **both ways**, and lives in dot-props so no tool can forget it. [sandbox](docs/sandbox.md#creative-mode)
-- **Map toys** come from a map's `map_toys()`, built on both ends in that order under the playground, never the map; a hit scan asks `shoot_toy` first; the bounce is after the move on every end. [sandbox](docs/sandbox.md#the-maps-toys), [netcode](docs/netcode.md#the-maps-toys)
+- **Map toys** come from a map's `map_toys()`, built on both ends in that order under the playlot, never the map; a hit scan asks `shoot_toy` first; the bounce is after the move on every end. [sandbox](docs/sandbox.md#the-maps-toys), [netcode](docs/netcode.md#the-maps-toys)
 - Saved builds are catalogue ids, whole or nothing. [sandbox](docs/sandbox.md#saved-builds)
 
 **Maps**
@@ -90,7 +90,7 @@ Short forms; the reasoning is in the linked file.
 - Unreached ground is allowed only where `survey_declared()` says why. [maps](docs/maps.md#every-hand-built-map-is-surveyed)
 - Custom maps are JSON documents, never scripts; a map prop's missing id is skipped, not the map. [maps](docs/maps.md#custom-maps-are-documents)
 - Material numbers are dot-physics'; liquids and foliage have no collider. [maps](docs/maps.md#map-materials)
-- The palette is `PlaygroundGeometry.COLOUR_*`; a map's light is its dot-lighting document, a child of the map node, never a second `WorldEnvironment`; its boxes get dot-lighting's `DotContactShade` (`PlaygroundMap.add_contact_shade`, called by every map once built). Render a look change with `RENDERER=forward_plus` too. [maps](docs/maps.md#the-look)
+- The palette is `PlaylotGeometry.COLOUR_*`; a map's light is its dot-lighting document, a child of the map node, never a second `WorldEnvironment`; its boxes get dot-lighting's `DotContactShade` (`PlaylotMap.add_contact_shade`, called by every map once built). Render a look change with `RENDERER=forward_plus` too. [maps](docs/maps.md#the-look)
 
 **Vehicles**
 
@@ -104,32 +104,32 @@ Short forms; the reasoning is in the linked file.
 - **A READY before the player is seated is kept** (`_ready_unseated`) and answered by `add_player`; a dropped one left the client waiting for ever. [netcode](docs/netcode.md#a-ready-before-the-seat)
 - `Ask` is full: new requests are ARM_PROP sub-kinds. New event kinds and message fields are appended. [netcode](docs/netcode.md#the-request-enum-is-full)
 - No message script preloads itself. [netcode](docs/netcode.md#no-message-preloads-itself)
-- A bag goes only to its owner, as ops up and whole documents down. [inventory](docs/inventory.md#over-the-wire-playgroundinventorynet)
+- A bag goes only to its owner, as ops up and whole documents down. [inventory](docs/inventory.md#over-the-wire-playlotinventorynet)
 
 **Modes and services**
 
 - Every mode is off by default and a cvar. Stamp every `DotDamage` with a tick. [modes](docs/modes.md)
-- A death's fall is the server's pick (`PlaygroundArena.decide_death`, `Playground.decide_npc_death`), riding COMBAT or PROP_GONE last and optional; a bleed-out emits `arena.player_killed` too. [modes](docs/modes.md#the-dead-fall)
+- A death's fall is the server's pick (`PlaylotArena.decide_death`, `Playlot.decide_npc_death`), riding COMBAT or PROP_GONE last and optional; a bleed-out emits `arena.player_killed` too. [modes](docs/modes.md#the-dead-fall)
 - A spawn is asked, placed, then charged. [modes](docs/modes.md#pg_shop-a-sandbox-with-prices)
-- One entity id per player, from `Playground.entity_table`. [modes](docs/modes.md#downed-not-dead-shares-pg_waves)
+- One entity id per player, from `Playlot.entity_table`. [modes](docs/modes.md#downed-not-dead-shares-pg_waves)
 - One chat path (dot-server's cancelled in `hook_pre`); the chat key is the session id. [services](docs/services.md#chat-dot-chats-and-exactly-one-path)
 - An admin's help never makes a time. Blind is owner-only state. [services](docs/services.md#the-moderators-live-tools)
 - The module advances the vote once a tick (`self_advance` off); the vote's clock is the one shown. [services](docs/services.md#the-vote)
 
 **Client**
 
-- Wait on `playground.booted`, not only the signal. [client](docs/client.md#booting)
-- Every key is a `PlaygroundBindings` row read through its action, never a keycode (Escape excepted); H is help, so no row may default to H. [client](docs/client.md#keys-help-and-leave)
-- M is dot-menu's map menu: solo through `Playground.change_map`, on a server dot-vote's menu (the owner's flag changes, anybody else votes). No other row may default to M. [client](docs/client.md#m-the-map-menu)
+- Wait on `playlot.booted`, not only the signal. [client](docs/client.md#booting)
+- Every key is a `PlaylotBindings` row read through its action, never a keycode (Escape excepted); H is help, so no row may default to H. [client](docs/client.md#keys-help-and-leave)
+- M is dot-menu's map menu: solo through `Playlot.change_map`, on a server dot-vote's menu (the owner's flag changes, anybody else votes). No other row may default to M. [client](docs/client.md#m-the-map-menu)
 - Escape releases then opens dot-menu; only a click captures. The platform owns the pointer (`escape_releases_pointer`, `pointer_fn` false while a screen of this client's stack is up). [client](docs/client.md#escape-the-pointer-and-the-menu)
 - The character body goes under the rig, not the visual; `auto_drive` off. [client](docs/client.md#third-person-and-the-body)
 - Chat lines go to the chat box, and to the HUD notice line only when there is no box (a ballot was drawn twice). [client](docs/client.md#the-chat-box)
-- The first-person camera is written only in `PlaygroundPlayer.present_camera`; there is no `DotFpsView`. Right mouse aims a zee gun (a tool's secondary otherwise); its quick melee is Mouse 3. [client](docs/client.md#the-first-person-camera)
+- The first-person camera is written only in `PlaylotPlayer.present_camera`; there is no `DotFpsView`. Right mouse aims a zee gun (a tool's secondary otherwise); its quick melee is Mouse 3. [client](docs/client.md#the-first-person-camera)
 - The hit marker, damage numbers and the red burst come from the server's `Kind.HIT`, never the local rig; the glance pieces need a shell with dot-ui 4. [client](docs/client.md#the-hud)
-- The HUD follows the menu's theme and HUD size; `PlaygroundHud.piece_theme()` is the accent only, never plate, text or ink. [client](docs/client.md#the-hud)
+- The HUD follows the menu's theme and HUD size; `PlaylotHud.piece_theme()` is the accent only, never plate, text or ink. [client](docs/client.md#the-hud)
 - B is the arena's loadout (dot-loadout's, bound by the module), enabled only while the replicated `pg_arena_on` says so. [modes](docs/modes.md#b-the-arenas-loadout)
 - Typing suspends the sampler as well as swallowing input; the console does it as a menu overlay, so it is built after the menu (`platform.adopt_menu` then `platform.add_console`, handed to `presentation.adopt_console`). [client](docs/client.md#the-chat-box)
-- **Avatar library (`game/playground_avatar_library.gd`).** The one place Playlot talks to the site's avatar library (dot-user-avatar's `DotAvatarLibraryClient`) and reads the app's `DotAvatarAppRules`. It sends the app id (cvar `sv_avatar_app_id`, 0 = unset, calls refused), honours the emote/pose/gesture and wearable switches and per-wearable rules, treats an equip cap of 0 as unlimited, and refuses (never trims) a list over it. The loadout limits are the cvars `sv_avatar_loadout_max_entries` and `sv_avatar_loadout_max_per_kind` (0 = unlimited). Suite: `headless_avatar_library`.
+- **Avatar library (`game/playlot_avatar_library.gd`).** The one place Playlot talks to the site's avatar library (dot-user-avatar's `DotAvatarLibraryClient`) and reads the app's `DotAvatarAppRules`. It sends the app id (cvar `sv_avatar_app_id`, 0 = unset, calls refused), honours the emote/pose/gesture and wearable switches and per-wearable rules, treats an equip cap of 0 as unlimited, and refuses (never trims) a list over it. The loadout limits are the cvars `sv_avatar_loadout_max_entries` and `sv_avatar_loadout_max_per_kind` (0 = unlimited). Suite: `headless_avatar_library`.
 
 ## Not here yet
 
