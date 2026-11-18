@@ -5,6 +5,7 @@ extends RefCounted
 ## The look and move halves of the screen are [DotFpsTouchSampler]'s; dot-mobile's overlay draws and routes the buttons.
 
 const CHANNEL := "playlot.touch"
+const PlaylotPaths := preload("../playlot_paths.gd")
 
 const FIRE := DotGameTouchLayout.FIRE
 const ALT := DotGameTouchLayout.ALT
@@ -54,7 +55,7 @@ var _handlers: Dictionary = {}
 ## jump and crouch are held on the sampler by the overlay. The sampler's own `ignore_fn` (the Menu button's rectangle)
 ## moves to the overlay, which keeps a finger on it off the stick.
 static func build(host: Control, sampler: DotFpsSampler, rules: DotMobileRules, handlers: Dictionary) -> RefCounted:
-	var made = (load("res://game/client/playlot_touch.gd") as GDScript).new()
+	var made = (load(PlaylotPaths.rebase("res://game/client/playlot_touch.gd")) as GDScript).new()
 	made.call(&"_setup", host, sampler, rules, handlers)
 	return made
 

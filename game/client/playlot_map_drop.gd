@@ -13,6 +13,7 @@ const DATA_MAP_SCRIPT := "res://maps/pg_data.gd"
 ## with) and the new one. Kept in step with maps/pg_data.gd's KINDS, which is loaded by path here.
 const MAP_KINDS: Array[String] = ["playground_map", "playlot_map"]
 const PlaylotMapSources := preload("playlot_map_sources.gd")
+const PlaylotPaths := preload("../playlot_paths.gd")
 ## What the refusal says this game takes.
 const TAKES := "a PLAYLOT map .json, or a folder or .zip of them"
 
@@ -79,7 +80,7 @@ static func accept(path: String, into: String, depth: int, taken: Callable, conv
 	if found.is_empty():
 		return {"added": [], "errors": errors}
 	var added: Array[Dictionary] = []
-	var data_map: GDScript = load(DATA_MAP_SCRIPT)
+	var data_map: GDScript = load(PlaylotPaths.rebase(DATA_MAP_SCRIPT))
 	var dir_made := DirAccess.make_dir_recursive_absolute(into)
 	for pair: Array in found:
 		var name := str(pair[0])
