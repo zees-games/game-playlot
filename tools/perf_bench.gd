@@ -40,6 +40,11 @@ func _select(_game: Object) -> void:
 		say("change_map %s: %s" % [map, "ok" if changed.ok else changed.error.message])
 		await wait(3.0)
 		player = client.get("player")
+		await _wait_world(pg)
+	if args.has("cam"):
+		_fix_camera(player)
+		if str(args.get("ablate", "0")) == "1":
+			await _ablate(pg)
 	var props_n := int(args.get("props", 60))
 	var eye: Vector3 = player.call("eye_position")
 	var ahead: Vector3 = player.call("aim_direction")
@@ -77,5 +82,123 @@ func _select(_game: Object) -> void:
 		say("stilled %d figures" % stilled)
 
 
+## `--cam x,y,z --look x,y,z` (world metres): the frame is drawn from a fixed camera there instead of the player's eye, so a
+## render A/B reads the same view every run (the pgc_fork overlook: `--map pgc_fork --cam 0,-110,330 --look 20,-170,0 --props 0 --bots 0`).
+## The player is parked under it and stops simulating; the world, its props and its culling run as they do in play.
+func _fix_camera(player: Node3D) -> void:
+	var c := str(args["cam"]).split_floats(",")
+	var l := str(args.get("look", "0,0,0")).split_floats(",")
+	var at := Vector3(c[0], c[1], c[2])
+	var cam := Camera3D.new()
+	cam.name = "BenchCamera"
+	# The play camera's reach and lens unless asked: its far is the view distance setting, which bounds what is drawn.
+	var play := get_viewport().get_camera_3d()
+	cam.far = float(args.get("far", str(play.far if play != null else 4000.0)))
+	cam.fov = float(args.get("fov", str(play.fov if play != null else 75.0)))
+	add_child(cam)
+	cam.look_at_from_position(at, Vector3(l[0], l[1], l[2]))
+	player.global_position = at
+	player.process_mode = Node.PROCESS_MODE_DISABLED
+	_cam = cam
+	cam.make_current()
+	say("fixed camera at %s looking at %s" % [at, Vector3(l[0], l[1], l[2])])
+
+
+var _cam: Camera3D = null
+var _data: Node = null
+
+
+## `--ablate 1` (with `--cam`): before the warm-up, prices each part of the drawn world at the fixed camera by hiding it for a
+## while and reading frame time and the visible and shadow passes' draws and primitives (a diagnosis; the run then measures as usual).
+func _ablate(pg: Node) -> void:
+	await wait(5.0)
+	var root: Node3D = null
+	if _data != null and _data.get("drawn_world") != null:
+		root = (_data.get("drawn_world") as Object).get("root")
+	var parts: Array = []
+	if root != null:
+		for c in root.get_children():
+			if c is Node3D:
+				var mis := c.find_children("*", "GeometryInstance3D", true, false).size()
+				say("ablate part %s %s geometry=%d" % [c.name, c.get_class(), mis])
+				parts.append(c)
+	var lights: Array = pg.find_children("*", "DirectionalLight3D", true, false) + pg.find_children("*", "OmniLight3D", true, false) + pg.find_children("*", "SpotLight3D", true, false)
+	var shadowed: Array = lights.filter(func(l: Light3D) -> bool: return l.shadow_enabled and l.is_visible_in_tree())
+	say("ablate lights=%d shadowed=%d" % [lights.size(), shadowed.size()])
+	await _ablate_row("all")
+	for l: Light3D in shadowed:
+		l.shadow_enabled = false
+	await _ablate_row("no shadows")
+	for l: Light3D in shadowed:
+		l.shadow_enabled = true
+	# The parts with the most geometry one at a time, then all of them.
+	for c: Node3D in parts:
+		c.visible = false
+		await _ablate_row("no " + str(c.name))
+		c.visible = true
+	for c: Node3D in parts:
+		c.visible = false
+	await _ablate_row("no world at all")
+	for c: Node3D in parts:
+		c.visible = true
+
+
+func _ablate_row(label: String) -> void:
+	await wait(2.0)
+	var vp := get_viewport()
+	var t0 := Time.get_ticks_usec()
+	var n := 90
+	var dc := 0.0
+	var pr := 0.0
+	var ob := 0.0
+	var sdc := 0.0
+	var spr := 0.0
+	for i in n:
+		await get_tree().process_frame
+		dc += vp.get_render_info(Viewport.RENDER_INFO_TYPE_VISIBLE, Viewport.RENDER_INFO_DRAW_CALLS_IN_FRAME)
+		pr += vp.get_render_info(Viewport.RENDER_INFO_TYPE_VISIBLE, Viewport.RENDER_INFO_PRIMITIVES_IN_FRAME)
+		ob += vp.get_render_info(Viewport.RENDER_INFO_TYPE_VISIBLE, Viewport.RENDER_INFO_OBJECTS_IN_FRAME)
+		sdc += vp.get_render_info(Viewport.RENDER_INFO_TYPE_SHADOW, Viewport.RENDER_INFO_DRAW_CALLS_IN_FRAME)
+		spr += vp.get_render_info(Viewport.RENDER_INFO_TYPE_SHADOW, Viewport.RENDER_INFO_PRIMITIVES_IN_FRAME)
+	var ms := (Time.get_ticks_usec() - t0) / 1000.0 / n
+	say("ablate %-24s ms=%.2f fps=%.1f draws=%d prims=%d objects=%d shadow_draws=%d shadow_prims=%d" % [label, ms, 1000.0 / ms, dc / n, pr / n, ob / n, sdc / n, spr / n])
+
+
+## A map with a world pack draws its boxes until the pack is built (sliced over frames), so a
+## render A/B waits for it: `--world-wait S` seconds at most (default 600, 0 skips), then says
+## how long it took or that it timed out (the run then measures the boxes, and says so).
+func _wait_world(pg: Node) -> void:
+	var limit := float(args.get("world-wait", "600"))
+	if limit <= 0.0:
+		return
+	var t0 := Time.get_ticks_msec()
+	var data: Node = null
+	while (Time.get_ticks_msec() - t0) / 1000.0 < limit:
+		if data == null:
+			for n: Node in pg.find_children("*", "Node3D", true, false):
+				if "drawn_world" in n and "draw_world" in n:
+					data = n
+					break
+		if data == null or not bool(data.get("draw_world")) or (data.get("doc") as Dictionary).get("world") == null:
+			if (Time.get_ticks_msec() - t0) > 3000:
+				say("no world pack to wait for")
+				return
+		elif data.get("drawn_world") != null:
+			_data = data
+			say("world pack drawn after %.1f s" % ((Time.get_ticks_msec() - t0) / 1000.0))
+			return
+		await wait(0.5)
+	say("world pack NOT drawn after %.0f s; the boxes are measured" % limit)
+
+
+func _process(_delta: float) -> void:
+	# The client's own camera takes `current` back when it respawns or reframes; the bench view wins every frame.
+	if _cam != null and not _cam.current:
+		_cam.make_current()
+
+
 func _sidecar_extra(_game: Object) -> Dictionary:
-	return {"props": int(args.get("props", 60)), "npcs": bots}
+	var extra := {"props": int(args.get("props", 60)), "npcs": bots}
+	if _cam != null:
+		extra["camera"] = [str(_cam.global_position), str(-_cam.global_basis.z), _cam.far, _cam.fov]
+	return extra
