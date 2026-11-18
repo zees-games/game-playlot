@@ -12,7 +12,7 @@ const PlaylotPlayer := preload("playlot_player.gd")
 ## server does. What the layer buys is the part a sandbox needs most and has least of:
 ## a record of who is here that survives them dropping out for a minute.
 ##
-## So this stands up the same addons `ArenaPlayerStack` does and binds them to what the
+## So this stands up the same addons `FcPlayerStack` does and binds them to what the
 ## playlot actually has:
 ##
 ## [codeblock]
@@ -460,7 +460,7 @@ func refresh_spawn_rules() -> void:
 		if fighting and arena.match_node != null else 0.0
 	)
 	# Off for game-fatal-contact's reason: it is what a fight wants and it can only be revoked in
-	# one of the two records of it. See `ArenaPlayerStack.refresh_spawn_rules`.
+	# one of the two records of it. See `FcPlayerStack.refresh_spawn_rules`.
 	spawns.rules.protection_breaks_on_attack = false
 
 

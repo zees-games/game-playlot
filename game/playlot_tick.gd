@@ -251,7 +251,7 @@ func tick_timers_only(tick: int) -> void:
 
 ## Puts the whole game on a tick rate decided elsewhere (a server's `sv_tickrate`, reaching a client through HELLO). Every player's
 ## controller moves with it, not just the loop: a controller keeps its own rate, and a mismatch is correct on one's own screen and wrong everywhere else.
-## The tick accessor `ArenaGame` and `AirdriftGame` also have, so a layer ticked from the module need not reach past the underscore of `_tick`.
+## The tick accessor `FcGame` and `AirdriftGame` also have, so a layer ticked from the module need not reach past the underscore of `_tick`.
 func current_tick() -> int:
 	return _tick
 
