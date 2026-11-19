@@ -4,7 +4,7 @@ The Q menu's NPCs and pack weapons come from dot-core profiles (`docs/profiles.m
 
 ## NPCs
 
-`cfg/game/game-playground/npc/<id>.yml` (game tier; the game key is the repository's original name, kept when the repository became game-playlot so operator cfg and packs keep resolving) over `cfg/addons/dot-npc/npc/` and under `cfg/server/game/game-playground/npc/` and `cfg/server/addons/dot-npc/npc/`.
+`cfg/game/game-playlot/npc/<id>.yml` (game tier; operator cfg written under the game's former id keeps applying: `PlaylotConfig.FORMER_IDS`) over `cfg/addons/dot-npc/npc/` and under `cfg/server/game/game-playlot/npc/` and `cfg/server/addons/dot-npc/npc/`.
 
 - A profile named like a catalogue entry (`npc_chaser.yml`) overrides **only the keys it states**: `name`, `health`, `speed`, `sight`, `sight_angle`, `hearing`, `faction`, `los`, `cost`, `extra:` (copied to the entry's `meta`, where `tune` reads them). A key counts as stated when it differs from the schema default or was edited at runtime.
 - `menu: {category, icon, sort, hidden}` regroups, sets the card's icon (a `res://` image; the drawn one otherwise), orders and hides. `enabled: false` hides too. The Entities tab sorts by `menu.sort`, catalogue order breaks ties.
@@ -47,6 +47,6 @@ dot-workbench's `DotWorkbenchHttp` edits the same `Playlot.profiles.runtime` ove
 
 ## Config and noblock
 
-`PlaylotConfig` is bound by dot-game's `DotGameConfigBinder` (`Playlot.config_binder`, prefix `pg`): every field is a `pg_<field>` cvar, a `cfg/game/game-playground/config/game.yml` key (operators override under `cfg/server/game/game-playground/config/game.yml`), an environment or command-line value, and a workbench "Game settings" set. Unknown keys fail the boot. The arena (`arena_*`), kill rewards and `max_players` are fields now. Movement constants in `playlot_map.gd` stay fixed because the map survey reads them. Checked by `headless_config`.
+`PlaylotConfig` is bound by dot-game's `DotGameConfigBinder` (`Playlot.config_binder`, prefix `pg`): every field is a `pg_<field>` cvar, a `cfg/game/game-playlot/config/game.yml` key (operators override under `cfg/server/game/game-playlot/config/game.yml`), an environment or command-line value, and a workbench "Game settings" set. Unknown keys fail the boot. The arena (`arena_*`), kill rewards and `max_players` are fields now. Movement constants in `playlot_map.gd` stay fixed because the map survey reads them. Checked by `headless_config`.
 
 `!block` and `!noblock` come from `DotGameNoblock` (`mp_teamblock` 0, `mp_enemyblock` 1); the module feeds `block_rules` into `Playlot.apply_pass_through`, and a solo or connected client adds it with `platform.add_noblock`. Checked by `dedicated`.

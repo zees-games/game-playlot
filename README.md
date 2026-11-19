@@ -41,7 +41,7 @@ Things you can do:
 | --- | --- |
 | `pg_flatgrass` | The default sandbox: a walled 200-metre plate of grass, with a corner of ramps and steps and the map's toys near the spawn |
 | `pg_generated` | Built from a seed each time it loads: rooms joined by corridors, with props scattered through them. Start with `--pg-map-seed=<n>` to pick the seed and share a layout. |
-| Map pack | More maps come from the Playlot map pack (the pack id `gamemann/game-playground-maps` keeps the old name) |
+| Map pack | More maps come from the Playlot map pack (published as the pack id `gamemann/game-playground-maps`, a legacy id) |
 
 ## Controls
 
@@ -102,7 +102,7 @@ On Windows, run `bootstrap.ps1` instead and open the project in Godot.
 
 ## Running a server
 
-Settings are console variables ("cvars"). Set them in the server's config, on the command line, or live from the console. `cvarlist pg_` lists all of them. Every game setting is also a key in a file under `cfg/game/game-playground/config_<group>/game.yml` (a server refuses to start on an unknown key) and a row in the admin workbench. `!block` and `!noblock` toggle player collision.
+Settings are console variables ("cvars"). Set them in the server's config, on the command line, or live from the console. `cvarlist pg_` lists all of them. Every game setting is also a key in a file under `cfg/game/game-playlot/config_<group>/game.yml` (a server refuses to start on an unknown key) and a row in the admin workbench. `!block` and `!noblock` toggle player collision.
 
 | Setting | Default | What it does |
 | --- | --- | --- |

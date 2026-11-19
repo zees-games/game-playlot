@@ -14,7 +14,7 @@
 # which describes the same game for a deployment that publishes it itself;
 # dot-server-deploy's examples/install_descriptor suite fails when the two disagree.
 
-content_id: gamemann/game-playground
+content_id: gamemann/game-playground  # legacy id: the published pack id; changes only with a new dot-cloud registration
 version: 0.0.0
 kind: pack
 
@@ -44,4 +44,4 @@ metadata:
 # The stock maps pack the game suggests, not requires: a server offers it by default (suggested_maps: none turns that off)
 # and the Workshop mounts it for solo play unless the player opts out (--no-suggested, --suggested=none).
 suggested:
-  - maps=gamemann/game-playground-maps
+  - maps=gamemann/game-playground-maps  # legacy id: the published maps pack id (the repository is playlot-maps)

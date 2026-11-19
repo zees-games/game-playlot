@@ -8,7 +8,7 @@ extends RefCounted
 const POINT_SET := "res://addons/dot_spawn/core/dot_spawn_point_set.gd"
 const POINT_DEF := "res://addons/dot_spawn/core/dot_spawn_point_def.gd"
 const STORE_CONFIG := "res://addons/dot_map/data/dot_map_data_config.gd"
-const GAME_ID := "game-playground"
+const GAME_ID := "game-playlot"
 
 
 ## dot-map's stores answer `fetch`; the command set asks `load`.

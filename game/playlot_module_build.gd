@@ -392,7 +392,7 @@ func _bind_noblock() -> DotResult:
 	if not DotGameNoblock.available():
 		DotLog.warn(CHANNEL, "dot-team is not in this build: players block each other")
 		return DotResult.success(null)
-	var made := DotGameNoblock.create("game-playground", Callable(game, "team_of_side"))
+	var made := DotGameNoblock.create("game-playlot", Callable(game, "team_of_side"))
 	if not made.ok:
 		return made
 	var built: DotGameNoblock = made.value

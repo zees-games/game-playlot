@@ -287,8 +287,8 @@ func playlot_receive(msg: Dictionary) -> void:
 	# scanned only res://addons, so pg_natural_disasters never registered and the menu had no disasters.
 	_check(PlaylotAddons.addon_roots("res://") == PackedStringArray(["res://addons"]),
 		"built in, the hooks are looked for in res://addons alone")
-	var mounted_roots := PlaylotAddons.addon_roots("res://dot_cloud/gamemann/game-playground/0.1.30")
-	_check(mounted_roots == PackedStringArray(["res://addons", "res://dot_cloud/gamemann/game-playground/0.1.30/addons"]),
+	var mounted_roots := PlaylotAddons.addon_roots("res://dot_cloud/gamemann/game-playlot/0.1.30")
+	_check(mounted_roots == PackedStringArray(["res://addons", "res://dot_cloud/gamemann/game-playlot/0.1.30/addons"]),
 		"delivered, the game's own addons folder under its mount is scanned too", str(mounted_roots))
 	var mounted := "user://pg_addon_scratch_mounted"
 	_write_fake_addon(mounted, "fake_with_hook", hooked)

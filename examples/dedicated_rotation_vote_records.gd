@@ -21,7 +21,7 @@ func _test_map_rotation_file() -> void:
 			"alt": {"maps": ["pg_generated"]},
 		},
 		"commands": {"names": {"rtv": "rockthevote"}},
-	}}], "game-playground")
+	}}], "game-playlot")
 	_check(built.ok, "a maps.yml with two rotations and a renamed rtv parses",
 		"" if built.ok else built.error.message)
 	if not built.ok:
@@ -80,7 +80,7 @@ func _test_map_rotation_file() -> void:
 		"commands": {"names": {
 			"pg_rtv": "game_rtv", "pg_map": ["gamemap", "gm"],
 			"pg_nextmap": "upnext", "pg_extend": "moretime", "pg_vote": "gamevote"}},
-	}}], "game-playground")
+	}}], "game-playlot")
 	var plain_names: PackedStringArray = game.command_names("pg_rtv")
 	game.rotation_file = named.value
 	var fresh := DotConsole.new()

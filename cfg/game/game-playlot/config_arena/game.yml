@@ -1,5 +1,5 @@
-# game-playground: every key of this file at its code default, commented out. Uncomment a line to change it;
-# an operator overrides in cfg/server/game/game-playground/config_arena/game.yml. Layers: defaults < this < env < argv.
+# game-playlot: every key of this file at its code default, commented out. Uncomment a line to change it;
+# an operator overrides in cfg/server/game/game-playlot/config_arena/game.yml. Layers: defaults < this < env < argv.
 
 # --- Arena
 # Seconds one arena round lasts. [10.0..7200.0]

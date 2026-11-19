@@ -187,7 +187,7 @@ func _test_button_over_the_wire() -> void:
 	_done()
 
 
-## The toys are run by the SERVER too (`[game-playground-1]` part 2): a connected player's
+## The toys are run by the SERVER too (`[game-playlot-1]` part 2): a connected player's
 ## launcher must not grab crates, because its buttons went to the physics gun.
 func _test_toys_over_the_wire() -> void:
 	_section("the toys are run by the server")

@@ -15,7 +15,7 @@ const PlaylotUserFiles := preload("../game/playlot_user_files.gd")
 ## every copy of this project on a box, and two suites at once wrote and deleted each other's cfg files.
 const ROOT_ARG := "--cfgroot="
 var ROOT := _root()
-const GAME := "game-playground"
+const GAME := "game-playlot"
 const CHECKS := 51
 const SECTIONS := 6
 
@@ -43,7 +43,7 @@ func _run() -> void:
 	_entered += 1
 	var config := PlaylotConfig.new()
 	var binder := PlaylotConfig.make_binder(config)
-	_check(DotAddonConfig.game_names("game-playlot") == PackedStringArray(["game-playground", "game-playlot"]), "the binder registers game-playground as game-playlot's former id", str(DotAddonConfig.game_names("game-playlot")))
+	_check(DotAddonConfig.game_names("game-playlot") == PackedStringArray(["game-playground", "game-playlot"]), "the binder registers game-playground as game-playlot's former id", str(DotAddonConfig.game_names("game-playlot")))  # legacy id
 	binder.strict = true
 	_check(binder.load_layers().ok, "defaults load")
 	_check(binder.diff().is_empty(), "no diff at the code defaults")
@@ -103,7 +103,7 @@ func _run() -> void:
 	var res: DotResult = wb.api.handle(DotGameWorkbench.LOCAL_ACTOR, {"op": "set", "kind": "config_world", "id": binder.profile_id, "key": "wave_kill_reward", "value": 90})
 	_check(res.ok and config.wave_kill_reward == 90, "a workbench edit reaches the live config")
 	var files: Dictionary = wb.exporter.call("collect")
-	var text: String = files.get("cfg/game/game-playground/config_world/game.yml", "")
+	var text: String = files.get("cfg/game/game-playlot/config_world/game.yml", "")
 	_check(text.contains("wave_kill_reward: 90"), "the export holds the edit in the cfg layout")
 
 	_ambience_cvars()

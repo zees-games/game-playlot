@@ -4,7 +4,7 @@ extends RefCounted
 
 const PlaylotAmbience := preload("playlot_ambience.gd")
 
-const GAME_ID := "game-playground"
+const GAME_ID := "game-playlot"
 
 ## The moods whose maps start lit. The sandbox is a clear afternoon, so it starts dark and the key lights it; the enclosed rock maps (kz, climb, xc, the quarry) start lit.
 const DARK_MOODS: PackedStringArray = ["interior_horror", "cave_tunnel"]
@@ -18,7 +18,7 @@ static func make_config() -> DotFlashlightConfig:
 	return cfg
 
 
-## The binder: `pg_flashlight_<field>` cvars, `cfg/game/game-playground/flashlight/game.yml`, a workbench set.
+## The binder: `pg_flashlight_<field>` cvars, `cfg/game/game-playlot/flashlight/game.yml`, a workbench set.
 static func make_binder(cfg: DotFlashlightConfig) -> DotGameConfigBinder:
 	var b := DotGameConfigBinder.create(cfg, GAME_ID, "pg_flashlight")
 	b.profile_kind = "flashlight"

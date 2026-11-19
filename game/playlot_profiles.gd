@@ -5,11 +5,11 @@ extends RefCounted
 ## Profiles add to or override the built-in catalogue, never replace it: an NPC profile named
 ## like a catalogue entry changes the keys it states; a new id needs `extra.base: <entry id>`
 ## to clone. A pack weapon's `menu:` (category, sort, hidden) reshapes that pack's rows.
-## Tiers: `cfg/addons/<addon>/<kind>/`, `cfg/game/game-playground/<kind>/`, `cfg/server/addons/<addon>/<kind>/`, `cfg/server/game/game-playground/<kind>/`.
+## Tiers: `cfg/addons/<addon>/<kind>/`, `cfg/game/game-playlot/<kind>/`, `cfg/server/addons/<addon>/<kind>/`, `cfg/server/game/game-playlot/<kind>/`.
 
 const CHANNEL := "pg.profiles"
 ## The game key of the profile game tier (the repository name).
-const GAME := "game-playground"
+const GAME := "game-playlot"
 ## The actor of an edit made on the process itself: the server console, or offline play.
 const LOCAL_ACTOR := &"__local"
 ## Profile keys written to an entry's `meta`, where the entity scripts read them with `tune`.

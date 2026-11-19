@@ -163,7 +163,7 @@ func load_rotation() -> DotResult:
 		if candidate != "" and not paths.has(candidate) and FileAccess.file_exists(candidate):
 			paths.append(candidate)
 
-	var read := DotMapRotationFile.load_files(paths, "game-playground")
+	var read := DotMapRotationFile.load_files(paths, "game-playlot")
 
 	if not read.ok:
 		DotLog.error(CHANNEL, "the map rotation file could not be read; every map rotates", {

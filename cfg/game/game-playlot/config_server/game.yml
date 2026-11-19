@@ -1,5 +1,5 @@
-# game-playground: every key of this file at its code default, commented out. Uncomment a line to change it;
-# an operator overrides in cfg/server/game/game-playground/config_server/game.yml. Layers: defaults < this < env < argv.
+# game-playlot: every key of this file at its code default, commented out. Uncomment a line to change it;
+# an operator overrides in cfg/server/game/game-playlot/config_server/game.yml. Layers: defaults < this < env < argv.
 
 # --- Content
 # The map to load on boot.
