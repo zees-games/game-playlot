@@ -350,6 +350,11 @@ func _local_commands() -> DotConsoleLocal:
 		# most-requested feature every generated world gets.
 		return rng.describe_lines()
 	)
+	local.add_command(&"trail", "Wear a subscribed pack trail: trail [id|off]", func(a: PackedStringArray) -> Variant:
+		# The client answers: it holds the player and, solo, the Workshop the trails come from.
+		return client.call(&"trail_command", a) if client != null and client.has_method(&"trail_command") \
+			else "pack trails are offered in solo play only"
+	)
 	DotConsoleProfileEdit.register(local, profile_submit)
 	return local
 

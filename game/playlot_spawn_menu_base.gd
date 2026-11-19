@@ -79,6 +79,9 @@ signal addon_item_chosen(key: String)
 ## A saved build was clicked: put it down in front of the player.
 signal build_chosen(build_name: String)
 
+## A pack trail was picked: the local player wears it.
+signal trail_chosen(trail_id: String)
+
 ## What the props and entities tabs are built from. Set before the first push.
 var catalogue: DotPropCatalogue = null
 

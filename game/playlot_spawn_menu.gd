@@ -403,7 +403,7 @@ func _weapon_card(def: PlaylotWeaponDef) -> Button:
 	return card
 
 
-## One thing a pack provides. Weapons are equipped, everything else is spawned, through the same
+## One thing a pack provides. Weapons are equipped, trails are worn, everything else is spawned, through the same
 ## signals the built-in tabs use, so nothing downstream knows a pack was involved.
 func _pack_card(row: Dictionary) -> Button:
 	var id := row.get("id", &"") as StringName
@@ -416,6 +416,8 @@ func _pack_card(row: Dictionary) -> Button:
 	var card := _card(icon, str(row.get("name", id)), str(row.get("tip", "")))
 	if row.get("kind") == &"weapon":
 		card.pressed.connect(_on_weapon_pressed.bind(id))
+	elif row.get("kind") == &"trail":
+		card.pressed.connect(func() -> void: trail_chosen.emit(str(row.get("trail", ""))))
 	else:
 		card.pressed.connect(_on_prop_pressed.bind(id))
 	card.set_meta(&"entry", id)

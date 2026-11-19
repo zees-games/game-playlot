@@ -560,6 +560,8 @@ func _test_workshop_3() -> void:
 	else:
 		_check(false, "zee-dot-weapons is next to this game", zee_dir)
 
+	_test_workshop_trails()
+
 	_wx_menu.queue_free()
 	_wx_stack.queue_free()
 	playlot.unfollow_workshop()
@@ -567,6 +569,40 @@ func _test_workshop_3() -> void:
 		and playlot.weapons.size() == _wx_own_weapons and playlot.props.catalogue.size() == _wx_own_props,
 		"unfollowing leaves the game's lists as they were")
 	_done()
+
+
+## A trail pack is data (kind `trail`, `def: trails.json`). The host carries dot-trail, not this
+## game, so the rows and the equip follow what the host has; either way nothing breaks.
+func _test_workshop_trails() -> void:
+	var accepts: Variant = (JSON.parse_string(FileAccess.get_file_as_string("res://provides.json")) as Dictionary).get("accepts", {})
+	_check(accepts is Dictionary and (accepts as Dictionary).get("kinds", []).has("trail"),
+		"provides.json accepts trail packs, so the site offers them")
+	var root := "user://workshop_trails"
+	DirAccess.make_dir_recursive_absolute(root)
+	var img := Image.create(8, 8, false, Image.FORMAT_RGBA8)
+	img.fill(Color.ORANGE)
+	var _png := img.save_png(root.path_join("spark.png"))
+	var index_file := FileAccess.open(root.path_join("trails.json"), FileAccess.WRITE)
+	index_file.store_string(JSON.stringify({"trails": [{"id": "spark", "title": "Spark", "image": "spark.png",
+		"width": 0.4, "lifetime": 1.0, "color": "#ffffff", "blend": "add", "access": "public", "price": 0}]}))
+	index_file.close()
+	var added := _wx_index.add_pack({
+		"content_id": "tmc/fixture-trails", "version": "1.0.0", "prefix": root + "/",
+		"session": "solo", "source": "subscription",
+		"provides": {"schema": 1, "title": "Fixture Trails", "kinds": ["trail"], "entries": [
+			{"kind": "trail", "id": "spark", "name": "Spark", "thumbnail": "spark.png", "def": "trails.json"},
+		]},
+	})
+	_check(added.ok, "a trail pack is in the index", "" if added.ok else added.error.message)
+	var hosted := WorkshopScript.PlaylotTrails.available()
+	var trail_rows := _wx_shop.rows().filter(func(r: Dictionary) -> bool: return r["kind"] == &"trail")
+	_check(trail_rows.size() == (1 if hosted else 0) and (not hosted or trail_rows[0].get("trail") == "spark"),
+		"its trail is a menu row exactly when the host carries dot-trail", "hosted=%s rows=%d" % [hosted, trail_rows.size()])
+	var worn := _wx_shop.trails.equip(_wx_player, "spark")
+	_check(worn.ok == hosted and (_wx_player.get_node_or_null("PackTrail") != null) == hosted,
+		"and the player wears it then, and is refused cleanly otherwise", "" if worn.ok else worn.error.message)
+	var off := _wx_shop.trails.equip(_wx_player, "off")
+	_check(off.ok, "taking it off always works")
 
 
 ## Weapons: a script loaded by path, held rather than spawned.

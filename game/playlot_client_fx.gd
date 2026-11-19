@@ -83,6 +83,7 @@ func _build_screens() -> void:
 		playlot.workshop_changed.connect(
 			func() -> void: menu.set_pack_rows(playlot.workshop.rows())
 		)
+		menu.trail_chosen.connect(_on_trail_chosen)
 
 	var registered := screens.register(menu)
 	DotLog.result(CHANNEL, "registering the spawn menu", registered)

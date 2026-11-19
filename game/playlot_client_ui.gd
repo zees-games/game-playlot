@@ -508,6 +508,31 @@ func _on_prop_chosen(prop_id: StringName) -> void:
 	_spawn()
 
 
+## A pack trail picked on the Q menu (solo: the Workshop is followed only there).
+func _on_trail_chosen(trail_id: String) -> void:
+	var worn := wear_trail(trail_id)
+	if not worn.ok:
+		DotLog.warn(CHANNEL, "the trail could not be worn", {"trail": trail_id, "why": worn.error.message})
+
+
+## Puts a subscribed pack's trail on the local player; "off" takes it off.
+func wear_trail(trail_id: String) -> DotResult:
+	if playlot == null or playlot.workshop == null:
+		return DotResult.fail(DotError.CODE_STATE, "pack trails are offered in solo play only")
+	return playlot.workshop.trails.equip(player, trail_id)
+
+
+## The console's `trail [id|off]`: lists the pack trails with no argument.
+func trail_command(args: PackedStringArray) -> Variant:
+	if playlot == null or playlot.workshop == null:
+		return "pack trails are offered in solo play only"
+	if args.is_empty():
+		var ids := playlot.workshop.trails.ids()
+		return "no pack trails mounted" if ids.is_empty() else "trails: " + ", ".join(ids)
+	var worn := wear_trail(args[0])
+	return ("trail: " + str(worn.value)) if worn.ok else ("trail: " + worn.error.message)
+
+
 func _on_npc_weapon_chosen(weapon_id: StringName) -> void:
 	if bridge != null:
 		bridge.ask_npc_weapon(weapon_id)

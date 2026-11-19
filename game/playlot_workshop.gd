@@ -2,6 +2,7 @@ extends RefCounted
 
 const PlaylotPaths := preload("playlot_paths.gd")
 const PlaylotSpawnables := preload("playlot_spawnables.gd")
+const PlaylotTrails := preload("playlot_trails.gd")
 const PlaylotWeaponDef := preload("weapons/playlot_weapon_def.gd")
 const PlaylotZee := preload("playlot_zee.gd")
 
@@ -44,6 +45,9 @@ var index: DotContentIndex = null
 
 ## The pack weapons, read through dot-weapon. No code weapons: the game's own stay in `weapons`.
 var weapon_catalogue: DotWeaponCatalogue = null
+
+## The pack trails (kind `trail`), worn rather than spawned. See [code]playlot_trails.gd[/code].
+var trails := PlaylotTrails.new()
 
 var _props: DotPropCatalogue = null
 var _weapons: Array[PlaylotWeaponDef] = []
@@ -92,7 +96,7 @@ func _on_index_changed(_a: Variant = null, _b: Variant = null) -> void:
 
 ## What the Q menu shows, one dictionary per pack row: `kind`, `id` (what the menu emits),
 ## `name`, `pack` (content id), `pack_title`, `category` (display name), `icon` (a texture, or
-## null for the menu to draw one), `tip`.
+## null for the menu to draw one), `tip`. A `trail` row also carries `trail`, the trail's own id.
 func rows() -> Array[Dictionary]:
 	return _rows
 
@@ -146,6 +150,12 @@ func sync() -> void:
 				icon = load(def.icon_path) as Texture2D
 			_rows.append(_row(kind, def.id, def.name_or_id(), entry.content_id, entry.pack_title,
 				titles.get(entry.content_id + "/" + entry.category, entry.category), icon, "", def))
+
+	for entry in trails.load_from(index):
+		_rows.append(_row(PlaylotTrails.KIND, StringName(ID_PREFIX + "trail_" + entry.id), entry.name if entry.name != "" else entry.id,
+			entry.content_id, entry.pack_title, titles.get(entry.content_id + "/" + entry.category, entry.category),
+			trails.icon(entry.id), "Wear it: click, or `trail %s` in the console" % entry.id, null))
+		_rows[_rows.size() - 1]["trail"] = entry.id
 
 	var sig := ",".join(_rows.map(func(r: Dictionary) -> String: return String(r["id"])))
 	if sig == _signature:
