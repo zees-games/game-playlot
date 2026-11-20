@@ -118,6 +118,12 @@ var draw_world: bool = DisplayServer.get_name() != "headless"
 ## play does not freeze a frame on the web. 0 builds it in one call.
 var world_slice_ms: int = 40
 
+## A `func(label: String)` told as each step of the world build ends (DotMapDrawnWorld's "mark"), for a probe; unset costs nothing.
+var world_mark: Callable = Callable()
+
+## False keeps the box meshes (hidden, not freed) once the pack is drawn: the old behaviour, for a probe's baseline.
+var free_box_meshes: bool = true
+
 ## The drawn world pack, or null while the boxes are what is seen.
 var drawn_world: DotMapDrawnWorld = null
 
@@ -265,6 +271,8 @@ func attach_world(world: DotMapBspMesh, offset: Vector3, original: bool = false)
 		"props": true,
 		"original_textures": original,
 	}
+	if world_mark.is_valid():
+		options["mark"] = world_mark
 	var drawn: DotMapDrawnWorld = null
 	if world_slice_ms > 0:
 		drawn = await DotMapDrawnWorld.attach_async(self, world, options, DotFrameSlice.new(world_slice_ms))
@@ -272,7 +280,7 @@ func attach_world(world: DotMapBspMesh, offset: Vector3, original: bool = false)
 		drawn = DotMapDrawnWorld.attach(self, world, options)
 	if drawn == null:
 		return null
-	var hidden := hide_box_meshes()
+	var hidden := hide_box_meshes() if free_box_meshes else 0
 	var shade := get_node_or_null(^"ContactShade")
 	if shade != null:
 		remove_child(shade)
@@ -284,7 +292,7 @@ func attach_world(world: DotMapBspMesh, offset: Vector3, original: bool = false)
 	return drawn
 
 
-## Hides the meshes of this map's boxes and brushes, but a see-through one's, and returns how
+## Frees the meshes of this map's boxes and brushes, but a see-through one's, and returns how
 ## many. Their collision shapes are untouched.
 func hide_box_meshes() -> int:
 	var hidden := 0
@@ -295,7 +303,10 @@ func hide_box_meshes() -> int:
 			continue
 		for part in child.get_children():
 			if part is GeometryInstance3D and (part as GeometryInstance3D).visible:
-				(part as GeometryInstance3D).visible = false
+				# Freed, not hidden: a hidden mesh is still walked by the shell's warm-up (collect), which
+				# on gm_fork offered 47.8k box meshes and materials for 55 pipelines. The body keeps its shapes.
+				child.remove_child(part)
+				part.free()
 				hidden += 1
 	return hidden
 

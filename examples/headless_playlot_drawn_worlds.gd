@@ -203,14 +203,17 @@ func _check_world_specs(text: String) -> void:
 		"%d of 6 refused" % refused)
 
 
-## How many box and brush meshes under [param map] are hidden.
+## How many boxes and brushes under [param map] have had their mesh taken off (the pack draws them; the body keeps its shapes).
 func _hidden_box_meshes(map: Node3D) -> int:
 	var hidden := 0
 	for child in map.get_children():
 		if child is StaticBody3D and child.has_meta(&"pg_box"):
+			var drawn := false
 			for part in child.get_children():
-				if part is GeometryInstance3D and not (part as GeometryInstance3D).visible:
-					hidden += 1
+				if part is GeometryInstance3D:
+					drawn = true
+			if not drawn:
+				hidden += 1
 	return hidden
 
 
