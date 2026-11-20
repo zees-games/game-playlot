@@ -1,5 +1,3 @@
-# Zee's Playlot
-
 Playlot is a 3D multiplayer sandbox. You can build with props, spawn NPCs and weapons, grab things with the physics and gravity guns, and mess around with other players. It is inspired by classic sandbox games like Garry's Mod.
 
 Hold **Q** in game to open the spawn menu.
