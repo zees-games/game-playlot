@@ -264,7 +264,9 @@ func _imported_shots(id: String, path: String) -> Array[Dictionary]:
 		{"name": id, "from": centre + Vector3(0.0, reach * 0.9, reach * 0.55), "at": centre, "in_air": true},
 		{"name": id + "_top", "from": centre + Vector3(0.0, reach * 1.1, 0.1), "at": centre, "in_air": true},
 		{"name": id + "_spawn", "from": spawn, "at": Vector3(centre.x, spawn.y - 0.3, centre.z)},
-		{"name": id + "_side", "from": Vector3(lo.x + ext.x * 0.15, lo.y + minf(ext.y, 12.0), hi.z - ext.z * 0.15), "at": Vector3(centre.x, lo.y + 1.0, centre.z), "in_air": true},
+		# Above the spawn's level, not the lowest box: lo.y is a valley floor or a pit, and a camera 12 m over it
+		# sits inside the hills of a terrain map and shoots the underside of the ground.
+		{"name": id + "_side", "from": Vector3(lo.x + ext.x * 0.15, spawn.y + maxf(12.0, reach * 0.12), hi.z - ext.z * 0.15), "at": Vector3(centre.x, spawn.y, centre.z), "in_air": true},
 	]
 	shots.append_array(_ground_shots(id, spawn, centre))
 	return shots
