@@ -1,0 +1,17 @@
+# duplication (cross-game)
+# Baselines only shrink: scripts/<gate> --update lowers or drops entries and refuses to add.
+examples/dedicated_profiles_and_lifecycle.gd	55
+examples/headless_avatar_library.gd	125
+examples/headless_presentation_chat_and_touch.gd	32
+game/client/playlot_browser.gd	96
+game/client/playlot_voice.gd	75
+game/net/playlot_events_base.gd	33
+game/net/playlot_net_link.gd	45
+game/net/playlot_toy_net.gd	32
+game/playlot_avatar_library.gd	39
+game/playlot_map_survey_base.gd	69
+game/playlot_player_stack.gd	118
+tools/audio_probe.gd	40
+tools/loudness_pilot.gd	34
+tools/pack_boot_probe.gd	82
+tools/render_cover.gd	38
