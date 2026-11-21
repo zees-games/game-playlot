@@ -1,6 +1,7 @@
 extends DotGamePerfBench
 
 const PlaylotConfig := preload("../game/playlot_config.gd")
+const PlaylotData := preload("../maps/pg_data.gd")
 const PlaylotPresentation := preload("../game/playlot_presentation.gd")
 
 ## The offline sandbox benchmark: dot-game's DotGamePerfBench (flags, recording, sidecar; see it) on the playlot client. Run it windowed with `tools/perf_bench.sh --box staging02` (gamedev, from a checkout).
@@ -28,6 +29,8 @@ func _setup_client(c: Node) -> void:
 	# --fetch-content 1: the client downloads a content (world-pack) map from the content origin, so a pack map can be measured.
 	c.set("fetch_content", str(args.get("fetch-content", "0")) == "1")
 	c.set("mouse_capture_override", true)
+	# --batch-props 1: the drawn world bakes its static props into per-cell batches (DotMapPropBatch) (the default); 0 keeps one node per prop.
+	PlaylotData.batch_props = str(args.get("batch-props", "1")) == "1"
 
 
 func _select(_game: Object) -> void:

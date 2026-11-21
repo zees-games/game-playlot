@@ -88,6 +88,10 @@ const KINDS: Array[String] = [KIND, "playlot_map"]
 ## [method validate] by name, it is never cut short.
 static var max_boxes: int = 0
 
+## Whether the drawn world's static props are baked into per-cell batches (DotMapPropBatch) instead of one node each. A flag so
+## the bench can A/B the same build (`--batch-props 0|1`). On since pgc_deadcity draws 4110 -> 2567 calls with it.
+static var batch_props: bool = true
+
 ## How far from the origin anything may be, in metres. The wire's own extent is larger.
 const MAX_EXTENT := 2000.0
 
@@ -265,6 +269,7 @@ func attach_world(world: DotMapBspMesh, offset: Vector3, original: bool = false)
 		"lamps": lamps,
 		"cloud": DotRegistry.get_service(&"dot_cloud_client"),
 		"props": true,
+		"batch_props": batch_props,
 		"original_textures": original,
 	}
 	var drawn: DotMapDrawnWorld = null
