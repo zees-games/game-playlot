@@ -12,6 +12,23 @@ It is built on [Godot 4](https://godotengine.org/), the [**GameSpice**](https://
 
 The game was built with Claude Code and is maintained with it. It has a full automated test suite, but few real players have tried it yet, so expect rough edges. Please report what you find.
 
+## Screenshots
+
+<table>
+<tr>
+<td><img src="https://raw.githubusercontent.com/zees-games/game-playlot/main/docs/screenshots/spawn-menu.png" alt="Spawn menu"><br>The spawn menu: props, entities, weapons and tools.</td>
+<td><img src="https://raw.githubusercontent.com/zees-games/game-playlot/main/docs/screenshots/builds.png" alt="Builds tab"><br>Saved builds you can put down in front of you.</td>
+</tr>
+<tr>
+<td><img src="https://raw.githubusercontent.com/zees-games/game-playlot/main/docs/screenshots/map-vote.png" alt="Map vote ballot"><br>The map vote ballot in chat.</td>
+<td><img src="https://raw.githubusercontent.com/zees-games/game-playlot/main/docs/screenshots/scoreboard.png" alt="Scoreboard"><br>The scoreboard.</td>
+</tr>
+<tr>
+<td><img src="https://raw.githubusercontent.com/zees-games/game-playlot/main/docs/screenshots/park-toys.png" alt="Park toys on flatgrass"><br>Park toys on the flatgrass sandbox map.</td>
+<td><img src="https://raw.githubusercontent.com/zees-games/game-playlot/main/docs/screenshots/third-person.png" alt="Third-person view"><br>Third-person view on flatgrass.</td>
+</tr>
+</table>
+
 ## How it plays
 
 Hold **Q** to open the spawn menu. Clicking something spawns it, and the menu stays open so you can keep building. Press `/` to search.
