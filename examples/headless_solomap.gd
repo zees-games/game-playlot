@@ -1,4 +1,4 @@
-extends DotGameCheckSuite
+extends GSGameCheckSuite
 
 ## Solo in the client shell: the map packs it mounted are in the catalogue before the first map, and its `start_map` (`--solo-map`, a hotspot "Play map" link) is that first map. With no host, an older shell or a map nobody has, the
 ## first map is `initial_map` as before. [codeblock]
@@ -31,7 +31,7 @@ class FakeSoloStart:
 
 
 func _ready() -> void:
-	DotLog.set_level(DotLog.Level.ERROR)
+	GSLog.set_level(GSLog.Level.ERROR)
 	_run.call_deferred()
 
 
@@ -73,7 +73,7 @@ func _first_map(host: Object) -> String:
 ## [first map id, whether the pack map is in its catalogue].
 func _boot(host: Object) -> Array:
 	if host != null:
-		DotRegistry.register(Playlot.SOLO_SERVICE, host)
+		GSRegistry.register(Playlot.SOLO_SERVICE, host)
 	var config := PlaylotConfig.new()
 	config.records_directory = ""
 	config.map_seconds = 0.0
@@ -92,6 +92,6 @@ func _boot(host: Object) -> Array:
 	remove_child(game)
 	game.free()
 	if host != null:
-		DotRegistry.unregister_instance(Playlot.SOLO_SERVICE, host)
+		GSRegistry.unregister_instance(Playlot.SOLO_SERVICE, host)
 	await get_tree().process_frame
 	return [first, listed]

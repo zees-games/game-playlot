@@ -70,9 +70,9 @@ var draw_ropes: bool = DisplayServer.get_name() != "headless"
 # --- Making them ----------------------------------------------------------------
 
 ## Welds [param a] to [param b] — or to the world when [param b] is null — at [param at].
-func weld(owner: StringName, a: RigidBody3D, b: RigidBody3D, at: Vector3) -> DotResult:
+func weld(owner: StringName, a: RigidBody3D, b: RigidBody3D, at: Vector3) -> GSResult:
 	if a == null or a == b:
-		return DotResult.fail(DotError.CODE_INVALID, "Weld what to what?")
+		return GSResult.fail(GSError.CODE_INVALID, "Weld what to what?")
 
 	var joint := Generic6DOFJoint3D.new()
 	joint.name = "Weld"
@@ -102,21 +102,21 @@ func weld(owner: StringName, a: RigidBody3D, b: RigidBody3D, at: Vector3) -> Dot
 
 	var c := _add(Kind.WELD, owner, a, b, a.to_local(at), b.to_local(at) if b != null else at, 0.0)
 	c.joint = joint
-	return DotResult.success(c)
+	return GSResult.success(c)
 
 
 ## Stops [param a] and [param b] colliding with each other.
-func nocollide(owner: StringName, a: RigidBody3D, b: RigidBody3D) -> DotResult:
+func nocollide(owner: StringName, a: RigidBody3D, b: RigidBody3D) -> GSResult:
 	if a == null or b == null or a == b:
-		return DotResult.fail(DotError.CODE_INVALID, "No-collide needs two different props.")
+		return GSResult.fail(GSError.CODE_INVALID, "No-collide needs two different props.")
 
 	for c in _items.values():
 		if (c as Constraint).kind == Kind.NOCOLLIDE and (c as Constraint).touches(a) and (c as Constraint).touches(b):
-			return DotResult.fail(DotError.CODE_CONFLICT, "Those two already pass through each other.")
+			return GSResult.fail(GSError.CODE_CONFLICT, "Those two already pass through each other.")
 
 	a.add_collision_exception_with(b)
 	b.add_collision_exception_with(a)
-	return DotResult.success(_add(Kind.NOCOLLIDE, owner, a, b, Vector3.ZERO, Vector3.ZERO, 0.0))
+	return GSResult.success(_add(Kind.NOCOLLIDE, owner, a, b, Vector3.ZERO, Vector3.ZERO, 0.0))
 
 
 ## Ties [param a] at [param a_at] to [param b] at [param b_at] — or to the world point
@@ -125,9 +125,9 @@ func nocollide(owner: StringName, a: RigidBody3D, b: RigidBody3D) -> DotResult:
 func rope(
 	owner: StringName, a: RigidBody3D, a_at: Vector3, b: RigidBody3D, b_at: Vector3,
 	slack: float = 0.0, counted: bool = true
-) -> DotResult:
+) -> GSResult:
 	if a == null or a == b:
-		return DotResult.fail(DotError.CODE_INVALID, "Tie what to what?")
+		return GSResult.fail(GSError.CODE_INVALID, "Tie what to what?")
 
 	var length := a_at.distance_to(b_at) + maxf(slack, 0.0)
 	var c := _add(
@@ -135,7 +135,7 @@ func rope(
 	)
 	c.counted = counted
 	_describe_rope_on_props(c)
-	return DotResult.success(c)
+	return GSResult.success(c)
 
 
 func _add(
@@ -153,7 +153,7 @@ func _add(
 	c.b_local = b_local
 	c.length = length
 	_items[c.id] = c
-	DotLog.debug(CHANNEL, "constraint made", {
+	GSLog.debug(CHANNEL, "constraint made", {
 		"kind": KIND_NAMES[kind], "owner": String(owner), "id": c.id,
 	})
 	return c

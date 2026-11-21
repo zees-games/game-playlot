@@ -1,6 +1,6 @@
-extends DotConfig
+extends GSConfig
 
-## Everything the playlot is configured with, layered like every [DotConfig]:
+## Everything the playlot is configured with, layered like every [GSConfig]:
 ## exported defaults, then a JSON file, then [code]PLAYLOT_*[/code] environment
 ## variables, then [code]--pg-*[/code] arguments. The variables under the old Playlot name
 ## ([constant FORMER_ENV_PREFIX]) are still read, with a warning, and the new name wins.
@@ -66,7 +66,7 @@ extends DotConfig
 @export_range(0.0, 86400.0, 30.0) var map_seconds: float = 2700.0
 
 ## The file that says which maps a server ROTATES: `cfg/maps.yml`, layered over the game's own
-## shipped `res://maps.yml` (dot-map's `DotMapRotationFile`: named rotations, `random` or
+## shipped `res://maps.yml` (dot-map's `GSMapRotationFile`: named rotations, `random` or
 ## `cycle`, wildcards, command names). Empty, or no such file, rotates every map. A map the
 ## active rotation leaves out stays installed (`pg_map <id>` loads it); it is only never
 ## chosen, balloted or nominated. `sv_map_rotation_file`.
@@ -144,7 +144,7 @@ extends DotConfig
 
 ## Whether standing on a moving prop carries you with it: a crate somebody else swings with
 ## the physics gun, a plank sliding down a ramp, or the one you are holding yourself under
-## your own feet (which is prop surfing). dot-props' DotPropCarry; the prop also takes some
+## your own feet (which is prop surfing). dot-props' GSPropCarry; the prop also takes some
 ## of your weight. Off leaves a crate exactly as solid and as still as the floor.
 @export var prop_surfing: bool = true
 
@@ -171,7 +171,7 @@ extends DotConfig
 ## [b]A budget alone does not stop a held key.[/b] Reach the cap, remove one, spawn
 ## another — that is a spawn and a free every frame, which costs the server more than
 ## the props do. dot-props' own default is 0.15 s; this is looser because a sandwich
-## of planks is built by spawning a dozen quickly, and it is a [DotConfig] field so an
+## of planks is built by spawning a dozen quickly, and it is a [GSConfig] field so an
 ## operator who is being spammed can tighten it without a build.
 @export_range(0.0, 10.0, 0.01) var prop_spawn_interval: float = 0.1
 
@@ -255,13 +255,13 @@ extends DotConfig
 
 @export_group("Movement")
 
-## Ground speed, m/s (`DotFpsTunables.max_speed`). Sent to every client in HELLO and again when it changes, so a client predicts with the number the server simulates. Map layouts stay sized against `PlaylotMap.MOVE_SPEED` (7.0).
+## Ground speed, m/s (`GSFpsTunables.max_speed`). Sent to every client in HELLO and again when it changes, so a client predicts with the number the server simulates. Map layouts stay sized against `PlaylotMap.MOVE_SPEED` (7.0).
 @export_range(1.0, 30.0, 0.1) var move_speed: float = 7.0
 
-## Jump height, metres (`DotFpsTunables.jump_height`). Replicated like [member move_speed].
+## Jump height, metres (`GSFpsTunables.jump_height`). Replicated like [member move_speed].
 @export_range(0.2, 5.0, 0.05) var jump_height: float = 1.15
 
-## Gravity, m/s² (`DotFpsTunables.gravity`, and the map toys'). Replicated like [member move_speed].
+## Gravity, m/s² (`GSFpsTunables.gravity`, and the map toys'). Replicated like [member move_speed].
 @export_range(2.0, 60.0, 0.5) var move_gravity: float = 20.0
 
 @export_group("Server")
@@ -289,13 +289,13 @@ const FORMER_IDS: PackedStringArray = ["game-playground"]  # legacy id: operator
 ## Declares the rename to dot-core (API 31), so a deployment's `cfg/game/game-playlot/` tiers and
 ## rotation `games:` keys keep applying to the game under its new id. Idempotent.
 static func register_ids() -> void:
-	DotAddonConfig.register_former_game(GAME_ID, FORMER_IDS)
+	GSAddonConfig.register_former_game(GAME_ID, FORMER_IDS)
 
 
 ## The binder every entry point uses: [param config] layered, one cfg file per [constant CFG_FILES] entry.
-static func make_binder(config: DotConfig, json_path := "") -> DotGameConfigBinder:
+static func make_binder(config: GSConfig, json_path := "") -> GSGameConfigBinder:
 	register_ids()
-	var b := DotGameConfigBinder.create(config, "game-playlot", "pg", json_path)
+	var b := GSGameConfigBinder.create(config, "game-playlot", "pg", json_path)
 	b.grouped = true
 	b.group_files = CFG_FILES
 	return b
@@ -317,7 +317,7 @@ func apply_env(prefix_override: String = "") -> PackedStringArray:
 	for key in config_keys():
 		var former := gs_env_name(FORMER_ENV_PREFIX + key.to_upper())
 		if OS.has_environment(former):
-			DotLog.warn(CHANNEL, "an environment variable has the old Playlot prefix; rename it", {
+			GSLog.warn(CHANNEL, "an environment variable has the old Playlot prefix; rename it", {
 				"variable": former, "use": gs_env_name(env_prefix() + key.to_upper()),
 			})
 	var applied := super(FORMER_ENV_PREFIX)
@@ -331,20 +331,20 @@ func cli_prefix() -> String:
 	return "--pg-"
 
 
-func validate() -> DotResult:
+func validate() -> GSResult:
 	if initial_map == &"":
-		return DotResult.fail(
-			DotError.CODE_INVALID, "There has to be a map to start on."
+		return GSResult.fail(
+			GSError.CODE_INVALID, "There has to be a map to start on."
 		)
 
 	if rtv_fraction <= 0.0 or rtv_fraction > 1.0:
-		return DotResult.fail(
-			DotError.CODE_INVALID,
+		return GSResult.fail(
+			GSError.CODE_INVALID,
 			"rtv_fraction must be above 0 and at most 1.",
 			"%.2f" % rtv_fraction
 		)
 
-	return DotResult.success(null)
+	return GSResult.success(null)
 
 
 func describe_summary() -> String:

@@ -30,7 +30,7 @@ var _model: ZeeWorldModel = null
 
 func _register_net_vars() -> void:
 	super()
-	replicate(&"net_weapon", DotNetVar.Type.STRING)
+	replicate(&"net_weapon", GSNetVar.Type.STRING)
 
 	for spec in ZeeWeaponNet.all_specs():
 		var name: StringName = spec["property"]
@@ -40,7 +40,7 @@ func _register_net_vars() -> void:
 		if not [&"net_fire_seq", &"net_fire_kind", &"net_reloading", &"net_switching"].has(name):
 			continue
 
-		var field := replicate(name, DotNetVar.Type[spec["type"]])
+		var field := replicate(name, GSNetVar.Type[spec["type"]])
 
 		if int(spec["bits"]) > 0:
 			field.bits(int(spec["bits"]))

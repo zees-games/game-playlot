@@ -36,7 +36,7 @@ var _camera: Camera3D = null
 var _blood_from: PlaylotPresentation = null
 var _blood_delay := 0
 var _arms_pending := false
-var _arms: DotPlayerViewArms = null
+var _arms: GSPlayerViewArms = null
 ## Builds the map on the first frame, when set (see `--cloud-store`); it is a Callable so the
 ## one-off build is not part of what `_process` runs every frame.
 var _map_pending: Callable = Callable()
@@ -156,12 +156,12 @@ func _cloud_store(spec: String) -> bool:
 	if parts.size() != 2 or parts[0].is_empty() or pub.strip_edges().is_empty():
 		push_error("--cloud-store wants ORIGIN,PUBKEY_FILE (a readable public key), got %s" % spec)
 		return false
-	var config := DotCloudConfig.new()
+	var config := GSCloudConfig.new()
 	config.cache_dir = "user://screenshot_store_cache"
-	DotPaths.remove_tree(config.cache_dir)
+	GSPaths.remove_tree(config.cache_dir)
 	config.require_signed_manifests = true
 	config.trusted_keys = {"default": pub}
-	var cloud := DotCloudClient.new()
+	var cloud := GSCloudClient.new()
 	cloud.name = "Cloud"
 	cloud.config = config
 	cloud.config_file = ""
@@ -173,7 +173,7 @@ func _cloud_store(spec: String) -> bool:
 	root.add_child(cloud)
 	# Registered here: the client registers itself only from `_ready`, which a child added during
 	# `_initialize` has not run when the map asks for it.
-	DotRegistry.register(DotCloudClient.SERVICE, cloud)
+	GSRegistry.register(GSCloudClient.SERVICE, cloud)
 	return true
 
 
@@ -226,7 +226,7 @@ func _draw_props(entries: Array) -> void:
 func _draw_toys(placements: Array) -> void:
 	if placements.is_empty():
 		return
-	var box := DotPropBodyBox.new()
+	var box := GSPropBodyBox.new()
 	box.name = "Toys"
 	box.authoritative = false
 	root.add_child(box)
@@ -234,10 +234,10 @@ func _draw_toys(placements: Array) -> void:
 	_toy_placements = placements
 
 
-var _toy_box: DotPropBodyBox = null
+var _toy_box: GSPropBodyBox = null
 var _action_args: Array = []
 var _action_id := ""
-var _action_figure: DotHumanoidFigure = null
+var _action_figure: GSHumanoidFigure = null
 var _toy_placements: Array = []
 
 
@@ -317,9 +317,9 @@ const AIR_STEP := 0.5
 ## The first point from [param from] towards [param at] inside the drawn world's air (a leaf with a visibility cluster),
 ## or [param from] when the map draws no culled world or the line is solid. Outside the air the culling shows the wrong part.
 func _into_air(from: Vector3, at: Vector3) -> Vector3:
-	var drawn: DotMapDrawnWorld = null
+	var drawn: GSMapDrawnWorld = null
 	if _map_node != null:
-		drawn = _map_node.get(&"drawn_world") as DotMapDrawnWorld
+		drawn = _map_node.get(&"drawn_world") as GSMapDrawnWorld
 	if drawn == null or drawn.visibility == null or drawn.visibility.root == null:
 		return from
 	var vis := drawn.visibility
@@ -477,12 +477,12 @@ var _fx_pending := false
 var _grenades_pending := false
 
 
-## `--arms`: the downed first-person arms (`DotPlayerViewArms`) seen from the eye, level and at the steepest look-down.
+## `--arms`: the downed first-person arms (`GSPlayerViewArms`) seen from the eye, level and at the steepest look-down.
 func _stage_arms(id: String) -> Array[Dictionary]:
 	var pivot := Node3D.new()
 	root.add_child(pivot)
 	pivot.global_position = Vector3(0.0, 1.0, 0.0)
-	_arms = DotPlayerViewArms.new()
+	_arms = GSPlayerViewArms.new()
 	pivot.add_child(_arms)
 	_arms.build()
 	_arms.set_downed(true)
@@ -498,7 +498,7 @@ func _stage_arms(id: String) -> Array[Dictionary]:
 ## `--action <kind> <id>` (`--action emote dance`): a person playing an avatar action from the
 ## front, early and later in the clip. The id goes through dot-user-avatar's own list.
 func _stage_action(id: String, kind: StringName, action: String) -> Array[Dictionary]:
-	var figure := PlaylotFigure.build(1.8, PackedInt32Array(), "actor") as DotHumanoidFigure
+	var figure := PlaylotFigure.build(1.8, PackedInt32Array(), "actor") as GSHumanoidFigure
 	if figure == null:
 		push_error("no people art in this build")
 		return []
@@ -506,7 +506,7 @@ func _stage_action(id: String, kind: StringName, action: String) -> Array[Dictio
 	figure.global_position = Vector3(0.0, 0.0, 0.0)
 	figure.rotation.y = PI
 	_action_figure = figure
-	var entry := DotAvatarActions.defaults().find(kind, action)
+	var entry := GSAvatarActions.defaults().find(kind, action)
 	var play := func() -> void:
 		var ok := figure.play_action(StringName(action), bool(entry.get("loop", false)), 0.0)
 		print("action %s/%s: played=%s" % [kind, action, ok])
@@ -599,7 +599,7 @@ func _stage_fx() -> Array[Dictionary]:
 func _stage_grenades() -> Array[Dictionary]:
 	var layer := PlaylotProjectiles.new()
 	root.add_child(layer)
-	var spawn := DotWeaponSpawn.new()
+	var spawn := GSWeaponSpawn.new()
 	spawn.id = &"aw_frag"
 	spawn.origin = Vector3(0, 2.2, -3)
 	spawn.radius = 0.2
@@ -617,15 +617,15 @@ func _stage_grenades() -> Array[Dictionary]:
 ## bool synchronously; making it a coroutine returns a signal object instead, which is
 ## truthy, so the tree quits on the first frame and writes nothing. That is what
 ## game-fatal-contact's first version of this file did and the reason its comment says so.
-## Frame sequence after each still (GS_SHOT_FRAMES); see DotShotSeq.
-var _seq := DotShotSeq.new()
+## Frame sequence after each still (GS_SHOT_FRAMES); see GSShotSeq.
+var _seq := GSShotSeq.new()
 var _seq_active := false
 
 
 func _splatter_blood() -> void:
 	if OS.get_cmdline_user_args().has("--nogore"):
 		_blood_from.settings.set_value(&"gore", false)
-	var npc := DotEntity.make_id(DotEntity.KIND_NPC, 1)
+	var npc := GSEntity.make_id(GSEntity.KIND_NPC, 1)
 	for i in 6:
 		var at := Vector3(-2.5 + i * 1.0, 1.2 + (i % 3) * 0.5, -1.0)
 		var _s := _blood_from.on_body_hit(npc, at, Vector3(at.x * 0.3, 1.7, 8.0), 8.0)

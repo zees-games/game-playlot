@@ -32,7 +32,7 @@ enum Kind {
 	NOTICE,
 	## A player got into or out of a vehicle.
 	SEAT,
-	## One chat line, already routed, sanitised and addressed by [DotChatRouter].
+	## One chat line, already routed, sanitised and addressed by [GSChatRouter].
 	CHAT,
 	## A player's health, armour or death. See [PlaylotArena].
 	COMBAT,
@@ -118,7 +118,7 @@ enum Ask {
 	USE_VEHICLE,
 	## I typed a line. The server decides what channel it lands on and who hears it.
 	SAY,
-	## Rock the vote, nominate, or cast one. The body is a token a [DotVoteSource] resolves.
+	## Rock the vote, nominate, or cast one. The body is a token a [GSVoteSource] resolves.
 	VOTE,
 	## Here is what I want to spawn with.
 	LOADOUT,
@@ -155,8 +155,8 @@ static func ask_name(ask: int) -> String:
 	return String(names[ask]) if ask >= 0 and ask < names.size() else "?"
 
 
-static func _w() -> DotNetWriter:
-	return DotNetWriter.new()
+static func _w() -> GSNetWriter:
+	return GSNetWriter.new()
 
 
 # --- Hello -----------------------------------------------------------------
@@ -185,14 +185,14 @@ static func write_movement(movement: Vector3) -> PackedByteArray:
 	return w.to_bytes()
 
 
-static func _write_movement(w: DotNetWriter, movement: Vector3) -> void:
+static func _write_movement(w: GSNetWriter, movement: Vector3) -> void:
 	w.write_float32(movement.x)
 	w.write_float32(movement.y)
 	w.write_float32(movement.z)
 
 
 ## "movement" is Vector3.ZERO when the message carried none (a server older than this field): the client keeps what it has.
-static func read_movement(r: DotNetReader) -> Vector3:
+static func read_movement(r: GSNetReader) -> Vector3:
 	if r.bits_remaining() < 96:
 		return Vector3.ZERO
 	var movement := Vector3(r.read_float32(), r.read_float32(), r.read_float32())
@@ -202,7 +202,7 @@ static func read_movement(r: DotNetReader) -> Vector3:
 	return movement
 
 
-static func read_hello(r: DotNetReader) -> Dictionary:
+static func read_hello(r: GSNetReader) -> Dictionary:
 	var player_id := r.read_varint()
 	var tick_rate := r.read_uint(9)
 	var server_tick := r.read_varint()
@@ -238,7 +238,7 @@ static func write_join(
 	return w.to_bytes()
 
 
-static func read_join(r: DotNetReader) -> Dictionary:
+static func read_join(r: GSNetReader) -> Dictionary:
 	var player_id := r.read_varint()
 	var net_id := r.read_varint()
 	var display_name := r.read_string(NAME_BYTES)
@@ -268,7 +268,7 @@ static func write_player(player_id: int) -> PackedByteArray:
 	return w.to_bytes()
 
 
-static func read_player(r: DotNetReader) -> int:
+static func read_player(r: GSNetReader) -> int:
 	return r.read_varint()
 
 
@@ -288,7 +288,7 @@ static func write_prop(
 	return w.to_bytes()
 
 
-static func read_prop(r: DotNetReader) -> Dictionary:
+static func read_prop(r: GSNetReader) -> Dictionary:
 	var net_id := r.read_varint()
 	var kind_id := r.read_string(ID_BYTES)
 	var owner_id := r.read_varint()
@@ -305,7 +305,7 @@ static func read_prop(r: DotNetReader) -> Dictionary:
 
 
 ## [param death] is how a killed NPC's body falls (the server's pick), last and optional.
-static func write_prop_gone(net_id: int, reason: StringName, death: DotPlayerDeath = null) -> PackedByteArray:
+static func write_prop_gone(net_id: int, reason: StringName, death: GSPlayerDeath = null) -> PackedByteArray:
 	var w := _w()
 	w.write_varint(net_id)
 	w.write_string(String(reason), ID_BYTES)
@@ -314,13 +314,13 @@ static func write_prop_gone(net_id: int, reason: StringName, death: DotPlayerDea
 	return w.to_bytes()
 
 
-static func read_prop_gone(r: DotNetReader) -> Dictionary:
+static func read_prop_gone(r: GSNetReader) -> Dictionary:
 	var net_id := r.read_varint()
 	var reason := r.read_string(ID_BYTES)
 	var out := {"net_id": net_id, "reason": StringName(reason)}
 	# A byte or more left is the fall; less is the padding to the last byte.
 	if r.bits_remaining() >= 8:
-		out["death"] = DotPlayerDeath.read_from(r)
+		out["death"] = GSPlayerDeath.read_from(r)
 	out["ok"] = r.ok()
 	return out
 
@@ -336,7 +336,7 @@ static func write_held(player_id: int, net_id: int, frozen: bool) -> PackedByteA
 	return w.to_bytes()
 
 
-static func read_held(r: DotNetReader) -> Dictionary:
+static func read_held(r: GSNetReader) -> Dictionary:
 	var player_id := r.read_varint()
 	var net_id := r.read_varint()
 	var frozen := r.read_bool()
@@ -350,7 +350,7 @@ static func write_weapon(player_id: int, weapon_id: StringName) -> PackedByteArr
 	return w.to_bytes()
 
 
-static func read_weapon(r: DotNetReader) -> Dictionary:
+static func read_weapon(r: GSNetReader) -> Dictionary:
 	var player_id := r.read_varint()
 	var weapon_id := r.read_string(ID_BYTES)
 	return {"player_id": player_id, "weapon_id": StringName(weapon_id), "ok": r.ok()}
@@ -369,7 +369,7 @@ static func write_seat(
 	return w.to_bytes()
 
 
-static func read_seat(r: DotNetReader) -> Dictionary:
+static func read_seat(r: GSNetReader) -> Dictionary:
 	var player_id := r.read_varint()
 	var vehicle_net_id := r.read_varint()
 	var seat_index := r.read_uint(8)
@@ -391,7 +391,7 @@ static func write_map(map_id: StringName) -> PackedByteArray:
 	return w.to_bytes()
 
 
-static func read_map(r: DotNetReader) -> StringName:
+static func read_map(r: GSNetReader) -> StringName:
 	return StringName(r.read_string(ID_BYTES))
 
 
@@ -405,7 +405,7 @@ static func write_notice(player_id: int, text: String) -> PackedByteArray:
 	return w.to_bytes()
 
 
-static func read_notice(r: DotNetReader) -> Dictionary:
+static func read_notice(r: GSNetReader) -> Dictionary:
 	var player_id := r.read_varint()
 	var text := r.read_string(TEXT_BYTES)
 	return {"player_id": player_id, "text": text, "ok": r.ok()}
@@ -419,7 +419,7 @@ static func write_id(id: StringName) -> PackedByteArray:
 	return w.to_bytes()
 
 
-static func read_id(r: DotNetReader) -> StringName:
+static func read_id(r: GSNetReader) -> StringName:
 	return StringName(r.read_string(ID_BYTES))
 
 
@@ -460,7 +460,7 @@ static func write_arm(sub: int, id: StringName, payload: String = "") -> PackedB
 	return w.to_bytes()
 
 
-static func read_arm(r: DotNetReader) -> Dictionary:
+static func read_arm(r: GSNetReader) -> Dictionary:
 	var id := StringName(r.read_string(ID_BYTES))
 	var out := {"id": id, "sub": ARM_PROP_SUB, "payload": ""}
 
@@ -478,7 +478,7 @@ static func write_index(index: int) -> PackedByteArray:
 	return w.to_bytes()
 
 
-static func read_index(r: DotNetReader) -> int:
+static func read_index(r: GSNetReader) -> int:
 	return r.read_uint(8)
 
 
@@ -490,24 +490,24 @@ const CHAT_KEY_BYTES := 48
 const CHAT_KIND_BITS := 4
 
 
-## Whether every [enum DotChatMessage.Kind] fits in [constant CHAT_KIND_BITS]. dot-chat owns
+## Whether every [enum GSChatMessage.Kind] fits in [constant CHAT_KIND_BITS]. dot-chat owns
 ## that enum, so it can grow under this game; headless_net reads this.
 static func chat_kinds_fit() -> bool:
-	return DotChatMessage.KIND_NAMES.size() <= (1 << CHAT_KIND_BITS)
+	return GSChatMessage.KIND_NAMES.size() <= (1 << CHAT_KIND_BITS)
 
 
-## One chat line, from [method DotChatMessage.to_dictionary], plus who said it.
+## One chat line, from [method GSChatMessage.to_dictionary], plus who said it.
 ##
 ## Encoded field by field, not JSON: a JSON body is an unbounded blob a hostile server could inflate.
 ## The meta field is one bounded number (the player the line belongs to); the kind is an index into
-## [constant DotChatMessage.KIND_NAMES], one table both ways.
+## [constant GSChatMessage.KIND_NAMES], one table both ways.
 static func write_chat(wire: Dictionary) -> PackedByteArray:
-	var writer := DotNetWriter.new()
+	var writer := GSNetWriter.new()
 	writer.write_varint(int(wire.get("n", 0)))
 	writer.write_uint(int(wire.get("t", 0)), 32)
 	writer.write_string(str(wire.get("c", "")), CHAT_CHANNEL_BYTES)
 	writer.write_uint(
-		maxi(0, DotChatMessage.kind_from_name(str(wire.get("k", "say")))), CHAT_KIND_BITS
+		maxi(0, GSChatMessage.kind_from_name(str(wire.get("k", "say")))), CHAT_KIND_BITS
 	)
 	writer.write_string(str(wire.get("s", "")), CHAT_KEY_BYTES)
 	writer.write_string(str(wire.get("d", "")), NAME_BYTES)
@@ -524,7 +524,7 @@ static func write_chat(wire: Dictionary) -> PackedByteArray:
 	return writer.to_bytes()
 
 
-static func read_chat(reader: DotNetReader) -> Dictionary:
+static func read_chat(reader: GSNetReader) -> Dictionary:
 	var out := {
 		"n": reader.read_varint(),
 		"t": reader.read_uint(32),
@@ -532,8 +532,8 @@ static func read_chat(reader: DotNetReader) -> Dictionary:
 	}
 
 	var kind := reader.read_uint(CHAT_KIND_BITS)
-	out["k"] = DotChatMessage.KIND_NAMES[kind] \
-		if kind >= 0 and kind < DotChatMessage.KIND_NAMES.size() else "say"
+	out["k"] = GSChatMessage.KIND_NAMES[kind] \
+		if kind >= 0 and kind < GSChatMessage.KIND_NAMES.size() else "say"
 
 	out["s"] = reader.read_string(CHAT_KEY_BYTES)
 	out["d"] = reader.read_string(NAME_BYTES)
@@ -550,13 +550,13 @@ static func read_chat(reader: DotNetReader) -> Dictionary:
 
 
 static func write_say(channel_id: StringName, text: String) -> PackedByteArray:
-	var writer := DotNetWriter.new()
+	var writer := GSNetWriter.new()
 	writer.write_string(String(channel_id), CHAT_CHANNEL_BYTES)
 	writer.write_string(text, CHAT_BYTES)
 	return writer.to_bytes()
 
 
-static func read_say(reader: DotNetReader) -> Dictionary:
+static func read_say(reader: GSNetReader) -> Dictionary:
 	var out := {
 		"channel": reader.read_string(CHAT_CHANNEL_BYTES),
 		"text": reader.read_string(CHAT_BYTES),
@@ -573,14 +573,14 @@ const HEALTH_BITS := 8
 
 ## Somebody's health changed, or they died.
 ##
-## An event, not a [DotNetVar]: health moves on a hit, not a tick, so a field would send an
+## An event, not a [GSNetVar]: health moves on a hit, not a tick, so a field would send an
 ## unchanged byte per player at the snapshot rate. A death carries how the body falls
-## ([DotPlayerDeath]) last and optional, so a reader of only the fields above still works.
+## ([GSPlayerDeath]) last and optional, so a reader of only the fields above still works.
 static func write_combat(
 	player_id: int, health: int, armour: int, attacker_id: int, died: bool,
-	death: DotPlayerDeath = null
+	death: GSPlayerDeath = null
 ) -> PackedByteArray:
-	var writer := DotNetWriter.new()
+	var writer := GSNetWriter.new()
 	writer.write_varint(player_id)
 	writer.write_uint(clampi(health, 0, 255), HEALTH_BITS)
 	writer.write_uint(clampi(armour, 0, 255), HEALTH_BITS)
@@ -591,7 +591,7 @@ static func write_combat(
 	return writer.to_bytes()
 
 
-static func read_combat(reader: DotNetReader) -> Dictionary:
+static func read_combat(reader: GSNetReader) -> Dictionary:
 	var out := {
 		"player_id": reader.read_varint(),
 		"health": reader.read_uint(HEALTH_BITS),
@@ -601,7 +601,7 @@ static func read_combat(reader: DotNetReader) -> Dictionary:
 	}
 	# A byte or more left is the fall; less is the padding to the last byte.
 	if bool(out["died"]) and reader.bits_remaining() >= 8:
-		out["death"] = DotPlayerDeath.read_from(reader)
+		out["death"] = GSPlayerDeath.read_from(reader)
 	out["ok"] = reader.ok()
 	return out
 
@@ -614,11 +614,11 @@ const MATCH_LABEL_BYTES := 48
 
 ## The match clock, once a second and on every transition.
 ##
-## Sent rather than derived: a mirroring client's [DotMatch] never ticks, so its clock never advances.
+## Sent rather than derived: a mirroring client's [GSMatch] never ticks, so its clock never advances.
 static func write_match(
 	state: int, seconds_left: float, round_number: int, label: String
 ) -> PackedByteArray:
-	var writer := DotNetWriter.new()
+	var writer := GSNetWriter.new()
 	writer.write_uint(clampi(state, 0, 15), MATCH_STATE_BITS)
 	writer.write_uint(clampi(int(seconds_left), 0, 65535), 16)
 	writer.write_uint(clampi(round_number, 0, 255), 8)
@@ -626,7 +626,7 @@ static func write_match(
 	return writer.to_bytes()
 
 
-static func read_match(reader: DotNetReader) -> Dictionary:
+static func read_match(reader: GSNetReader) -> Dictionary:
 	var out := {
 		"state": reader.read_uint(MATCH_STATE_BITS),
 		"seconds_left": float(reader.read_uint(16)),
@@ -649,7 +649,7 @@ const PROGRESS_TEXT_BYTES := 96
 static func write_progress(
 	player_id: int, id: StringName, title: String, value: int
 ) -> PackedByteArray:
-	var writer := DotNetWriter.new()
+	var writer := GSNetWriter.new()
 	writer.write_varint(player_id)
 	writer.write_string(String(id), PROGRESS_ID_BYTES)
 	writer.write_string(title, PROGRESS_TEXT_BYTES)
@@ -657,7 +657,7 @@ static func write_progress(
 	return writer.to_bytes()
 
 
-static func read_progress(reader: DotNetReader) -> Dictionary:
+static func read_progress(reader: GSNetReader) -> Dictionary:
 	var out := {
 		"player_id": reader.read_varint(),
 		"id": reader.read_string(PROGRESS_ID_BYTES),
@@ -678,14 +678,14 @@ const LOADOUT_COUNT_BITS := 4
 
 ## What a client asks the vote for: `rtv`, `nominate <id>`, `vote <n>`, `extend`.
 ##
-## A token rather than an enum: what an id means is a [DotVoteSource]'s business.
+## A token rather than an enum: what an id means is a [GSVoteSource]'s business.
 static func write_vote(token: String) -> PackedByteArray:
-	var writer := DotNetWriter.new()
+	var writer := GSNetWriter.new()
 	writer.write_string(token, VOTE_TOKEN_BYTES)
 	return writer.to_bytes()
 
 
-static func read_vote(reader: DotNetReader) -> String:
+static func read_vote(reader: GSNetReader) -> String:
 	return reader.read_string(VOTE_TOKEN_BYTES)
 
 
@@ -696,14 +696,14 @@ const CUE_BYTES := 32
 ## A map-vote cue id (empty for none) and a countdown second (0 for none). Named `_cue`
 ## because [method write_vote] is the other direction's: a player's token to the server.
 static func write_vote_cue(cue: String, seconds_left: int, runoff: bool) -> PackedByteArray:
-	var writer := DotNetWriter.new()
+	var writer := GSNetWriter.new()
 	writer.write_string(cue, CUE_BYTES)
 	writer.write_uint(clampi(seconds_left, 0, 255), 8)
 	writer.write_bool(runoff)
 	return writer.to_bytes()
 
 
-static func read_vote_cue(reader: DotNetReader) -> Dictionary:
+static func read_vote_cue(reader: GSNetReader) -> Dictionary:
 	var out := {
 		"cue": reader.read_string(CUE_BYTES),
 		"seconds_left": reader.read_uint(8),
@@ -713,18 +713,18 @@ static func read_vote_cue(reader: DotNetReader) -> Dictionary:
 	return out
 
 
-## The vote's clock as [method DotVoteClockView.state_of] describes it: whether there is
+## The vote's clock as [method GSVoteClockView.state_of] describes it: whether there is
 ## one, the whole seconds left, and whether it is counting. A client counts it down
 ## itself between messages; the server sends another only when that count would be wrong.
 static func write_clock(state: Dictionary) -> PackedByteArray:
-	var writer := DotNetWriter.new()
+	var writer := GSNetWriter.new()
 	writer.write_bool(bool(state.get("has_clock", false)))
 	writer.write_varint(maxi(int(state.get("seconds_left", 0)), 0))
 	writer.write_bool(bool(state.get("running", false)))
 	return writer.to_bytes()
 
 
-static func read_clock(reader: DotNetReader) -> Dictionary:
+static func read_clock(reader: GSNetReader) -> Dictionary:
 	var out := {
 		"has_clock": reader.read_bool(),
 		"seconds_left": reader.read_varint(),
@@ -739,7 +739,7 @@ static func read_clock(reader: DotNetReader) -> Dictionary:
 ## Ids only: the server validates them against a schema and entitlements, and refuses rather
 ## than repairs a loadout it does not like.
 static func write_loadout(pairs: Array) -> PackedByteArray:
-	var writer := DotNetWriter.new()
+	var writer := GSNetWriter.new()
 	var count := mini(pairs.size(), LOADOUT_MAX_SLOTS)
 	writer.write_uint(count, LOADOUT_COUNT_BITS)
 
@@ -751,7 +751,7 @@ static func write_loadout(pairs: Array) -> PackedByteArray:
 	return writer.to_bytes()
 
 
-static func read_loadout(reader: DotNetReader) -> Dictionary:
+static func read_loadout(reader: GSNetReader) -> Dictionary:
 	var count := reader.read_uint(LOADOUT_COUNT_BITS)
 	var pairs: Array = []
 

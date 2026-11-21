@@ -15,14 +15,14 @@ const PlaylotPresentation := preload("../game/playlot_presentation.gd")
 const PORT := 27299
 
 var _server_pid := -1
-## Frame sequence after each still (GS_SHOT_FRAMES); see DotShotSeq. The headless
+## Frame sequence after each still (GS_SHOT_FRAMES); see GSShotSeq. The headless
 ## cover_server renders nothing, so the clips are recorded here on the client.
-var _seq := DotShotSeq.new()
+var _seq := GSShotSeq.new()
 
 
 func _ready() -> void:
 	var _scratch := PlaylotPresentation.use_scratch_settings("render_cover")
-	DotLog.set_level(DotLog.Level.ERROR)
+	GSLog.set_level(GSLog.Level.ERROR)
 	_run.call_deferred()
 
 
@@ -41,7 +41,7 @@ func _run() -> void:
 		"res://tools/cover_server.tscn", "--", "--port", str(PORT)]))
 	await get_tree().create_timer(10.0).timeout
 
-	var link := DotClientLink.new()
+	var link := GSClientLink.new()
 	link.name = "Server"
 	link.player_name = "Cover"
 	link.transport_preference = "udp"
@@ -58,7 +58,7 @@ func _run() -> void:
 	add_child(client)
 	for i in 3:
 		await get_tree().process_frame
-	var gate: DotLoadGate = client.get("gate")
+	var gate: GSLoadGate = client.get("gate")
 	print("render_cover: gate open at the first shot: ", gate.is_open() if gate != null else "no gate")
 	await _shot("cover_up")
 

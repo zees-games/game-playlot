@@ -42,9 +42,9 @@ func refresh_skins(session_id: int) -> void:
 
 func add_player(
 	peer_id: int, session_id: int, display_name: String, record_key: StringName = &""
-) -> DotResult:
+) -> GSResult:
 	if net == null or not net.is_server:
-		return DotResult.fail(DotError.CODE_FORBIDDEN, "Only the server adds players.")
+		return GSResult.fail(GSError.CODE_FORBIDDEN, "Only the server adds players.")
 
 	var id := _player_key(session_id)
 
@@ -60,13 +60,13 @@ func add_player(
 	if player == null:
 		_player_of_peer.erase(peer_id)
 		_peer_of_player.erase(session_id)
-		return DotResult.fail(DotError.CODE_STATE, "The game refused the player.")
+		return GSResult.fail(GSError.CODE_STATE, "The game refused the player.")
 
 	if _ready_unseated.has(peer_id):
 		_ready_unseated.erase(peer_id)
 		_admit(peer_id)
 
-	return DotResult.success(player)
+	return GSResult.success(player)
 
 
 ## A player the game made itself (a bot, a test) gets an entity like one a peer asked for. Its peer
@@ -96,7 +96,7 @@ func _on_player_added(id: StringName) -> void:
 	var registered := net.registry.register(identity, 0, net.clock.tick, net.config)
 
 	if not registered.ok:
-		DotLog.warn(CHANNEL, "could not replicate a player", {"error": str(registered.error)})
+		GSLog.warn(CHANNEL, "could not replicate a player", {"error": str(registered.error)})
 		return
 
 	_broadcast(PlaylotEvents.Kind.JOIN, _join_body(session_id))
@@ -115,7 +115,7 @@ func _on_player_removed(id: StringName) -> void:
 ## Every prop the spawner creates becomes a replicated entity, announced reliably AND replicated by
 ## snapshot: the snapshot moves it, the event says what it is. Props are named by PATH in the
 ## catalogue so a dot-cloud pack can deliver them (a mounted pack's `class_name`s are not registered).
-func _on_prop_spawned(prop: DotPropInstance) -> void:
+func _on_prop_spawned(prop: GSPropInstance) -> void:
 	if net == null or not net.is_server or prop == null or prop.node == null:
 		return
 
@@ -123,7 +123,7 @@ func _on_prop_spawned(prop: DotPropInstance) -> void:
 	if body == null:
 		return
 
-		# A vehicle replicates through DotVehicleNetSync (wheel angle and full seats cannot be derived
+		# A vehicle replicates through GSVehicleNetSync (wheel angle and full seats cannot be derived
 		# from a position), so the catalogue decides the behaviour once, here. The table below is the
 		# same on both ends and `_apply_prop` reads it the same way.
 	var behaviour := _behaviour_for(prop.def)
@@ -136,18 +136,18 @@ func _on_prop_spawned(prop: DotPropInstance) -> void:
 	if as_vehicle != null and game.vehicles != null:
 		as_vehicle.vehicle = game.vehicles.vehicle_for_node(body)
 
-	var identity := DotNetIdentity.new()
+	var identity := GSNetIdentity.new()
 	identity.name = "Identity"
 	identity.owner_peer_id = 0
 	# SERVER, not SHARED: nothing about a rigid body is predicted, so there is no owner
 	# to share with. See PlaylotPropNet for why that is a decision and not a gap.
-	identity.authority = DotNetIdentity.Authority.SERVER
+	identity.authority = GSNetIdentity.Authority.SERVER
 	body.add_child(identity)
 
 	var registered := net.registry.register(identity, 0, net.clock.tick, net.config)
 
 	if not registered.ok:
-		DotLog.warn(CHANNEL, "could not replicate a prop", {"error": str(registered.error)})
+		GSLog.warn(CHANNEL, "could not replicate a prop", {"error": str(registered.error)})
 		return
 
 	_prop_nets[prop.instance_id] = behaviour
@@ -166,7 +166,7 @@ func _on_prop_spawned(prop: DotPropInstance) -> void:
 ## Replicates everything [param spawner] spawns, as props are: a PROP event says what it is and a
 ## [PlaylotPropNet] moves it. Called by the module once the waves exist. Through the prop path,
 ## not a second one; the definition is found in [member npc_catalogue] when the prop catalogue lacks it.
-func watch_npc_spawner(spawner: DotNpcSpawner, catalogue: DotNpcCatalogue) -> void:
+func watch_npc_spawner(spawner: GSNpcSpawner, catalogue: GSNpcCatalogue) -> void:
 	npc_catalogue = catalogue
 
 	if spawner == null or net == null or not net.is_server:
@@ -175,11 +175,11 @@ func watch_npc_spawner(spawner: DotNpcSpawner, catalogue: DotNpcCatalogue) -> vo
 	spawner.spawned.connect(_on_npc_spawned)
 	spawner.removed.connect(_on_npc_removed)
 	# Before `removed`, while the body is there: how it falls, sent with the PROP_GONE.
-	spawner.died.connect(func(npc: DotNpcInstance, by: StringName) -> void:
+	spawner.died.connect(func(npc: GSNpcInstance, by: StringName) -> void:
 		var _fall := game.decide_npc_death(npc.node as Node3D, by, npc.def.max_health if npc.def != null else 0.0))
 
 
-func _on_npc_spawned(npc: DotNpcInstance) -> void:
+func _on_npc_spawned(npc: GSNpcInstance) -> void:
 	var body := npc.node as Node3D
 
 	if body == null or net == null or not net.is_server:
@@ -190,16 +190,16 @@ func _on_npc_spawned(npc: DotNpcInstance) -> void:
 	behaviour.prop = body
 	body.add_child(behaviour)
 
-	var identity := DotNetIdentity.new()
+	var identity := GSNetIdentity.new()
 	identity.name = "Identity"
 	identity.owner_peer_id = 0
-	identity.authority = DotNetIdentity.Authority.SERVER
+	identity.authority = GSNetIdentity.Authority.SERVER
 	body.add_child(identity)
 
 	var registered := net.registry.register(identity, 0, net.clock.tick, net.config)
 
 	if not registered.ok:
-		DotLog.warn(CHANNEL, "could not replicate an NPC", {"error": str(registered.error)})
+		GSLog.warn(CHANNEL, "could not replicate an NPC", {"error": str(registered.error)})
 		return
 
 	_prop_nets[npc.instance_id] = behaviour
@@ -212,7 +212,7 @@ func _on_npc_spawned(npc: DotNpcInstance) -> void:
 	))
 
 
-func _on_npc_removed(npc: DotNpcInstance, reason: StringName) -> void:
+func _on_npc_removed(npc: GSNpcInstance, reason: StringName) -> void:
 	var behaviour: PlaylotPropNet = _prop_nets.get(npc.instance_id)
 	_prop_nets.erase(npc.instance_id)
 	_npc_kinds.erase(npc.instance_id)
@@ -226,7 +226,7 @@ func _on_npc_removed(npc: DotNpcInstance, reason: StringName) -> void:
 		net_id, reason, _death_of(npc.node, reason)))
 
 
-func _on_prop_removed(prop: DotPropInstance, reason: StringName) -> void:
+func _on_prop_removed(prop: GSPropInstance, reason: StringName) -> void:
 	if net == null or not net.is_server or prop == null:
 		return
 
@@ -253,7 +253,7 @@ func _on_prop_refused(player_id: StringName, prop_id: StringName, reason: String
 
 ## Somebody's physics gun took hold of a prop or let go of one: everybody is told, so every
 ## client can draw the beam.
-func _on_held_changed(id: StringName, prop: DotPropInstance, held: bool) -> void:
+func _on_held_changed(id: StringName, prop: GSPropInstance, held: bool) -> void:
 	if net == null or not net.is_server:
 		return
 	var session := session_of(id)
@@ -276,7 +276,7 @@ func _on_pane_broken(index: int, _at: Vector3, _material: StringName) -> void:
 ## Tells everybody that somebody got in or out, not just the rider: the other clients must stop
 ## drawing a walking player and draw one sitting in a car, and a "get in" prompt over a full seat lies.
 func announce_seat(
-	vehicle: DotVehicleInstance, rider_id: StringName, seat: DotVehicleSeat, seated: bool
+	vehicle: GSVehicleInstance, rider_id: StringName, seat: GSVehicleSeat, seated: bool
 ) -> void:
 	if net == null or not net.is_server or vehicle == null:
 		return
@@ -385,7 +385,7 @@ func _tell_world_props(peer_id: int) -> void:
 		))
 
 
-func _on_map_ready(map: DotMapDef) -> void:
+func _on_map_ready(map: GSMapDef) -> void:
 	_broadcast(PlaylotEvents.Kind.MAP, PlaylotEvents.write_map(map.id))
 	_register_toys()
 	# Re-announced after a map change: a client rebuilt its world and needs to be told
@@ -473,7 +473,7 @@ func _select_tool(session_id: int, id: StringName, tool_id: StringName) -> void:
 	_broadcast(PlaylotEvents.Kind.WEAPON, PlaylotEvents.write_weapon(session_id, tool_id))
 
 
-func _apply_weapon(reader: DotNetReader) -> void:
+func _apply_weapon(reader: GSNetReader) -> void:
 	var held := PlaylotEvents.read_weapon(reader)
 	if not bool(held["ok"]):
 		return
@@ -484,7 +484,7 @@ func _apply_weapon(reader: DotNetReader) -> void:
 	weapon_changed.emit(int(held["player_id"]), held["weapon_id"] as StringName)
 
 
-func _apply_held(reader: DotNetReader) -> void:
+func _apply_held(reader: GSNetReader) -> void:
 	var holding := PlaylotEvents.read_held(reader)
 	if not bool(holding["ok"]):
 		return
@@ -504,13 +504,13 @@ func _on_projectile_launched(flying: RefCounted) -> void:
 
 ## The local thrower's own launches, flown now; [method _apply_projectile] adopts them when
 ## the server's launch arrives. Returns how many.
-func predict_launches(outcome: DotWeaponOutcome, owner_body: Node = null) -> int:
+func predict_launches(outcome: GSWeaponOutcome, owner_body: Node = null) -> int:
 	if game.projectiles == null or game.projectiles.authority or outcome == null:
 		return 0
 
 	var rid := (owner_body as CollisionObject3D).get_rid() if owner_body is CollisionObject3D else RID()
 
-	for spawn: DotWeaponSpawn in outcome.spawns:
+	for spawn: GSWeaponSpawn in outcome.spawns:
 		var _f: Variant = game.projectiles.predict(spawn, _player_key(local_player_id), rid)
 
 	return outcome.spawns.size()
@@ -525,7 +525,7 @@ func _on_projectile_detonated(serial: int, at: Vector3, radius: float) -> void:
 	))
 
 
-func _apply_projectile(reader: DotNetReader) -> void:
+func _apply_projectile(reader: GSNetReader) -> void:
 	if game.projectiles == null:
 		return
 
@@ -560,7 +560,7 @@ func _adopt_movement(movement: Vector3) -> void:
 		game.set_movement(movement.x, movement.y, movement.z)
 
 
-func _apply_hello(reader: DotNetReader) -> void:
+func _apply_hello(reader: GSNetReader) -> void:
 	var hello := PlaylotEvents.read_hello(reader)
 	if not bool(hello["ok"]):
 		return
@@ -602,16 +602,16 @@ func _adopt_tick_rate(rate: int) -> void:
 
 	net.config.tick_rate = game.tick_rate
 	net.clock.tick_rate = game.tick_rate
-		# dot-net API 7 has DotNetClock.adopt_tick_rate(), which also raises the engine's step cap to a
+		# dot-net API 7 has GSNetClock.adopt_tick_rate(), which also raises the engine's step cap to a
 		# quarter second of ticks (8 steps are 62.5 ms at 128 Hz). A shell built before it gets the same
 		# rule here; remove this branch when the oldest shell is API 7.
-	if DotAddonApi.build_level("dot_net") >= 7:
-		DotNetClock.adopt_tick_rate(game.tick_rate)
+	if GSAddonApi.build_level("dot_net") >= 7:
+		GSNetClock.adopt_tick_rate(game.tick_rate)
 	else:
 		Engine.max_physics_steps_per_frame = maxi(Engine.max_physics_steps_per_frame, ceili(0.25 * float(game.tick_rate)))
 		Engine.physics_ticks_per_second = game.tick_rate
 
-	DotLog.info(CHANNEL, "adopted the server's tick rate", {
+	GSLog.info(CHANNEL, "adopted the server's tick rate", {
 		"was": before, "now": game.tick_rate, "engine": Engine.physics_ticks_per_second,
 	})
 
@@ -643,14 +643,14 @@ func _claim_local_player() -> void:
 	if claimed == 0 or mine.identity.owner_peer_id == claimed:
 		return
 
-	DotLog.debug(CHANNEL, "claimed the local player after HELLO", {
+	GSLog.debug(CHANNEL, "claimed the local player after HELLO", {
 		"session": local_player_id, "net_id": mine.identity.net_id,
 	})
 	var _changed := net.registry.change_owner(mine.identity.net_id, claimed)
 
 
 func _on_ride_entered(
-	vehicle: DotVehicleInstance, rider_id: StringName, seat: DotVehicleSeat
+	vehicle: GSVehicleInstance, rider_id: StringName, seat: GSVehicleSeat
 ) -> void:
 	announce_seat(vehicle, rider_id, seat, true)
 
@@ -665,9 +665,9 @@ func _on_pickup_changed(_holder_id: StringName, target_id: StringName, held: boo
 
 
 func _on_ride_exited(
-	vehicle: DotVehicleInstance,
+	vehicle: GSVehicleInstance,
 	rider_id: StringName,
-	seat: DotVehicleSeat,
+	seat: GSVehicleSeat,
 	_at: Vector3
 ) -> void:
 	announce_seat(vehicle, rider_id, seat, false)
@@ -676,7 +676,7 @@ func _on_ride_exited(
 ## A client's copy of "that player is in a car". The client does not run the ride (no vehicle
 ## spawner, exit sweep or seats), so it only stops predicting a player who is no longer walking: a
 ## predicted controller simulating a passenger fights the snapshots' position every tick.
-func _apply_seat(reader: DotNetReader) -> void:
+func _apply_seat(reader: GSNetReader) -> void:
 	var info := PlaylotEvents.read_seat(reader)
 
 	if not bool(info["ok"]):
@@ -701,7 +701,7 @@ func _apply_seat(reader: DotNetReader) -> void:
 	seat_changed.emit(int(info["player_id"]), bool(info["seated"]))
 
 
-func _apply_prop_gone(reader: DotNetReader) -> void:
+func _apply_prop_gone(reader: GSNetReader) -> void:
 	var info := PlaylotEvents.read_prop_gone(reader)
 	if not bool(info["ok"]):
 		return

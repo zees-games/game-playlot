@@ -9,11 +9,11 @@ func _test_the_wheel_cycles_tools() -> void:
 	var jump_wheel := 0
 	for row in keys.rows:
 		var action := StringName(str(row["action"]))
-		if action == DotMenuBindings.WEAPON_PREVIOUS_ACTION:
+		if action == GSMenuBindings.WEAPON_PREVIOUS_ACTION:
 			prev_row = row
-		elif action == DotMenuBindings.WEAPON_NEXT_ACTION:
+		elif action == GSMenuBindings.WEAPON_NEXT_ACTION:
 			next_row = row
-		elif action == DotMenuBindings.JUMP_ACTION and str(row["default"]).begins_with("Wheel"):
+		elif action == GSMenuBindings.JUMP_ACTION and str(row["default"]).begins_with("Wheel"):
 			jump_wheel += 1
 	_check(str(prev_row.get("default", "")) == "Wheel up" and str(next_row.get("default", "")) == "Wheel down",
 		"the weapon actions default to Wheel up and Wheel down", "%s / %s" % [prev_row.get("default"), next_row.get("default")])
@@ -90,7 +90,7 @@ var _g_on_rocket
 func _test_grenades() -> void:
 	_section("grenades and rockets fly")
 	await _sandbox_floor()
-	playlot.props.clear_all(DotPropSpawner.REASON_ADMIN)
+	playlot.props.clear_all(GSPropSpawner.REASON_ADMIN)
 	playlot.projectiles.clear()
 
 	_g_bot = playlot.players[&"bot"]
@@ -107,7 +107,7 @@ func _test_grenades() -> void:
 		playlot.tick_rate, playlot.current_tick())
 	_check(rig != null, "a player holds a frag")
 
-	var ctx := DotWeaponContext.new()
+	var ctx := GSWeaponContext.new()
 	ctx.origin = _g_bot.eye_position()
 	# Thrown down at the floor ahead, so it lands and rolls between the crate and the
 	# soldier rather than sailing over both.
@@ -116,8 +116,8 @@ func _test_grenades() -> void:
 	var thrown := 0
 	for i in 60:
 		ctx.tick = playlot.current_tick() + i
-		var command := DotWeaponCommand.new()
-		command.set_button(DotWeaponCommand.BUTTON_ATTACK, i < 6)
+		var command := GSWeaponCommand.new()
+		command.set_button(GSWeaponCommand.BUTTON_ATTACK, i < 6)
 		command.slot = PlaylotZee.slot_of(rig)
 		var outcome := rig.simulate_tick(command, ctx.tick, ctx)
 		thrown += outcome.spawns.size()
@@ -168,7 +168,7 @@ func _test_grenades_2() -> bool:
 			_g_lowest = minf(_g_lowest, live[0].position.y)
 			_g_bounced = _g_bounced or live[0].bounces > 0
 			for sound in playlot.npc_sounds.audible(live[0].position, playlot.npc_world.now(), 1.0):
-				if sound.kind == DotNpcAiSounds.Kind.DANGER:
+				if sound.kind == GSNpcAiSounds.Kind.DANGER:
 					_g_danger_heard = true
 		if not _g_blasts.is_empty():
 			break
@@ -216,7 +216,7 @@ func _test_grenades_2() -> bool:
 func _test_grenades_3() -> void:
 	if _g_stood != null:
 		var stood_health := float(_g_stood.node.get("health"))
-		var cooked := DotWeaponSpawn.new()
+		var cooked := GSWeaponSpawn.new()
 		cooked.id = &"frag"
 		cooked.origin = (_g_stood.node as Node3D).global_position + Vector3(1.0, 0.0, 0.0)
 		cooked.splash_radius = 5.2
@@ -234,12 +234,12 @@ func _test_grenades_3() -> void:
 	PlaylotZee.disarm(_g_bot)
 
 	# An NPC gets out from under one
-	playlot.props.clear_all(DotPropSpawner.REASON_ADMIN)
+	playlot.props.clear_all(GSPropSpawner.REASON_ADMIN)
 	await get_tree().physics_frame
 	var runner := playlot.props.spawn(&"npc_soldier", &"bot", Vector3(10, 1.2, -10))
 	await get_tree().physics_frame
 	var runner_body: Node3D = runner.node if runner != null else null
-	var fused := DotWeaponSpawn.new()
+	var fused := GSWeaponSpawn.new()
 	fused.id = &"frag"
 	fused.origin = runner_body.global_position + Vector3(0.8, -0.4, 0.0) if runner_body != null else Vector3.ZERO
 	fused.gravity_scale = 1.0
@@ -260,10 +260,10 @@ func _test_grenades_3() -> void:
 		"from %.1f m to at most %.1f m" % [start.distance_to(fused.origin), farthest])
 	for i in 16:
 		await get_tree().physics_frame
-	playlot.props.clear_all(DotPropSpawner.REASON_ADMIN)
+	playlot.props.clear_all(GSPropSpawner.REASON_ADMIN)
 
 	# A rocket goes off on contact
-	var rocket := DotWeaponSpawn.new()
+	var rocket := GSWeaponSpawn.new()
 	rocket.id = &"launcher"
 	rocket.origin = Vector3(0, 1.5, 0)
 	rocket.velocity = Vector3(0, -30, 0)
@@ -315,7 +315,7 @@ func _test_aw_grenades() -> void:
 		await get_tree().physics_frame
 	_check(smoke != null and fire != null and zones.active_smokes() == 1, "a smoke grenade leaves a cloud")
 	_check(zones.active_fires() == 1, "an incendiary leaves a fire zone")
-	var senses: DotNpcSenses = zones.senses
+	var senses: GSNpcSenses = zones.senses
 	var through := senses != null and senses.sight_blocked(Vector3(40, 1.0, 34), Vector3(40, 1.0, 46))
 	var beside := senses != null and senses.sight_blocked(Vector3(60, 1.0, 34), Vector3(60, 1.0, 46))
 	_check(through and not beside, "smoke blocks an NPC's sight through the cloud and nowhere else")
@@ -335,12 +335,12 @@ func _test_aw_grenades() -> void:
 	_check(flash != null and told.size() == 1 and told[0][0] == &"bot" and float(told[0][1]) > 0.0,
 		"a flash blinds a player through the blinded signal", str(told))
 	# A flash beside a chaser blinds its senses on its own clock: it stops perceiving the player, then does again.
-	if DotAddonApi.build_level("dot_npc") >= 6:
+	if GSAddonApi.build_level("dot_npc") >= 6:
 		_g_bot.teleport(Vector3(50, 1.0, 50), 0.0)
 		var spawned := playlot.props.spawn(&"npc_chaser", &"bot", Vector3(53, 1.2, 47))
 		var chaser: PlaylotEntity = spawned.node as PlaylotEntity if spawned != null else null
-		var cand := DotNpcSenses.Candidate.new(&"u9", Vector3(53, 1.2, 50), &"player", 0.0)
-		var cn: DotNpcInstance = chaser.npc if chaser != null else null
+		var cand := GSNpcSenses.Candidate.new(&"u9", Vector3(53, 1.2, 50), &"player", 0.0)
+		var cn: GSNpcInstance = chaser.npc if chaser != null else null
 		var before: bool = cn != null and cn.blind_until <= chaser.age
 		var _f2 := layer.launch(_aw_spawn(&"aw_flash", Vector3(50, 1.4, 47), Vector3.ZERO, 2), &"u9")
 		for i in 8:
@@ -364,29 +364,29 @@ func _test_aw_grenades() -> void:
 
 func _check_aw_wire_format() -> void:
 	var wire_fire := PlaylotEvents.write_detonate(3, Vector3(1, 2, 3), 4.0, 2, 7.5)
-	var wr := DotNetReader.new(wire_fire)
+	var wr := GSNetReader.new(wire_fire)
 	var _sub := wr.read_uint(PlaylotEvents.PROJECTILE_SUB_BITS)
 	var rd := PlaylotEvents.read_detonate(wr)
 	_check(bool(rd["ok"]) and int(rd["fx"]) == 2 and absf(float(rd["seconds"]) - 7.5) < 0.001,
 		"a detonation carries the utility kind and its seconds", str(rd))
-	var plain := DotNetReader.new(PlaylotEvents.write_detonate(3, Vector3(1, 2, 3), 4.0))
+	var plain := GSNetReader.new(PlaylotEvents.write_detonate(3, Vector3(1, 2, 3), 4.0))
 	var _sub2 := plain.read_uint(PlaylotEvents.PROJECTILE_SUB_BITS)
 	var pr := PlaylotEvents.read_detonate(plain)
 	_check(bool(pr["ok"]) and int(pr["fx"]) == 0, "and a plain blast carries none")
-	var bl := DotNetReader.new(PlaylotEvents.write_blind(3.5))
+	var bl := GSNetReader.new(PlaylotEvents.write_blind(3.5))
 	_check(bl.read_uint(PlaylotEvents.PROJECTILE_SUB_BITS) == PlaylotEvents.ProjectileTell.BLIND
 		and absf(float(PlaylotEvents.read_blind(bl)["seconds"]) - 3.5) < 0.01, "a blind tell carries its seconds")
-	var soft := DotNetReader.new(PlaylotEvents.write_blind(3.5, 0.4))
+	var soft := GSNetReader.new(PlaylotEvents.write_blind(3.5, 0.4))
 	var _sub3 := soft.read_uint(PlaylotEvents.PROJECTILE_SUB_BITS)
 	var sr := PlaylotEvents.read_blind(soft)
-	var full := DotNetReader.new(PlaylotEvents.write_blind(3.5))
+	var full := GSNetReader.new(PlaylotEvents.write_blind(3.5))
 	var _sub4 := full.read_uint(PlaylotEvents.PROJECTILE_SUB_BITS)
 	_check(absf(float(sr["strength"]) - 0.4) < 0.04 and absf(float(PlaylotEvents.read_blind(full)["strength"]) - 1.0) < 0.001,
 		"a blind tell carries the flash strength, full by default")
 
 
-func _aw_spawn(id: StringName, at: Vector3, velocity: Vector3, fuse: int) -> DotWeaponSpawn:
-	var spawn := DotWeaponSpawn.new()
+func _aw_spawn(id: StringName, at: Vector3, velocity: Vector3, fuse: int) -> GSWeaponSpawn:
+	var spawn := GSWeaponSpawn.new()
 	spawn.id = id
 	spawn.origin = at
 	spawn.velocity = velocity
@@ -404,7 +404,7 @@ func _test_grenades_4() -> void:
 		"a rocket with no fuse goes off where it meets the floor", str(_g_rocket_blasts))
 
 	# What a client is told, and its copy decides nothing
-	var spawn := DotWeaponSpawn.new()
+	var spawn := GSWeaponSpawn.new()
 	spawn.id = &"sticky"
 	spawn.origin = Vector3(1, 2, 3)
 	spawn.velocity = Vector3(4.5, 6.25, -7.0)
@@ -414,11 +414,11 @@ func _test_grenades_4() -> void:
 	spawn.fuse_ticks = 200
 	spawn.life_ticks = 300
 	var wire := PlaylotEvents.write_launch(9, spawn, &"u3", true)
-	var reader := DotNetReader.new(wire)
+	var reader := GSNetReader.new(wire)
 	_check(reader.read_uint(PlaylotEvents.PROJECTILE_SUB_BITS) == PlaylotEvents.ProjectileTell.LAUNCH,
 		"a launch says it is one")
 	var read := PlaylotEvents.read_launch(reader)
-	var back: DotWeaponSpawn = read["spawn"]
+	var back: GSWeaponSpawn = read["spawn"]
 	_check(bool(read["ok"]) and int(read["serial"]) == 9 and back.velocity == spawn.velocity
 		and back.fuse_ticks == 200 and bool(back.meta[&"sticks"]) and read["owner_id"] == &"u3"
 		and back.origin.distance_to(spawn.origin) < 0.01,
@@ -442,7 +442,7 @@ func _test_grenades_4() -> void:
 var _an_body: Node
 var _an_bot: PlaylotPlayer
 var _an_before: float
-var _an_rebel: DotPropInstance
+var _an_rebel: GSPropInstance
 
 func _test_armed_npcs() -> void:
 	_section("NPCs with weapons")
@@ -482,14 +482,14 @@ func _test_armed_npcs() -> void:
 		playlot.tick_rate, playlot.current_tick())
 	var target: Node3D = _an_body
 	_an_before = float(_an_body.get("health"))
-	var ctx := DotWeaponContext.new()
+	var ctx := GSWeaponContext.new()
 	ctx.origin = _an_bot.eye_position()
 	ctx.direction = (target.global_position + Vector3.UP * 0.3 - ctx.origin).normalized()
 	ctx.authority = true
 	for i in 40:
 		ctx.tick = playlot.current_tick() + i
-		var command := DotWeaponCommand.new()
-		command.set_button(DotWeaponCommand.BUTTON_ATTACK, i % 2 == 0)
+		var command := GSWeaponCommand.new()
+		command.set_button(GSWeaponCommand.BUTTON_ATTACK, i % 2 == 0)
 		command.slot = PlaylotZee.slot_of(rig)
 		var outcome := rig.simulate_tick(command, ctx.tick, ctx)
 		playlot.player_shots_fired(&"bot", outcome)
@@ -538,7 +538,7 @@ func _test_armed_npcs_2() -> void:
 		"with their own weapons")
 
 	# Death drops the weapon, and walking over it picks it up
-	playlot.props.clear_all(DotPropSpawner.REASON_ADMIN)
+	playlot.props.clear_all(GSPropSpawner.REASON_ADMIN)
 	await get_tree().physics_frame
 	var doomed := playlot.props.spawn(&"npc_soldier", &"bot", Vector3(0, 1.2, 0))
 	await get_tree().physics_frame
@@ -550,12 +550,12 @@ func _test_armed_npcs_2() -> void:
 	playlot.hit_landed.connect(on_hit)
 	doomed.node.call("take_damage", 9999.0, &"bot")
 	playlot.hit_landed.disconnect(on_hit)
-	_check(landed.size() == 1 and landed[0][0] == &"bot" and DotEntity.kind_of(int(landed[0][1])) == DotEntity.KIND_NPC
+	_check(landed.size() == 1 and landed[0][0] == &"bot" and GSEntity.kind_of(int(landed[0][1])) == GSEntity.KIND_NPC
 		and absf(float(landed[0][2]) - had) < 0.01 and bool(landed[0][3]),
 		"the player who killed it is told so, for the health it had rather than the 9999 thrown",
 		"%s, had %.0f" % [str(landed), had])
 	await get_tree().physics_frame
-	var dropped: DotPropInstance = null
+	var dropped: GSPropInstance = null
 	for prop in playlot.props.all_props():
 		if prop.def != null and String(prop.def.id) == "pickup_zee_smg":
 			dropped = prop
@@ -579,7 +579,7 @@ func _test_armed_npcs_2() -> void:
 	_check(placed != null and playlot.props.group_count(&"bot", &"weapons") == 1,
 		"a weapon put on the ground counts against the weapons limit")
 
-	playlot.props.clear_all(DotPropSpawner.REASON_ADMIN)
+	playlot.props.clear_all(GSPropSpawner.REASON_ADMIN)
 	_done()
 
 
@@ -588,14 +588,14 @@ var _nc_tick := 100000
 ## Presses V once (a fresh edge) and returns whether the body is in noclip afterwards.
 func _press_noclip(player: PlaylotPlayer) -> bool:
 	for pressed in [true, false]:
-		var cmd := DotFpsCommand.new()
+		var cmd := GSFpsCommand.new()
 		cmd.yaw = player.controller.state.yaw
 		cmd.pitch = player.controller.state.pitch
-		cmd.buttons = DotFpsCommand.BUTTON_NOCLIP if pressed else 0
+		cmd.buttons = GSFpsCommand.BUTTON_NOCLIP if pressed else 0
 		player.controller.apply_command(cmd)
 		_nc_tick += 1
 		player.controller.simulate_tick(_nc_tick, 1.0 / 60.0)
-	return player.controller.state.mode == DotFpsState.Mode.NOCLIP
+	return player.controller.state.mode == GSFpsState.Mode.NOCLIP
 
 
 func _test_noclip_is_a_permission() -> void:
@@ -621,7 +621,7 @@ func _test_noclip_is_a_permission() -> void:
 
 	playlot.noclip_policy = func(_id: StringName) -> bool: return false
 	playlot._sync_noclip_permits()
-	_check(player.controller.state.mode != DotFpsState.Mode.NOCLIP, "losing the permission ends noclip")
+	_check(player.controller.state.mode != GSFpsState.Mode.NOCLIP, "losing the permission ends noclip")
 	_check(not _press_noclip(player), "and the key is dead again")
 
 	playlot.config.noclip = "everyone"
@@ -648,14 +648,14 @@ func _test_view_cycle() -> void:
 	_check(rules.next_mode(&"tp") == &"selfie", "third person goes to the playlot's selfie")
 	_check(rules.next_mode(&"selfie") == &"fp", "selfie wraps to first person")
 
-	var stock := DotPlayerViewRules.new()
+	var stock := GSPlayerViewRules.new()
 	_check(stock.next_mode(&"tp") == &"fp" and stock.next_mode(&"fp") == &"tp", "the addon's own cycle is first and third only")
 
 	_check(rules.set_cvar("mp_viewcycle", "fp,selfie") and rules.next_mode(&"fp") == &"selfie", "mp_viewcycle reorders the cycle")
 	_check(not rules.set_cvar("mp_viewcycle", ""), "an empty mp_viewcycle is refused")
 	_check(rules.set_cvar("mp_viewcycle", "fp,bogus,tp") and rules.next_mode(&"fp") == &"tp", "an unknown id in the cycle is skipped")
 
-	rules.force_view = DotPlayerViewRules.FIRST_ONLY
+	rules.force_view = GSPlayerViewRules.FIRST_ONLY
 	_check(rules.next_mode(&"fp") == &"fp", "a forced view does not cycle")
 	_done()
 
@@ -687,7 +687,7 @@ func _test_zee_aim() -> void:
 	var tick := 200000
 
 	var step := func(direction: Vector2, aim: bool) -> void:
-		var command := DotFpsCommand.new()
+		var command := GSFpsCommand.new()
 		command.move = direction
 		bot.controller.apply_command(command)
 		tick += 1
@@ -718,7 +718,7 @@ func _test_zee_aim() -> void:
 		"and the player walks at that pace", "hip %.2f m aimed %.2f m, ratio %.2f of %.2f" % [hip, aimed, aimed / maxf(hip, 0.001), paced])
 	var up := PlaylotZee.command_for(0, 0.0, 0.0, 1, true)
 	var down := PlaylotZee.command_for(0, 0.0, 0.0, 1)
-	_check(up.is_pressed(DotWeaponCommand.BUTTON_AIM) and not down.is_pressed(DotWeaponCommand.BUTTON_AIM),
+	_check(up.is_pressed(GSWeaponCommand.BUTTON_AIM) and not down.is_pressed(GSWeaponCommand.BUTTON_AIM),
 		"the aim argument is the weapon command's aim button")
 
 	# The spread: first shots of a held trigger with the sights down, then up for longer than they take to rise.
@@ -732,7 +732,7 @@ func _test_zee_aim() -> void:
 
 
 ## The mean spread of a held trigger's shots over a second, sights up or down, after two seconds to settle.
-func _zee_mean_spread(rig: ZeeWeaponRig, held: DotWeaponDef, aim: bool) -> float:
+func _zee_mean_spread(rig: ZeeWeaponRig, held: GSWeaponDef, aim: bool) -> float:
 	var command := PlaylotZee.command_for(0, 0.0, 0.0, PlaylotZee.slot_of(rig), aim)
 	var at := 300000
 	for i in range(playlot.tick_rate * 2):
@@ -743,7 +743,7 @@ func _zee_mean_spread(rig: ZeeWeaponRig, held: DotWeaponDef, aim: bool) -> float
 	for i in range(playlot.tick_rate):
 		at += 1
 		rig.arsenal.current().magazine = held.magazine
-		var fire := PlaylotZee.command_for(DotFpsCommand.BUTTON_USER_0 if i % 2 == 0 else 0, 0.0, 0.0, PlaylotZee.slot_of(rig), aim)
+		var fire := PlaylotZee.command_for(GSFpsCommand.BUTTON_USER_0 if i % 2 == 0 else 0, 0.0, 0.0, PlaylotZee.slot_of(rig), aim)
 		var outcome := rig.simulate_tick(fire, at)
 		for shot in outcome.shots:
 			total += shot.spread
@@ -765,12 +765,12 @@ func _test_the_flashlight() -> void:
 	var a := playlot.add_player(&"fl_a", "Fl")
 	await get_tree().physics_frame
 	var was_state := cfg.default_state
-	cfg.default_state = DotFlashlightConfig.START_ON
+	cfg.default_state = GSFlashlightConfig.START_ON
 	a.flashlight_ready = false
 	for _i in range(4):
 		await get_tree().physics_frame
 	_check(a.flashlight, "a config that starts lit lights the player")
-	cfg.default_state = DotFlashlightConfig.START_OFF
+	cfg.default_state = GSFlashlightConfig.START_OFF
 	a.flashlight_ready = false
 	for _i in range(4):
 		await get_tree().physics_frame

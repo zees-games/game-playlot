@@ -46,7 +46,7 @@ const UNDO_ADDON := "playground.undo"
 const NEXT_UNDO_ADDON := "playlot.undo"
 
 ## The spawn provider contract: `res://addons/<pack>/spawn_provider.gd`, or any object registered
-## in [DotRegistry] under a name starting with [constant REGISTRY_PREFIX]. See docs/spawn-providers.md.
+## in [GSRegistry] under a name starting with [constant REGISTRY_PREFIX]. See docs/spawn-providers.md.
 const PROVIDER_FILE := "spawn_provider.gd"
 ## The host's addons folder: what a build carries and what the shell overlays mount into.
 const ADDONS_ROOT := "res://addons"
@@ -124,7 +124,7 @@ class Menu:
 
 	func add_item(
 		id: String, label: String, callback: Callable, category: String = "", hint: String = ""
-	) -> DotResult:
+	) -> GSResult:
 		return _owner._add(_addon, id, label, callback, category, hint)
 
 	## The message a hook sends to clients: set by the game, called with a dictionary.
@@ -197,7 +197,7 @@ func scan(host: Node, authoritative: bool, root: String = ADDONS_ROOT) -> int:
 			continue
 
 		var res := load_hook(host, authoritative, dir_name, path)
-		DotLog.result(CHANNEL, "loading the hook of %s" % dir_name, res)
+		GSLog.result(CHANNEL, "loading the hook of %s" % dir_name, res)
 
 		if res.ok:
 			found += 1
@@ -230,11 +230,11 @@ static func _method_of(hook: Variant, current: String, former: String) -> String
 
 ## Loads one hook script. A hook that does not parse, has no `playlot_register` (or former name) or
 ## fails inside it is refused and logged; the game carries on without it.
-func load_hook(host: Node, authoritative: bool, addon: String, path: String) -> DotResult:
+func load_hook(host: Node, authoritative: bool, addon: String, path: String) -> GSResult:
 	var script: Variant = load(path)
 
 	if not script is GDScript or not (script as GDScript).can_instantiate():
-		return DotResult.fail(DotError.CODE_INVALID, "%s does not compile" % path)
+		return GSResult.fail(GSError.CODE_INVALID, "%s does not compile" % path)
 
 	var hook: Variant = (script as GDScript).new()
 
@@ -245,7 +245,7 @@ func load_hook(host: Node, authoritative: bool, addon: String, path: String) -> 
 		if hook is Node:
 			(hook as Node).free()
 
-		return DotResult.fail(DotError.CODE_INVALID, "%s defines no %s(menu)" % [path, REGISTER])
+		return GSResult.fail(GSError.CODE_INVALID, "%s defines no %s(menu)" % [path, REGISTER])
 
 	if hook is Node and host != null:
 		(hook as Node).name = "Addon_%s" % addon
@@ -259,11 +259,11 @@ func load_hook(host: Node, authoritative: bool, addon: String, path: String) -> 
 	menu.send_fn = func(body: Dictionary) -> void: message.emit(addon, body)
 	_hooks[addon] = hook
 	hook.call(register, menu)
-	return DotResult.success(addon)
+	return GSResult.success(addon)
 
 
 ## Finds every spawn provider: `spawn_provider.gd` under each directory of [param root] and every
-## object in [DotRegistry] named `playlot.spawn_provider*` (or the former prefix). Returns how many provided entries.
+## object in [GSRegistry] named `playlot.spawn_provider*` (or the former prefix). Returns how many provided entries.
 ## A pack with neither is not an error: the menu simply has nothing from it.
 func scan_providers(host: Node, root: String = ADDONS_ROOT, registry: bool = true) -> int:
 	var found := 0
@@ -280,7 +280,7 @@ func scan_providers(host: Node, root: String = ADDONS_ROOT, registry: bool = tru
 		var script: Variant = load(path)
 
 		if not script is GDScript or not (script as GDScript).can_instantiate():
-			DotLog.warn(CHANNEL, "a spawn provider does not compile", {"path": path})
+			GSLog.warn(CHANNEL, "a spawn provider does not compile", {"path": path})
 			continue
 
 		var provider: Variant = (script as GDScript).new()
@@ -291,7 +291,7 @@ func scan_providers(host: Node, root: String = ADDONS_ROOT, registry: bool = tru
 	if not registry:
 		return found
 
-	for reg_name in DotRegistry.names():
+	for reg_name in GSRegistry.names():
 		var key := String(reg_name)
 		var prefix := REGISTRY_PREFIX if key.begins_with(REGISTRY_PREFIX) else FORMER_REGISTRY_PREFIX
 
@@ -304,7 +304,7 @@ func scan_providers(host: Node, root: String = ADDONS_ROOT, registry: bool = tru
 		if _providers.has(pack):
 			continue
 
-		if register_provider(pack, DotRegistry.get_service(reg_name), host).ok:
+		if register_provider(pack, GSRegistry.get_service(reg_name), host).ok:
 			found += 1
 
 	return found
@@ -312,12 +312,12 @@ func scan_providers(host: Node, root: String = ADDONS_ROOT, registry: bool = tru
 
 ## Takes one provider (duck-typed: it only needs `spawn_entries()`) and adds its entries. A bad
 ## entry is skipped and logged; the rest of the pack still shows.
-func register_provider(pack: String, provider: Variant, host: Node = null) -> DotResult:
+func register_provider(pack: String, provider: Variant, host: Node = null) -> GSResult:
 	if not provider is Object or not (provider as Object).has_method(PROVIDER_ENTRIES):
 		if provider is Node:
 			(provider as Node).free()
 
-		return DotResult.fail(DotError.CODE_INVALID, "%s has no %s()" % [pack, PROVIDER_ENTRIES])
+		return GSResult.fail(GSError.CODE_INVALID, "%s has no %s()" % [pack, PROVIDER_ENTRIES])
 
 	if provider is Node and host != null and (provider as Node).get_parent() == null:
 		(provider as Node).name = "Provider_%s" % pack
@@ -326,7 +326,7 @@ func register_provider(pack: String, provider: Variant, host: Node = null) -> Do
 	var entries: Variant = (provider as Object).call(PROVIDER_ENTRIES)
 
 	if not entries is Array:
-		return DotResult.fail(DotError.CODE_INVALID, "%s.%s() did not return an Array" % [pack, PROVIDER_ENTRIES])
+		return GSResult.fail(GSError.CODE_INVALID, "%s.%s() did not return an Array" % [pack, PROVIDER_ENTRIES])
 
 	var added := 0
 
@@ -345,13 +345,13 @@ func register_provider(pack: String, provider: Variant, host: Node = null) -> Do
 		if made.ok:
 			added += 1
 		else:
-			DotLog.warn(CHANNEL, "a spawn entry was refused", {"pack": pack, "why": made.error.message})
+			GSLog.warn(CHANNEL, "a spawn entry was refused", {"pack": pack, "why": made.error.message})
 
 	_providers[pack] = provider
-	return DotResult.success(added)
+	return GSResult.success(added)
 
 
-func _add_entry(pack: String, entry: Dictionary) -> DotResult:
+func _add_entry(pack: String, entry: Dictionary) -> GSResult:
 	var id := str(entry.get("id", ""))
 	var kind := str(entry.get("kind", ""))
 	var spawn: Variant = entry.get("spawn", "")
@@ -361,10 +361,10 @@ func _add_entry(pack: String, entry: Dictionary) -> DotResult:
 		spawn = spawn_fn
 
 	if id.is_empty() or kind.is_empty():
-		return DotResult.fail(DotError.CODE_INVALID, "an entry needs an id and a kind")
+		return GSResult.fail(GSError.CODE_INVALID, "an entry needs an id and a kind")
 
 	if not spawn is Callable and not spawn is String and not spawn is StringName and not spawn is Dictionary:
-		return DotResult.fail(DotError.CODE_INVALID, "%s/%s: spawn is a Callable or a string" % [pack, id])
+		return GSResult.fail(GSError.CODE_INVALID, "%s/%s: spawn is a Callable or a string" % [pack, id])
 
 	var category := str(entry.get("category", ""))
 	var hint: Variant = entry.get("cfg_hint", {})
@@ -396,10 +396,10 @@ func _run_entry(item: Item, spawn: Variant, ctx: Context) -> Variant:
 	var game := ctx.game
 
 	if not ctx.authoritative or game == null:
-		return DotResult.fail(DotError.CODE_STATE, "only the authority gives or spawns")
+		return GSResult.fail(GSError.CODE_STATE, "only the authority gives or spawns")
 
 	if ctx.who == &"" or not (game.get("players") as Dictionary).has(ctx.who):
-		return DotResult.fail(DotError.CODE_STATE, "no such player")
+		return GSResult.fail(GSError.CODE_STATE, "no such player")
 
 	if spawn is Callable:
 		var known := _runtime_npcs(ctx.world)
@@ -407,12 +407,12 @@ func _run_entry(item: Item, spawn: Variant, ctx: Context) -> Variant:
 			"game": game, "world": ctx.world, "player_id": ctx.who, "at": ctx.at,
 			"kind": item.kind, "cfg_hint": item.cfg_hint, "authoritative": true,
 		})
-		if not out is DotResult or (out as DotResult).ok:
+		if not out is GSResult or (out as GSResult).ok:
 			_adopt_runtime_npcs(game, ctx, known)
-		return out if out is DotResult else DotResult.success(item.key())
+		return out if out is GSResult else GSResult.success(item.key())
 
 	if spawn is Dictionary and item.kind != "weapon":
-		return DotResult.fail(DotError.CODE_INVALID, "%s has stats but no spawn_fn to run" % item.key())
+		return GSResult.fail(GSError.CODE_INVALID, "%s has stats but no spawn_fn to run" % item.key())
 
 	var target := item.id if spawn is Dictionary or String(spawn).is_empty() else String(spawn)
 
@@ -423,17 +423,17 @@ func _run_entry(item: Item, spawn: Variant, ctx: Context) -> Variant:
 
 	if item.kind == "weapon":
 		if game.call("weapon_def", StringName(target)) == null:
-			return DotResult.fail(DotError.CODE_INVALID, "the weapon catalogue has no %s" % target)
+			return GSResult.fail(GSError.CODE_INVALID, "the weapon catalogue has no %s" % target)
 
 		# The same event a pickup raises: on a server the bridge charges and arms it, offline the
 		# client equips it. Not a second way to hold a weapon.
 		game.call("pick_up_weapon", ctx.who, StringName(target))
-		return DotResult.success(item.key())
+		return GSResult.success(item.key())
 
 	if item.kind == "npc" or item.kind == "bot":
 		return _spawn_body(item, target, ctx)
 
-	return DotResult.fail(DotError.CODE_INVALID, "kind %s needs a Callable spawn" % item.kind)
+	return GSResult.fail(GSError.CODE_INVALID, "kind %s needs a Callable spawn" % item.kind)
 
 
 ## Every NPC a pack's self-ticking runtime (a child of [param world] with the `zhm_runtime` meta, as
@@ -447,8 +447,8 @@ func _runtime_npcs(world: Node) -> Dictionary:
 	for runtime in world.get_children():
 		var spawner: Variant = runtime.get("spawner") if runtime.has_meta(&"zhm_runtime") else null
 
-		if spawner is DotNpcSpawner:
-			for npc in (spawner as DotNpcSpawner).all_npcs():
+		if spawner is GSNpcSpawner:
+			for npc in (spawner as GSNpcSpawner).all_npcs():
 				out[npc.instance_id] = spawner
 
 	return out
@@ -470,7 +470,7 @@ func hurt_monster(game: Node, collider: Node, damage: float, by: StringName, poi
 	var held := _runtime_npcs(game.get("world"))
 
 	for id: int in held:
-		var spawner: DotNpcSpawner = held[id]
+		var spawner: GSNpcSpawner = held[id]
 		var npc := spawner.get_npc(id)
 
 		if npc == null or npc.node != body:
@@ -481,7 +481,7 @@ func hurt_monster(game: Node, collider: Node, damage: float, by: StringName, poi
 
 		var limb: Variant = body.call(&"zhm_limb_hit", point, damage, direction * damage * MONSTER_IMPULSE)
 		var lost := spawner.damage(id, damage, by)
-		game.call("confirm_hit", by, game.call("hit_victim_id", DotEntity.KIND_NPC, id), lost, point, not npc.is_alive(), limb == &"head")
+		game.call("confirm_hit", by, game.call("hit_victim_id", GSEntity.KIND_NPC, id), lost, point, not npc.is_alive(), limb == &"head")
 		return true
 
 	return true
@@ -494,7 +494,7 @@ func blast_monsters(game: Node, at: Vector3, radius: float, damage: float, by: S
 	var held := _runtime_npcs(game.get("world"))
 
 	for id: int in held:
-		var npc := (held[id] as DotNpcSpawner).get_npc(id)
+		var npc := (held[id] as GSNpcSpawner).get_npc(id)
 
 		if npc == null or not npc.is_alive() or not npc.node is Node3D:
 			continue
@@ -514,7 +514,7 @@ func despawn_all(world: Node) -> int:
 	var all := _runtime_npcs(world)
 
 	for id: int in all:
-		(all[id] as DotNpcSpawner).remove(id, DotNpcSpawner.REASON_CLEANUP)
+		(all[id] as GSNpcSpawner).remove(id, GSNpcSpawner.REASON_CLEANUP)
 
 	return all.size()
 
@@ -540,7 +540,7 @@ func _adopt_runtime_npcs(game: Object, ctx: Context, known: Dictionary) -> void:
 	ctx.push_undo(func() -> void:
 		for id: int in fresh:
 			if is_instance_valid(fresh[id]):
-				(fresh[id] as DotNpcSpawner).remove(id, DotNpcSpawner.REASON_ADMIN)
+				(fresh[id] as GSNpcSpawner).remove(id, GSNpcSpawner.REASON_ADMIN)
 	)
 
 
@@ -583,7 +583,7 @@ func _teach_weapon(pack: String, provider: Variant, entry: Dictionary, host: Nod
 	if str(entry.get("kind", "")) != "weapon" or not spawn is Dictionary or host == null:
 		return
 	if not (provider as Object).has_method("weapon_defs") or host.get("weapons") == null:
-		DotLog.warn(CHANNEL, "a weapon row has data and its provider has no weapon_defs()", {"pack": pack, "id": str(entry.get("id", ""))})
+		GSLog.warn(CHANNEL, "a weapon row has data and its provider has no weapon_defs()", {"pack": pack, "id": str(entry.get("id", ""))})
 		return
 
 	var want := _weapon_name(spawn as Dictionary, str(entry.get("id", "")))
@@ -593,9 +593,9 @@ func _teach_weapon(pack: String, provider: Variant, entry: Dictionary, host: Nod
 		return
 
 	for each: Variant in _defs_of(provider as Object):
-		if not each is DotWeaponDef or String((each as DotWeaponDef).id) != want:
+		if not each is GSWeaponDef or String((each as GSWeaponDef).id) != want:
 			continue
-		var pack_def := each as DotWeaponDef
+		var pack_def := each as GSWeaponDef
 		var def := PlaylotWeaponDefScript.make(game_id, str(entry.get("name", pack_def.display_name)), "")
 		def.description = pack_def.description
 		def.category = &"pack"
@@ -605,7 +605,7 @@ func _teach_weapon(pack: String, provider: Variant, entry: Dictionary, host: Nod
 		PlaylotZeeScript.add_provider_def(def, provider as Object)
 		return
 
-	DotLog.warn(CHANNEL, "a weapon row names a weapon its provider's weapon_defs() lacks", {"pack": pack, "weapon": want})
+	GSLog.warn(CHANNEL, "a weapon row names a weapon its provider's weapon_defs() lacks", {"pack": pack, "weapon": want})
 
 
 ## A provider's definitions; over the live profile edits when it offers `weapon_defs_with(layer)`.
@@ -626,20 +626,20 @@ func reapply_weapons(host: Node, profile_id: String) -> int:
 	for def: Variant in weapons:
 		var pack_def: Variant = def.meta.get("pack_def")
 		var pack := str(def.meta.get("provider", ""))
-		if not pack_def is DotWeaponDef or not _providers.has(pack):
+		if not pack_def is GSWeaponDef or not _providers.has(pack):
 			continue
-		if profiles.weapons.profile_for(String((pack_def as DotWeaponDef).id)) != profile_id:
+		if profiles.weapons.profile_for(String((pack_def as GSWeaponDef).id)) != profile_id:
 			continue
 		if not fresh_by_pack.has(pack):
 			fresh_by_pack[pack] = _defs_of(_providers[pack] as Object)
 		for fresh: Variant in fresh_by_pack[pack]:
-			if fresh is DotWeaponDef and (fresh as DotWeaponDef).id == (pack_def as DotWeaponDef).id:
-				DotWeaponProfiles.refresh_def(pack_def, fresh)
+			if fresh is GSWeaponDef and (fresh as GSWeaponDef).id == (pack_def as GSWeaponDef).id:
+				GSWeaponProfiles.refresh_def(pack_def, fresh)
 				done += 1
 	return done
 
 
-func _spawn_body(item: Item, target: String, ctx: Context) -> DotResult:
+func _spawn_body(item: Item, target: String, ctx: Context) -> GSResult:
 	var game := ctx.game
 	var count := clampi(int(item.cfg_hint.get("count", 1)), 1, MAX_COUNT)
 	var weapon := StringName(str(item.cfg_hint.get("weapon", "")))
@@ -667,9 +667,9 @@ func _spawn_body(item: Item, target: String, ctx: Context) -> DotResult:
 			body.call("arm_with", weapon)
 
 	if spawned == 0:
-		return DotResult.fail(DotError.CODE_QUOTA, "%s could not be spawned (limit, or no such NPC)" % item.label)
+		return GSResult.fail(GSError.CODE_QUOTA, "%s could not be spawned (limit, or no such NPC)" % item.label)
 
-	return DotResult.success(spawned)
+	return GSResult.success(spawned)
 
 
 func _spawn_scene(path: String, ctx: Context, at: Vector3) -> Node:
@@ -702,13 +702,13 @@ func provider_count() -> int:
 
 func _add(
 	addon: String, id: String, label: String, callback: Callable, category: String, hint: String
-) -> DotResult:
+) -> GSResult:
 	if id.is_empty() or not callback.is_valid():
-		return DotResult.fail(DotError.CODE_INVALID, "an item needs an id and a callback")
+		return GSResult.fail(GSError.CODE_INVALID, "an item needs an id and a callback")
 
 	for existing in _items:
 		if existing.addon == addon and existing.id == id:
-			return DotResult.fail(DotError.CODE_CONFLICT, "%s/%s is registered" % [addon, id])
+			return GSResult.fail(GSError.CODE_CONFLICT, "%s/%s is registered" % [addon, id])
 
 	var item := Item.new()
 	item.addon = addon
@@ -718,7 +718,7 @@ func _add(
 	item.hint = hint
 	item.callback = callback
 	_items.append(item)
-	return DotResult.success(item)
+	return GSResult.success(item)
 
 
 func items() -> Array[Item]:
@@ -755,20 +755,20 @@ func describe_items() -> Array[Dictionary]:
 
 
 ## Runs one entry. Server side, or offline.
-func activate(key: String, ctx: Context) -> DotResult:
+func activate(key: String, ctx: Context) -> GSResult:
 	var item := find(key)
 
 	if item == null:
-		return DotResult.fail(DotError.CODE_INVALID, "no addon item %s" % key)
+		return GSResult.fail(GSError.CODE_INVALID, "no addon item %s" % key)
 
 	ctx._sender = func(body: Dictionary) -> void: message.emit(item.addon, body)
 	ctx._undo_sink = undo_sink
 	var out: Variant = item.callback.call(ctx)
 
-	if out is DotResult:
-		return out as DotResult
+	if out is GSResult:
+		return out as GSResult
 
-	return DotResult.success(key)
+	return GSResult.success(key)
 
 
 ## A message the authority sent, on a client: handed to the hook that sent it.

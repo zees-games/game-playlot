@@ -10,9 +10,9 @@ func _physics_process(_delta: float) -> void:
 	if loading != null:
 		loading.poll_loading()
 	_follow_npc_lod(waves.spawner if waves != null else null, _delta)
-	var _t_bridge_server_tick := DotFrameCost.now()
+	var _t_bridge_server_tick := GSFrameCost.now()
 	bridge.server_tick(_tick)
-	DotFrameCost.add(&"mod.bridge_server_tick", _t_bridge_server_tick)
+	GSFrameCost.add(&"mod.bridge_server_tick", _t_bridge_server_tick)
 
 	# [b]After the world has ticked, and that is the ordering that matters.[/b] dot-combat
 	# rewinds to resolve a shot and the waves read where everybody is, and both have to
@@ -21,42 +21,42 @@ func _physics_process(_delta: float) -> void:
 	# three times now.
 	var step := 1.0 / float(maxi(game.tick_rate, 1))
 
-	var _t_arena := DotFrameCost.now()
+	var _t_arena := GSFrameCost.now()
 	if arena != null:
 		arena.tick(_tick, step)
-	DotFrameCost.add(&"mod.arena", _t_arena)
+	GSFrameCost.add(&"mod.arena", _t_arena)
 
-	var _t_shop := DotFrameCost.now()
+	var _t_shop := GSFrameCost.now()
 	if shop != null:
 		shop.tick(step)
-	DotFrameCost.add(&"mod.shop", _t_shop)
+	GSFrameCost.add(&"mod.shop", _t_shop)
 
-	var _t_spectate := DotFrameCost.now()
+	var _t_spectate := GSFrameCost.now()
 	if spectate != null:
 		spectate.tick(step)
-	DotFrameCost.add(&"mod.spectate", _t_spectate)
+	GSFrameCost.add(&"mod.spectate", _t_spectate)
 
-	var _t_downs := DotFrameCost.now()
+	var _t_downs := GSFrameCost.now()
 	if downs != null:
 		downs.tick(step)
-	DotFrameCost.add(&"mod.downs", _t_downs)
+	GSFrameCost.add(&"mod.downs", _t_downs)
 
-	var _t_waves := DotFrameCost.now()
+	var _t_waves := GSFrameCost.now()
 	if waves != null:
 		waves.tick(_tick, step)
-	DotFrameCost.add(&"mod.waves", _t_waves)
+	GSFrameCost.add(&"mod.waves", _t_waves)
 
-	var _t_vote := DotFrameCost.now()
+	var _t_vote := GSFrameCost.now()
 	if vote != null:
 		vote.advance(step)
-	DotFrameCost.add(&"mod.vote", _t_vote)
+	GSFrameCost.add(&"mod.vote", _t_vote)
 
 
 # --- Sessions --------------------------------------------------------------
 
 ## A client finished the signon and is in the world. `client_spawn`, not `client_connected` (a socket and
 ## nothing else); it carries `userid`, NOT `peer_id` (which read as 0 and nobody joined).
-func _on_client_spawn(event: DotEvent) -> void:
+func _on_client_spawn(event: GSEvent) -> void:
 	var session := server.session_by_userid(event.get_int("userid"))
 
 	if session == null or _joined.has(session.userid):
@@ -82,7 +82,7 @@ func _on_client_spawn(event: DotEvent) -> void:
 
 	_joined[session.userid] = true
 
-	var loadouts := DotGameAvatarActionRelay.loadouts_of(net)
+	var loadouts := GSGameAvatarActionRelay.loadouts_of(net)
 	if loadouts != null:
 		loadouts.add_peer(session.peer_id)
 
@@ -117,7 +117,7 @@ func _on_peer_admitted(peer_id: int) -> void:
 
 
 ## What somebody is told once they are in: the backlog, and the clock. After the admission only: earlier lands on a node that does not exist.
-func _welcome(session: DotClientSession) -> void:
+func _welcome(session: GSClientSession) -> void:
 	if bridge == null or not bridge.peer_is_ready(session.peer_id):
 		return
 
@@ -138,7 +138,7 @@ func _welcome(session: DotClientSession) -> void:
 ## refused by Godot and never runs, so nobody was ever removed. The default keeps it callable
 ## from anything that emits only the session.
 func _build_mod_tools() -> void:
-	mod_tools = DotModTools.new()
+	mod_tools = GSModTools.new()
 	mod_tools.name = "ModTools"
 	mod_tools.register_service = false
 	mod_tools.manager = services.moderation if services != null else null
@@ -163,7 +163,7 @@ func _build_mod_tools() -> void:
 	# A map change clears everybody's return history (its points are on a freed map); a respawn keeps it.
 	game.maps.changed.connect(_on_map_changed_for_mod_tools)
 
-	mod_commands = DotModToolCommands.install(self, mod_tools, server)
+	mod_commands = GSModToolCommands.install(self, mod_tools, server)
 	mod_commands.alive_fn = func(id: StringName) -> bool:
 		var health := arena.health_of(PlaylotModTools.key_of(id)) if arena != null else null
 		return health == null or health.alive
@@ -171,13 +171,13 @@ func _build_mod_tools() -> void:
 
 ## Installs the map-edit commands behind the `config` flag and lets the same sessions use the spawn-point tool.
 func _build_map_edit() -> void:
-	map_edit = PlaylotMapEdit.make(game) as DotGameMapEdit
+	map_edit = PlaylotMapEdit.make(game) as GSGameMapEdit
 
 	if map_edit == null:
 		return
 
 	map_edit.server = server
-	DotLog.result(CHANNEL, "binding the map-edit commands", map_edit.bind(self))
+	GSLog.result(CHANNEL, "binding the map-edit commands", map_edit.bind(self))
 	game.map_edit = map_edit
 	game.map_edit_allowed_fn = _session_may_edit_map
 	game.maps.changed.connect(_on_map_changed_for_map_edit)
@@ -185,11 +185,11 @@ func _build_map_edit() -> void:
 
 
 ## The working points belong to the map that was running; the new map's saved ones replace them.
-func _on_map_changed_for_map_edit(_map: DotMapDef, _world: Node = null) -> void:
+func _on_map_changed_for_map_edit(_map: GSMapDef, _world: Node = null) -> void:
 	PlaylotMapEdit.reload_saved(map_edit)
 
 
-func _on_map_changed_for_mod_tools(_map: DotMapDef, _world: Node) -> void:
+func _on_map_changed_for_mod_tools(_map: GSMapDef, _world: Node) -> void:
 	# Every client covers for the new map and says so when it lifts; until it does nobody is
 	# harmed, and one that never re-covers is released after the roster's grace.
 	if loading != null:
@@ -199,7 +199,7 @@ func _on_map_changed_for_mod_tools(_map: DotMapDef, _world: Node) -> void:
 		mod_tools.clear_history()
 
 
-func _on_client_disconnected(session: DotClientSession, _reason: String = "") -> void:
+func _on_client_disconnected(session: GSClientSession, _reason: String = "") -> void:
 	var id := _player_id(session)
 
 	if loading != null:
@@ -231,7 +231,7 @@ func _on_client_disconnected(session: DotClientSession, _reason: String = "") ->
 
 	_joined.erase(session.userid)
 
-	var loadouts := DotGameAvatarActionRelay.loadouts_of(net)
+	var loadouts := GSGameAvatarActionRelay.loadouts_of(net)
 	if loadouts != null:
 		loadouts.remove_peer(session.peer_id)
 
@@ -246,7 +246,7 @@ func _on_client_disconnected(session: DotClientSession, _reason: String = "") ->
 
 ## The key this seat's records and board rows are filed under: the account's uid, never the session's
 ## userid (a server-local counter). Without an identity the seat is known by its userid, read as unranked.
-func _record_key_for(session: DotClientSession) -> StringName:
+func _record_key_for(session: GSClientSession) -> StringName:
 	var uid := session.uid()
 	if uid == "":
 		log_warn("a session has no identity; its runs are not ranked", {"userid": session.userid})
@@ -256,7 +256,7 @@ func _record_key_for(session: DotClientSession) -> StringName:
 
 # --- Helpers ---------------------------------------------------------------
 
-func _on_map_over(_map: DotMapDef, reason: StringName) -> void:
+func _on_map_over(_map: GSMapDef, reason: StringName) -> void:
 	log_info("the map is over", {"reason": String(reason)})
 
 
@@ -276,8 +276,8 @@ func _on_run_filed(
 
 ## Disconnects a peer whose message schema this server cannot play with, with dot-net's
 ## sentence as the reason. See `peer_schema_refused` above.
-func _refuse_peer(peer_id: int, error: DotError) -> void:
-	var session: DotClientSession = server.session_of(peer_id) if server != null else null
+func _refuse_peer(peer_id: int, error: GSError) -> void:
+	var session: GSClientSession = server.session_of(peer_id) if server != null else null
 	if session != null:
 		server.kick(session, error.message, error)
 
@@ -288,7 +288,7 @@ func _refuse_peer(peer_id: int, error: DotError) -> void:
 ## cvar flipped at runtime and a callable set at the switch is one more thing the switch
 ## has to remember to unset. Off, the shot has already shoved whatever prop it hit and
 ## that is all a gun does in a sandbox.
-func _resolve_shot(player_id: StringName, shot: DotShot) -> void:
+func _resolve_shot(player_id: StringName, shot: GSShot) -> void:
 	# Heard by the wave NPCs first, and whether or not the arena is on.
 	if waves != null:
 		waves.note_fire(player_id, shot.origin)
@@ -301,8 +301,8 @@ func _resolve_shot(player_id: StringName, shot: DotShot) -> void:
 	var _resolved := arena.combat.resolve_shot(shot)
 
 
-## The NPC level of detail and sense workers follow the `npc_lod*` cvars (dot-game's DotGameNpcLod; all off by default). This module is a DotModule, so it holds the attachment itself.
-var _npc_lod: DotGameNpcLod = null
+## The NPC level of detail and sense workers follow the `npc_lod*` cvars (dot-game's GSGameNpcLod; all off by default). This module is a GSModule, so it holds the attachment itself.
+var _npc_lod: GSGameNpcLod = null
 
 
 func _follow_npc_lod(spawner: Object, delta: float) -> void:
@@ -311,6 +311,6 @@ func _follow_npc_lod(spawner: Object, delta: float) -> void:
 	if _npc_lod == null or _npc_lod.spawner != spawner:
 		if _npc_lod != null:
 			_npc_lod.release()
-		_npc_lod = DotGameNpcLod.attach(self, (server.console if server != null else null), spawner, server.config if server != null else null)
+		_npc_lod = GSGameNpcLod.attach(self, (server.console if server != null else null), spawner, server.config if server != null else null)
 	if _npc_lod != null:
 		_npc_lod.follow(delta)

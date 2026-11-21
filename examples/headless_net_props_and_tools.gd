@@ -289,8 +289,8 @@ func _test_prop_replication_2() -> void:
 ## The tool gun's resize and paint, and an armed NPC's weapon, over the wire.
 ##
 ## Last on purpose: the vehicle check drops every third snapshot, so steps added before it move its phase.
-var _tlaan_crate: DotPropInstance
-var _tlaan_soldier: DotPropInstance
+var _tlaan_crate: GSPropInstance
+var _tlaan_soldier: GSPropInstance
 var _tlaan_armed_mirror: PlaylotNpcNet
 
 func _test_tool_look_and_armed_npcs() -> void:
@@ -329,9 +329,9 @@ func _test_tool_look_and_armed_npcs() -> void:
 
 	# Two ropes on the one crate are both drawn; one slot per prop would leave the second undrawn.
 	var crate_body := server_node as RigidBody3D
-	var first: DotResult = _server_game.constraints.rope(&"u%d" % SESSION, crate_body,
+	var first: GSResult = _server_game.constraints.rope(&"u%d" % SESSION, crate_body,
 		crate_body.global_position, null, crate_body.global_position + Vector3(0, 4, 0), 0.0, false)
-	var second: DotResult = _server_game.constraints.rope(&"u%d" % SESSION, crate_body,
+	var second: GSResult = _server_game.constraints.rope(&"u%d" % SESSION, crate_body,
 		crate_body.global_position, null, crate_body.global_position + Vector3(3, 4, 0), 0.0, false)
 	var client_prop_net: PlaylotPropNet = null
 	for net in _client_bridge.get("_prop_nets").values():
@@ -381,10 +381,10 @@ func _test_tool_look_and_armed_npcs_2() -> void:
 		"and puts one in its hands")
 	# A wave NPC reaches the client too, through the same path: it was never replicated,
 	# so a connected player was hunted by a wave they could not see.
-	var waves := DotNpcSpawner.new()
+	var waves := GSNpcSpawner.new()
 	waves.name = "TestWaves"
 	waves.catalogue = PlaylotWaves.shared_catalogue()
-	var limits := DotNpcLimits.new()
+	var limits := GSNpcLimits.new()
 	limits.spawn_interval = 0.0
 	limits.require_navigable_spawn = false
 	waves.limits = limits
@@ -563,8 +563,8 @@ func _test_tools() -> void:
 
 	# Aimed at where the crate ended up, not where it was put: it falls about a third of a metre
 	# before the button is held, so a default pitch is a ray over the top of it.
-	var grab := DotFpsCommand.new()
-	grab.set_button(DotFpsCommand.BUTTON_USER_0, true)
+	var grab := GSFpsCommand.new()
+	grab.set_button(GSFpsCommand.BUTTON_USER_0, true)
 	_aim_at(grab, player, (crate.node as Node3D).global_position)
 	await _steps(12, grab)
 
@@ -578,8 +578,8 @@ func _test_tools() -> void:
 	# was. Moving it and seeing the prop follow is the difference between "grabbed" and
 	# "grabbed and then dropped on the next tick".
 	var held_at := (crate.node as Node3D).global_position
-	var turn := DotFpsCommand.new()
-	turn.set_button(DotFpsCommand.BUTTON_USER_0, true)
+	var turn := GSFpsCommand.new()
+	turn.set_button(GSFpsCommand.BUTTON_USER_0, true)
 	turn.pitch = player.controller.state.pitch
 	turn.yaw = player.controller.state.yaw + 40.0
 	await _steps(16, turn)
@@ -589,18 +589,18 @@ func _test_tools() -> void:
 		"and holding it carries it with the aim", "%.2f m" % moved_to.distance_to(held_at))
 
 	# Releasing the button drops it. A gun that never lets go is a gun with one use.
-	await _steps(4, DotFpsCommand.new())
+	await _steps(4, GSFpsCommand.new())
 	_check(player.phys_gun.held == null, "releasing the button lets go")
 
-	_server_game.props.remove(crate.instance_id, DotPropSpawner.REASON_ADMIN)
+	_server_game.props.remove(crate.instance_id, GSPropSpawner.REASON_ADMIN)
 	await _exchange_steps(4)
 	_done()
 
 
 ## Points [param command] at [param target] from [param player]'s eye.
 ##
-## Written as the inverse of [method DotFpsMotor.aim_for] rather than copied, so the view convention lives in one place.
-func _aim_at(command: DotFpsCommand, player: PlaylotPlayer, target: Vector3) -> void:
+## Written as the inverse of [method GSFpsMotor.aim_for] rather than copied, so the view convention lives in one place.
+func _aim_at(command: GSFpsCommand, player: PlaylotPlayer, target: Vector3) -> void:
 	var to := target - player.eye_position()
 
 	if to.length_squared() <= 0.0:
@@ -621,11 +621,11 @@ func _test_weapon_request() -> void:
 	# the charge is REACHED, and a shop here would test dot-economy's arithmetic twice.
 	var charged: Array[StringName] = []
 	var refuse := [false]
-	_server_bridge.charge_fn = func(_id: StringName, thing: StringName) -> DotResult:
+	_server_bridge.charge_fn = func(_id: StringName, thing: StringName) -> GSResult:
 		charged.append(thing)
 		if bool(refuse[0]):
-			return DotResult.fail(DotError.CODE_STATE, "You cannot afford that.")
-		return DotResult.success(null)
+			return GSResult.fail(GSError.CODE_STATE, "You cannot afford that.")
+		return GSResult.success(null)
 
 	var told: Array = []
 	_client_bridge.weapon_changed.connect(
@@ -685,9 +685,9 @@ func _test_refused_spawn_is_free() -> void:
 	_section("a spawn the prop budget refuses costs nothing")
 
 	var charged: Array[StringName] = []
-	_server_bridge.charge_fn = func(_id: StringName, thing: StringName) -> DotResult:
+	_server_bridge.charge_fn = func(_id: StringName, thing: StringName) -> GSResult:
 		charged.append(thing)
-		return DotResult.success(null)
+		return GSResult.success(null)
 	var notices: Array[String] = []
 	var on_notice := func(_pid: int, text: String) -> void: notices.append(text)
 	_client_bridge.notice_received.connect(on_notice)
@@ -720,8 +720,8 @@ func _test_refused_spawn_is_free() -> void:
 
 	# Asked before anything is spawned: a player who cannot afford it gets nothing placed.
 	notices.clear()
-	_server_bridge.may_charge_fn = func(_id: StringName, _thing: StringName) -> DotResult:
-		return DotResult.fail(DotError.CODE_STATE, "$100 short of 'barrel'.")
+	_server_bridge.may_charge_fn = func(_id: StringName, _thing: StringName) -> GSResult:
+		return GSResult.fail(GSError.CODE_STATE, "$100 short of 'barrel'.")
 	_client_bridge.ask_spawn_prop(&"barrel")
 	_exchange()
 	await _steps(4)

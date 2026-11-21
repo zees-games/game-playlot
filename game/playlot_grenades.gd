@@ -26,7 +26,7 @@ var _regions: Array[Dictionary] = []
 var _bodies: Array = []
 var _owners: Array[StringName] = []
 ## dot-npc's senses, when the game has them: a smoke cloud registers a sight blocker there. Set by the world.
-var senses: DotNpcSenses = null
+var senses: GSNpcSenses = null
 ## Smoke clouds up: `{id, left}`, the blocker's id in [member senses] and its seconds to go.
 var _blockers: Array[Dictionary] = []
 ## What the last [method detonate] left, for the wire: `{fx, seconds}` or empty.
@@ -42,7 +42,7 @@ func bind(layer: Node) -> void:
 
 
 ## Sets off a utility grenade [param g] at its position. Returns `{fx, seconds}` for a smoke or a fire, else empty.
-func detonate(g: AwGrenade, def: DotWeaponDef, owner_id: StringName, radius: float) -> Dictionary:
+func detonate(g: AwGrenade, def: GSWeaponDef, owner_id: StringName, radius: float) -> Dictionary:
 	_last = {}
 	zones.rules = projectiles.rules
 	g.owner_entity = _owner_index(owner_id)
@@ -99,7 +99,7 @@ func _on_effect(info: Dictionary) -> void:
 
 ## Zombies and NPCs stop seeing through a cloud (hearing passes) until it ends; dot-npc API 6.
 func _block_sight(at: Vector3, radius: float, seconds: float) -> void:
-	if senses == null or DotAddonApi.build_level("dot_npc") < 6:
+	if senses == null or GSAddonApi.build_level("dot_npc") < 6:
 		return
 
 	# Until removed (seconds 0): the senses' own clock is only set when an NPC decides.

@@ -8,7 +8,7 @@ The family rules on suites (both counters, read stderr, cap every run, re-import
 | --- | --- |
 | `headless_playlot` | **the point of the repository**: boots the whole game, spawns props and entities, clicks a real spawn menu, fires weapons, changes the map under all of it, and drives the real client's frame hooks; includes the model props (every stock prop spawns with a shape and stays above the floor, a dropped-in model appears and spawns) and the addons hook (against a scratch folder and the real natural-disasters adapter) and the waypoint and NPC spawner tools |
 | `headless_net` | a server and a client in one process over a real link: prediction, mirrors, the bag, vehicles, weapons, chat through the real router, and no engine error over the whole run (an `EngineErrors` logger: two minigames' suites printed `!is_inside_tree()` from a toy pulled after a mid-tick rebuild, green) |
-| `dedicated` | a real `DotServer`, the module and its console commands; exits clean |
+| `dedicated` | a real `GSServer`, the module and its console commands; exits clean |
 | `headless_presentation` | the presentation layer, settings round trip, effects, the HTTP party |
 | `headless_stack` | the player stack (`PlaylotPlayerStack`: roster, sides, classes, collision layout, spawn director, view switch, character) against a real sandbox |
 
@@ -28,7 +28,7 @@ Every check here was armed (the guard removed or the old code put back, and the 
 
 - **A suite that leaves objects alive fails.** `game.sh` rejects a log with "resources still in use at exit", "ObjectDB instances were leaked" or leaked RIDs. Name the culprit with `godot --headless --verbose --path . res://examples/headless_playlot.tscn -- --only=<section>` (the "Leaked instance" ids match the ids of nodes you print from a frame loop). It found a `Control` built per sidebar caption and added only for some, and `PlaylotAddons` scanners whose callback lambdas capture their own item, which need `release()`.
 - **`headless_net` is order-sensitive, not flaky.** Both halves are plain nodes in one scene tree and share one physics space, so the vehicle test's velocity and the lossy test's distance depend on where every body is. **Add a test at the END of the connected-player sequence**, and treat a vehicle or lossy failure after inserting one as a schedule change until proved otherwise. "Run it again" is the advice that hides a real regression: the second run is the one that gets believed. (A prop's server body and client mirror are in different `World3D`s, so it is not the two copies touching.)
-- **A bot keeps the last command it was given.** `DotFpsController.apply_command` stays set, so a bot from an earlier section keeps running and hopping. A test that stops driving a bot still has a bot that is driving.
+- **A bot keeps the last command it was given.** `GSFpsController.apply_command` stays set, so a bot from an earlier section keeps running and hopping. A test that stops driving a bot still has a bot that is driving.
 - **A settle drive's empty command turns the bot to yaw 0.** Aim after settling.
 - **A check whose answer depends on how long the player has existed is broken.** Read a yaw or position after ticks have run; a freshly added bot's controller has not started ticking.
 - **A GDScript lambda captures locals by value.** Break out of a loop from a signal handler through an `Array`, not a `bool`.
@@ -42,5 +42,5 @@ Every check here was armed (the guard removed or the old code put back, and the 
 - **`dedicated` writes under `user://`** (achievements, heat maps): it wipes them first, or the result depends on how many times it has run.
 - **The loopback signaller answers inside the call**, so it passes a caller that forgot `await`. Use the HTTP stub ([modes.md](modes.md#hosting-a-sandbox-playlotparty)).
 - **`present_frame` interpolates only while the client's manager is RUNNING** ([vehicles.md](vehicles.md#harness-notes)).
-- **Do not measure reach with `DotFpsTunables.new()`**: the addon's defaults are not the server's ([simulation.md](simulation.md#the-movement-is-a-bhop-servers-not-the-addons-defaults)).
+- **Do not measure reach with `GSFpsTunables.new()`**: the addon's defaults are not the server's ([simulation.md](simulation.md#the-movement-is-a-bhop-servers-not-the-addons-defaults)).
 - **What no suite sees**: the screen, motion between ticks, sound. Render it ([client.md](client.md#looking-at-it)); four of this game's interface bugs and the remote-body bugs were found by a picture.

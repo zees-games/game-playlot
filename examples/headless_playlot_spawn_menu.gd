@@ -20,7 +20,7 @@ func _built_map_ids() -> Array[String]:
 ##
 ## A menu built from a catalogue is a seam between the screen stack and the catalogue that no addon suite reaches; it is a `Control` built in code, so sizes are checked, not just contents.
 var _sm_menu: PlaylotSpawnMenu
-var _sm_stack: DotScreenStack
+var _sm_stack: GSScreenStack
 var _sm_servers: PlaylotBrowser
 var _sm_props_shown: Array[StringName]
 var _sm_prop_count: int
@@ -36,7 +36,7 @@ func _test_spawn_menu() -> void:
 
 	# Registered on a real stack rather than shown directly: pushing is what calls
 	# `_on_push`, and `_on_push` is what fills the grid.
-	_sm_stack = DotScreenStack.new()
+	_sm_stack = GSScreenStack.new()
 	add_child(_sm_stack)
 
 	var ready := _sm_stack.setup()
@@ -99,17 +99,17 @@ func _test_spawn_menu_2() -> void:
 	var env_key := "GS_BROWSER_BACKBONE_URL"
 	var had := OS.get_environment(env_key)
 	OS.unset_environment(env_key)
-	var off: DotResult = PlaylotBrowser.site_listing()
+	var off: GSResult = PlaylotBrowser.site_listing()
 	_check(
 		off.ok and off.value == null
 			and not _sm_servers.browser.sources().any(
-				func(s: DotBrowserSource) -> bool: return s.source_name() == &"backbone"
+				func(s: GSBrowserSource) -> bool: return s.source_name() == &"backbone"
 			),
 		"no site listing is read when none is configured"
 	)
 	OS.set_environment(env_key, "http://127.0.0.1:9")
-	var on: DotResult = PlaylotBrowser.site_listing()
-	var listing: DotBrowserSourceBackbone = on.value if on.ok else null
+	var on: GSResult = PlaylotBrowser.site_listing()
+	var listing: GSBrowserSourceBackbone = on.value if on.ok else null
 	_check(
 		listing != null and listing.config.page_url(1).contains("app=playground"),
 		"and this game's servers are when one is",
@@ -127,7 +127,7 @@ func _test_spawn_menu_2() -> void:
 	_check(web_origin == "https://site.example", "and with no query the page's own origin is the site", web_origin)
 	var web_file := PlaylotBrowser.resolve_default_site({"web": true, "origin": "null", "query": ""})
 	_check(web_file == "", "and a page with no usable origin lists no site", web_file)
-	var web_listing: DotResult = PlaylotBrowser.site_listing({"web": true, "origin": "https://site.example", "query": ""})
+	var web_listing: GSResult = PlaylotBrowser.site_listing({"web": true, "origin": "https://site.example", "query": ""})
 	_check(
 		web_listing.ok and web_listing.value != null
 			and web_listing.value.config.page_url(1).begins_with("https://site.example/api/content/server/list")
@@ -139,7 +139,7 @@ func _test_spawn_menu_2() -> void:
 	var native_default := PlaylotBrowser.resolve_default_site({"web": false, "origin": "https://site.example", "query": "https://other.example"})
 	_check(native_default == "https://deploy.example", "on native the exported default is used and the page is never asked", native_default)
 	OS.set_environment(env_key, "http://127.0.0.1:9")
-	var env_wins: DotResult = PlaylotBrowser.site_listing({"web": false})
+	var env_wins: GSResult = PlaylotBrowser.site_listing({"web": false})
 	_check(
 		env_wins.ok and env_wins.value != null and env_wins.value.config.backbone_url == "http://127.0.0.1:9",
 		"and the environment beats that default",

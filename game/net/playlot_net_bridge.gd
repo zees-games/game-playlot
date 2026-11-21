@@ -2,13 +2,13 @@ extends "playlot_net_bridge_ask.gd"
 
 
 
-func attach(p_game: Playlot, p_net: DotNetManager, link_parent: Node) -> DotResult:
+func attach(p_game: Playlot, p_net: GSNetManager, link_parent: Node) -> GSResult:
 	if p_game == null or p_net == null or link_parent == null:
-		return DotResult.fail(DotError.CODE_INVALID, "A bridge needs all three.")
+		return GSResult.fail(GSError.CODE_INVALID, "A bridge needs all three.")
 
 	if p_game.authoritative != p_net.is_server:
-		return DotResult.fail(
-			DotError.CODE_STATE,
+		return GSResult.fail(
+			GSError.CODE_STATE,
 			"The game and the manager disagree about who is authoritative.",
 			"game=%s net.is_server=%s" % [p_game.authoritative, p_net.is_server]
 		)
@@ -29,13 +29,13 @@ func attach(p_game: Playlot, p_net: DotNetManager, link_parent: Node) -> DotResu
 
 	var event := net.messages.register(
 		PlaylotEvent.NAME, PlaylotEvent,
-		DotNetMessage.Delivery.RELIABLE, DotNetMessage.Direction.TO_CLIENT
+		GSNetMessage.Delivery.RELIABLE, GSNetMessage.Direction.TO_CLIENT
 	)
 	if not event.ok:
 		return event
 	var request := net.messages.register(
 		PlaylotRequest.NAME, PlaylotRequest,
-		DotNetMessage.Delivery.RELIABLE, DotNetMessage.Direction.TO_SERVER
+		GSNetMessage.Delivery.RELIABLE, GSNetMessage.Direction.TO_SERVER
 	)
 	if not request.ok:
 		return request
@@ -46,7 +46,7 @@ func attach(p_game: Playlot, p_net: DotNetManager, link_parent: Node) -> DotResu
 	link = PlaylotNetLink.attached_to(link_parent, self, net.is_server)
 	# Not parent.add_child: the link must sit under the server (RPC paths) yet die with this bridge;
 	# a bare add_child left a second link after a module reload and renamed the live one.
-	DotGameLink.attach(link, link_parent, self, PlaylotNetLink.NODE_NAME)
+	GSGameLink.attach(link, link_parent, self, PlaylotNetLink.NODE_NAME)
 
 	_attach_inventory()
 
@@ -91,7 +91,7 @@ func attach(p_game: Playlot, p_net: DotNetManager, link_parent: Node) -> DotResu
 		if game.toys != null:
 			_register_toys()
 
-	return DotResult.success(true)
+	return GSResult.success(true)
 
 
 func remove_peer(peer_id: int) -> void:
@@ -146,10 +146,10 @@ func server_tick(tick: int) -> void:
 	_tick = tick
 	_game_ticked_for = -1
 	weapon_net.watch(game.weapon_layer)
-	var _t_net := DotFrameCost.now()
+	var _t_net := GSFrameCost.now()
 	if net != null:
 		net.server_tick(tick)
-	DotFrameCost.add(&"br.dotnet_tick", _t_net)
+	GSFrameCost.add(&"br.dotnet_tick", _t_net)
 	ensure_game_ticked(tick)
 
 
@@ -167,25 +167,25 @@ func ensure_game_ticked(tick: int) -> void:
 				and behaviour.identity.owner_peer_id > 0:
 			behaviour.player.controller.apply_command(behaviour.last_move.duplicate_command())
 
-	var _t_g := DotFrameCost.now()
+	var _t_g := GSFrameCost.now()
 	game.tick_once(tick)
-	DotFrameCost.add(&"br.game_tick_once", _t_g)
+	GSFrameCost.add(&"br.game_tick_once", _t_g)
 
 	# The tools, from the buttons the commands carried. After the movement, because a
 	# gun is aimed from where the player ENDED the tick.
-	var _t_d := DotFrameCost.now()
+	var _t_d := GSFrameCost.now()
 	for session_id in _behaviours:
 		_drive_tools(int(session_id), _behaviours[session_id])
-	DotFrameCost.add(&"br.drive_tools", _t_d)
+	GSFrameCost.add(&"br.drive_tools", _t_d)
 
 	# After the game moved them, before the snapshot is built. A prop pulled before the
 	# physics step would replicate where it was last tick, which is the whole family's
 	# "produced correctly and consumed by nothing" one step along: correct data, wrong
 	# instant, and nothing errors.
-	var _t_p := DotFrameCost.now()
+	var _t_p := GSFrameCost.now()
 	for instance_id in _prop_nets:
 		(_prop_nets[instance_id] as PlaylotPropNet).pull()
-	DotFrameCost.add(&"br.prop_pull", _t_p)
+	GSFrameCost.add(&"br.prop_pull", _t_p)
 
 	# Every bag the server changed this tick, to its owner, once. After the game ticked,
 	# because a spawn from the bag happens inside it.
@@ -194,7 +194,7 @@ func ensure_game_ticked(tick: int) -> void:
 
 
 ## Runs one player's physics gun or gravity gun from the buttons their command carried. The triggers are
-## BUTTONS, per-tick and continuous, riding in [member DotFpsCommand.buttons]; reliable requests would lag
+## BUTTONS, per-tick and continuous, riding in [member GSFpsCommand.buttons]; reliable requests would lag
 ## the mouse. The server actuates them: the client's props are frozen and drawn from snapshots.
 func _drive_tools(session_id: int, behaviour: PlaylotPlayerNet) -> void:
 	if behaviour == null or behaviour.player == null or behaviour.identity == null:
@@ -207,10 +207,10 @@ func _drive_tools(session_id: int, behaviour: PlaylotPlayerNet) -> void:
 	var before := int(_prev_buttons.get(session_id, 0))
 	_prev_buttons[session_id] = buttons
 
-	var primary := (buttons & DotFpsCommand.BUTTON_USER_0) != 0
-	var secondary := (buttons & DotFpsCommand.BUTTON_USER_1) != 0
-	var primary_pressed := primary and (before & DotFpsCommand.BUTTON_USER_0) == 0
-	var secondary_pressed := secondary and (before & DotFpsCommand.BUTTON_USER_1) == 0
+	var primary := (buttons & GSFpsCommand.BUTTON_USER_0) != 0
+	var secondary := (buttons & GSFpsCommand.BUTTON_USER_1) != 0
+	var primary_pressed := primary and (before & GSFpsCommand.BUTTON_USER_0) == 0
+	var secondary_pressed := secondary and (before & GSFpsCommand.BUTTON_USER_1) == 0
 
 	var space := player.get_world_3d().direct_space_state if player.is_inside_tree() else null
 	var origin := player.eye_position()
@@ -235,7 +235,7 @@ func _drive_tools(session_id: int, behaviour: PlaylotPlayerNet) -> void:
 		game.player_shots_fired(player.player_id, outcome)
 
 		if shot_fn.is_valid():
-			for shot: DotShot in outcome.shots:
+			for shot: GSShot in outcome.shots:
 				shot_fn.call(player.player_id, shot)
 		return
 
@@ -247,8 +247,8 @@ func _drive_tools(session_id: int, behaviour: PlaylotPlayerNet) -> void:
 	# the menu, after the spawn, and taken back out if the purse refuses.
 	var toy: PlaylotWeapon = _toy_of.get(session_id)
 	if toy != null:
-		var reload_pressed := (buttons & DotFpsCommand.BUTTON_USER_2) != 0 \
-			and (before & DotFpsCommand.BUTTON_USER_2) == 0
+		var reload_pressed := (buttons & GSFpsCommand.BUTTON_USER_2) != 0 \
+			and (before & GSFpsCommand.BUTTON_USER_2) == 0
 		if primary_pressed:
 			_toy_result(session_id, player.player_id, toy, toy.primary(space, origin, aim))
 		if secondary_pressed:
@@ -287,7 +287,7 @@ func _drive_tools(session_id: int, behaviour: PlaylotPlayerNet) -> void:
 
 # --- The client tick -------------------------------------------------------
 
-func _on_request(message: DotNetMessage) -> void:
+func _on_request(message: GSNetMessage) -> void:
 	var ask := message as PlaylotRequest
 	if ask == null or net == null or not net.is_server:
 		return
@@ -334,7 +334,7 @@ func _on_request(message: DotNetMessage) -> void:
 
 			if bool(said["ok"]):
 				# Emitted rather than acted on. Everything about what a line means is
-				# [DotChatRouter]'s, and the router is [PlaylotModule]'s.
+				# [GSChatRouter]'s, and the router is [PlaylotModule]'s.
 				say_requested.emit(
 					peer_id, StringName(str(said["channel"])), str(said["text"])
 				)
@@ -391,7 +391,7 @@ func _on_arm(peer_id: int, session_id: int, id: StringName, arm: Dictionary) -> 
 			if looked is Array and (looked as Array).size() == 3:
 				at = Vector3(float(looked[0]), float(looked[1]), float(looked[2]))
 			var started := game.activate_addon_item(String(arm["id"]), session_id, at, id)
-			DotLog.result(CHANNEL, "an addon item was asked for", started)
+			GSLog.result(CHANNEL, "an addon item was asked for", started)
 			if not started.ok:
 				_tell(peer_id, PlaylotEvents.Kind.NOTICE,
 					PlaylotEvents.write_notice(session_id, started.error.message))
@@ -404,7 +404,7 @@ func _on_arm(peer_id: int, session_id: int, id: StringName, arm: Dictionary) -> 
 					toy.armed = prop_id
 
 
-func _on_event(message: DotNetMessage) -> void:
+func _on_event(message: GSNetMessage) -> void:
 	var event := message as PlaylotEvent
 	if event == null or game == null or net == null or net.is_server:
 		return
@@ -504,7 +504,7 @@ func _on_event(message: DotNetMessage) -> void:
 			var _weapon := weapon_net.apply(event.kind, reader, game.weapon_layer)
 
 
-func _apply_join(reader: DotNetReader) -> void:
+func _apply_join(reader: GSNetReader) -> void:
 	var join := PlaylotEvents.read_join(reader)
 	if not bool(join["ok"]):
 		return
@@ -535,7 +535,7 @@ func _apply_join(reader: DotNetReader) -> void:
 			identity, int(join["net_id"]), net.clock.tick, net.config
 		)
 		if not registered.ok:
-			DotLog.warn(CHANNEL, "could not mirror a player", {"error": str(registered.error)})
+			GSLog.warn(CHANNEL, "could not mirror a player", {"error": str(registered.error)})
 			game.remove_player(id)
 			return
 	else:
@@ -554,7 +554,7 @@ func _apply_join(reader: DotNetReader) -> void:
 ## dot-2d's scatter had exactly this bug and could not be mirrored at all until it grew
 ## an `adopt()`. Registering with 0 here would give the prop a different id on every
 ## client and every snapshot for it would land on nothing.
-func _apply_prop(reader: DotNetReader) -> void:
+func _apply_prop(reader: GSNetReader) -> void:
 	var info := PlaylotEvents.read_prop(reader)
 	if not bool(info["ok"]):
 		return
@@ -585,12 +585,12 @@ func _apply_prop(reader: DotNetReader) -> void:
 	if def == null and scene_path == "":
 		# Not an error: a server may run a catalogue this build does not have, and the
 		# honest answer is to draw nothing rather than to guess.
-		DotLog.debug(CHANNEL, "a prop this build does not have", {"id": str(info["kind_id"])})
+		GSLog.debug(CHANNEL, "a prop this build does not have", {"id": str(info["kind_id"])})
 		return
 
 	var scene: PackedScene = load(scene_path) if scene_path != "" else null
 	if scene == null:
-		DotLog.warn(CHANNEL, "a prop's scene would not load", {"path": scene_path})
+		GSLog.warn(CHANNEL, "a prop's scene would not load", {"path": scene_path})
 		return
 
 	var body := scene.instantiate() as Node3D
@@ -632,15 +632,15 @@ func _apply_prop(reader: DotNetReader) -> void:
 	behaviour.prop = body
 	body.add_child(behaviour)
 
-	var identity := DotNetIdentity.new()
+	var identity := GSNetIdentity.new()
 	identity.name = "Identity"
 	identity.owner_peer_id = 0
-	identity.authority = DotNetIdentity.Authority.SERVER
+	identity.authority = GSNetIdentity.Authority.SERVER
 	body.add_child(identity)
 
 	var registered := net.registry.register(identity, net_id, net.clock.tick, net.config)
 	if not registered.ok:
-		DotLog.warn(CHANNEL, "could not mirror a prop", {"error": str(registered.error)})
+		GSLog.warn(CHANNEL, "could not mirror a prop", {"error": str(registered.error)})
 		body.queue_free()
 		return
 

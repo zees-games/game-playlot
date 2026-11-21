@@ -42,8 +42,8 @@ const FLOOR_Y := 0.0
 ## [b]Every step's name is its random stream[/b], so adding one at the end cannot change
 ## what the ones before it produced — which is what makes a seed somebody shared keep
 ## meaning the same world after the next feature lands.
-static func pipeline(width: int = 40, height: int = 40) -> DotProcGenPipeline:
-	var p := DotProcGenPipeline.new()
+static func pipeline(width: int = 40, height: int = 40) -> GSProcGenPipeline:
+	var p := GSProcGenPipeline.new()
 	p.width = width
 	p.height = height
 	p.pipeline_name = &"pg_generated"
@@ -51,7 +51,7 @@ static func pipeline(width: int = 40, height: int = 40) -> DotProcGenPipeline:
 	# not change map, which an operator sees as a hang.
 	p.max_attempts = 10
 
-	var rooms := DotProcGenRooms.new()
+	var rooms := GSProcGenRooms.new()
 	rooms.step_name = &"rooms"
 	# Big leaves: a sandbox room wants space to build in, and a maze of cupboards is the
 	# failure mode of every BSP generator whose minimum is set for a dungeon.
@@ -60,7 +60,7 @@ static func pipeline(width: int = 40, height: int = 40) -> DotProcGenPipeline:
 	rooms.margin = 0.15
 	p.add(rooms)
 
-	var corridors := DotProcGenConnect.new()
+	var corridors := GSProcGenConnect.new()
 	corridors.step_name = &"corridors"
 	# Three cells wide, which is about eighteen metres: a corridor a player can carry a
 	# crate down without wedging it, and wide enough for two people to pass.
@@ -70,24 +70,24 @@ static func pipeline(width: int = 40, height: int = 40) -> DotProcGenPipeline:
 	corridors.extra_loops = 4
 	p.add(corridors)
 
-	var spawn := DotProcGenMarkers.new()
+	var spawn := GSProcGenMarkers.new()
 	spawn.step_name = &"spawn"
 	spawn.kind = &"spawn"
-	spawn.placement = DotProcGenMarkers.Placement.ROOM_CENTRE
+	spawn.placement = GSProcGenMarkers.Placement.ROOM_CENTRE
 	spawn.count = 1
 	p.add(spawn)
 
-	var props := DotProcGenMarkers.new()
+	var props := GSProcGenMarkers.new()
 	props.step_name = &"props"
 	props.kind = &"prop"
-	props.placement = DotProcGenMarkers.Placement.SCATTERED
+	props.placement = GSProcGenMarkers.Placement.SCATTERED
 	props.count = 12
 	# Far enough apart that two crates do not spawn inside each other, which in a game
 	# with a physics gun is a pair that explodes apart on the first frame.
 	props.min_separation = 4
 	p.add(props)
 
-	var check := DotProcGenValidate.new()
+	var check := GSProcGenValidate.new()
 	check.step_name = &"reachable"
 	check.from_kind = &"spawn"
 	# Everything placed has to be reachable from the spawn, and the map has to be mostly
@@ -107,21 +107,21 @@ static func pipeline(width: int = 40, height: int = 40) -> DotProcGenPipeline:
 ## [param seed_source] is anything with `seed_for(name)` — dot-randomness' manager,
 ## duck-typed, so this file names no type from that addon and the generator still lands on
 ## the session's own seed rather than on one of its own.
-static func generate(seed_value: int, seed_source: Object = null) -> DotResult:
+static func generate(seed_value: int, seed_source: Object = null) -> GSResult:
 	var p := pipeline()
 	p.seed_source = seed_source
 	var res := p.generate(seed_value)
 	if not res.ok:
 		return res.wrap("generating the sandbox")
 
-	var doc := res.value as DotProcGenDoc
-	DotLog.info(CHANNEL, "generated a sandbox", {
+	var doc := res.value as GSProcGenDoc
+	GSLog.info(CHANNEL, "generated a sandbox", {
 		"seed": int(doc.meta.get("seed", 0)),
 		"attempt": int(doc.meta.get("attempt", 0)) + 1,
 		"rooms": doc.rooms.size(),
 		"fingerprint": str(doc.meta.get("fingerprint", "")).substr(0, 16),
 	})
-	return DotResult.success(doc)
+	return GSResult.success(doc)
 
 
 ## Turns a document into geometry under [param parent].
@@ -131,7 +131,7 @@ static func generate(seed_value: int, seed_source: Object = null) -> DotResult:
 ## 900 meshes and a physics broad phase that has to sort them every tick — on a game whose
 ## whole point is throwing rigid bodies around. Run-length merging takes it to a few
 ## dozen, and the geometry is identical.
-static func build(parent: Node3D, doc: DotProcGenDoc) -> Dictionary:
+static func build(parent: Node3D, doc: GSProcGenDoc) -> Dictionary:
 	var built := {"walls": 0, "floor": 0, "props": [], "spawn": Vector3.ZERO}
 
 	# The floor is one box. A sandbox has no holes in it -- the walls are what shape it --
@@ -154,11 +154,11 @@ static func build(parent: Node3D, doc: DotProcGenDoc) -> Dictionary:
 	for y in range(doc.height):
 		var x := 0
 		while x < doc.width:
-			if doc.at(x, y) != DotProcGenDoc.SOLID or merged[y * doc.width + x] == 1:
+			if doc.at(x, y) != GSProcGenDoc.SOLID or merged[y * doc.width + x] == 1:
 				x += 1
 				continue
 			var run := 0
-			while x + run < doc.width and doc.at(x + run, y) == DotProcGenDoc.SOLID \
+			while x + run < doc.width and doc.at(x + run, y) == GSProcGenDoc.SOLID \
 					and merged[y * doc.width + x + run] == 0:
 				merged[y * doc.width + x + run] = 1
 				run += 1
@@ -194,7 +194,7 @@ static func _wall(parent: Node3D, x: int, y: int, w: int, h: int) -> void:
 
 
 ## A one-line description for a console command and for the map's own notice.
-static func describe(doc: DotProcGenDoc) -> String:
+static func describe(doc: GSProcGenDoc) -> String:
 	return "seed %d, %d rooms, %d links, %s" % [
 		int(doc.meta.get("seed", 0)),
 		doc.rooms.size(),

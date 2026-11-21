@@ -14,7 +14,7 @@ func _init() -> void:
 	super()
 
 
-func primary(gun: Object, hit: Dictionary) -> DotResult:
+func primary(gun: Object, hit: Dictionary) -> GSResult:
 	var body := rigid_body(hit)
 
 	if pending.is_empty():
@@ -22,18 +22,18 @@ func primary(gun: Object, hit: Dictionary) -> DotResult:
 			return nothing_there()
 
 		pending = {"body": body, "point": hit["point"]}
-		return DotResult.success("first")
+		return GSResult.success("first")
 
 	var first: RigidBody3D = pending.get("body")
 	pending = {}
 
 	if not is_instance_valid(first):
-		return DotResult.fail(DotError.CODE_STATE, "The first prop has gone.")
+		return GSResult.fail(GSError.CODE_STATE, "The first prop has gone.")
 
 	if body == first:
-		return DotResult.fail(DotError.CODE_INVALID, "Pick a different prop to weld it to.")
+		return GSResult.fail(GSError.CODE_INVALID, "Pick a different prop to weld it to.")
 
-	var allowed: DotResult = gun.call("may_constrain")
+	var allowed: GSResult = gun.call("may_constrain")
 
 	if not allowed.ok:
 		return allowed
@@ -42,13 +42,13 @@ func primary(gun: Object, hit: Dictionary) -> DotResult:
 	return gun.call("constraints").weld(gun.get("wielder"), first, body, hit["point"])
 
 
-func secondary(gun: Object, hit: Dictionary) -> DotResult:
+func secondary(gun: Object, hit: Dictionary) -> GSResult:
 	var body := rigid_body(hit)
 
 	if body == null:
 		return nothing_there()
 
-	var allowed: DotResult = gun.call("may_constrain")
+	var allowed: GSResult = gun.call("may_constrain")
 
 	if not allowed.ok:
 		return allowed
@@ -56,10 +56,10 @@ func secondary(gun: Object, hit: Dictionary) -> DotResult:
 	return gun.call("constraints").weld(gun.get("wielder"), body, null, hit["point"])
 
 
-func reload(gun: Object, hit: Dictionary) -> DotResult:
+func reload(gun: Object, hit: Dictionary) -> GSResult:
 	var body := rigid_body(hit)
 
 	if body == null:
 		return nothing_there()
 
-	return DotResult.success(gun.call("constraints").remove_on(body, 0))
+	return GSResult.success(gun.call("constraints").remove_on(body, 0))

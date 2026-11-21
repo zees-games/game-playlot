@@ -1,5 +1,5 @@
 extends "res://examples/dedicated_rotation_vote_records.gd"
-## Boots a real [DotServer], loads the playlot module into it, and runs the
+## Boots a real [GSServer], loads the playlot module into it, and runs the
 ## commands an operator and an admin would actually type.
 ##
 ## [codeblock]
@@ -13,14 +13,14 @@ const PgTestPorts := preload("test_ports.gd")
 
 
 func _ready() -> void:
-	DotLog.set_level(DotLog.Level.ERROR)
-	DotLog.signals().record.connect(_on_log_record)
+	GSLog.set_level(GSLog.Level.ERROR)
+	GSLog.signals().record.connect(_on_log_record)
 	_run.call_deferred()
 
 
 ## An ERROR from the stats layer would otherwise scroll past and leave a stat dead with every check green.
 func _on_log_record(rec: Dictionary) -> void:
-	if int(rec.get("level", 0)) >= DotLog.Level.ERROR and String(rec.get("channel", "")).begins_with("stats"):
+	if int(rec.get("level", 0)) >= GSLog.Level.ERROR and String(rec.get("channel", "")).begins_with("stats"):
 		_stats_errors.append(str(rec.get("message", rec)))
 
 
@@ -37,7 +37,7 @@ func _run() -> void:
 	if not _is_exit_probe():
 		probe = await _run_exit_probe()
 
-	DotPaths.remove_tree(SERVER_DIR)
+	GSPaths.remove_tree(SERVER_DIR)
 	DirAccess.make_dir_recursive_absolute(SERVER_DIR)
 
 	await _boot()
@@ -81,7 +81,7 @@ func _run() -> void:
 		_test_exits_clean(probe)
 
 	await _shut_down()
-	DotPaths.remove_tree(SERVER_DIR)
+	GSPaths.remove_tree(SERVER_DIR)
 
 	# The copy of this suite that the exit probe runs does not run the probe itself.
 	var sections := SECTIONS - (1 if _is_exit_probe() else 0) + (TIMER_SECTIONS if _timer_linked() else 0)
@@ -141,7 +141,7 @@ func _boot() -> void:
 	cfg.store_line("hostname \"playlot test\"")
 	cfg.close()
 
-	var config := DotServerConfig.new()
+	var config := GSServerConfig.new()
 	config.startup_config = cfg_path
 	# And nothing in the after-the-listener file, so the test is unambiguous about
 	# which one set it.
@@ -168,17 +168,17 @@ func _boot() -> void:
 	# is on: a terminal is still read, and a suite takes no commands from either.
 	config.stdin_console_enabled = false
 
-	server = DotServer.new()
+	server = GSServer.new()
 	server.name = "Server"
 	server.config = config
 	add_child(server)
 
 	# Answering a query is its own addon, and a server only answers if a host is plugged
 	# in. Added before the server finishes booting so the listener opens with it.
-	var query_host := DotQueryHost.new()
+	var query_host := GSQueryHost.new()
 	query_host.name = "QueryHost"
 	query_host.app_url = APP_URL
-	query_host.server_ref = DotNodeRef.of_path(NodePath("../Server"))
+	query_host.server_ref = GSNodeRef.of_path(NodePath("../Server"))
 	add_child(query_host)
 
 	# `auto_boot` makes `_ready` await `boot()`, which opens a listener and reads the
@@ -187,13 +187,13 @@ func _boot() -> void:
 	for _i in range(60):
 		await get_tree().process_frame
 
-		if server.state == DotServer.State.RUNNING:
+		if server.state == GSServer.State.RUNNING:
 			break
 
 	_check(
-		server.state == DotServer.State.RUNNING,
+		server.state == GSServer.State.RUNNING,
 		"the server boots",
-		DotServer.State.keys()[server.state]
+		GSServer.State.keys()[server.state]
 	)
 	_check(server.console != null, "the server has a console")
 	_check(
@@ -222,8 +222,8 @@ func _boot() -> void:
 	_check(game.maps.current != null, "the game loaded a map",
 		String(game.maps.current.id) if game.maps.current else "-")
 
-	# [b]The identity half, before the modules.[/b] [DotPlatformModule] refuses to load
-	# without a [DotPlatformHub] in the registry, and building the hub is awaited work —
+	# [b]The identity half, before the modules.[/b] [GSPlatformModule] refuses to load
+	# without a [GSPlatformHub] in the registry, and building the hub is awaited work —
 	# which is why it is here, in the application, rather than inside a module's
 	# `_module_load`, which dot-server's module host does not await.
 	platform = PlaylotPlatform.new()
@@ -231,10 +231,10 @@ func _boot() -> void:
 	platform.directory = "%s/identity" % SERVER_DIR
 	add_child(platform)
 
-	var identity: DotResult = await platform.setup()
+	var identity: GSResult = await platform.setup()
 	_check(identity.ok, "profiles and avatars are up", str(identity.error))
 
-	var platform_module: DotResult = await server.modules.load_module(
+	var platform_module: GSResult = await server.modules.load_module(
 		"res://addons/dot_platform/dot_platform_module.gd"
 	)
 	_check(platform_module.ok, "the platform module loads", str(platform_module.error))
@@ -247,7 +247,7 @@ func _boot() -> void:
 		"punishments_path", "%s/punishments.json" % SERVER_DIR
 	)
 
-	var loaded: DotResult = await server.modules.load_module(
+	var loaded: GSResult = await server.modules.load_module(
 		"res://game/playlot_module.gd"
 	)
 
@@ -261,7 +261,7 @@ func _boot() -> void:
 	# THIS run: a path that is right and a directory that was not wiped is a suite carrying
 	# the last run's gag into this one.
 	var services: PlaylotServices = _module().get("services")
-	var moderation: DotModerationManager = services.moderation if services != null else null
+	var moderation: GSModerationManager = services.moderation if services != null else null
 	_check(services != null and services.punishments_path.begins_with(SERVER_DIR),
 		"punishments go to this run's own store, not the one a real server enforces",
 		services.punishments_path if services != null else "no services")
@@ -307,11 +307,11 @@ func _test_map_commands() -> void:
 		and server.console.find_cvar("sv_map_menu_flag").get_string() == "generic"
 		and (menu_half.get("change_fn") as Callable).is_valid(),
 		"the map menu is there, staff-only by default, changing the map now")
-	var staff := DotCmdContext.new()
-	staff.source = DotCmdContext.Source.CHAT
+	var staff := GSCmdContext.new()
+	staff.source = GSCmdContext.Source.CHAT
 	staff.permissions = PackedStringArray(["generic"])
-	var player := DotCmdContext.new()
-	player.source = DotCmdContext.Source.CHAT
+	var player := GSCmdContext.new()
+	player.source = GSCmdContext.Source.CHAT
 	var offered: Dictionary = menu_half.call("offer", player)
 	_check((offered["maps"] as Array).size() > 1 and not bool(offered["allowed"]) and bool(offered["vote"]),
 		"a player is offered every map, as a vote")
@@ -356,7 +356,7 @@ func _test_map_commands() -> void:
 	for _i in range(10):
 		await get_tree().process_frame
 
-	var map_command: DotConCommand = server.console.find_command("map")
+	var map_command: GSConCommand = server.console.find_command("map")
 	_check(map_command != null, "`map` is registered")
 	_check(
 		map_command != null and map_command.chat_allowed,
@@ -412,7 +412,7 @@ func _test_services() -> void:
 	)
 	_check(
 		services.chat.channel(PlaylotServices.CHANNEL_NEAR).scope
-			== DotChatChannel.Scope.RADIUS,
+			== GSChatChannel.Scope.RADIUS,
 		"one of which is a radius, so a build is a conversation"
 	)
 	_check(
@@ -425,11 +425,11 @@ func _test_services() -> void:
 	# one, and neither imports the other — so the only thing that makes a gag work is that
 	# something is registered under that name.
 	_check(
-		DotRegistry.has(DotModerationManager.MUTE_SERVICE),
+		GSRegistry.has(GSModerationManager.MUTE_SERVICE),
 		"a mute source is registered, which is the only thing that makes a gag work"
 	)
 	_check(
-		DotRegistry.has(DotModerationManager.BAN_SERVICE),
+		GSRegistry.has(GSModerationManager.BAN_SERVICE),
 		"and a ban source, which dot-server's admission check consults"
 	)
 
@@ -438,7 +438,7 @@ func _test_services() -> void:
 	# see all of, an arena bigger than a screen, and a sandbox that is both at once.
 	_check(
 		services.voice != null
-			and services.voice.default_channel == DotVoiceRouter.Channel.ALL,
+			and services.voice.default_channel == GSVoiceRouter.Channel.ALL,
 		"voice reaches the whole server, and the near channel is text's"
 	)
 	_check(
@@ -449,8 +449,8 @@ func _test_services() -> void:
 
 	# The operator's switch: registered by the module, replicated so clients hide their key,
 	# and enforced on the router.
-	var voice_cvar: DotConVar = server.console.find_cvar("sv_voice_enable")
-	_check(voice_cvar != null and DotConsole.is_replicated(voice_cvar),
+	var voice_cvar: GSConVar = server.console.find_cvar("sv_voice_enable")
+	_check(voice_cvar != null and GSConsole.is_replicated(voice_cvar),
 		"sv_voice_enable is registered and replicated to clients")
 	var off_enabled := true
 	if voice_cvar != null:
@@ -470,8 +470,8 @@ func _test_services() -> void:
 
 	# The wire, both directions. Every encoder against its decoder, because the two have
 	# to be exact inverses and nothing can check that for you.
-	var line := DotChatMessage.make(
-		DotChatMessage.Kind.SAY, PlaylotServices.CHANNEL_NEAR, "7", "Ada", "over here"
+	var line := GSChatMessage.make(
+		GSChatMessage.Kind.SAY, PlaylotServices.CHANNEL_NEAR, "7", "Ada", "over here"
 	)
 	line.seq = 3
 
@@ -479,7 +479,7 @@ func _test_services() -> void:
 	wire["x"] = {"p": 7}
 
 	var back := PlaylotEvents.read_chat(
-		DotNetReader.new(PlaylotEvents.write_chat(wire))
+		GSNetReader.new(PlaylotEvents.write_chat(wire))
 	)
 	_check(bool(back["ok"]), "a chat line round-trips")
 	_check(String(back["m"]) == "over here", "with the text")
@@ -498,12 +498,12 @@ func _test_services() -> void:
 	# two ends of a wire.
 	var kinds_ok := true
 
-	for kind in DotChatMessage.Kind.values():
-		var one := DotChatMessage.make(
-			kind as DotChatMessage.Kind, PlaylotServices.CHANNEL_ALL, "1", "Ada", "x"
+	for kind in GSChatMessage.Kind.values():
+		var one := GSChatMessage.make(
+			kind as GSChatMessage.Kind, PlaylotServices.CHANNEL_ALL, "1", "Ada", "x"
 		)
 		var round_trip := PlaylotEvents.read_chat(
-			DotNetReader.new(PlaylotEvents.write_chat(one.to_dictionary()))
+			GSNetReader.new(PlaylotEvents.write_chat(one.to_dictionary()))
 		)
 
 		if String(round_trip["k"]) != one.kind_name():
@@ -544,8 +544,8 @@ func _test_arena() -> void:
 	# [b]Entitlements default to nothing, and that default is the important one.[/b] A
 	# server that granted everything would work perfectly in every test, ship, and
 	# quietly be a game where every unlock is free — which nobody reports as a bug.
-	var free_only := schema.choices_for(&"primary", DotLoadoutEntitlements.none())
-	var everything := schema.choices_for(&"primary", DotLoadoutEntitlements.everything())
+	var free_only := schema.choices_for(&"primary", GSLoadoutEntitlements.none())
+	var everything := schema.choices_for(&"primary", GSLoadoutEntitlements.everything())
 	_check(
 		everything.size() > free_only.size(),
 		"and something is locked (%d free of %d)" % [free_only.size(), everything.size()]
@@ -566,7 +566,7 @@ func _test_arena() -> void:
 	_check(alice.is_protected(0), "and is protected on the tick they appear")
 
 	# [b]Through the arena's own tick, not the health's.[/b] Spawn protection is checked
-	# by `DotHealth.apply` against the tick the MANAGER last saw, and ticking only the
+	# by `GSHealth.apply` against the tick the MANAGER last saw, and ticking only the
 	# health leaves the manager on zero — so the protection reads as expired everywhere
 	# except in the one place that decides. A test that ticked the health alone would pass
 	# its own assertion and then be refused by the thing it was setting up.
@@ -609,7 +609,7 @@ func _test_arena() -> void:
 	# Armed by deciding nothing in `_on_killed` (null) and by leaving the cvars unbound in
 	# the module (the replicated check fails and the pick is a draw over the stock weights).
 	var weights := server.console.find_cvar("sv_ragdoll_reactions")
-	_check(weights != null and weights.has_flag(DotConVar.FLAG_REPLICATED),
+	_check(weights != null and weights.has_flag(GSConVar.FLAG_REPLICATED),
 		"the sv_ragdoll* set is bound, replicated, because the clients draw the bodies")
 	var carol := game.add_player(&"u902", "Carol")
 	arena.admit(&"u902", "Carol")
@@ -622,7 +622,7 @@ func _test_arena() -> void:
 	arena.player_killed.connect(on_killed)
 	var fatal := arena.hurt(&"u901", &"u902", 500.0, 2.0)
 	_check(fatal != null and fatal.lethal and carol != null and carol.death != null
-			and carol.death.reaction == DotPlayerDeathReactions.FACE_PLANT,
+			and carol.death.reaction == GSPlayerDeathReactions.FACE_PLANT,
 		"a kill picks the body's fall on the server, from sv_ragdoll_reactions",
 		str(carol.death.describe()) if carol != null and carol.death != null else "no death")
 	# A downed player bleeding out is a death too, which nothing told a client before: it
@@ -634,7 +634,7 @@ func _test_arena() -> void:
 		downs.died.emit(&"u902", &"bleed_out")
 	arena.player_killed.disconnect(on_killed)
 	_check(killed == [&"u902"] and carol.death != null
-			and carol.death.reaction == DotPlayerDeathReactions.CRUMPLE,
+			and carol.death.reaction == GSPlayerDeathReactions.CRUMPLE,
 		"and a bleed-out crumples, announced like any death", str(killed))
 	arena.release(&"u902")
 	game.remove_player(&"u902")

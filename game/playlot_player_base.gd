@@ -13,15 +13,15 @@ const PlaylotCharacter := preload("playlot_character.gd")
 ## - anything that changes where a player ends up runs *inside* the simulation, after
 ##   the move ([member post_move_fn], the toys, a prop underfoot), so a predicting
 ##   client's replay of a tick gets what the server's tick got;
-## - a style is dot-player-controller's [code]DotFpsStyle[/code]; a run timer, when a
+## - a style is dot-player-controller's [code]GSFpsStyle[/code]; a run timer, when a
 ##   server added one, hears [signal style_changed] and puts its ranking half beside it.
 
 const CHANNEL := "playlot.player"
 
 ## The movement style changed. What a run timer listens to for its ranking half.
-signal style_changed(style: DotFpsStyle)
+signal style_changed(style: GSFpsStyle)
 
-## `func(player, state: DotFpsState) -> void`, run on every simulated tick after the move and
+## `func(player, state: GSFpsState) -> void`, run on every simulated tick after the move and
 ## before the toys: a run timer's zone effects (push, speed limit, gravity, the prespeed
 ## clamp). Unset when there is none. On the tick rather than from a signal, because each of
 ## them changes where the player ends up.
@@ -40,77 +40,77 @@ var post_move_fn: Callable = Callable()
 ## holds one of each: their own, which samples, and everybody else's, which does not.
 @export var samples_input: bool = false
 
-var controller: DotFpsController = null
+var controller: GSFpsController = null
 
 ## The third-person controller, when this player has one. See [method set_view_mode].
-var tps: DotTpsController = null
+var tps: GSTpsController = null
 
 ## Which of the two is driving. Built only on a player that can have a camera.
-var controller_switch: DotPlayerControllerSwitch = null
+var controller_switch: GSPlayerControllerSwitch = null
 
 ## The dot-player component root the two controllers bind through.
-var player_node: DotPlayer = null
+var player_node: GSPlayer = null
 
 ## The body other people see. Null until [method build_character] is called.
 var character: PlaylotCharacter = null
 
 ## How this player's body fell on their last death: the server's pick
 ## ([method PlaylotArena.decide_death]), carried on COMBAT. Null before one.
-var death: DotPlayerDeath = null
+var death: GSPlayerDeath = null
 
 ## The locomotion state machine over that body.
-var anim: DotPlayerAnimDriver = null
+var anim: GSPlayerAnimDriver = null
 
 ## The camera's motion cues on the local player: the landing dip and nod, the strafe lean and
-## the widening past a run, from dot-player-controller's [DotFpsViewMotion] applied where the
+## the widening past a run, from dot-player-controller's [GSFpsViewMotion] applied where the
 ## camera is written ([method present_camera]). Null on everybody else.
 ##
-## [b]Not a [DotFpsView], and one stood here doing nothing until 2026-10-11.[/b] The client
-## added a `DotFpsView` after the controller had looked for one, so `controller.view` was null
+## [b]Not a [GSFpsView], and one stood here doing nothing until 2026-10-11.[/b] The client
+## added a `GSFpsView` after the controller had looked for one, so `controller.view` was null
 ## and the view never ran: no dip, no lean, no widening, and the recoil `_present_zee` handed
 ## it went nowhere. The client writes the camera itself (the interpolated eye, below), which
 ## is game-fatal-contact's arrangement, so the arithmetic comes here instead of a node that would
 ## write the same camera.
-var camera_motion: DotFpsViewMotion = null
+var camera_motion: GSFpsViewMotion = null
 
 ## A landing the drawn eye has not reached yet: its impact (0 for none) and its tick.
 var _landing_impact: float = 0.0
 var _landing_tick: int = -1
 
 ## Turns devices into commands, for a locally controlled player only.
-var sampler: DotFpsSampler = null
+var sampler: GSFpsSampler = null
 
 ## See [method class_base_tunables].
-var _class_base: DotFpsTunables = null
+var _class_base: GSFpsTunables = null
 
-## This player's run timer, when a server added dot-timer: a `DotTimer` owned by
+## This player's run timer, when a server added dot-timer: a `GSTimer` owned by
 ## `addons/pg_timer`'s manager, untyped because the addon may be absent. Null otherwise.
 var timer: Object = null
 
 ## Standing on a moving prop. Set by the game on join; see [method _ride_prop].
-var carry: DotPropCarry = null
+var carry: GSPropCarry = null
 var carry_enabled_fn: Callable = Callable()
 
-## The map's toys (dot-props' [DotPropBodyBox]), for the trampolines and pads that throw this
+## The map's toys (dot-props' [GSPropBodyBox]), for the trampolines and pads that throw this
 ## player and the roundabout that carries them. Set by the game on every map, both ends.
-var toys: DotPropBodyBox = null
+var toys: GSPropBodyBox = null
 
 ## `func(index: int) -> void`: this player was thrown by toy [param index]. The game's, which
 ## counts the bounce on the server only (that is what a client hears).
 var bounced_fn: Callable = Callable()
 
-## What a player weighs to a prop they stand on (DotPropCarry takes a share of it).
+## What a player weighs to a prop they stand on (GSPropCarry takes a share of it).
 const MASS_KG := 80.0
 
 ## How far props have carried this player, all told. For `describe` and the suites.
 var carried_metres: float = 0.0
 
 ## The movement half of the style in force.
-var movement_style: DotFpsStyle = null
+var movement_style: GSFpsStyle = null
 
 ## The tools, when the game has dot-props.
-var phys_gun: DotPhysGun = null
-var grav_gun: DotGravGun = null
+var phys_gun: GSPhysGun = null
+var grav_gun: GSGravGun = null
 
 ## The zee-dot-weapons rig in this player's hands, or null. Put here and taken away by
 ## PlaylotZee, never built by the player: most players hold a physics gun.
@@ -127,7 +127,7 @@ var zee_world: Node3D = null
 
 ## The weapon [method _hold_kind_now] last looked up, and the arms it is held with.
 var _hold_id: StringName = &"-"
-var _hold_kind: int = DotHumanoidFigure.Hold.NONE
+var _hold_kind: int = GSHumanoidFigure.Hold.NONE
 
 ## Whether this player is in a vehicle, and so is not walking.
 ##
@@ -171,7 +171,7 @@ var flashlight_ready: bool = false
 
 ## The marker [member beacon] draws, while it does. Client side; built and freed by
 ## [method present_beacon], and never built on a server, which calls nothing that draws.
-var beacon_marker: DotFxBeacon = null
+var beacon_marker: GSFxBeacon = null
 
 ## Set by the world so the timer is ticked with the same clock the movement uses.
 ## [b]Assigned through, not just stored.[/b] The controller sizes its step from its own
@@ -187,9 +187,9 @@ var tick_rate: int = 128:
 			controller.tick_rate = value
 
 
-## This player's swimming mode (dot-player-controller's DotFpsSwimMode). Its water is the
+## This player's swimming mode (dot-player-controller's GSFpsSwimMode). Its water is the
 ## map's, set by [method set_water].
-var swim: DotFpsSwimMode = DotFpsSwimMode.new()
+var swim: GSFpsSwimMode = GSFpsSwimMode.new()
 
 
 ## The water this player can swim in: the map's water boxes, world space.
@@ -198,7 +198,7 @@ var swim: DotFpsSwimMode = DotFpsSwimMode.new()
 ## Gives this player a visible body and the locomotion state machine that drives it.
 ##
 ## [b]dot-player-char's visual half had no implementation in any game in this family.[/b]
-## Five projects installed the addon, four built a catalogue, and `DotPlayerCharVisual` —
+## Five projects installed the addon, four built a catalogue, and `GSPlayerCharVisual` —
 ## the abstract node the whole addon exists to fill — was subclassed nowhere. It survived
 ## because every game was first-person and nobody sees their own body; the third-person
 ## camera is what made it visible, and the first frame through it was an empty view four
@@ -209,7 +209,7 @@ var swim: DotFpsSwimMode = DotFpsSwimMode.new()
 ## for the stock look their id picks. Set by the server from their avatar and sent in JOIN.
 var skins := PackedInt32Array()
 
-var _character_def: DotPlayerCharDef = null
+var _character_def: GSPlayerCharDef = null
 var _character_colour := Color.WHITE
 
 
@@ -223,7 +223,7 @@ func set_skins(p_skins: PackedInt32Array) -> void:
 		refresh_body()
 
 
-func build_character(def: DotPlayerCharDef, colour: Color) -> void:
+func build_character(def: GSPlayerCharDef, colour: Color) -> void:
 	if def == null:
 		return
 
@@ -239,7 +239,7 @@ func build_character(def: DotPlayerCharDef, colour: Color) -> void:
 	character.set_seated(riding)
 
 	if anim == null:
-		anim = DotPlayerAnimDriver.new()
+		anim = GSPlayerAnimDriver.new()
 		anim.name = "Animation"
 		# [b]Driven from here rather than by itself.[/b] `auto_drive` reads the body's
 		# transform once a frame and differentiates it, which is a second opinion about
@@ -247,7 +247,7 @@ func build_character(def: DotPlayerCharDef, colour: Color) -> void:
 		# on the controller. Two sources of "am I running" disagree exactly when a
 		# correction lands, which is when an animation pop is most visible.
 		anim.auto_drive = false
-		anim.anim_set = DotPlayerAnimSet.locomotion()
+		anim.anim_set = GSPlayerAnimSet.locomotion()
 		add_child(anim)
 
 	refresh_body()
@@ -303,24 +303,24 @@ func face_body() -> void:
 ## thrown weapon, fists, nothing or a weapon put away mid-switch.
 ##
 ## [b]Nothing set it, so a watcher saw every gun float.[/b] The figure draws its held-gun arms only when
-## told the hand holds a gun ([method DotHumanoidFigure.set_hold]); with the default the arms hung at the
+## told the hand holds a gun ([method GSHumanoidFigure.set_hold]); with the default the arms hung at the
 ## sides and the gun hung off a hand at the hip (the third-person sheets of tools/anim_review.sh).
 ## Looked up once per weapon, as FC does.
 func _hold_kind_now() -> int:
 	var model := zee_world as ZeeWorldModel if zee_world != null and is_instance_valid(zee_world) else null
 	if model == null or not model.visible:
-		return DotHumanoidFigure.Hold.NONE
+		return GSHumanoidFigure.Hold.NONE
 	var id := model.equipped()
 	if id != _hold_id:
 		_hold_id = id
 		var art: Variant = ZeeWeaponArtTable.table().get(id)
 		var pose: StringName = (art as ZeeWeaponArt).pose if art is ZeeWeaponArt else &""
 		if pose == &"" or not (art as ZeeWeaponArt).has_model() or pose == ZeeWeaponArtTable.POSE_THROWN:
-			_hold_kind = DotHumanoidFigure.Hold.NONE
+			_hold_kind = GSHumanoidFigure.Hold.NONE
 		elif pose == ZeeWeaponArtTable.POSE_MELEE:
-			_hold_kind = DotHumanoidFigure.Hold.MELEE
+			_hold_kind = GSHumanoidFigure.Hold.MELEE
 		else:
-			_hold_kind = DotHumanoidFigure.Hold.GUN
+			_hold_kind = GSHumanoidFigure.Hold.GUN
 	return _hold_kind
 
 
@@ -376,7 +376,7 @@ func set_view_mode(third_person: bool) -> StringName:
 	var now := StringName(str(res.value)) if res.ok else controller_switch.active_id()
 
 	# The body is shown in third person and hidden in first, which is the whole reason
-	# `DotPlayerCharVisual.set_shown` exists.
+	# `GSPlayerCharVisual.set_shown` exists.
 	refresh_body()
 
 	return now
@@ -389,7 +389,7 @@ func view_mode() -> StringName:
 
 ## Sets which collision layers this player's movement sweeps against.
 ##
-## [b]Not `DotFpsTunables`' default of 1.[/b] One means bit 0, which is right only while
+## [b]Not `GSFpsTunables`' default of 1.[/b] One means bit 0, which is right only while
 ## every body in the game is on bit 0 — the state a layout exists to end. Once props,
 ## entities and vehicles moved to their own layers, a mask of 1 was a player who walks
 ## through every crate, every NPC and every car in the sandbox, and nothing would have
@@ -410,7 +410,7 @@ func use_collision_mask(mask: int) -> void:
 ## class's `move_speed_scale` is a multiplier; applied to tunables that already carry it
 ## the product compounds, so four respawns as a 0.8 class is 0.41 of the speed, arrived
 ## at silently with every number in the inspector looking deliberate.
-func class_base_tunables() -> DotFpsTunables:
+func class_base_tunables() -> GSFpsTunables:
 	if _class_base == null and controller != null and controller.tunables != null:
 		_class_base = controller.tunables.duplicate()
 
@@ -428,13 +428,13 @@ func class_base_tunables() -> DotFpsTunables:
 ##
 ## Static because a map sizes its jumps against these with no player in the tree:
 ## `PlaylotMap.jump_reach` asks [method movement_tunables] directly.
-func _tunables() -> DotFpsTunables:
+func _tunables() -> GSFpsTunables:
 	return movement_tunables()
 
 
 ## Puts the three configurable movement numbers on this player (`PlaylotConfig` Movement group). Also on the class base, so a later class scale starts from them.
 func apply_movement(speed: float, jump: float, gravity: float) -> void:
-	for t: DotFpsTunables in [controller.tunables if controller != null else null, _class_base]:
+	for t: GSFpsTunables in [controller.tunables if controller != null else null, _class_base]:
 		if t != null:
 			t.max_speed = speed
 			t.jump_height = jump
@@ -442,8 +442,8 @@ func apply_movement(speed: float, jump: float, gravity: float) -> void:
 
 
 ## A fresh copy of the movement every player here is built with. See [method _tunables].
-static func movement_tunables() -> DotFpsTunables:
-	var t := DotFpsTunables.with_profile("legacy")
+static func movement_tunables() -> GSFpsTunables:
+	var t := GSFpsTunables.with_profile("legacy")
 
 	t.auto_hop = true
 	t.bhop_speed_cap_scale = 0.0
@@ -475,7 +475,7 @@ static func movement_tunables() -> DotFpsTunables:
 ## [signal style_changed] is how a run timer keeps its ranking half in step: applying only
 ## the movement half would time and rank a run as "normal" while the player is actually
 ## sideways, and nothing would error.
-func set_style(movement: DotFpsStyle) -> DotResult:
+func set_style(movement: GSFpsStyle) -> GSResult:
 	movement_style = movement
 	var applied := controller.set_style(movement)
 	style_changed.emit(movement)
@@ -486,7 +486,7 @@ func set_style(movement: DotFpsStyle) -> DotResult:
 ## stop reasons (`&"teleport"`, `&"noclip"`, ...), as a StringName.
 func stop_run(reason: StringName) -> void:
 	if timer != null:
-		DotLog.debug(CHANNEL, "the run was stopped", {"player": String(player_id), "reason": String(reason)})
+		GSLog.debug(CHANNEL, "the run was stopped", {"player": String(player_id), "reason": String(reason)})
 		timer.call("stop", reason)
 
 
@@ -509,14 +509,14 @@ func teleport(to: Vector3, yaw: float = INF, keep_run: bool = false) -> void:
 	# after a teleport sets the yaw back to whatever the command says: for a client,
 	# this player's own `sampler`, which had never been told and still faced wherever
 	# the mouse last left it; for a bot or any player with no command that tick,
-	# `DotFpsController`'s starved-tick substitute, which is a fresh command facing yaw
+	# `GSFpsController`'s starved-tick substitute, which is a fresh command facing yaw
 	# 0. So every derived spawn yaw on every map here — the tower's, the circuit's,
 	# the switchback's, each with a paragraph about its sign convention — was true for
 	# no ticks at all, and the one check on it passed because it read the yaw BEFORE a
 	# tick had run. `headless_playlot::_the_spawn_yaw_survives_a_tick` is the check
 	# that reads it after.
 	#
-	# `DotFpsController.teleport` also drops the smoothing and puts the player in the
+	# `GSFpsController.teleport` also drops the smoothing and puts the player in the
 	# air, which a direct write did not: a player moved while grounded kept a ground
 	# state for a tick at a height with no ground under it.
 	controller.teleport(to, yaw)
@@ -533,7 +533,7 @@ func teleport(to: Vector3, yaw: float = INF, keep_run: bool = false) -> void:
 		# put. Not left null: a null command is a starved tick and faces north. And not
 		# the command it had: a bot that was holding forward when it fell off a course
 		# is otherwise respawned already running off the pad.
-		var hold := DotFpsCommand.new()
+		var hold := GSFpsCommand.new()
 		hold.yaw = controller.state.yaw
 		hold.pitch = controller.state.pitch
 		controller.apply_command(hold)
@@ -557,15 +557,15 @@ func eye_position() -> Vector3:
 
 
 ## Where the eye is DRAWN this frame: the last two ticks blended by how far this frame sits
-## between them ([method DotFpsController.render_state]). Aim, reach and every trace still use
+## between them ([method GSFpsController.render_state]). Aim, reach and every trace still use
 ## [method eye_position]; this is the camera's alone.
 ##
 ## A predicted eye moves once a tick, so on a screen faster than the tick some frames stand still
 ## (62 of 593 in `tools/screenshot_net.sh --walk`). Not while riding: the controller is not
 ## simulated in a vehicle, so a blend toward its stale previous tick drags the view backwards.
-## A teleport resets the blend itself (`DotFpsController.teleport`).
-static func camera_motion_picks() -> DotFpsViewMotion:
-	var m := DotFpsViewMotion.new()
+## A teleport resets the blend itself (`GSFpsController.teleport`).
+static func camera_motion_picks() -> GSFpsViewMotion:
+	var m := GSFpsViewMotion.new()
 	m.landing_dip = 0.06
 	m.landing_reference_speed = 16.0
 	m.landing_min_speed = 8.0
@@ -652,7 +652,7 @@ func _on_landed(impact: float) -> void:
 	_landing_tick = controller.state.tick
 
 
-func _kick_landing(drawn: DotFpsState) -> void:
+func _kick_landing(drawn: GSFpsState) -> void:
 	if _landing_impact <= 0.0:
 		return
 	if drawn.position.y > controller.state.position.y + 0.005 and controller.state.tick <= _landing_tick + 1:
@@ -668,21 +668,21 @@ func render_eye_position() -> Vector3:
 
 
 func aim_direction() -> Vector3:
-	return DotFpsMotor.aim_for(controller.state.yaw, controller.state.pitch)
+	return GSFpsMotor.aim_for(controller.state.yaw, controller.state.pitch)
 
 
 ## The duck-typed lookup dot-weapon's player bridge asks a carrier for.
 ##
 ## [b]Without it every shot leaves the body's origin pointing north.[/b]
-## `DotWeaponPlayerBridge` takes a shot's origin and aim from a controller it finds through
+## `GSWeaponPlayerBridge` takes a shot's origin and aim from a controller it finds through
 ## `component()`, and a player without the method falls back to the node's transform —
 ## whose basis is identity here, because the yaw lives in the controller's state. Every
 ## shot fires, costs ammunition and hits nothing; mg-smash-copter found it as twenty drawn
-## rounds in a row. `DotFpsController` as well as `DotPlayerController`, because the bridge
+## rounds in a row. `GSFpsController` as well as `GSPlayerController`, because the bridge
 ## asks for the base and this player holds the first-person subclass.
 func component(type_name: StringName) -> Object:
 	match String(type_name):
-		"DotPlayerController", "DotFpsController":
+		"GSPlayerController", "GSFpsController":
 			return controller
 		"ZeeWeaponRig":
 			return zee_rig

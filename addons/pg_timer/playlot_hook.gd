@@ -11,7 +11,7 @@ extends Node
 ## (`tick`, `add_player`, `on_map_changed`, `start_for`, ...), all of which is this file.
 ##
 ## [b]Every dot-timer script is loaded by path and every call goes through [method Object.call].[/b]
-## A script that named `DotTimerManager` would not compile in a checkout without the addon, and
+## A script that named `GSTimerManager` would not compile in a checkout without the addon, and
 ## the game's parse pass checks this file too. That is the whole reason it reads like
 ## reflection.
 ##
@@ -35,7 +35,7 @@ const RUN := ROOT + "/core/dot_timer_run.gd"
 const REPLAY := ROOT + "/replay/dot_timer_replay.gd"
 const HUD := ROOT + "/ui/dot_timer_hud.gd"
 
-## The DotTimerManager, or null when the addon is absent.
+## The GSTimerManager, or null when the addon is absent.
 var manager: Node = null
 
 var game: Node = null
@@ -44,7 +44,7 @@ var authoritative: bool = true
 
 var _send: Callable = Callable()
 
-## DotTimerZone.Kind, name -> value.
+## GSTimerZone.Kind, name -> value.
 var _kind: Dictionary = {}
 
 var _rules: GDScript = null
@@ -52,7 +52,7 @@ var _track: GDScript = null
 var _run: GDScript = null
 var _flags: Dictionary = {}
 
-## Reused by [method _zone_at] every tick: a typed Array[DotTimerZone], built by reflection.
+## Reused by [method _zone_at] every tick: a typed Array[GSTimerZone], built by reflection.
 var _found: Array = []
 
 ## player id -> whether admin help was on last tick, for the edge log.
@@ -65,7 +65,7 @@ var _hud_player: StringName = &""
 
 func playlot_register(menu) -> void:
 	if not FileAccess.file_exists(PLUGIN):
-		DotLog.info(CHANNEL, "dot-timer is not installed; no run timer", {"looked_for": ROOT})
+		GSLog.info(CHANNEL, "dot-timer is not installed; no run timer", {"looked_for": ROOT})
 		return
 
 	game = menu.host
@@ -80,7 +80,7 @@ func playlot_register(menu) -> void:
 	_run = load(RUN)
 	_flags = (load(REPLAY) as GDScript).get_script_constant_map()
 
-	# A DotTimerConfig rather than exports one at a time, so the timer is configured through the
+	# A GSTimerConfig rather than exports one at a time, so the timer is configured through the
 	# same layered path as everything else. The game has already resolved its tick rate from
 	# `sv_tickrate`, so the timer is handed that rather than reading the engine a second time.
 	var config: Object = (load(CONFIG) as GDScript).new()
@@ -117,21 +117,21 @@ func playlot_register(menu) -> void:
 
 
 func _define_boards() -> void:
-	var boards: DotLeaderboardManager = game.get("boards")
+	var boards: GSLeaderboardManager = game.get("boards")
 	if boards == null:
 		return
 
-	var fastest := DotLeaderboardDef.make(&"fastest", DotLeaderboardDef.Kind.TIME)
+	var fastest := GSLeaderboardDef.make(&"fastest", GSLeaderboardDef.Kind.TIME)
 	fastest.display_name = "Fastest time"
 	boards.define(fastest)
 
-	var top_speed := DotLeaderboardDef.make(&"top_speed", DotLeaderboardDef.Kind.POINTS)
+	var top_speed := GSLeaderboardDef.make(&"top_speed", GSLeaderboardDef.Kind.POINTS)
 	top_speed.display_name = "Highest speed"
 	top_speed.decimals = 1
 	top_speed.unit = "m/s"
 	boards.define(top_speed)
 
-	var points := DotLeaderboardDef.make(&"points", DotLeaderboardDef.Kind.POINTS)
+	var points := GSLeaderboardDef.make(&"points", GSLeaderboardDef.Kind.POINTS)
 	points.display_name = "Ranking points"
 	points.decimals = 1
 	boards.define(points)
@@ -143,7 +143,7 @@ func _define_boards() -> void:
 func tick(_tick: int) -> void:
 	for id in game.players:
 		var player: Node = game.players[id]
-		var state: DotFpsState = player.controller.state
+		var state: GSFpsState = player.controller.state
 		manager.call("tick_player",
 			game.record_key(id), state.position, state.velocity, state.is_grounded(), true,
 			state.yaw, state.pitch, state.previous_buttons, _replay_flags(player)
@@ -156,9 +156,9 @@ func set_tick_rate(rate: int) -> void:
 
 func add_player(id: StringName, player: Node) -> void:
 	var key: StringName = game.record_key(id)
-	var added: DotResult = manager.call("add_player", key, player.display_name)
+	var added: GSResult = manager.call("add_player", key, player.display_name)
 	if not added.ok:
-		DotLog.result(CHANNEL, "a player could not be timed", added)
+		GSLog.result(CHANNEL, "a player could not be timed", added)
 		return
 
 	player.timer = manager.call("timer_for", key)
@@ -192,7 +192,7 @@ func on_map_changing() -> void:
 ## A map that carries its own zones hands them over (`timer_zones()`, duck-typed, so a
 ## delivered course map can still be written against dot-timer); one that ships a JSON file
 ## has already had it read by dot-map into `maps.zones_json`.
-func on_map_changed(map: DotMapDef, loaded: Node) -> void:
+func on_map_changed(map: GSMapDef, loaded: Node) -> void:
 	var zones: Object = null
 
 	if loaded != null and loaded.has_method("timer_zones"):
@@ -200,11 +200,11 @@ func on_map_changed(map: DotMapDef, loaded: Node) -> void:
 
 	var text: String = game.maps.zones_json
 	if zones == null and text != "":
-		var parsed: DotResult = (load(ZONE_SET) as GDScript).call("from_json", text)
+		var parsed: GSResult = (load(ZONE_SET) as GDScript).call("from_json", text)
 		if parsed.ok:
 			zones = parsed.value
 		else:
-			DotLog.warn(CHANNEL, "a map's zone file could not be read", {
+			GSLog.warn(CHANNEL, "a map's zone file could not be read", {
 				"map": String(map.id) if map != null else "", "why": parsed.error.message
 			})
 
@@ -216,11 +216,11 @@ func on_map_changed(map: DotMapDef, loaded: Node) -> void:
 	if zones != null and map != null and (zones.get("map_id") == null or String(zones.get("map_id")) == ""):
 		zones.set("map_id", map.id)
 
-	var bound: DotResult = manager.call("set_zones", zones)
+	var bound: GSResult = manager.call("set_zones", zones)
 	if not bound.ok:
-		DotLog.result(CHANNEL, "the zones could not be bound", bound)
+		GSLog.result(CHANNEL, "the zones could not be bound", bound)
 
-	DotLog.info(CHANNEL, "zones for the map", {
+	GSLog.info(CHANNEL, "zones for the map", {
 		"map": String(map.id) if map != null else "", "zones": _zones().size()
 	})
 
@@ -261,12 +261,12 @@ func retire_legacy_records() -> int:
 	var store: Object = manager.get("store")
 	if not authoritative or store == null:
 		return 0
-	var listed: DotResult = await store.call("maps")
+	var listed: GSResult = await store.call("maps")
 	if not listed.ok:
 		return 0
 	var legacy := {}
 	for row in (listed.value as Array):
-		var on_map: DotResult = await store.call("records_on_map", StringName(str((row as Dictionary).get("map", ""))))
+		var on_map: GSResult = await store.call("records_on_map", StringName(str((row as Dictionary).get("map", ""))))
 		if not on_map.ok:
 			continue
 		for record in (on_map.value as Array):
@@ -281,7 +281,7 @@ func retire_legacy_records() -> int:
 	DirAccess.make_dir_recursive_absolute(path.get_base_dir())
 	var out := FileAccess.open(path, FileAccess.READ_WRITE if FileAccess.file_exists(path) else FileAccess.WRITE)
 	if out == null:
-		DotLog.error(CHANNEL, "legacy records could not be archived; they stay where they are", {
+		GSLog.error(CHANNEL, "legacy records could not be archived; they stay where they are", {
 			"path": path, "why": error_string(FileAccess.get_open_error()),
 		})
 		return 0
@@ -289,17 +289,17 @@ func retire_legacy_records() -> int:
 
 	var moved := 0
 	for key in legacy:
-		var theirs: DotResult = await store.call("records_of", key, {"stage": -1})
+		var theirs: GSResult = await store.call("records_of", key, {"stage": -1})
 		if not theirs.ok:
 			continue
 		for record in (theirs.value as Array):
 			out.store_line(JSON.stringify(record.call("to_dictionary")))
 		out.flush()
-		var wiped: DotResult = await manager.call("wipe_player", key)
+		var wiped: GSResult = await manager.call("wipe_player", key)
 		if wiped.ok:
 			moved += int(wiped.value)
 	out.close()
-	DotLog.info(CHANNEL, "records keyed by a session number were moved aside", {
+	GSLog.info(CHANNEL, "records keyed by a session number were moved aside", {
 		"players": legacy.size(), "records": moved, "archive": path,
 	})
 	return moved
@@ -318,18 +318,18 @@ func describe() -> Dictionary:
 
 ## After the move, on every end that simulates the player (a prediction replay included).
 ## The timer decides and the game acts: dot-timer never moves a player.
-func _post_move(player: Node, state: DotFpsState) -> void:
+func _post_move(player: Node, state: GSFpsState) -> void:
 	var timer: Object = player.timer
 	if timer == null:
 		return
-	var controller: DotFpsController = player.controller
+	var controller: GSFpsController = player.controller
 
 	# An admin's help makes a run assisted every tick it is on, so a run begun with it on
 	# carries it too; `taint` is dot-timer's mark and the run is never filed.
 	var helped := (
-		DotFpsAdminModifiers.is_noclipped(controller)
-		or not is_equal_approx(DotFpsAdminModifiers.speed_of(controller), 1.0)
-		or not is_equal_approx(DotFpsAdminModifiers.gravity_of(controller), 1.0)
+		GSFpsAdminModifiers.is_noclipped(controller)
+		or not is_equal_approx(GSFpsAdminModifiers.speed_of(controller), 1.0)
+		or not is_equal_approx(GSFpsAdminModifiers.gravity_of(controller), 1.0)
 	)
 	if helped:
 		timer.call("taint")
@@ -337,14 +337,14 @@ func _post_move(player: Node, state: DotFpsState) -> void:
 	if helped != bool(_assisted.get(player.player_id, false)):
 		_assisted[player.player_id] = helped
 		if helped:
-			DotLog.info(CHANNEL, "admin help is on: this player's runs are assisted and will not be filed",
+			GSLog.info(CHANNEL, "admin help is on: this player's runs are assisted and will not be filed",
 				{"player": String(player.player_id)})
 		else:
-			DotLog.debug(CHANNEL, "admin help is off", {"player": String(player.player_id)})
+			GSLog.debug(CHANNEL, "admin help is off", {"player": String(player.player_id)})
 
 	# The prespeed limit runs inside the simulation, because clamping speed changes where
 	# the player ends up. `in_zone`, not `is_inside`, which answers only for EFFECT zones.
-	var style: DotFpsStyle = player.movement_style
+	var style: GSFpsStyle = player.movement_style
 	if style != null and style.prespeed_limit > 0.0 and bool(timer.call("in_zone", _kind["START"])):
 		state.velocity = _rules.clamp_prespeed(state.velocity, style.prespeed_limit)
 
@@ -385,7 +385,7 @@ func _zone_at(timer: Object, point: Vector3, kind: int) -> Object:
 ## across every teleport.
 func _replay_flags(player: Node) -> int:
 	var flags := 0
-	var state: DotFpsState = player.controller.state
+	var state: GSFpsState = player.controller.state
 	if state.crouch_fraction > 0.5:
 		flags |= int(_flags["FLAG_DUCKED"])
 	if state.time_since_jump < 1.5 / float(maxi(player.controller.tick_rate, 1)):
@@ -396,7 +396,7 @@ func _replay_flags(player: Node) -> int:
 
 
 ## The ranking half of a style follows the movement half, so a sideways run is ranked as one.
-func _on_style_changed(style: DotFpsStyle, player: Node) -> void:
+func _on_style_changed(style: GSFpsStyle, player: Node) -> void:
 	if style == null or player.timer == null:
 		return
 	var ranking: Object = manager.call("style_for", style.id)
@@ -436,7 +436,7 @@ func _on_record_accepted(record: Object, _previous: Object, rank: int) -> void:
 		"map": String(record.get("map_id")), "track": str(record.get("track")), "style": String(record.get("style_id")),
 	}
 	var stats: Dictionary = record.get("stats")
-	var boards: DotLeaderboardManager = game.get("boards")
+	var boards: GSLeaderboardManager = game.get("boards")
 
 	# A seat with no account keeps its session number as its key, and a session number is
 	# nobody: its time stands for this process only, and the boards never get a row for it.
@@ -445,7 +445,7 @@ func _on_record_accepted(record: Object, _previous: Object, rank: int) -> void:
 		if stats.has("max_speed"):
 			await boards.submit(&"top_speed", scope, key, name_of, float(stats["max_speed"]))
 		# Points are global: the sum of what a player has earned on the server.
-		var totals := DotStatSet.new()
+		var totals := GSStatSet.new()
 		totals.add(&"points", float(record.get("points")))
 		totals.add(&"completions", 1.0)
 		await boards.add_stats(key, totals)
@@ -462,7 +462,7 @@ func _on_record_accepted(record: Object, _previous: Object, rank: int) -> void:
 ## a timer server, and the reason is almost always one the player could have been told.
 func _on_record_refused(key: StringName, refused: Object, reason: String) -> void:
 	var id: StringName = game.match_id(key)
-	DotLog.info(CHANNEL, "a run was not recorded", {"player": String(id), "why": reason})
+	GSLog.info(CHANNEL, "a run was not recorded", {"player": String(id), "why": reason})
 	_filed(id, float(refused.call("time")) if refused != null else -1.0, 0, reason)
 
 
@@ -571,10 +571,10 @@ func checkpoint(player_id: StringName, action: int, which: int = -1) -> String:
 	var checkpoints: Object = manager.call("checkpoints_for", game.record_key(player_id))
 	if player == null or checkpoints == null:
 		return "Only a player has checkpoints."
-	var state: DotFpsState = player.controller.state
+	var state: GSFpsState = player.controller.state
 	match action:
 		0:
-			var saved: DotResult = checkpoints.call("save", state.position, state.velocity,
+			var saved: GSResult = checkpoints.call("save", state.position, state.velocity,
 				state.yaw, state.pitch, state.is_grounded(), state.is_crouched())
 			if not saved.ok:
 				return saved.error.message
@@ -606,7 +606,7 @@ func checkpoint(player_id: StringName, action: int, which: int = -1) -> String:
 ## The module's commands, bound only when the timer is here. [param target_fn] is the
 ## module's `_target(ctx, allow_named)`: a player for themself, the console for anybody.
 func bind_commands(add_command: Callable, target_fn: Callable) -> void:
-	add_command.call("pg_timer", func(ctx: DotCmdContext) -> void:
+	add_command.call("pg_timer", func(ctx: GSCmdContext) -> void:
 		var run: Object = manager.call("run_for", game.record_key(target_fn.call(ctx, true)))
 		if run == null:
 			ctx.reply("No timer for that player.")
@@ -614,7 +614,7 @@ func bind_commands(add_command: Callable, target_fn: Callable) -> void:
 			ctx.reply_lines(run.call("describe_lines")),
 		"Show a player's run, or your own", "").with_chat()
 
-	add_command.call("pg_track", func(ctx: DotCmdContext) -> void:
+	add_command.call("pg_track", func(ctx: GSCmdContext) -> void:
 		var id: StringName = target_fn.call(ctx, false)
 		if id == &"" or not game.players.has(id):
 			ctx.reply("Only a player can switch track.")
@@ -635,7 +635,7 @@ func bind_commands(add_command: Callable, target_fn: Callable) -> void:
 		ctx.reply("Track: %s" % _track.name_of(track)),
 		"Switch track: main, or bonus <n>", "").with_chat()
 
-	add_command.call("pg_top", func(ctx: DotCmdContext) -> void:
+	add_command.call("pg_top", func(ctx: GSCmdContext) -> void:
 		var store: Object = manager.get("store")
 		if game.maps.current == null or store == null:
 			ctx.reply("No records here.")
@@ -645,7 +645,7 @@ func bind_commands(add_command: Callable, target_fn: Callable) -> void:
 		var style: StringName = &"normal"
 		if timer != null and timer.get("style") != null:
 			style = timer.get("style").get("id")
-		var listed: DotResult = await store.call("top", game.maps.current.id, track, style, 10)
+		var listed: GSResult = await store.call("top", game.maps.current.id, track, style, 10)
 		if not listed.ok:
 			ctx.reply_error(listed)
 			return
@@ -659,14 +659,14 @@ func bind_commands(add_command: Callable, target_fn: Callable) -> void:
 		ctx.reply_lines(lines),
 		"The fastest times on this map, track and style", "").with_chat()
 
-	add_command.call("pg_cp", func(ctx: DotCmdContext) -> void:
+	add_command.call("pg_cp", func(ctx: GSCmdContext) -> void:
 		ctx.reply(checkpoint(target_fn.call(ctx, false), 0)),
 		"Save a practice checkpoint", "").with_chat()
-	add_command.call("pg_tp", func(ctx: DotCmdContext) -> void:
+	add_command.call("pg_tp", func(ctx: GSCmdContext) -> void:
 		var which := ctx.args[0].to_int() - 1 if ctx.args.size() > 0 and ctx.args[0].is_valid_int() else -1
 		ctx.reply(checkpoint(target_fn.call(ctx, false), 1, which)),
 		"Go back to a practice checkpoint", "").with_chat()
-	add_command.call("pg_cp_clear", func(ctx: DotCmdContext) -> void:
+	add_command.call("pg_cp_clear", func(ctx: GSCmdContext) -> void:
 		ctx.reply(checkpoint(target_fn.call(ctx, false), 2)),
 		"Forget them all", "").with_chat()
 

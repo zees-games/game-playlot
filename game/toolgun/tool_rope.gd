@@ -21,7 +21,7 @@ func schema() -> Array[Dictionary]:
 	}]
 
 
-func primary(gun: Object, hit: Dictionary) -> DotResult:
+func primary(gun: Object, hit: Dictionary) -> GSResult:
 	var body := rigid_body(hit)
 
 	if pending.is_empty():
@@ -30,19 +30,19 @@ func primary(gun: Object, hit: Dictionary) -> DotResult:
 			return nothing_there()
 
 		pending = {"body": body, "point": hit["point"]}
-		return DotResult.success("first")
+		return GSResult.success("first")
 
 	var first: RigidBody3D = pending.get("body")
 	var first_point: Vector3 = pending.get("point")
 	pending = {}
 
 	if not is_instance_valid(first):
-		return DotResult.fail(DotError.CODE_STATE, "The first prop has gone.")
+		return GSResult.fail(GSError.CODE_STATE, "The first prop has gone.")
 
 	if body == first:
-		return DotResult.fail(DotError.CODE_INVALID, "Tie it to something else.")
+		return GSResult.fail(GSError.CODE_INVALID, "Tie it to something else.")
 
-	var allowed: DotResult = gun.call("may_constrain")
+	var allowed: GSResult = gun.call("may_constrain")
 
 	if not allowed.ok:
 		return allowed
@@ -52,10 +52,10 @@ func primary(gun: Object, hit: Dictionary) -> DotResult:
 	)
 
 
-func reload(gun: Object, hit: Dictionary) -> DotResult:
+func reload(gun: Object, hit: Dictionary) -> GSResult:
 	var body := rigid_body(hit)
 
 	if body == null:
 		return nothing_there()
 
-	return DotResult.success(gun.call("constraints").remove_on(body, 2))
+	return GSResult.success(gun.call("constraints").remove_on(body, 2))

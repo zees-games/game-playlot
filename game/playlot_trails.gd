@@ -8,7 +8,7 @@ extends RefCounted
 ## link does. A host without dot-trail lists no pack trails and logs why, instead of failing to parse.
 ##
 ## [b]A trail pack is data.[/b] Its `provides.json` names one `trail` entry per trail with
-## `def: trails.json`; the directory that file sits in is loaded with `DotTrailStore.load_dir`,
+## `def: trails.json`; the directory that file sits in is loaded with `GSTrailStore.load_dir`,
 ## which reads the images as bytes (a data pack is not imported, so they are not resources).
 
 const CHANNEL := "playlot.trails"
@@ -19,7 +19,7 @@ const KIND := &"trail"
 ## Name of the emitter node on the wearer, so equipping again replaces rather than stacks.
 const EMITTER_NAME := "PackTrail"
 
-const CLASSES: Array[String] = ["DotTrailRegistry", "DotTrailStore", "DotTrailEmitter"]
+const CLASSES: Array[String] = ["GSTrailRegistry", "GSTrailStore", "GSTrailEmitter"]
 
 ## The registry the last [method load_from] filled, or null.
 var registry: RefCounted = null
@@ -43,8 +43,8 @@ static func available() -> bool:
 
 ## Loads every visible `trail` entry of [param index] into a fresh registry and returns the entries
 ## whose trail loaded. Each pack directory is read once however many entries point into it.
-func load_from(index: DotContentIndex) -> Array[DotContentEntry]:
-	var out: Array[DotContentEntry] = []
+func load_from(index: GSContentIndex) -> Array[GSContentEntry]:
+	var out: Array[GSContentEntry] = []
 	registry = null
 	if index == null:
 		return out
@@ -52,24 +52,24 @@ func load_from(index: DotContentIndex) -> Array[DotContentEntry]:
 	if entries.is_empty():
 		return out
 	if not available():
-		DotLog.warn(CHANNEL, "pack trails need dot-trail in the host; not listed", {"entries": entries.size()})
+		GSLog.warn(CHANNEL, "pack trails need dot-trail in the host; not listed", {"entries": entries.size()})
 		return out
-	var fresh: RefCounted = script_named("DotTrailRegistry").new()
-	var store: RefCounted = script_named("DotTrailStore").new(fresh)
+	var fresh: RefCounted = script_named("GSTrailRegistry").new()
+	var store: RefCounted = script_named("GSTrailStore").new(fresh)
 	var dirs := {}
 	for entry in entries:
 		var dir := entry.path("def").get_base_dir()
 		if dir == "" or dirs.has(dir):
 			continue
 		dirs[dir] = true
-		var loaded: DotResult = store.call(&"load_dir", dir)
+		var loaded: GSResult = store.call(&"load_dir", dir)
 		if not loaded.ok:
-			DotLog.warn(CHANNEL, "a trail pack could not be read", {"pack": entry.content_id, "why": loaded.error.message})
+			GSLog.warn(CHANNEL, "a trail pack could not be read", {"pack": entry.content_id, "why": loaded.error.message})
 	for entry in entries:
 		if fresh.call(&"get_def", entry.id) != null:
 			out.append(entry)
 		else:
-			DotLog.debug(CHANNEL, "a trail entry names no loaded trail", {"key": entry.key})
+			GSLog.debug(CHANNEL, "a trail entry names no loaded trail", {"key": entry.key})
 	registry = fresh
 	return out
 
@@ -82,29 +82,29 @@ func icon(trail_id: String) -> Texture2D:
 
 
 ## Puts trail [param trail_id] on [param wearer], replacing the one it wore. "" or "off" takes it off.
-func equip(wearer: Node3D, trail_id: String) -> DotResult:
+func equip(wearer: Node3D, trail_id: String) -> GSResult:
 	if wearer == null or not is_instance_valid(wearer):
-		return DotResult.fail(DotError.CODE_STATE, "no player to wear a trail")
+		return GSResult.fail(GSError.CODE_STATE, "no player to wear a trail")
 	var worn := wearer.get_node_or_null(EMITTER_NAME)
 	if trail_id == "" or trail_id == "off":
 		if worn != null:
 			worn.queue_free()
-		return DotResult.success("off")
+		return GSResult.success("off")
 	if registry == null:
-		return DotResult.fail(DotError.CODE_STATE, "no trail packs are mounted")
-	var allowed: DotResult = registry.call(&"may_equip", trail_id, PackedStringArray())
+		return GSResult.fail(GSError.CODE_STATE, "no trail packs are mounted")
+	var allowed: GSResult = registry.call(&"may_equip", trail_id, PackedStringArray())
 	if not allowed.ok:
 		return allowed
 	if worn == null:
-		worn = script_named("DotTrailEmitter").new() as Node3D
+		worn = script_named("GSTrailEmitter").new() as Node3D
 		worn.name = EMITTER_NAME
 		worn.set(&"registry", registry)
 		wearer.add_child(worn)
 	else:
 		worn.set(&"registry", registry)
 	worn.call(&"set_trail", allowed.value)
-	DotLog.info(CHANNEL, "trail equipped", {"trail": trail_id})
-	return DotResult.success(trail_id)
+	GSLog.info(CHANNEL, "trail equipped", {"trail": trail_id})
+	return GSResult.success(trail_id)
 
 
 ## The loaded trail ids, for the console.

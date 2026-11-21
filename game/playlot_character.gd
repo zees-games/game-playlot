@@ -1,9 +1,9 @@
-extends DotPlayerModelVisual
+extends GSPlayerModelVisual
 
 ## The player's body, drawn from a definition rather than loaded from art.
 ##
 ## [b]Every other project in this family installs dot-player-char and draws nothing with
-## it.[/b] The catalogue is built, the metrics are read, and `DotPlayerCharVisual` —
+## it.[/b] The catalogue is built, the metrics are read, and `GSPlayerCharVisual` —
 ## the abstract node the whole addon exists to fill — has no implementation anywhere. That
 ## was survivable while every game was first-person: nobody sees their own body. It stops
 ## being survivable the moment there is a third-person camera, which is what
@@ -14,10 +14,10 @@ extends DotPlayerModelVisual
 ## [b]Primitives, for this project's own stated reason.[/b] `PlaylotIcons` draws a menu
 ## card from the three `meta` fields a prop's body is built from, so that a barrel is a
 ## green cylinder in the world and a green cylinder in the menu. A character here is the
-## same argument one level up: the shipped `DotPlayerCharDef` carries height, radius and
+## same argument one level up: the shipped `GSPlayerCharDef` carries height, radius and
 ## eye height, and those three numbers are enough to build a body that is the right size.
-## A server with content points `DotPlayerModelDef.rig_scene` at a real rig and this class
-## adopts it instead — which is the seam `DotPlayerModelRig.adopt` exists for.
+## A server with content points `GSPlayerModelDef.rig_scene` at a real rig and this class
+## adopts it instead — which is the seam `GSPlayerModelRig.adopt` exists for.
 ##
 ## [b]It is not the local player's own view.[/b] `set_shown(false)` is what a first-person
 ## camera wants, and the switch drives it: a player looking through their own eyes must
@@ -43,11 +43,11 @@ var _leg_radius := 0.0
 ## Builds a body the size the character definition says, under an adopted rig.
 ##
 ## [b]The rig is adopted rather than loaded[/b], which is what lets a project with no art
-## use the whole addon: `DotPlayerModelRig.build_from` returns success and builds nothing
+## use the whole addon: `GSPlayerModelRig.build_from` returns success and builds nothing
 ## when `rig_scene` is empty, and `adopt` hands it the node this class made instead. Every
 ## mount, every attachment and every tint then works exactly as it would over a real rig.
 func build_for(
-	def: DotPlayerCharDef, colour: Color,
+	def: GSPlayerCharDef, colour: Color,
 	skins: PackedInt32Array = PackedInt32Array(), figure_key: String = ""
 ) -> void:
 	if def == null:
@@ -65,14 +65,14 @@ func build_for(
 	if _parts != null and is_instance_valid(_parts):
 		_parts.queue_free()
 
-	# [b]Under the RIG, not under this node.[/b] `DotPlayerCharVisual` is a
-	# `DotPlayerComponent`, which is a plain `Node` — it has no transform, no `rotation`
+	# [b]Under the RIG, not under this node.[/b] `GSPlayerCharVisual` is a
+	# `GSPlayerComponent`, which is a plain `Node` — it has no transform, no `rotation`
 	# and no `visible`, because a component is a behaviour rather than a place. The rig
 	# is the `Node3D`, which is also what `set_shown` hides and what the mounts hang off.
 	# Parenting the body to this node instead gave a character that could not be turned
 	# and could not be hidden, with a runtime error per tick and nothing drawn.
 	if rig == null:
-		rig = DotPlayerModelRig.new()
+		rig = GSPlayerModelRig.new()
 		rig.name = "Rig"
 		add_child(rig)
 
@@ -147,7 +147,7 @@ func build_for(
 
 	rig.adopt(_parts, _model_def(def))
 
-	DotLog.debug(CHANNEL, "body built", {
+	GSLog.debug(CHANNEL, "body built", {
 		"char": String(def.id), "height": height, "radius": radius
 	})
 
@@ -209,11 +209,11 @@ func body() -> Node3D:
 ## `vertical`, `on_floor`, `crouched`, `aim` (a seated player is drawn `seated`). Once a frame,
 ## from the client, for every player; a capsule ignores it.
 func move_person(motion: Dictionary) -> void:
-	var person := _parts.get_node_or_null(^"Figure") as DotHumanoidFigure if _parts != null else null
+	var person := _parts.get_node_or_null(^"Figure") as GSHumanoidFigure if _parts != null else null
 	if person == null:
 		return
 	var delta: float
-	if DotAddonApi.build_level("dot_player_char") >= 11:
+	if GSAddonApi.build_level("dot_player_char") >= 11:
 		# Game time, as the body moves: a wall-clock step skated the feet in slow motion.
 		delta = person.frame_delta()
 	else:
@@ -261,7 +261,7 @@ func _apply_pose() -> void:
 			# thighs are `seat_height()` over its origin: this node's origin is the seat, so the
 			# figure goes that far under it. Drawn as a crouch lowered by half the legs before,
 			# a rider was somebody squatting over the cushion.
-			var person := node as DotHumanoidFigure
+			var person := node as GSHumanoidFigure
 			node.position.y = standing_y - (person.seat_height() if _seated_pose and person != null else 0.0)
 		elif node.name == &"Legs":
 			if _seated_pose:
@@ -282,10 +282,10 @@ func set_shown(shown: bool) -> void:
 		super(shown)
 		return
 	rig.visible = true
-	figure.first_person = DotHumanoidOwnView.THIRD if shown else DotHumanoidOwnView.LEGS
+	figure.first_person = GSHumanoidOwnView.THIRD if shown else GSHumanoidOwnView.LEGS
 
 
-## What the hand holds, [enum DotHumanoidFigure.Hold]: a gun draws the figure's held-gun arms. Once a frame
+## What the hand holds, [enum GSHumanoidFigure.Hold]: a gun draws the figure's held-gun arms. Once a frame
 ## from the player's `face_body`; a capsule body has no arms and ignores it.
 func set_hold(kind: int) -> void:
 	var figure := _figure()
@@ -293,10 +293,10 @@ func set_hold(kind: int) -> void:
 		figure.set_hold(kind)
 
 
-func _figure() -> DotHumanoidFigure:
+func _figure() -> GSHumanoidFigure:
 	if _parts == null or not is_instance_valid(_parts):
 		return null
-	return _parts.get_node_or_null("Figure") as DotHumanoidFigure
+	return _parts.get_node_or_null("Figure") as GSHumanoidFigure
 
 
 ## Whether the whole body is drawn (not just a first-person figure's legs). For a suite, and for a HUD that says so.
@@ -304,16 +304,16 @@ func is_body_visible() -> bool:
 	if rig == null or not rig.visible:
 		return false
 	var figure := _figure()
-	return figure == null or figure.first_person == DotHumanoidOwnView.THIRD
+	return figure == null or figure.first_person == GSHumanoidOwnView.THIRD
 
 
 ## A model definition for a rig that is built rather than loaded.
 ##
-## `rig_scene` is deliberately empty: it is what tells `DotPlayerModelRig.build_from` to
+## `rig_scene` is deliberately empty: it is what tells `GSPlayerModelRig.build_from` to
 ## build nothing and wait for `adopt`. The mounts name nodes this class makes, so
 ## `attachment(&"right_hand")` answers for a weapon the same way it would over real art.
-func _model_def(char_def: DotPlayerCharDef) -> DotPlayerModelDef:
-	var def := DotPlayerModelDef.new()
+func _model_def(char_def: GSPlayerCharDef) -> GSPlayerModelDef:
+	var def := GSPlayerModelDef.new()
 	def.id = char_def.id
 	def.display_name = char_def.display_name
 	def.rig_scene = ""

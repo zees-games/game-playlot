@@ -1,7 +1,7 @@
 extends RefCounted
 
 ## Maps dropped on PLAYLOT's window or executable: map documents (`.json`), and folders and zips of them, copied into
-## `user://maps` by dot-map's DotMapDropIntake (API 26) and added to the solo game's maps. A Garry's Mod map (a `.bsp`, a
+## `user://maps` by dot-map's GSMapDropIntake (API 26) and added to the solo game's maps. A Garry's Mod map (a `.bsp`, a
 ## Workshop `.gma`, or a folder holding one) is claimed too: one PLAYLOT has a conversion of is that map (gm_fork is pgc_fork,
 ## entry `source_map` set), any other is refused with what to drop instead. Anything else is refused out loud.
 
@@ -22,8 +22,8 @@ const TAKES := "a PLAYLOT map .json, or a folder or .zip of them"
 ## [param on_result] gets each drop's result dictionary. [param converted] is `func(source: String) -> Dictionary`, the
 ## `{id, title}` of the map converted from a Source map, or empty. Null, with a warning, on a dot-map older than API 26.
 static func attach(parent: Node, into: String, taken: Callable, on_result: Callable, converted: Callable = Callable()) -> Node:
-	if DotAddonApi.build_level("dot_map") < NEEDS_LEVEL or not ResourceLoader.exists(INTAKE_SCRIPT):
-		DotLog.warn(CHANNEL, "dropped maps are off: this build's dot-map is older than API %d" % NEEDS_LEVEL)
+	if GSAddonApi.build_level("dot_map") < NEEDS_LEVEL or not ResourceLoader.exists(INTAKE_SCRIPT):
+		GSLog.warn(CHANNEL, "dropped maps are off: this build's dot-map is older than API %d" % NEEDS_LEVEL)
 		return null
 	var intake: Node = load(INTAKE_SCRIPT).new()
 	intake.name = "MapDrop"
@@ -85,7 +85,7 @@ static func accept(path: String, into: String, depth: int, taken: Callable, conv
 	for pair: Array in found:
 		var name := str(pair[0])
 		var doc: Dictionary = pair[1]
-		var checked: DotResult = data_map.validate(doc)
+		var checked: GSResult = data_map.validate(doc)
 		if not checked.ok:
 			errors.append("%s: %s" % [name, checked.error.message])
 			continue

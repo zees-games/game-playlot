@@ -4,7 +4,7 @@ extends Node3D
 ##
 ## [b]No map here knows about a run timer.[/b] The game ships none: a server that adds
 ## dot-timer gets `addons/pg_timer`, which reads a map's zones from the JSON file dot-map
-## loaded beside it (`DotMapDef.zones_path`), or from a `timer_zones()` method a delivered
+## loaded beside it (`GSMapDef.zones_path`), or from a `timer_zones()` method a delivered
 ## map may define. A map is geometry, spawns and toys, and every built-in one plays the same
 ## with the timer present or absent.
 ##
@@ -31,13 +31,13 @@ const PlaylotPlayer := preload("playlot_player.gd")
 # is this tree's most repeated bug and the base class is the one place every built-in map
 # already reads.
 
-## Ground speed, m/s. `DotFpsTunables.max_speed`.
+## Ground speed, m/s. `GSFpsTunables.max_speed`.
 const MOVE_SPEED := 7.0
 
-## Metres. `DotFpsTunables.jump_height`. NOT the addon's default, which is 1.1.
+## Metres. `GSFpsTunables.jump_height`. NOT the addon's default, which is 1.1.
 const JUMP_HEIGHT := 1.15
 
-## m/s². `DotFpsTunables.gravity`. Not Godot's project default, which is 9.8.
+## m/s². `GSFpsTunables.gravity`. Not Godot's project default, which is 9.8.
 const MOVE_GRAVITY := 20.0
 
 
@@ -45,7 +45,7 @@ const MOVE_GRAVITY := 20.0
 ## [param rise] metres higher than they left. 0.0 for a rise the jump cannot reach.
 ##
 ## [b]Asked of the movement, not worked out here.[/b] This was a copy of the arithmetic
-## until dot-player-controller answered it on `DotFpsTunables.jump_reach`; now it asks
+## until dot-player-controller answered it on `GSFpsTunables.jump_reach`; now it asks
 ## the tunables every player here is built with (`PlaylotPlayer.movement_tunables`,
 ## static, so a map with no player in the tree can ask). The landing height is still
 ## the point: 4.75 m flat, 4.16 m onto a 0.5 m step.
@@ -54,7 +54,7 @@ static func jump_reach(rise: float) -> float:
 
 
 ## The highest top face a player on flat ground is asked to jump onto, in metres: the
-## apex times `DotFpsTunables.CLIMB_MARGIN`, asked of the same tunables as
+## apex times `GSFpsTunables.CLIMB_MARGIN`, asked of the same tunables as
 ## [method jump_reach]. 1.035 m, not [constant JUMP_HEIGHT]: a ledge at the apex works
 ## only when the tick lands right. Above this a block is a wall.
 static func climb_limit() -> float:
@@ -63,10 +63,10 @@ static func climb_limit() -> float:
 
 ## [method jump_reach]'s tunables, built once. Private and never handed out, so nothing
 ## can scale it the way a class scales a live player's.
-static var _movement_cache: DotFpsTunables = null
+static var _movement_cache: GSFpsTunables = null
 
 
-static func _movement() -> DotFpsTunables:
+static func _movement() -> GSFpsTunables:
 	if _movement_cache == null:
 		_movement_cache = PlaylotPlayer.movement_tunables()
 
@@ -124,7 +124,7 @@ const CONTACT_SHADE_SCRIPT := "res://addons/dot_lighting/runtime/dot_contact_sha
 ## the server's, put down later and not under this node. By path, behind the level, so a
 ## shell older than the helper draws the map without it.
 func add_contact_shade() -> void:
-	if DotAddonApi.build_level("dot_lighting") < 4 or not ResourceLoader.exists(CONTACT_SHADE_SCRIPT):
+	if GSAddonApi.build_level("dot_lighting") < 4 or not ResourceLoader.exists(CONTACT_SHADE_SCRIPT):
 		return
 	var old := get_node_or_null(^"ContactShade")
 	if old != null:

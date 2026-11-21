@@ -21,16 +21,16 @@ func _test_identity() -> void:
 	# noticed, because it never validated a schema.
 	_check(problems.ok, "the avatar schema is valid", str(problems.error))
 
-	var legal := DotAvatar.make(&"pg_builder")
+	var legal := GSAvatar.make(&"pg_builder")
 	legal.set_part(&"body", &"body_overalls")
 	legal.set_part(&"hat", &"hat_cap")
 
 	_check(
-		schema.validate(legal, DotAvatarEntitlements.none()).ok,
+		schema.validate(legal, GSAvatarEntitlements.none()).ok,
 		"a free avatar is accepted with no entitlements at all"
 	)
 
-	var locked := DotAvatar.make(&"pg_builder")
+	var locked := GSAvatar.make(&"pg_builder")
 	locked.set_part(&"body", &"body_plain")
 	locked.set_part(&"hat", &"hat_hard")
 
@@ -38,11 +38,11 @@ func _test_identity() -> void:
 	# server that granted everything would work perfectly in every test, ship, and quietly
 	# be a game where every unlock is free — which nobody reports as a bug.
 	_check(
-		not schema.validate(locked, DotAvatarEntitlements.none()).ok,
+		not schema.validate(locked, GSAvatarEntitlements.none()).ok,
 		"and one nobody has unlocked is refused"
 	)
 	_check(
-		schema.validate(locked, DotAvatarEntitlements.of([&"hat_hard"])).ok,
+		schema.validate(locked, GSAvatarEntitlements.of([&"hat_hard"])).ok,
 		"until they hold it"
 	)
 
@@ -67,7 +67,7 @@ func _test_blind_and_beacon() -> void:
 	print("[blind and beacon]")
 
 	var player := game.add_player(&"u78", "Quin")
-	var session := DotClientSession.new()
+	var session := GSClientSession.new()
 	session.peer_id = 7808
 	session.userid = 78
 	session.display_name = "Quin"
@@ -123,11 +123,11 @@ func _test_blind_and_beacon() -> void:
 
 	var _dark_off := await _run_command_later("blind Quin off")
 	var _unlit := await _run_command_later("beacon Quin off")
-	var tools: DotModTools = _module().get("mod_tools")
+	var tools: GSModTools = _module().get("mod_tools")
 	_check(
 		not player.blinded and not player.beacon
-		and not tools.is_active(&"78", DotModTools.ACTION_BLIND)
-		and not tools.is_active(&"78", DotModTools.ACTION_BEACON),
+		and not tools.is_active(&"78", GSModTools.ACTION_BLIND)
+		and not tools.is_active(&"78", GSModTools.ACTION_BEACON),
 		"and both come off, with the tools' record agreeing with the world"
 	)
 
@@ -137,16 +137,16 @@ func _test_blind_and_beacon() -> void:
 
 
 ## [method _run_command] as a player: what `!creative` in chat arrives as.
-func _run_as(session: DotClientSession, line: String) -> PackedStringArray:
+func _run_as(session: GSClientSession, line: String) -> PackedStringArray:
 	var captured: Array[String] = []
-	var template := DotCmdContext.console("", PackedStringArray())
+	var template := GSCmdContext.console("", PackedStringArray())
 	template.session = session
 	template.reply_sink = func(text: String) -> void: captured.append(text)
 	server.console.execute(line, template)
 	return PackedStringArray(captured)
 
 
-## dot-team's block rules through dot-game's DotGameNoblock: strangers block by default, `!noblock` lets the caller's pairs pass, `!block` takes it back, and the cvars decide.
+## dot-team's block rules through dot-game's GSGameNoblock: strangers block by default, `!noblock` lets the caller's pairs pass, `!block` takes it back, and the cvars decide.
 func _test_noblock() -> void:
 	print("")
 	print("[noblock]")
@@ -158,7 +158,7 @@ func _test_noblock() -> void:
 		"mp_blockstate and the config cvars are bound")
 	var _a := game.add_player(&"u81", "Walker")
 	var _b := game.add_player(&"u82", "Other")
-	var session := DotClientSession.new()
+	var session := GSClientSession.new()
 	session.peer_id = 8109
 	session.userid = 81
 	session.display_name = "Walker"
@@ -185,7 +185,7 @@ func _test_creative() -> void:
 
 	var builder := game.add_player(&"u79", "Builder")
 	var other := game.add_player(&"u80", "Other")
-	var session := DotClientSession.new()
+	var session := GSClientSession.new()
 	session.peer_id = 7909
 	session.userid = 79
 	session.display_name = "Builder"
@@ -196,7 +196,7 @@ func _test_creative() -> void:
 	_check(game.props.is_protected(&"u79"), "and protects their props in dot-props")
 
 	var crate := game.props.spawn(&"crate", &"u79", Vector3(0.0, 40.0, 0.0))
-	var tool := DotPropTool.new()
+	var tool := GSPropTool.new()
 	tool.spawner = game.props
 	tool.wielder = &"u80"
 	_check(crate != null and not tool.may_act_on(crate).ok, "nobody else's tool may touch what they build")
@@ -258,7 +258,7 @@ func _test_saved_builds() -> void:
 	var module := _module()
 	module.get("builds").set("directory", "%s/builds" % SERVER_DIR)
 	var builder := game.add_player(&"u81", "Mason")
-	var session := DotClientSession.new()
+	var session := GSClientSession.new()
 	session.peer_id = 8101
 	session.userid = 81
 	session.display_name = "Mason"
@@ -314,7 +314,7 @@ func _test_saved_builds() -> void:
 ## punishment store, which may be remote, so the reply can land a frame late.
 func _run_command_later(line: String) -> PackedStringArray:
 	var captured: Array[String] = []
-	var template := DotCmdContext.console("", PackedStringArray())
+	var template := GSCmdContext.console("", PackedStringArray())
 	template.reply_sink = func(text: String) -> void: captured.append(text)
 	server.console.execute(line, template)
 	await get_tree().process_frame
@@ -336,7 +336,7 @@ func _test_inventory_commands() -> void:
 	)
 
 	var player := game.add_player(&"u79", "Rae")
-	var session := DotClientSession.new()
+	var session := GSClientSession.new()
 	session.peer_id = 7909
 	session.userid = 79
 	session.display_name = "Rae"
@@ -377,7 +377,7 @@ func _test_welcome_waits_for_ready() -> void:
 	var bridge: PlaylotNetBridge = _module().get("bridge")
 	var services: PlaylotServices = _module().get("services")
 	var peer := 7909
-	var session := DotClientSession.new()
+	var session := GSClientSession.new()
 	session.peer_id = peer
 	session.userid = 79
 	session.display_name = "Wren"
@@ -389,11 +389,11 @@ func _test_welcome_waits_for_ready() -> void:
 	bridge.net.send_fn = func(peer_id: int, payload: PackedByteArray, _delivery: int) -> void:
 		if peer_id != peer:
 			return
-		var decoded: DotResult = bridge.net.messages.decode(DotNetReader.new(payload), 1, false)
+		var decoded: GSResult = bridge.net.messages.decode(GSNetReader.new(payload), 1, false)
 		if decoded.ok and decoded.value is PlaylotEvent:
 			kinds.append((decoded.value as PlaylotEvent).kind)
 
-	var _spawned: DotEvent = server.events.fire("client_spawn", {"userid": 79})
+	var _spawned: GSEvent = server.events.fire("client_spawn", {"userid": 79})
 	_check(game.players.has(&"u79"), "client_spawn puts the joiner in the game")
 	_check(
 		kinds.is_empty(),
@@ -401,11 +401,11 @@ func _test_welcome_waits_for_ready() -> void:
 		str(kinds)
 	)
 
-	var writer := DotNetWriter.new()
-	var _encoded: DotResult = bridge.net.messages.encode(
+	var writer := GSNetWriter.new()
+	var _encoded: GSResult = bridge.net.messages.encode(
 		PlaylotRequest.new(PlaylotEvents.Ask.READY, PackedByteArray()), writer
 	)
-	var _ready: DotResult = bridge.receive_request(peer, writer.to_bytes())
+	var _ready: GSResult = bridge.receive_request(peer, writer.to_bytes())
 	var chats := kinds.count(PlaylotEvents.Kind.CHAT)
 	_check(
 		kinds.has(PlaylotEvents.Kind.HELLO) and chats >= 2,
@@ -414,7 +414,7 @@ func _test_welcome_waits_for_ready() -> void:
 	)
 
 	kinds.clear()
-	var _again: DotResult = bridge.receive_request(peer, writer.to_bytes())
+	var _again: GSResult = bridge.receive_request(peer, writer.to_bytes())
 	_check(
 		kinds.count(PlaylotEvents.Kind.CHAT) == 0,
 		"a READY said twice does not welcome them twice",
@@ -436,12 +436,12 @@ func _test_welcome_waits_for_ready() -> void:
 	_section_done()
 
 
-## A disconnect actually reaches the module. An ARITY check: `DotServer.client_disconnected` emits
+## A disconnect actually reaches the module. An ARITY check: `GSServer.client_disconnected` emits
 ## `(session, reason)`, and a handler taking only the session was refused by Godot on every call.
 func _test_disconnect_is_handled() -> void:
 	print("a client disconnecting reaches the module")
 
-	var session := DotClientSession.new()
+	var session := GSClientSession.new()
 	session.userid = 4242
 	session.peer_id = 0
 	session.display_name = "Leaver"
@@ -449,7 +449,7 @@ func _test_disconnect_is_handled() -> void:
 	game.add_player(&"u4242", "Leaver")
 	_check(game.players.has(&"u4242"), "a player is in the game")
 
-	# Emitted with BOTH arguments, exactly as DotServer emits it. A handler with the
+	# Emitted with BOTH arguments, exactly as GSServer emits it. A handler with the
 	# wrong arity is refused by the engine rather than adapted to.
 	server.client_disconnected.emit(session, "closed")
 
@@ -493,7 +493,7 @@ func _test_module_unloads_cleanly() -> void:
 		"%d left" % game.players.size()
 	)
 
-	var reloaded: DotResult = await server.modules.load_module(
+	var reloaded: GSResult = await server.modules.load_module(
 		"res://game/playlot_module.gd"
 	)
 	_check(reloaded.ok, "and it can be loaded again")
@@ -511,7 +511,7 @@ func _test_a_module_reload() -> void:
 
 	for _i in range(2):
 		_check(server.modules.unload_module("playground").ok, "the module unloads")
-		var back: DotResult = await server.modules.load_module("res://game/playlot_module.gd")
+		var back: GSResult = await server.modules.load_module("res://game/playlot_module.gd")
 		_check(back.ok, "and loads again", back.error.message if not back.ok else "")
 	for _i in range(5):
 		await get_tree().process_frame
@@ -530,14 +530,14 @@ func _test_a_module_reload() -> void:
 	var mirror := Node.new()
 	mirror.name = name
 	side.add_child(mirror)
-	var link := DotClientLink.new()
+	var link := GSClientLink.new()
 	link.name = "Server"
 	link.player_name = "Reloaded"
 	link.transport_preference = "udp"
 	link.udp_address = "127.0.0.1:%d" % server.config.port
 	mirror.add_child(link)
 	# The client's own link, re-made on each phase change as a real client's game scene does:
-	# DotClientLink clears its children while connecting. Heard is what any of them counted.
+	# GSClientLink clears its children while connecting. Heard is what any of them counted.
 	var heard := [0]
 	var attach := func(_a: Variant = null, _b: Variant = null) -> void:
 		if link.get_node_or_null(NodePath(String(PlaylotNetLink.NODE_NAME))) == null:
@@ -574,8 +574,8 @@ func _test_a_module_reload() -> void:
 	_section_done()
 
 
-## A script that `extends DotNetMessage` and preloads ITSELF, first loaded from a module a running
-## [DotServer] loads, leaves every loaded script alive at exit on Godot 4.7.2. The leak is reported after
+## A script that `extends GSNetMessage` and preloads ITSELF, first loaded from a module a running
+## [GSServer] loads, leaves every loaded script alive at exit on Godot 4.7.2. The leak is reported after
 ## `quit()` where no check reaches, so this reads every message script in `game/` as text.
 func _test_no_message_preloads_itself() -> void:
 	print("exiting clean")
@@ -621,7 +621,7 @@ func _test_no_message_preloads_itself() -> void:
 func _extends_message(source: String) -> bool:
 	for line in source.split("\n"):
 		if line.begins_with("extends "):
-			return line.contains("DotNetMessage") or line.contains("dot_net_message.gd")
+			return line.contains("GSNetMessage") or line.contains("dot_net_message.gd")
 	return false
 
 

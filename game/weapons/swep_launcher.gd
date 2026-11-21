@@ -18,11 +18,11 @@ extends "playlot_weapon.gd"
 const FALLBACK := &"ball"
 
 
-func _primary(_space: Variant, origin: Vector3, aim: Vector3) -> DotResult:
+func _primary(_space: Variant, origin: Vector3, aim: Vector3) -> GSResult:
 	return launch(_ammunition(), origin, aim, tune(&"speed", 26.0))
 
 
-func _secondary(_space: Variant, origin: Vector3, aim: Vector3) -> DotResult:
+func _secondary(_space: Variant, origin: Vector3, aim: Vector3) -> GSResult:
 	# Same prop, much faster, and up a little so a heavy one carries rather than
 	# ploughing into the floor two metres away.
 	return launch(

@@ -13,7 +13,7 @@ func _init() -> void:
 	super()
 
 
-func primary(gun: Object, hit: Dictionary) -> DotResult:
+func primary(gun: Object, hit: Dictionary) -> GSResult:
 	var body := rigid_body(hit)
 
 	if body == null:
@@ -22,15 +22,15 @@ func primary(gun: Object, hit: Dictionary) -> DotResult:
 
 	if pending.is_empty():
 		pending = {"body": body}
-		return DotResult.success("first")
+		return GSResult.success("first")
 
 	var first: RigidBody3D = pending.get("body")
 	pending = {}
 
 	if not is_instance_valid(first):
-		return DotResult.fail(DotError.CODE_STATE, "The first prop has gone.")
+		return GSResult.fail(GSError.CODE_STATE, "The first prop has gone.")
 
-	var allowed: DotResult = gun.call("may_constrain")
+	var allowed: GSResult = gun.call("may_constrain")
 
 	if not allowed.ok:
 		return allowed
@@ -38,10 +38,10 @@ func primary(gun: Object, hit: Dictionary) -> DotResult:
 	return gun.call("constraints").nocollide(gun.get("wielder"), first, body)
 
 
-func reload(gun: Object, hit: Dictionary) -> DotResult:
+func reload(gun: Object, hit: Dictionary) -> GSResult:
 	var body := rigid_body(hit)
 
 	if body == null:
 		return nothing_there()
 
-	return DotResult.success(gun.call("constraints").remove_on(body, 1))
+	return GSResult.success(gun.call("constraints").remove_on(body, 1))

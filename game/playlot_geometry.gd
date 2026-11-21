@@ -102,7 +102,7 @@ static func panel(
 	mesh.position = at
 	# Passable by design (this function's whole point): said so to dot-core's collision audit,
 	# so a panel is not one of the findings that a real missing collider would be.
-	mesh.set_meta(DotCollisionAudit.META, true)
+	mesh.set_meta(GSCollisionAudit.META, true)
 	parent.add_child(mesh)
 	return mesh
 
@@ -201,7 +201,7 @@ static func _load(path: String) -> Texture2D:
 ##
 ## The tilt is applied to the box rather than to a plane, so the ramp has a back and
 ## an end — which is what makes a surf map a place rather than an infinite slope, and
-## is the difference between this and [code]DotFpsFlatBody.add_ramp[/code].
+## is the difference between this and [code]GSFpsFlatBody.add_ramp[/code].
 static func ramp(
 	parent: Node3D,
 	at: Vector3,

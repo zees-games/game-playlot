@@ -4,11 +4,11 @@ func set_water(boxes: Array[AABB]) -> void:
 	swim.volumes = boxes
 	if controller != null and controller.motor != null and controller.state != null \
 			and controller.state.mode == swim.mode_id and boxes.is_empty():
-		controller.motor.set_mode(controller.state, DotFpsState.Mode.AIR)
+		controller.motor.set_mode(controller.state, GSFpsState.Mode.AIR)
 
 
 func _ready() -> void:
-	controller = DotFpsController.new()
+	controller = GSFpsController.new()
 	controller.name = "Controller"
 	controller.tick_rate = tick_rate
 
@@ -21,17 +21,17 @@ func _ready() -> void:
 	# sample, move, then time the tick with the position the move produced — and it
 	# is the same shape a dot-net bridge and a dedicated server use, so nothing has
 	# to be rearranged when one arrives.
-	controller.drive = DotFpsController.Drive.EXTERNAL
+	controller.drive = GSFpsController.Drive.EXTERNAL
 	controller.tunables = _tunables()
 	# What a map box is made of reaches the feet: ice, mud, sand, snow, rubber. Read off box
 	# metadata both ends build from one map document, so a client predicts it too.
 	controller.surfaces = PlaylotMaterials.player_surfaces()
 	# Every player, both ends: an admin's noclip is a modifier whose index travels on the
-	# wire. See dot-player-controller's DotFpsAdminModifiers.
+	# wire. See dot-player-controller's GSFpsAdminModifiers.
 	controller.admin_abilities = true
 
 	# body_ref left unset, so it defaults to the parent — this node, which is the
-	# Node3D the movement drives. `DotNodeRef.of_self()` looks equivalent and is not:
+	# Node3D the movement drives. `GSNodeRef.of_self()` looks equivalent and is not:
 	# it resolves to the CONTROLLER, which is a plain Node, and setup() then refuses
 	# with "the player body must be a Node3D" and the whole player never simulates.
 	# Swimming: one mode per player, registered on every setup (a style rebuilds the motor),
@@ -43,13 +43,13 @@ func _ready() -> void:
 	controller.simulated.connect(_on_simulated)
 
 	if samples_input:
-		sampler = DotFpsSampler.new(controller.tunables)
-		DotFpsSampler.register_default_actions(sampler)
+		sampler = GSFpsSampler.new(controller.tunables)
+		GSFpsSampler.register_default_actions(sampler)
 
 
 ## Gives this player a third-person controller and the switch that hands between them. A different motor, not a
 ## moved camera: a sandbox ranks and rewinds nothing, so it is free to use one (the racing and arena games keep one).
-## Built on demand, only for a player that samples input: `DotTpsController` drives a CharacterBody3D, a real
+## Built on demand, only for a player that samples input: `GSTpsController` drives a CharacterBody3D, a real
 ## per-tick cost a dedicated server full of remote players should not pay.
 ## Returns whether it was built.
 func build_view_switch() -> bool:
@@ -59,39 +59,39 @@ func build_view_switch() -> bool:
 	if not samples_input:
 		return false
 
-	# [b]The component root both controllers bind through.[/b] `DotPlayerController` is a
-	# `DotPlayerComponent`: it finds its player by walking up, reads the body from it and
+	# [b]The component root both controllers bind through.[/b] `GSPlayerController` is a
+	# `GSPlayerComponent`: it finds its player by walking up, reads the body from it and
 	# refuses to run unbound. Without this node the third-person controller has no body to
 	# ask for and logs "no CharacterBody3D for this player" once per activation.
-	player_node = DotPlayer.new()
+	player_node = GSPlayer.new()
 	player_node.name = "Player"
 	player_node.player_key = String(player_id)
 	player_node.is_local = true
-	# [b]No `roster_ref`, deliberately.[/b] `DotPlayer` binds on a key alone when it
+	# [b]No `roster_ref`, deliberately.[/b] `GSPlayer` binds on a key alone when it
 	# cannot find a roster, and everything the controllers ask it for — the body, whether
 	# the player is alive — is answered without one. Pointing it at the stack's roster
 	# would mean either a node path across two subtrees or turning
 	# `register_service` on, and a registry name is global to the process: two servers in
 	# one editor session would collide on it, which is the reason the stacks turn it off.
 	# The body is this node, which is why it is a CharacterBody3D at all.
-	player_node.body_ref = DotNodeRef.of_path(NodePath(".."))
+	player_node.body_ref = GSNodeRef.of_path(NodePath(".."))
 	add_child(player_node)
 
-	tps = DotTpsController.new()
+	tps = GSTpsController.new()
 	tps.name = "ThirdPerson"
 	tps.controller_id = &"tp"
-	tps.tunables = DotTpsTunables.new()
+	tps.tunables = GSTpsTunables.new()
 	add_child(tps)
 
 	# [b]The id BEFORE the switch is added, and that ordering is the bug.[/b]
-	# `DotPlayerControllerSwitch._ready` runs `refresh()` and activates its default the
+	# `GSPlayerControllerSwitch._ready` runs `refresh()` and activates its default the
 	# moment it enters the tree — so a controller still carrying an empty `controller_id`
 	# at that instant is registered under its class name instead, `default_controller`
 	# names something that is not there, and the switch falls back to whatever it found
 	# first. The sandbox opened in third person and the only symptom was the camera.
 	controller.controller_id = &"fp"
 
-	controller_switch = DotPlayerControllerSwitch.new()
+	controller_switch = GSPlayerControllerSwitch.new()
 	controller_switch.name = "ViewSwitch"
 	# First person is what a sandbox opens in: the tools are aimed down a crosshair and a
 	# physics gun held over the shoulder is a different, worse tool.
@@ -150,7 +150,7 @@ func step_controller(tick: int, delta: float) -> void:
 ## the player ends up this tick, and a run timer decides whether the player crossed a line
 ## from where they were and where they now are — so it has to see the position the move
 ## produced, not the one it started from.
-func _on_simulated(_tick: int, state: DotFpsState) -> void:
+func _on_simulated(_tick: int, state: GSFpsState) -> void:
 	global_position = state.position
 
 	# Into the water once the waist is in it. Here because this runs on every simulated tick,
@@ -169,14 +169,14 @@ func _on_simulated(_tick: int, state: DotFpsState) -> void:
 ## simulates this player (a predicting client's replays included): dot-props' `launch_for` is a
 ## pure function of where the toys stand, so the client is thrown on the tick the server is.
 ## AIR at once, as a jump leaves the ground, or the motor's ground snap holds them down.
-func _launch_from_toy(state: DotFpsState) -> void:
+func _launch_from_toy(state: GSFpsState) -> void:
 	if toys == null or riding or not state.is_grounded():
 		return
 	var thrown := toys.launch_for(state.position, state.velocity)
 	if thrown.is_empty():
 		return
 	state.velocity = thrown["velocity"]
-	state.mode = DotFpsState.Mode.AIR
+	state.mode = GSFpsState.Mode.AIR
 	state.time_since_grounded = 1000.0
 	if bounced_fn.is_valid():
 		bounced_fn.call(int(thrown["index"]))
@@ -188,7 +188,7 @@ func _launch_from_toy(state: DotFpsState) -> void:
 ## resolved on each machine from its own bodies. Written into the state as well as the
 ## node: the next move starts from `state.position`, and a lift applied to the node alone
 ## is undone by it, so the player would ride one frame a tick and stand still overall.
-func _ride_prop(state: DotFpsState) -> void:
+func _ride_prop(state: GSFpsState) -> void:
 	if carry == null or not state.is_grounded() or riding:
 		return
 
@@ -197,7 +197,7 @@ func _ride_prop(state: DotFpsState) -> void:
 	var lift := Vector3.ZERO
 
 	# A prop underfoot (prop surfing), and a turning roundabout through the same call
-	# (`DotPropCarry.toys`). With prop surfing off, the roundabout still carries: it is a toy
+	# (`GSPropCarry.toys`). With prop surfing off, the roundabout still carries: it is a toy
 	# on the map, not a prop somebody spawned to ride.
 	if surfing:
 		lift = carry.ride(state.ground_id, state.position, MASS_KG, step)
@@ -244,7 +244,7 @@ func set_riding(value: bool, vehicle_node: Node3D = null) -> void:
 		# on its next tick whether there is ground under them, which is the honest answer
 		# — the exit sweep only proved there was room, not that it was a floor.
 		controller.state.velocity = Vector3.ZERO
-		controller.state.mode = DotFpsState.Mode.AIR
+		controller.state.mode = GSFpsState.Mode.AIR
 
 
 ## Held by somebody's physics gun ([PlaylotPickup]): a rider with no vehicle and no
@@ -271,8 +271,8 @@ func adopt_ride(at: Vector3, velocity: Vector3) -> void:
 ##
 ## What a vehicle is driven from. Never null: the controller keeps the last command it
 ## was given, which is what makes a dropped input a straight line rather than a stop.
-func pending_command() -> DotFpsCommand:
-	return controller.current_command if controller.current_command != null else DotFpsCommand.new()
+func pending_command() -> GSFpsCommand:
+	return controller.current_command if controller.current_command != null else GSFpsCommand.new()
 
 
 ## Draws [member beacon] for one frame, and says when it pings.
@@ -284,7 +284,7 @@ func pending_command() -> DotFpsCommand:
 ## caller that plays it is the one that asked.
 ##
 ## [param local_view] is whether this is the player whose eyes the camera is behind, which
-## hides the column (see [DotFxBeacon]).
+## hides the column (see [GSFxBeacon]).
 ##
 ## [b]Not hidden while dead, unlike the reference game's.[/b] Nothing on this node knows
 ## the arena killed it: a dead player here is a body standing where it fell until dot-match's
@@ -301,7 +301,7 @@ func present_beacon(delta: float, local_view: bool) -> bool:
 		return false
 
 	if beacon_marker == null:
-		beacon_marker = DotFxBeacon.new()
+		beacon_marker = GSFxBeacon.new()
 		beacon_marker.name = "Beacon"
 		# Red-orange, the colour nothing in a grey dev-textured sandbox is, and brighter than
 		# the warm props a player spawns. Ping off: the game plays its own catalogue ping

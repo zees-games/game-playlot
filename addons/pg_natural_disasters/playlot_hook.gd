@@ -8,7 +8,7 @@ extends Node3D
 ## (`ln -s ../../natural-disasters/addons/natural_disasters addons/natural_disasters`), and
 ## when that link is absent the hook registers nothing and the playlot starts as before.
 ##
-## Paths are loaded rather than named: a script that mentioned `DotDisasterManager` would
+## Paths are loaded rather than named: a script that mentioned `GSDisasterManager` would
 ## not compile in a checkout without the addon.
 
 const MANAGER := "res://addons/natural_disasters/runtime/dot_disaster_manager.gd"
@@ -22,7 +22,7 @@ var _host: Node = null
 
 func playlot_register(menu) -> void:
 	if not ResourceLoader.exists(MANAGER):
-		DotLog.info("pg.addons", "natural-disasters is not linked; no disasters in the menu")
+		GSLog.info("pg.addons", "natural-disasters is not linked; no disasters in the menu")
 		return
 
 	_host = menu.host
@@ -50,16 +50,16 @@ func playlot_register(menu) -> void:
 ## The client half: draw what the authority announced.
 func playlot_receive(msg: Dictionary) -> void:
 	if manager != null:
-		var received: DotResult = manager.call("receive", msg)
-		DotLog.result("pg.addons", "a disaster message", received)
+		var received: GSResult = manager.call("receive", msg)
+		GSLog.result("pg.addons", "a disaster message", received)
 
 
-func _start(ctx, kind_id: StringName) -> DotResult:
+func _start(ctx, kind_id: StringName) -> GSResult:
 	if manager == null:
-		return DotResult.fail(DotError.CODE_STATE, "natural-disasters is not linked")
+		return GSResult.fail(GSError.CODE_STATE, "natural-disasters is not linked")
 
 	var overrides := {"origin": ctx.at}
-	var started: DotResult = manager.call("start", kind_id, overrides)
+	var started: GSResult = manager.call("start", kind_id, overrides)
 	if started.ok and started.value != null:
 		# One undo entry per spawn; stopping it sends the stop message every client's view obeys.
 		var event_id: int = int(started.value.get("id"))

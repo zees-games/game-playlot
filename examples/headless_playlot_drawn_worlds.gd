@@ -13,13 +13,13 @@ func _test_the_maps_are_surveyed_2() -> void:
 	for id in CUSTOM_MAPS:
 		var path := "res://maps/custom/%s.json" % id
 		var map: Node3D = _tmas_data_script.new()
-		var configured: DotResult = map.configure_doc(path)
+		var configured: GSResult = map.configure_doc(path)
 		_check(configured.ok, "%s: the document loads" % id, str(configured.error) if not configured.ok else "")
 		# A whole-map import (`"unedited": true`, written by the converter) is the author's map as built for Garry's
 		# Mod, not a course laid out for this game's player: its ledges and slots are the author's, and a survey of a
 		# whole Source map runs for minutes. It is shown as imported, so only the load is checked.
 		var doc: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
-		if doc is Dictionary and DotValue.same((doc as Dictionary).get("unedited", false), true):
+		if doc is Dictionary and GSValue.same((doc as Dictionary).get("unedited", false), true):
 			map.free()
 			print("    %s: an unedited whole-map import, not surveyed" % id)
 			_tmas_unsurveyed_checks += 4
@@ -56,14 +56,14 @@ func _brush_documents() -> void:
 	f.store_string(JSON.stringify(doc))
 	f.close()
 	var map: Node3D = _tmas_data_script.new()
-	var configured: DotResult = map.configure_doc(path)
+	var configured: GSResult = map.configure_doc(path)
 	_check(configured.ok, "brushes: a saved and re-read document loads", str(configured.error) if not configured.ok else "")
 	var kinds: Array[String] = []
 	var convex := 0
 	var meshes := 0
 	for n in map.get_children():
-		if n is StaticBody3D and n.has_meta(DotMapBrush.META_KIND):
-			kinds.append(str(n.get_meta(DotMapBrush.META_KIND)))
+		if n is StaticBody3D and n.has_meta(GSMapBrush.META_KIND):
+			kinds.append(str(n.get_meta(GSMapBrush.META_KIND)))
 			for c in n.get_children():
 				if c is CollisionShape3D and (c as CollisionShape3D).shape is ConvexPolygonShape3D:
 					convex += 1
@@ -110,7 +110,7 @@ func _test_drawn_worlds() -> void:
 	var map: Node3D = _tmas_data_script.new()
 	map.draw_world = true
 	add_child(map)
-	var configured: DotResult = map.configure_doc(doc_path)
+	var configured: GSResult = map.configure_doc(doc_path)
 	var guard := 300
 	while map.drawn_world == null and map._world_loading and guard > 0:
 		await get_tree().process_frame
@@ -167,7 +167,7 @@ func _check_unusable_packs(text: String, doc_path: String) -> void:
 		add_child(other)
 		other.configure_doc(path)
 		other.draw_world = true
-		var got: DotResult = await other.load_world()
+		var got: GSResult = await other.load_world()
 		var shaded_before: bool = other._shades_boxes()
 		_check(not got.ok and other.drawn_world == null and other.get_node_or_null(^"World") == null and _hidden_box_meshes(other) == 0,
 			"world: a pack %s leaves the boxes drawn" % ("that is not there" if name == "missing" else "made at another scale"),

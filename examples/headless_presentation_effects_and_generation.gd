@@ -1,4 +1,4 @@
-extends DotGameCheckSuite
+extends GSGameCheckSuite
 
 const PlaylotAmbience := preload("../game/playlot_ambience.gd")
 const PlaylotInventory := preload("../game/playlot_inventory.gd")
@@ -25,7 +25,7 @@ func _make() -> PlaylotPresentation:
 	p.setup()
 	# The client builds the console after its menu; there is no menu here.
 	p.build_console()
-	p.settings.local_store = DotSettingsStoreMemory.new()
+	p.settings.local_store = GSSettingsStoreMemory.new()
 	p.settings.load_now()
 	p.apply_all()
 	return p
@@ -65,7 +65,7 @@ func _test_ambience_is_quiet_and_obeys_settings() -> void:
 
 	var rules := PlaylotAmbience.make_rules()
 	var names: Array = []
-	for row: Array in DotAmbienceRules.VARS.values():
+	for row: Array in GSAmbienceRules.VARS.values():
 		names.append(rules.cvar_of(row))
 	_check(names.has("pg_ambient") and names.has("pg_ambient_volume") and rules.volume == PlaylotAmbience.LEVEL, "the cvars are pg_ambient* with the quiet defaults")
 	_check(str(p.describe_lines()).contains("ambience"), "describe says what plays")
@@ -81,7 +81,7 @@ func _test_one_seed() -> void:
 	_check(p.rng != null, "there is a randomness manager")
 	_check(p.rng.current_seed() != 0, "with a seed, picked and announced")
 	_check(
-		DotRegistry.has(DotRandomManager.SERVICE),
+		GSRegistry.has(GSRandomManager.SERVICE),
 		"published, which is how a generated map finds it without naming the addon"
 	)
 
@@ -123,7 +123,7 @@ func _test_generated_map_is_walkable() -> void:
 		_done()
 		return
 
-	var doc := res.value as DotProcGenDoc
+	var doc := res.value as GSProcGenDoc
 	_check(doc.rooms.size() >= 5, "with rooms in it (%d)" % doc.rooms.size())
 	_check(
 		doc.links.size() > doc.rooms.size() - 1,
@@ -153,12 +153,12 @@ func _test_generated_map_is_walkable() -> void:
 	# without sending a map.
 	var again := PlaylotWorldGen.generate(4242)
 	_check(
-		(again.value as DotProcGenDoc).fingerprint() == doc.fingerprint(),
+		(again.value as GSProcGenDoc).fingerprint() == doc.fingerprint(),
 		"two runs of one seed produce the same map, to the byte"
 	)
 	var other := PlaylotWorldGen.generate(4243)
 	_check(
-		(other.value as DotProcGenDoc).fingerprint() != doc.fingerprint(),
+		(other.value as GSProcGenDoc).fingerprint() != doc.fingerprint(),
 		"and a different seed a different one"
 	)
 
@@ -212,7 +212,7 @@ func _test_the_backpack_is_the_prop_catalogue() -> void:
 		"one item per prop (%d against %d)" % [items.ids().size(), props.props.size()]
 	)
 
-	var heavy: DotPropDef = null
+	var heavy: GSPropDef = null
 	for d in props.props:
 		if heavy == null or d.mass > heavy.mass:
 			heavy = d
@@ -223,7 +223,7 @@ func _test_the_backpack_is_the_prop_catalogue() -> void:
 		"whose weight is the prop's own mass, which until now exactly one thing read"
 	)
 	_check(
-		item.kind == DotInvItem.Kind.UNIQUE,
+		item.kind == GSInvItem.Kind.UNIQUE,
 		"and which does not stack, because every prop carries its own state once spawned"
 	)
 
@@ -282,7 +282,7 @@ func _test_sounds_and_effects() -> void:
 	_section("Somebody else's building, and the switch for it")
 
 	var p := _make()
-	var sink := p.audio.sink as DotAudioSinkNull
+	var sink := p.audio.sink as GSAudioSinkNull
 	p.audio.listener_position = Vector3.ZERO
 
 	sink.forget()
@@ -456,8 +456,8 @@ func _test_blood() -> void:
 	await get_tree().physics_frame
 	await get_tree().physics_frame
 
-	var npc := DotEntity.make_id(DotEntity.KIND_NPC, 1)
-	var prop := DotEntity.make_id(DotEntity.KIND_PROP, 1)
+	var npc := GSEntity.make_id(GSEntity.KIND_NPC, 1)
+	var prop := GSEntity.make_id(GSEntity.KIND_PROP, 1)
 	var eye := Vector3(0, 1, 0)
 	var at := Vector3(0, 1, -3)
 
@@ -472,7 +472,7 @@ func _test_blood() -> void:
 	_check(p.on_body_hit(prop, at, eye) == null, "a prop is not bled on")
 	_check(p.on_body_hit(npc, at, at) == null, "no line, no splatter")
 
-	var cfg := DotFxDecalConfig.new()
+	var cfg := GSFxDecalConfig.new()
 	cfg.max_blood = 4
 	p.decals.apply_config(cfg)
 	for i in 10:
@@ -492,7 +492,7 @@ func _test_the_vote_is_heard() -> void:
 	_section("The map vote is heard: every cue its rules name is a sound here")
 
 	var p := _make()
-	var sink := p.audio.sink as DotAudioSinkNull
+	var sink := p.audio.sink as GSAudioSinkNull
 	var rules := PlaylotVote.vote_rules()
 
 	var named: Array[StringName] = []

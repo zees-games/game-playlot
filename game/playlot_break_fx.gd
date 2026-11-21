@@ -1,6 +1,6 @@
 extends Node
 
-## Splinters and shards where a prop or a pane breaks, drawn by dot-fx's DotFxBreak and following fx_quality.
+## Splinters and shards where a prop or a pane breaks, drawn by dot-fx's GSFxBreak and following fx_quality.
 
 ## Wire index -> dot-fx material; append only, the index travels in SHATTER.
 const MATERIALS: PackedStringArray = ["glass", "wood", "metal", "plastic"]
@@ -9,11 +9,11 @@ const KIND_OF_PROP := {
 	&"barrel": 2, &"can": 2, &"die": 3,
 }
 
-var break_fx: DotFxBreak = null
+var break_fx: GSFxBreak = null
 
 
 func setup(settings: Object) -> void:
-	break_fx = DotFxBreak.new()
+	break_fx = GSFxBreak.new()
 	break_fx.name = "Break"
 	add_child(break_fx)
 	break_fx.follow(settings)

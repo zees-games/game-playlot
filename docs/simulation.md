@@ -4,7 +4,7 @@ This game is the only place dot-player-controller, dot-map, dot-props, dot-npc a
 
 ## The game owns the tick loop
 
-`DotFpsController.Drive.EXTERNAL`, not `LOCAL`, even in single player. In `LOCAL` the controller accumulates frame time and ticks itself, so a run timer would be fed from a signal fired inside somebody else's loop, and a bot could not be driven at all. `Playlot._simulate_tick` owns it, which makes the order explicit:
+`GSFpsController.Drive.EXTERNAL`, not `LOCAL`, even in single player. In `LOCAL` the controller accumulates frame time and ticks itself, so a run timer would be fed from a signal fired inside somebody else's loop, and a bot could not be driven at all. `Playlot._simulate_tick` owns it, which makes the order explicit:
 
 1. `props.advance`, `maps.advance`, then the vehicles are driven and ticked
 2. the NPC candidate list is rebuilt once, then the NPC world and every entity tick (see [sandbox.md](sandbox.md#perception-is-dot-npcs-being-a-prop-is-still-dot-props))
@@ -19,11 +19,11 @@ This game is the only place dot-player-controller, dot-map, dot-props, dot-npc a
 
 ## `body_ref` must not be `of_self()`
 
-`DotNodeRef.of_self()` on the controller resolves to the controller, a plain `Node`. `setup()` refuses ("the player body must be a Node3D"), `motor` stays null, and the player never moves. Leave it unset: it defaults to the parent. Its first appearance cost nine failures that all pointed somewhere else.
+`GSNodeRef.of_self()` on the controller resolves to the controller, a plain `Node`. `setup()` refuses ("the player body must be a Node3D"), `motor` stays null, and the player never moves. Leave it unset: it defaults to the parent. Its first appearance cost nine failures that all pointed somewhere else.
 
 ## A style is movement, and a timer's ranking half follows it
 
-`DotFpsStyle` transforms the tunables and filters the command. `PlaylotPlayer.set_style` applies it and emits `style_changed`, which is how `addons/pg_timer` puts the matching `DotTimerStyle` (whether a run counts and what it is worth) on the player's timer when a server has one ([timer.md](timer.md)). `DotFpsController.set_style` **rebuilds the motor**, which assigning the property does not; the suite checks that specifically.
+`GSFpsStyle` transforms the tunables and filters the command. `PlaylotPlayer.set_style` applies it and emits `style_changed`, which is how `addons/pg_timer` puts the matching `GSTimerStyle` (whether a run counts and what it is worth) on the player's timer when a server has one ([timer.md](timer.md)). `GSFpsController.set_style` **rebuilds the motor**, which assigning the property does not; the suite checks that specifically.
 
 A style rebuilds the tunables from the controller's base copy, so anything written into the live tunables (a collision mask) is lost on the next style change. Go through the controller's setters (`set_collision_mask`).
 
@@ -33,13 +33,13 @@ A style rebuilds the tunables from the controller's base copy, so anything writt
 
 ## Teleport and the spawn yaw
 
-`PlaylotPlayer.teleport` goes through `DotFpsController.teleport` (drops the smoothing and puts the player in the air), tells `PlaylotPlayer.sampler` the new angles, and leaves a player that nothing samples **holding still and facing where it was put**. A `DotFpsCommand` carries **absolute** view angles, so writing `controller.state.yaw` directly lasts until the next tick: the client's sampler, or a bot's last command, turns it straight back. A bot holding forward when it fell off a course was otherwise respawned already running off the pad.
+`PlaylotPlayer.teleport` goes through `GSFpsController.teleport` (drops the smoothing and puts the player in the air), tells `PlaylotPlayer.sampler` the new angles, and leaves a player that nothing samples **holding still and facing where it was put**. A `GSFpsCommand` carries **absolute** view angles, so writing `controller.state.yaw` directly lasts until the next tick: the client's sampler, or a bot's last command, turns it straight back. A bot holding forward when it fell off a course was otherwise respawned already running off the pad.
 
-Facing a direction is `atan2(-dx, -dz)`: `DotFpsMotor._view_basis` builds forward as `(-sin(yaw), 0, -cos(yaw))`. The obvious `atan2(dx, dz)` is 180 degrees out and mirrored.
+Facing a direction is `atan2(-dx, -dz)`: `GSFpsMotor._view_basis` builds forward as `(-sin(yaw), 0, -cos(yaw))`. The obvious `atan2(dx, dz)` is 180 degrees out and mirrored.
 
 **A teleport stops a run, if there is one** (`PlaylotPlayer.stop_run`, a no-op without a timer). A teleport that kept the clock running is the simplest cheat on a timed map; only a map's own TELEPORT zone keeps it, and that is the adapter's.
 
-**A respawn here is a teleport of the same body** (`Playlot.spawn_player`), so nothing a handler set is lost and `DotModTools.respawned` is never called: blind, beacon, noclip and freeze all survive a respawn (game-fatal-contact ends the last two with the body).
+**A respawn here is a teleport of the same body** (`Playlot.spawn_player`), so nothing a handler set is lost and `GSModTools.respawned` is never called: blind, beacon, noclip and freeze all survive a respawn (game-fatal-contact ends the last two with the body).
 
 `Playlot.spawn_player` steps a spawn to the nearest free point on two rings of eight at `SPAWN_SPACING` (1.5 m) (`_clear_of_players`), which stays on the smallest start pad; past seventeen people the centre is shared. Every start here is one point, and without this two players joining stood inside each other's heads.
 
@@ -55,7 +55,7 @@ A generated or document map needs configuring before anybody spawns: `_on_map_ch
 
 ## The movement is a bhop server's, not the addon's defaults
 
-`PlaylotPlayer._tunables` (the static builder behind `movement_tunables()`) differs from `DotFpsTunables` in the genre's direction:
+`PlaylotPlayer._tunables` (the static builder behind `movement_tunables()`) differs from `GSFpsTunables` in the genre's direction:
 
 | | Default | Here | Why |
 | --- | --- | --- | --- |
@@ -65,7 +65,7 @@ A generated or document map needs configuring before anybody spawns: `_on_map_ch
 | `coyote_time` | 0.1 | **0** | free speed on a timed map; a run set with it is not comparable |
 | `jump_buffer_time` | 0.1 | **0** | the same |
 
-`PlaylotMap.jump_reach(rise)` and `climb_limit()` ask the same tunables (`DotFpsTunables.jump_reach` / `climb_limit`, apex × `CLIMB_MARGIN` 0.9 = 1.035 m) so maps with no player in the tree ask the movement itself. `MOVE_SPEED`, `JUMP_HEIGHT` and `MOVE_GRAVITY` stay on `PlaylotMap` for laying out geometry and are asserted against the tunables the server applies. `PlaylotConfig` (Movement group, `config_world`) carries `move_speed`, `jump_height` and `move_gravity` at the same defaults; `Playlot.apply_movement()` puts them on every player and the toys, and the server bridge sends them in HELLO (appended) and in a `MOVEMENT` event on change, so a client predicts with the server's numbers (`headless_net`: `_test_movement_over_the_wire`). The map constants and `jump_reach` stay the defaults: a changed value does not re-size a built-in map. Never measure a reach off `DotFpsTunables.new()`: the addon's defaults are not this server's.
+`PlaylotMap.jump_reach(rise)` and `climb_limit()` ask the same tunables (`GSFpsTunables.jump_reach` / `climb_limit`, apex × `CLIMB_MARGIN` 0.9 = 1.035 m) so maps with no player in the tree ask the movement itself. `MOVE_SPEED`, `JUMP_HEIGHT` and `MOVE_GRAVITY` stay on `PlaylotMap` for laying out geometry and are asserted against the tunables the server applies. `PlaylotConfig` (Movement group, `config_world`) carries `move_speed`, `jump_height` and `move_gravity` at the same defaults; `Playlot.apply_movement()` puts them on every player and the toys, and the server bridge sends them in HELLO (appended) and in a `MOVEMENT` event on change, so a client predicts with the server's numbers (`headless_net`: `_test_movement_over_the_wire`). The map constants and `jump_reach` stay the defaults: a changed value does not re-size a built-in map. Never measure a reach off `GSFpsTunables.new()`: the addon's defaults are not this server's.
 
 ## The tick rate comes from `server.cfg`, and every link is silent
 
@@ -79,7 +79,7 @@ A timer counting 128 a second on a server stepping 100 reports every run 28% lon
 
 ## The server module
 
-`game/playlot_module.gd` is the only file that names dot-server. It extends `DotModule`, **not `DotGameModule`, deliberately for now**: `DotGameModule`'s `game`, `bridge`, `net` and `services` are untyped fields a subclass cannot redeclare and this module reads them typed throughout; its `_build_extras` builds services, the arena, the waves, the mod tools, the vote and progress in an order each depends on; and it keeps its own `_joined` table and spawn path rather than a `DotGameRoster`. That is a conversion of its own. Consequences: the module wires things `DotGameModule` would do itself (identity and dot-platform, hibernation; see [services.md](services.md)).
+`game/playlot_module.gd` is the only file that names dot-server. It extends `GSModule`, **not `GSGameModule`, deliberately for now**: `GSGameModule`'s `game`, `bridge`, `net` and `services` are untyped fields a subclass cannot redeclare and this module reads them typed throughout; its `_build_extras` builds services, the arena, the waves, the mod tools, the vote and progress in an order each depends on; and it keeps its own `_joined` table and spawn path rather than a `GSGameRoster`. That is a conversion of its own. Consequences: the module wires things `GSGameModule` would do itself (identity and dot-platform, hibernation; see [services.md](services.md)).
 
 | Commands | |
 | --- | --- |

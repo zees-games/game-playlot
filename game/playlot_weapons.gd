@@ -39,13 +39,13 @@ static func make(def: PlaylotWeaponDef) -> PlaylotWeapon:
 	var valid := def.validate()
 
 	if not valid.ok:
-		DotLog.error(CHANNEL, "a weapon definition is not usable", {
+		GSLog.error(CHANNEL, "a weapon definition is not usable", {
 			"why": valid.error.message
 		})
 		return null
 
 	if not ResourceLoader.exists(def.script_path):
-		DotLog.error(CHANNEL, "a weapon's script is not there", {
+		GSLog.error(CHANNEL, "a weapon's script is not there", {
 			"weapon": String(def.id), "script": def.script_path
 		})
 		return null
@@ -53,7 +53,7 @@ static func make(def: PlaylotWeaponDef) -> PlaylotWeapon:
 	var res: Resource = load(def.script_path)
 
 	if not (res is GDScript):
-		DotLog.error(CHANNEL, "a weapon's script is not a script", {
+		GSLog.error(CHANNEL, "a weapon's script is not a script", {
 			"weapon": String(def.id), "script": def.script_path
 		})
 		return null
@@ -65,7 +65,7 @@ static func make(def: PlaylotWeaponDef) -> PlaylotWeapon:
 	# the methods the client calls — and the first symptom is a crash inside a mouse
 	# handler, several frames from the catalogue entry that caused it.
 	if not (made is PlaylotWeapon):
-		DotLog.error(CHANNEL, "a weapon's script is not a weapon", {
+		GSLog.error(CHANNEL, "a weapon's script is not a weapon", {
 			"weapon": String(def.id),
 			"script": def.script_path,
 			"hint": "extend res://game/weapons/playlot_weapon.gd",

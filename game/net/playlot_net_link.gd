@@ -12,12 +12,12 @@ const PlaylotNetLink := preload("playlot_net_link.gd")
 ## same set of @rpc methods, and routes it by the receiver's node path. Using the same
 ## script on both ends makes the checksum identical by construction; naming the node the
 ## same on both ends and parenting it to a node that is itself named the same
-## ([DotServer] on one side and [DotClientLink] on the other, both called
+## ([GSServer] on one side and [GSClientLink] on the other, both called
 ## [code]Server[/code]) is the whole of the routing.
 ##
 ## [codeblock]
-## Server            <- DotServer, or DotClientLink named to match
-##   Chat            <- DotChatManager / DotClientChat
+## Server            <- GSServer, or GSClientLink named to match
+##   Chat            <- GSChatManager / GSClientChat
 ##   (NODE_NAME)   <- this, on both
 ## [/codeblock]
 
@@ -28,15 +28,15 @@ const CHANNEL := "playlot.link"
 ## that ships both ends together.
 const NODE_NAME := &"Playground"
 
-## Everything here rides [constant DotTransport.Channel.STATE], which dot-server reserves
+## Everything here rides [constant GSTransport.Channel.STATE], which dot-server reserves
 ## for exactly this and uses for nothing itself. Sharing chat's channel would make a burst
 ## of snapshots delay a chat line, and vice versa.
 const CHANNEL_STATE := 1
 
 ## Voice, and only voice.
 ##
-## [constant DotTransport.Channel.EVENT] is what dot-server reserves for chat and events,
-## and this game's chat has moved onto [DotChatRouter] and rides `event` on the state
+## [constant GSTransport.Channel.EVENT] is what dot-server reserves for chat and events,
+## and this game's chat has moved onto [GSChatRouter] and rides `event` on the state
 ## channel with everything else — so this one is free. Voice gets it to itself for the
 ## reason the state channel exists at all: a hundred and twenty-eight snapshots a second
 ## must not sit behind a talk spurt, and a talk spurt must not sit behind a snapshot.
@@ -74,7 +74,7 @@ var voice_sent: int = 0
 var voice_received: int = 0
 
 
-## Makes the link; the caller places it (see [DotGameLink]).
+## Makes the link; the caller places it (see [GSGameLink]).
 static func attached_to(
 	_parent: Node, p_bridge: PlaylotNetBridge, server: bool
 ) -> PlaylotNetLink:
@@ -98,9 +98,9 @@ func _live() -> bool:
 	if live == _dropping:
 		_dropping = not live
 		if _dropping:
-			DotLog.debug(CHANNEL, "sending stopped: the link has no multiplayer peer", describe())
+			GSLog.debug(CHANNEL, "sending stopped: the link has no multiplayer peer", describe())
 		else:
-			DotLog.debug(CHANNEL, "sending resumed", {"server": is_server})
+			GSLog.debug(CHANNEL, "sending resumed", {"server": is_server})
 
 	return live
 
@@ -128,7 +128,7 @@ func _note_unbridged(method: String) -> void:
 		return
 
 	_unbridged = true
-	DotLog.debug(CHANNEL, "messages are arriving with no bridge to hand them to; dropping", {
+	GSLog.debug(CHANNEL, "messages are arriving with no bridge to hand them to; dropping", {
 		"first": method, "server": is_server,
 	})
 
@@ -179,7 +179,7 @@ func send_input(payload: PackedByteArray) -> void:
 		_net_client_input.rpc_id(1, payload)
 
 
-## One encoded [DotVoicePacket], in whichever direction this end is.
+## One encoded [GSVoicePacket], in whichever direction this end is.
 ##
 ## [b]One call for both transports.[/b] On ENet `unreliable` is a UDP datagram that is
 ## never retransmitted, which is what voice wants — a frame that arrives late is one the
@@ -293,7 +293,7 @@ func _net_request(payload: PackedByteArray) -> void:
 ## A voice frame, either way.
 ##
 ## `any_peer`, so on the server the sender is a claim until the transport is asked.
-## [method DotVoiceRouter.relay] stamps it over whatever the packet's own speaker field
+## [method GSVoiceRouter.relay] stamps it over whatever the packet's own speaker field
 ## said — without that any client can put words in any other player's mouth.
 @rpc("any_peer", "unreliable", "call_remote", CHANNEL_VOICE)
 func _net_voice(payload: PackedByteArray) -> void:

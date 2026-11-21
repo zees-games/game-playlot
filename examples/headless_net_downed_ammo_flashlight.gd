@@ -23,7 +23,7 @@ func _test_downed_over_the_wire() -> void:
 	await _steps(2)
 	mirror.face_body()
 	var body := mirror.character.body() if mirror.character != null else null
-	var figure := body.get_node_or_null(^"Figure") as DotHumanoidFigure if body != null else null
+	var figure := body.get_node_or_null(^"Figure") as GSHumanoidFigure if body != null else null
 	_check(mirror.downed, "the client hears they are down")
 	_check(
 		figure != null and figure.downed,
@@ -48,7 +48,7 @@ var _dac_drawn: ZeeWeaponRig
 var _dac_settle: int
 var _dac_drive
 var _dac_spent: int
-var _dac_def: DotWeaponDef
+var _dac_def: GSWeaponDef
 
 func _test_drawn_ammo_corrected() -> void:
 	_section("the drawn gun takes the server's ammunition count")
@@ -76,7 +76,7 @@ func _test_drawn_ammo_corrected() -> void:
 
 	# One tick on both ends, the drawn gun driven the way PlaylotClient._net_physics does.
 	_dac_drive = func(drawn_fire: bool) -> void:
-		var buttons := DotFpsCommand.BUTTON_USER_0 if drawn_fire else 0
+		var buttons := GSFpsCommand.BUTTON_USER_0 if drawn_fire else 0
 		var command := PlaylotZee.command_for(buttons, 0.0, 0.0, PlaylotZee.slot_of(_dac_drawn))
 		var _outcome := _dac_drawn.simulate_tick(command, _tick)
 		PlaylotZee.note_drawn(_dac_mirror, _dac_drawn, command, tick_sec)
@@ -103,8 +103,8 @@ func _test_drawn_ammo_corrected() -> void:
 
 	# Both fire, then the gun in hand is asked for again: the server refills its own rig, and
 	# says nothing to the drawn one but the snapshot.
-	var fire := DotFpsCommand.new()
-	fire.set_button(DotFpsCommand.BUTTON_USER_0, true)
+	var fire := GSFpsCommand.new()
+	fire.set_button(GSFpsCommand.BUTTON_USER_0, true)
 	for _i in range(30):
 		_dac_drive.call(true)
 		await _step(fire)
@@ -141,9 +141,9 @@ func _test_drawn_ammo_corrected_2() -> void:
 
 ## Noclip is a permission the server hands out: the client's V press (BUTTON_NOCLIP in its command)
 ## only takes when the server's policy allows it, and revoking the permit ends it.
-func _noclip_command(pressed: bool) -> DotFpsCommand:
-	var c := DotFpsCommand.new()
-	c.buttons = DotFpsCommand.BUTTON_NOCLIP if pressed else 0
+func _noclip_command(pressed: bool) -> GSFpsCommand:
+	var c := GSFpsCommand.new()
+	c.buttons = GSFpsCommand.BUTTON_NOCLIP if pressed else 0
 	return c
 
 
@@ -153,7 +153,7 @@ func _press_v_over_the_wire() -> bool:
 	await _steps(4, _noclip_command(false))
 	_exchange()
 	await _steps(2)
-	return _server_player().controller.state.mode == DotFpsState.Mode.NOCLIP
+	return _server_player().controller.state.mode == GSFpsState.Mode.NOCLIP
 
 
 func _test_noclip_over_the_wire() -> void:
@@ -171,12 +171,12 @@ func _test_noclip_over_the_wire() -> void:
 	_server_game.noclip_policy = func(_id: StringName) -> bool: return false
 	await _steps(3)
 	_check(not await _press_v_over_the_wire(), "without the permission V does nothing on the server")
-	_check(_client_player().controller.state.mode != DotFpsState.Mode.NOCLIP, "and the client is not in noclip either")
+	_check(_client_player().controller.state.mode != GSFpsState.Mode.NOCLIP, "and the client is not in noclip either")
 
 	_server_game.noclip_policy = func(id: StringName) -> bool: return id == &"u%d" % SESSION
 	await _steps(3)
 	_check(await _press_v_over_the_wire(), "with the permission the server body goes into noclip")
-	_check(_client_player().controller.state.mode == DotFpsState.Mode.NOCLIP, "and the client's prediction agrees")
+	_check(_client_player().controller.state.mode == GSFpsState.Mode.NOCLIP, "and the client's prediction agrees")
 	_check(not await _press_v_over_the_wire(), "a second press leaves noclip")
 
 	_check(await _press_v_over_the_wire(), "back in noclip")
@@ -184,7 +184,7 @@ func _test_noclip_over_the_wire() -> void:
 	await _steps(4)
 	_exchange()
 	await _steps(2)
-	_check(_server_player().controller.state.mode != DotFpsState.Mode.NOCLIP, "revoking the permission ends noclip on the server")
+	_check(_server_player().controller.state.mode != GSFpsState.Mode.NOCLIP, "revoking the permission ends noclip on the server")
 
 	_server_game.config.noclip = saved_mode
 	_server_game.noclip_policy = saved_policy
@@ -198,8 +198,8 @@ func _test_grenade_for_a_joiner() -> void:
 	_server_game.projectiles.clear()
 	_client_game.projectiles.clear()
 
-	var outcome := DotWeaponOutcome.new()
-	var spawn := DotWeaponSpawn.new()
+	var outcome := GSWeaponOutcome.new()
+	var spawn := GSWeaponSpawn.new()
 	spawn.id = &"frag"
 	spawn.origin = Vector3(-40, 8, -40)
 	spawn.velocity = Vector3(1, 3, 0)
@@ -265,12 +265,12 @@ func _test_the_aim_bit_crosses() -> void:
 
 	var paced := _server_game.ads_rules.move_speed_for(rig.current_def().id)
 	var start := theirs.global_position
-	var walk_step := func(command: DotFpsCommand, aim: bool) -> void:
+	var walk_step := func(command: GSFpsCommand, aim: bool) -> void:
 		var _o := drawn.simulate_tick(PlaylotZee.command_for(0, 0.0, 0.0, PlaylotZee.slot_of(drawn), aim), _tick)
 		await _step(command, aim)
 
 	var run := func(direction: Vector2, aim: bool) -> float:
-		var walk := DotFpsCommand.new()
+		var walk := GSFpsCommand.new()
 		walk.move = direction
 		theirs.teleport(start, 0.0)
 		for _i in range(INPUT_LEAD + 8):

@@ -1,6 +1,6 @@
 extends RefCounted
 
-## The playlot's weapon pictures: zee weapon id to sprite tag; the rest is dot-ui's [DotWeaponIconStyle].
+## The playlot's weapon pictures: zee weapon id to sprite tag; the rest is dot-ui's [GSWeaponIconStyle].
 
 const TAGS := {
 	&"battle_rifle": &"battle_rifle", &"beamer": &"energy_rifle", &"bullpup": &"bullpup",
@@ -14,10 +14,10 @@ const TAGS := {
 }
 
 ## The one instance the client, HUD and menu share.
-static var shared: DotWeaponIconStyle = _make()
+static var shared: GSWeaponIconStyle = _make()
 
 
-static func _make() -> DotWeaponIconStyle:
-	var s := DotWeaponIconStyle.new()
+static func _make() -> GSWeaponIconStyle:
+	var s := GSWeaponIconStyle.new()
 	s.tags = TAGS
 	return s

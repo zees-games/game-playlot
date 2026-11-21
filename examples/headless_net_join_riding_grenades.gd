@@ -36,11 +36,11 @@ func _test_nothing_before_ready() -> void:
 	services.bridge = _server_bridge
 	services.punishments_path = NET_PUNISHMENTS
 	_server_bridge.get_parent().add_child(services)
-	var _up: DotResult = services.setup(null, _server_game, _server_bridge)
+	var _up: GSResult = services.setup(null, _server_game, _server_bridge)
 	services.add_peer(CLIENT_PEER)
 	services.add_peer(late_peer)
 	_server_voice.clear()
-	var heard: DotResult = services.voice.relay(CLIENT_PEER, _voice_frame())
+	var heard: GSResult = services.voice.relay(CLIENT_PEER, _voice_frame())
 	_check(
 		heard.ok and int(heard.value) == 1 and not _server_voice.has(late_peer)
 			and not _server_voice.has(0) and services.voice_held == 1,
@@ -70,7 +70,7 @@ func _test_nothing_before_ready() -> void:
 	services.free()
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(NET_PUNISHMENTS))
 	_check(
-		not DotRegistry.has(DotModerationManager.MUTE_SERVICE),
+		not GSRegistry.has(GSModerationManager.MUTE_SERVICE),
 		"and the voice section's services leave no mute source behind"
 	)
 	await _test_nothing_before_ready_2()
@@ -92,7 +92,7 @@ func _test_nothing_before_ready_2() -> void:
 
 ## A connected client standing on a prop the server moves (prop surfing).
 ##
-## Measured because a client's riding (`DotPropCarry`) needs a body underfoot with a velocity, and its frozen mirror has none, so only the server's corrections move it; this counts the cost against a still deck.
+## Measured because a client's riding (`GSPropCarry`) needs a body underfoot with a velocity, and its frozen mirror has none, so only the server's corrections move it; this counts the cost against a still deck.
 func _test_riding_over_the_wire() -> void:
 	_section("riding a moving prop, connected")
 
@@ -158,7 +158,7 @@ func _test_button_over_the_wire() -> void:
 		_check(false, "a button and a door")
 		_done()
 		return
-	DotPhysGun.set_frozen(button, true)
+	GSPhysGun.set_frozen(button, true)
 	var _wired := _server_game.io.link(button.instance_id, &"pressed", door.instance_id, &"toggle")
 	_exchange()
 	await _steps(8)
@@ -207,8 +207,8 @@ func _test_toys_over_the_wire() -> void:
 		"the server holds the asker's launcher, loaded with what they armed",
 		str(toy.describe()) if toy != null else "no toy")
 
-	var fire := DotFpsCommand.new()
-	fire.set_button(DotFpsCommand.BUTTON_USER_0, true)
+	var fire := GSFpsCommand.new()
+	fire.set_button(GSFpsCommand.BUTTON_USER_0, true)
 	var before := _server_game.props.player_count(id)
 	await _steps(2, fire)
 	await _steps(4)
@@ -219,8 +219,8 @@ func _test_toys_over_the_wire() -> void:
 	_client_bridge.ask_weapon(&"remover")
 	_exchange()
 	await _steps(4)
-	var alt := DotFpsCommand.new()
-	alt.set_button(DotFpsCommand.BUTTON_USER_1, true)
+	var alt := GSFpsCommand.new()
+	alt.set_button(GSFpsCommand.BUTTON_USER_1, true)
 	await _steps(2, alt)
 	await _steps(4)
 	_check(_server_game.props.player_count(id) == 0 and theirs.phys_gun.held == null,
@@ -263,10 +263,10 @@ func _test_zee_over_the_wire() -> void:
 	# Arrays, because a lambda captures a scalar by value.
 	_zotw_uses = []
 	_zotw_resolved = []
-	_server_bridge.shot_fn = func(_id: StringName, _shot: DotShot) -> void: _zotw_resolved.append(1)
+	_server_bridge.shot_fn = func(_id: StringName, _shot: GSShot) -> void: _zotw_resolved.append(1)
 	if rig is ZeeWeaponRig:
 		(rig as ZeeWeaponRig).used.connect(
-			func(o: DotWeaponOutcome) -> void: _zotw_uses.append(o.shots.size())
+			func(o: GSWeaponOutcome) -> void: _zotw_uses.append(o.shots.size())
 		)
 
 	# What a client draws of it: the server's WEAPON event puts the SMG on the body, and the
@@ -289,7 +289,7 @@ func _test_zee_over_the_wire() -> void:
 	var kit_torso: Variant = _zotw_mirror.character.rig.find_child("torso", true, false) if _zotw_mirror != null and _zotw_mirror.character != null else null
 	# One of the family's people: half its chest, measured off the people at 1.8 m.
 	if torso_radius <= 0.0 and _zotw_mirror != null and _zotw_mirror.character != null \
-			and _zotw_mirror.character.rig.find_child("Figure", true, false) is DotHumanoidFigure:
+			and _zotw_mirror.character.rig.find_child("Figure", true, false) is GSHumanoidFigure:
 		torso_radius = 0.2
 	if torso_radius <= 0.0 and kit_torso is MeshInstance3D:
 		var box := (kit_torso as MeshInstance3D).global_transform * (kit_torso as MeshInstance3D).get_aabb()
@@ -304,8 +304,8 @@ func _test_zee_over_the_wire() -> void:
 		"%.2f m off the axis, torso radius %.2f" % [off_axis, torso_radius]
 	)
 
-	var fire := DotFpsCommand.new()
-	fire.set_button(DotFpsCommand.BUTTON_USER_0, true)
+	var fire := GSFpsCommand.new()
+	fire.set_button(GSFpsCommand.BUTTON_USER_0, true)
 	await _steps(256, fire)
 	await _steps(8)
 
@@ -386,7 +386,7 @@ func _test_inventory_flood() -> void:
 	for i in range(40):
 		var from := home if i % 2 == 0 else away
 		var to := away if i % 2 == 0 else home
-		var _flooded := mine.apply(DotInvOp.move(BACKPACK, _uid_at(mine, from), BACKPACK, to))
+		var _flooded := mine.apply(GSInvOp.move(BACKPACK, _uid_at(mine, from), BACKPACK, to))
 	_check(net_half.in_flight_count() == 40, "a client sends forty moves in one tick")
 	_exchange()
 	await _steps(2)
@@ -427,7 +427,7 @@ func _test_inventory_rejoin() -> void:
 
 	# An op still in flight when the connection drops, whose request never arrives.
 	var mine_then := _client_bag()
-	var stranded := mine_then.apply(DotInvOp.move(
+	var stranded := mine_then.apply(GSInvOp.move(
 		BACKPACK, _uid_at(mine_then, _cell_of(mine_then, &"beach_ball")), BACKPACK, _first_free(mine_then)
 	))
 	if stranded.ok and not _to_server.is_empty():
@@ -458,7 +458,7 @@ func _test_inventory_rejoin() -> void:
 	await _steps(2)
 	var mine := _client_bag()
 	var ball := _uid_at(mine, _cell_of(mine, &"beach_ball"))
-	var moved := mine != null and mine.apply(DotInvOp.move(BACKPACK, ball, BACKPACK, Vector2i(7, 4))).ok
+	var moved := mine != null and mine.apply(GSInvOp.move(BACKPACK, ball, BACKPACK, Vector2i(7, 4))).ok
 	_exchange()
 	_check(
 		gave and moved and _bag_summary(_client_bag()) == _bag_summary(_irx_inv.for_player(_irx_person)),
@@ -501,7 +501,7 @@ func _test_inventory_rejoin_2() -> void:
 
 	var mine_again := _client_bag()
 	var back_ball := _uid_at(mine_again, Vector2i(7, 4))
-	var again := mine_again.apply(DotInvOp.move(BACKPACK, back_ball, BACKPACK, Vector2i(8, 4)))
+	var again := mine_again.apply(GSInvOp.move(BACKPACK, back_ball, BACKPACK, Vector2i(8, 4)))
 	_exchange()
 	_check(
 		again.ok and _cell_of(_irx_inv.for_player(_irx_person), &"beach_ball") == Vector2i(8, 4)
@@ -529,8 +529,8 @@ func _test_grenade_over_the_wire() -> void:
 	_server_game.projectiles.clear()
 	_client_game.projectiles.clear()
 
-	var outcome := DotWeaponOutcome.new()
-	var spawn := DotWeaponSpawn.new()
+	var outcome := GSWeaponOutcome.new()
+	var spawn := GSWeaponSpawn.new()
 	spawn.id = &"frag"
 	spawn.origin = Vector3(-40, 4, -40)
 	spawn.velocity = Vector3(3, 2, 0)
@@ -597,9 +597,9 @@ func _test_own_grenade_predicted() -> void:
 	_client_game.projectiles.clear()
 	var mine := StringName("u%d" % SESSION)
 
-	var make := func() -> DotWeaponOutcome:
-		var outcome := DotWeaponOutcome.new()
-		var spawn := DotWeaponSpawn.new()
+	var make := func() -> GSWeaponOutcome:
+		var outcome := GSWeaponOutcome.new()
+		var spawn := GSWeaponSpawn.new()
 		spawn.id = &"frag"
 		spawn.origin = Vector3(-40, 4, -40)
 		spawn.velocity = Vector3(3, 2, 0)
@@ -652,8 +652,8 @@ func _test_utility_over_the_wire() -> void:
 	_client_game.projectiles.utility.connect(on_fx)
 	var far := Vector3(-60, 4, -60)
 	for id: StringName in [&"aw_smoke", &"aw_incendiary"]:
-		var outcome := DotWeaponOutcome.new()
-		var spawn := DotWeaponSpawn.new()
+		var outcome := GSWeaponOutcome.new()
+		var spawn := GSWeaponSpawn.new()
 		spawn.id = id
 		spawn.origin = far
 		spawn.gravity_scale = 1.0
@@ -675,8 +675,8 @@ func _test_utility_over_the_wire() -> void:
 	# A flash beside the connected player: that player's client is blinded, and the earlier smoke and fire told no blind.
 	seen.clear()
 	_client_game.projectiles.utility.connect(on_fx)
-	var flash := DotWeaponOutcome.new()
-	var fs := DotWeaponSpawn.new()
+	var flash := GSWeaponOutcome.new()
+	var fs := GSWeaponSpawn.new()
 	fs.id = &"aw_flash"
 	var target := _server_player()
 	fs.origin = target.global_position + Vector3(0, 0.9, 0) - target.global_basis.z * 1.5
@@ -699,8 +699,8 @@ func _test_utility_over_the_wire() -> void:
 
 ## One well-formed frame of this server's voice format, on the everybody channel.
 func _voice_frame() -> PackedByteArray:
-	var packet := DotVoicePacket.new()
-	packet.channel = DotVoiceRouter.Channel.ALL
+	var packet := GSVoicePacket.new()
+	packet.channel = GSVoiceRouter.Channel.ALL
 	packet.sample_count = PlaylotServices.voice_config().frame_samples()
 	packet.payload.resize(packet.sample_count / 2)
 	return packet.to_bytes()

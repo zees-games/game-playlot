@@ -37,41 +37,41 @@ static var FX_DIR := PlaylotPaths.rebase("res://scenes/fx")
 ## forward. A beam from the eye itself is drawn end-on, as a dot in the crosshair.
 const BEAM_OFFSET := Vector3(0.14, -0.16, -0.35)
 
-var settings: DotSettingsManager = null
-var rng: DotRandomManager = null
-var audio: DotAudioManager = null
+var settings: GSSettingsManager = null
+var rng: GSRandomManager = null
+var audio: GSAudioManager = null
 
 ## Everybody's footsteps by the box's material and a bed per map: dot-audio's stock (Kenney's
 ## footsteps and generated beds, CC0; the addon's stock/CREDITS.md). A box's `dot_fps_surface`
 ## meta, which the movement already reads, is what a step on it sounds like.
-var steps: DotAudioFootsteps = null
-var ambience: DotAudioAmbience = null
+var steps: GSAudioFootsteps = null
+var ambience: GSAudioAmbience = null
 
 ## Quiet moods under the map (dot-audio's stock set); the old bed plays only when none loaded.
-var ambient: DotAmbienceDirector = null
+var ambient: GSAmbienceDirector = null
 const BreakFx := preload("playlot_break_fx.gd")
 
 ## Splinters and shards where props and panes break.
 var break_fx: Node = null
-var fx: DotFxManager = null
+var fx: GSFxManager = null
 ## Blood on the surface behind a hit body. Visual only; the player's `gore` setting and `fx_quality` scale it.
-var blood: DotFxBlood = null
+var blood: GSFxBlood = null
 ## [member blood]'s decal pool.
-var decals: DotFxDecals = null
+var decals: GSFxDecals = null
 ## The player's console, built by [method build_console] once the client has a menu.
-var console: DotConsoleController = null
+var console: GSConsoleController = null
 #
-var profile_link: DotNetProfileLink = null
+var profile_link: GSNetProfileLink = null
 ## True while the profile workbench or its admin probe owns the link's answers (no console lines).
 var mute_profile_replies := false
-var console_panel: DotConsolePanel = null
+var console_panel: GSConsolePanel = null
 
 ## The physics guns' beams while they are drawn, by whose (0 is this client's own offline
 ## beam). See [method on_tool_beam].
 var _beams: Dictionary = {}
 
 ## The in-game chat box. See [method _build_chat].
-var chat_window: DotChatWindow = null
+var chat_window: GSChatWindow = null
 
 ## The player whose camera the motion settings move. See [method bind_camera_motion].
 var _camera_player: Node = null
@@ -86,68 +86,68 @@ var _chat_relayed: bool = false
 
 # --- Settings ---------------------------------------------------------------
 
-static func schema() -> DotSettingsSchema:
-	var s := DotSettingsSchema.new()
+static func schema() -> GSSettingsSchema:
+	var s := GSSettingsSchema.new()
 	s.version = SCHEMA_VERSION
 
-	s.add(DotSettingsDef.number(&"master_volume", 0.8, 0.0, 1.0, &"audio"))
-	s.add(DotSettingsDef.number(&"sfx_volume", 1.0, 0.0, 1.0, &"audio"))
-	s.add(DotSettingsDef.number(&"voice_volume", 1.0, 0.0, 1.0, &"audio"))
-	s.add(DotSettingsDef.boolean(&"ambient", true, &"audio").with_description("Quiet sounds under the map."))
-	s.add(DotSettingsDef.number(&"ambient_volume", 1.0, 0.0, 1.0, &"audio"))
+	s.add(GSSettingsDef.number(&"master_volume", 0.8, 0.0, 1.0, &"audio"))
+	s.add(GSSettingsDef.number(&"sfx_volume", 1.0, 0.0, 1.0, &"audio"))
+	s.add(GSSettingsDef.number(&"voice_volume", 1.0, 0.0, 1.0, &"audio"))
+	s.add(GSSettingsDef.boolean(&"ambient", true, &"audio").with_description("Quiet sounds under the map."))
+	s.add(GSSettingsDef.number(&"ambient_volume", 1.0, 0.0, 1.0, &"audio"))
 
-	s.add(DotSettingsDef.number(&"sensitivity", 2.5, 0.05, 20.0, &"controls").with_scope(
-		DotSettingsDef.Scope.ACCOUNT
+	s.add(GSSettingsDef.number(&"sensitivity", 2.5, 0.05, 20.0, &"controls").with_scope(
+		GSSettingsDef.Scope.ACCOUNT
 	))
-	s.add(DotSettingsDef.boolean(&"hold_to_open_menu", true, &"controls").with_description(
+	s.add(GSSettingsDef.boolean(&"hold_to_open_menu", true, &"controls").with_description(
 		"Hold the spawn-menu key for the spawn menu, or press it to pin it open."
-	).with_scope(DotSettingsDef.Scope.ACCOUNT))
+	).with_scope(GSSettingsDef.Scope.ACCOUNT))
 
-	s.add(DotSettingsDef.integer(&"field_of_view", 100, 70, 130, &"video").with_scope(
-		DotSettingsDef.Scope.SERVER_CLAMPED
+	s.add(GSSettingsDef.integer(&"field_of_view", 100, 70, 130, &"video").with_scope(
+		GSSettingsDef.Scope.SERVER_CLAMPED
 	))
-	s.add(DotSettingsDef.integer(&"fx_quality", 3, 0, 3, &"video"))
-	s.add(DotSettingsDef.boolean(&"gore", true, &"video").with_description(
+	s.add(GSSettingsDef.integer(&"fx_quality", 3, 0, 3, &"video"))
+	s.add(GSSettingsDef.boolean(&"gore", true, &"video").with_description(
 		"Blood splatters on the walls behind a hit player or NPC."
 	))
 
-	s.add(DotSettingsDef.number(&"shake_scale", 1.0, 0.0, 2.0, &"accessibility")
+	s.add(GSSettingsDef.number(&"shake_scale", 1.0, 0.0, 2.0, &"accessibility")
 		.with_description("Zero turns camera shake off entirely."))
-	s.add(DotSettingsDef.boolean(&"allow_flashes", true, &"accessibility"))
+	s.add(GSSettingsDef.boolean(&"allow_flashes", true, &"accessibility"))
 
 	# Camera motion, each 0 (off) to 2, 1 the game's pick (`PlaylotPlayer.camera_motion_picks`).
 	# ACCOUNT: motion sickness is about the person; one each, as the lean and the dip differ.
 	for key: StringName in CAMERA_MOTION_KEYS:
-		s.add(DotSettingsDef.number(key, 1.0, 0.0, 2.0, &"accessibility", 0.05).with_scope(
-			DotSettingsDef.Scope.ACCOUNT
+		s.add(GSSettingsDef.number(key, 1.0, 0.0, 2.0, &"accessibility", 0.05).with_scope(
+			GSSettingsDef.Scope.ACCOUNT
 		).with_description(CAMERA_MOTION_KEYS[key]))
 
 	# Chat. ACCOUNT scope for all three: which key opens chat and whether a player wants
 	# the box at all is about the person, not about this machine.
-	s.add(DotSettingsDef.choice(
+	s.add(GSSettingsDef.choice(
 		&"chat_window",
 		&"auto",
 		[&"auto", &"on", &"off"] as Array[StringName],
 		&"chat"
-	).with_scope(DotSettingsDef.Scope.ACCOUNT).with_description(
+	).with_scope(GSSettingsDef.Scope.ACCOUNT).with_description(
 		"auto hides the box on a server already carrying chat somewhere the player can "
 		+ "see it; on always draws it; off never does."
 	))
-	s.add(DotSettingsDef.binding(&"chat_open_key", "Y", &"chat").with_scope(
-		DotSettingsDef.Scope.ACCOUNT
+	s.add(GSSettingsDef.binding(&"chat_open_key", "Y", &"chat").with_scope(
+		GSSettingsDef.Scope.ACCOUNT
 	))
-	s.add(DotSettingsDef.binding(&"chat_near_key", "U", &"chat").with_scope(
-		DotSettingsDef.Scope.ACCOUNT
+	s.add(GSSettingsDef.binding(&"chat_near_key", "U", &"chat").with_scope(
+		GSSettingsDef.Scope.ACCOUNT
 	).with_description("Opens chat on the proximity channel rather than on all."))
 
 	# A sandbox's own: how much of somebody else's building you want to be told about.
-	s.add(DotSettingsDef.boolean(&"prop_sounds", true, &"sandbox").with_description(
+	s.add(GSSettingsDef.boolean(&"prop_sounds", true, &"sandbox").with_description(
 		"Whether other people's props make a noise when they land."
 	))
 	# The window, the frame rate, the theme and the counter: dot-menu's stock settings, applied by the client's
-	# DotMenuApplier and DotMenu. GROUP_CONTROLS adds `invert_mouse` (sensitivity is declared above), which the
+	# GSMenuApplier and GSMenu. GROUP_CONTROLS adds `invert_mouse` (sensitivity is declared above), which the
 	# applier inverts the sampler's look with.
-	DotMenuStock.declare(s, [DotMenuStock.GROUP_VIDEO, DotMenuStock.GROUP_INTERFACE, DotMenuStock.GROUP_CONTROLS] as Array[StringName])
+	GSMenuStock.declare(s, [GSMenuStock.GROUP_VIDEO, GSMenuStock.GROUP_INTERFACE, GSMenuStock.GROUP_CONTROLS] as Array[StringName])
 	# One binding setting per key the client reads ([PlaylotBindings]), so the Controls page
 	# can move every one and the help screen shows where each is now.
 	PlaylotBindings.make().add_to_schema(s)
@@ -197,14 +197,14 @@ static func _sweep_dead_scratch() -> void:
 # --- Audio ------------------------------------------------------------------
 
 ## What a sandbox makes a noise about, which is mostly other people building.
-static func sound_catalogue() -> DotAudioCatalogue:
-	var c := DotAudioCatalogue.new()
-	DotAudioStock.add_to(c)
+static func sound_catalogue() -> GSAudioCatalogue:
+	var c := GSAudioCatalogue.new()
+	GSAudioStock.add_to(c)
 
-	var spawn := DotAudioDef.new()
+	var spawn := GSAudioDef.new()
 	spawn.id = &"prop_spawn"
 	spawn.path = "%s/prop_spawn.ogg" % SOUND_DIR
-	spawn.kind = DotAudioDef.Kind.POSITIONAL_3D
+	spawn.kind = GSAudioDef.Kind.POSITIONAL_3D
 	spawn.bus = &"SFX"
 	spawn.max_distance = 60.0
 	# A player emptying a Q menu spawns several a second, and a sandbox server has a
@@ -216,10 +216,10 @@ static func sound_catalogue() -> DotAudioCatalogue:
 	spawn.pitch_max = 1.08
 	c.add(spawn)
 
-	var land := DotAudioDef.new()
+	var land := GSAudioDef.new()
 	land.id = &"prop_land"
 	land.path = "%s/prop_land.ogg" % SOUND_DIR
-	land.kind = DotAudioDef.Kind.POSITIONAL_3D
+	land.kind = GSAudioDef.Kind.POSITIONAL_3D
 	land.bus = &"SFX"
 	land.max_distance = 45.0
 	land.max_concurrent = 4
@@ -228,10 +228,10 @@ static func sound_catalogue() -> DotAudioCatalogue:
 	c.add(land)
 
 	# Something going into a liquid: a person jumping in, a crate thrown in.
-	var splash := DotAudioDef.new()
+	var splash := GSAudioDef.new()
 	splash.id = &"splash"
 	splash.path = "%s/splash.ogg" % SOUND_DIR
-	splash.kind = DotAudioDef.Kind.POSITIONAL_3D
+	splash.kind = GSAudioDef.Kind.POSITIONAL_3D
 	splash.bus = &"SFX"
 	splash.max_distance = 50.0
 	splash.max_concurrent = 3
@@ -243,10 +243,10 @@ static func sound_catalogue() -> DotAudioCatalogue:
 
 	# A pane of glass going: loud, far, and never more than two at once, because a blast
 	# through a greenhouse breaks a dozen panes in one tick.
-	var glass := DotAudioDef.new()
+	var glass := GSAudioDef.new()
 	glass.id = &"glass_break"
 	glass.path = "%s/glass_break.ogg" % SOUND_DIR
-	glass.kind = DotAudioDef.Kind.POSITIONAL_3D
+	glass.kind = GSAudioDef.Kind.POSITIONAL_3D
 	glass.bus = &"SFX"
 	glass.max_distance = 70.0
 	glass.max_concurrent = 2
@@ -263,8 +263,8 @@ static func sound_catalogue() -> DotAudioCatalogue:
 
 
 ## The grab, undo, punt, buy and refusal cues, split out of [method sound_catalogue].
-static func _add_tool_cues(c: DotAudioCatalogue) -> void:
-	var grab := DotAudioDef.new()
+static func _add_tool_cues(c: GSAudioCatalogue) -> void:
+	var grab := GSAudioDef.new()
 	grab.id = &"tool_grab"
 	grab.path = "%s/tool_grab.ogg" % SOUND_DIR
 	grab.bus = &"UI"
@@ -274,23 +274,23 @@ static func _add_tool_cues(c: DotAudioCatalogue) -> void:
 
 	_add_undo_cues(c)
 
-	var punt := DotAudioDef.new()
+	var punt := GSAudioDef.new()
 	punt.id = &"tool_punt"
 	punt.path = "%s/tool_punt.ogg" % SOUND_DIR
 	punt.bus = &"SFX"
-	punt.kind = DotAudioDef.Kind.POSITIONAL_3D
+	punt.kind = GSAudioDef.Kind.POSITIONAL_3D
 	punt.max_distance = 70.0
 	punt.priority = 70
 	c.add(punt)
 
-	var buy := DotAudioDef.new()
+	var buy := GSAudioDef.new()
 	buy.id = &"buy"
 	buy.path = "%s/buy.ogg" % SOUND_DIR
 	buy.bus = &"UI"
 	buy.priority = 80
 	c.add(buy)
 
-	var refused := DotAudioDef.new()
+	var refused := GSAudioDef.new()
 	refused.id = &"refused"
 	refused.path = "%s/refused.ogg" % SOUND_DIR
 	refused.bus = &"UI"
@@ -302,14 +302,14 @@ static func _add_tool_cues(c: DotAudioCatalogue) -> void:
 
 
 ## The vote, beacon and wave cues, split out of [method sound_catalogue].
-static func _add_service_cues(c: DotAudioCatalogue) -> void:
+static func _add_service_cues(c: GSAudioCatalogue) -> void:
 	# The map vote's cues. Flat, on the interface bus: a ballot is about the server, not
 	# about a place in it. The ids are PlaylotVote's, which its rules name too.
 	for vote_id in [
 		PlaylotVote.CUE_START, PlaylotVote.CUE_END,
 		PlaylotVote.CUE_WARNING, PlaylotVote.CUE_COUNT,
 	]:
-		var cue := DotAudioDef.new()
+		var cue := GSAudioDef.new()
 		cue.id = vote_id
 		cue.path = "%s/%s.ogg" % [SOUND_DIR, String(vote_id)]
 		cue.bus = &"UI"
@@ -320,10 +320,10 @@ static func _add_service_cues(c: DotAudioCatalogue) -> void:
 	# An administrator's beacon: a ping a second from the beaconed player, heard by everybody and positional, because
 	# it says WHERE somebody is. The furthest reach in this table, an octave under the vote's warning, which shares
 	# its voice, so a ping is never heard as a ballot closing.
-	var ping := DotAudioDef.new()
+	var ping := GSAudioDef.new()
 	ping.id = BEACON_SOUND
 	ping.path = "%s/beacon.ogg" % SOUND_DIR
-	ping.kind = DotAudioDef.Kind.POSITIONAL_3D
+	ping.kind = GSAudioDef.Kind.POSITIONAL_3D
 	ping.bus = &"SFX"
 	ping.unit_size = 20.0
 	ping.max_distance = 160.0
@@ -333,7 +333,7 @@ static func _add_service_cues(c: DotAudioCatalogue) -> void:
 	ping.pitch_max = 0.5
 	c.add(ping)
 
-	var wave := DotAudioDef.new()
+	var wave := GSAudioDef.new()
 	wave.id = &"wave_incoming"
 	wave.path = "%s/wave.ogg" % SOUND_DIR
 	wave.bus = &"UI"
@@ -342,14 +342,14 @@ static func _add_service_cues(c: DotAudioCatalogue) -> void:
 
 
 ## Falling bodies and map toys, split out of [method sound_catalogue].
-static func _add_body_sounds(c: DotAudioCatalogue) -> void:
+static func _add_body_sounds(c: GSAudioCatalogue) -> void:
 	# A body landing: dot-player-char's stock death sounds (Kenney, CC0), shipped in the addon.
-	for row: Dictionary in DotPlayerDeathSounds.rows():
-		var fall := DotAudioDef.new()
+	for row: Dictionary in GSPlayerDeathSounds.rows():
+		var fall := GSAudioDef.new()
 		fall.id = row["id"]
 		fall.path = row["path"]
 		fall.variants = row["variants"]
-		fall.kind = DotAudioDef.Kind.POSITIONAL_3D
+		fall.kind = GSAudioDef.Kind.POSITIONAL_3D
 		fall.bus = &"SFX"
 		fall.unit_size = 8.0
 		fall.max_distance = 45.0
@@ -363,12 +363,12 @@ static func _add_body_sounds(c: DotAudioCatalogue) -> void:
 
 	# The map's toys: dot-props' stock toy sounds (Kenney, CC0, and a horn made for it), shipped
 	# in the addon, each carrying as far as its row says.
-	for row: Dictionary in DotPropBodySounds.rows():
-		var toy := DotAudioDef.new()
+	for row: Dictionary in GSPropBodySounds.rows():
+		var toy := GSAudioDef.new()
 		toy.id = row["id"]
 		toy.path = row["path"]
 		toy.variants = row["variants"]
-		toy.kind = DotAudioDef.Kind.POSITIONAL_3D
+		toy.kind = GSAudioDef.Kind.POSITIONAL_3D
 		toy.bus = &"SFX"
 		toy.unit_size = 6.0
 		toy.max_distance = float(row["distance"])
@@ -382,8 +382,8 @@ static func _add_body_sounds(c: DotAudioCatalogue) -> void:
 
 
 ## The undo cue and its positional twin, split out of [method sound_catalogue] to keep it short.
-static func _add_undo_cues(c: DotAudioCatalogue) -> void:
-	var undo := DotAudioDef.new()
+static func _add_undo_cues(c: GSAudioCatalogue) -> void:
+	var undo := GSAudioDef.new()
 	undo.id = &"undo"
 	undo.path = "%s/undo.ogg" % SOUND_DIR
 	undo.bus = &"UI"
@@ -393,10 +393,10 @@ static func _add_undo_cues(c: DotAudioCatalogue) -> void:
 	undo.pitch_max = 0.8
 	c.add(undo)
 
-	var undo_at := DotAudioDef.new()
+	var undo_at := GSAudioDef.new()
 	undo_at.id = &"undo_at"
 	undo_at.path = "%s/undo.ogg" % SOUND_DIR
-	undo_at.kind = DotAudioDef.Kind.POSITIONAL_3D
+	undo_at.kind = GSAudioDef.Kind.POSITIONAL_3D
 	undo_at.bus = &"SFX"
 	undo_at.cooldown_ms = 120
 	undo_at.priority = 60
@@ -410,51 +410,51 @@ static func _add_undo_cues(c: DotAudioCatalogue) -> void:
 ## is the only ominous one, because it arrives whether the player asked or not.
 static func sound_recipes() -> Dictionary:
 	return {
-		&"prop_spawn": DotAudioSynth.Voice.SPAWN,
-		&"prop_land": DotAudioSynth.Voice.IMPACT,
-		&"glass_break": DotAudioSynth.Voice.SHOT_TIGHT,
-		&"splash": DotAudioSynth.Voice.SHOT_HEAVY,
-		&"tool_grab": DotAudioSynth.Voice.CLICK,
-		&"undo": DotAudioSynth.Voice.SPAWN,
-		&"undo_at": DotAudioSynth.Voice.SPAWN,
-		&"tool_punt": DotAudioSynth.Voice.SHOT,
-		&"buy": DotAudioSynth.Voice.PICKUP,
-		&"refused": DotAudioSynth.Voice.DENY,
-		&"wave_incoming": DotAudioSynth.Voice.BOOM,
+		&"prop_spawn": GSAudioSynth.Voice.SPAWN,
+		&"prop_land": GSAudioSynth.Voice.IMPACT,
+		&"glass_break": GSAudioSynth.Voice.SHOT_TIGHT,
+		&"splash": GSAudioSynth.Voice.SHOT_HEAVY,
+		&"tool_grab": GSAudioSynth.Voice.CLICK,
+		&"undo": GSAudioSynth.Voice.SPAWN,
+		&"undo_at": GSAudioSynth.Voice.SPAWN,
+		&"tool_punt": GSAudioSynth.Voice.SHOT,
+		&"buy": GSAudioSynth.Voice.PICKUP,
+		&"refused": GSAudioSynth.Voice.DENY,
+		&"wave_incoming": GSAudioSynth.Voice.BOOM,
 		# Voices nothing else in the table uses, so a ballot opening is never heard as a
 		# prop arriving or a refusal.
-		PlaylotVote.CUE_START: DotAudioSynth.Voice.SHOT_TIGHT,
-		PlaylotVote.CUE_END: DotAudioSynth.Voice.DIE,
-		PlaylotVote.CUE_WARNING: DotAudioSynth.Voice.BLIP,
-		PlaylotVote.CUE_COUNT: DotAudioSynth.Voice.STEP,
-		BEACON_SOUND: DotAudioSynth.Voice.BLIP,
+		PlaylotVote.CUE_START: GSAudioSynth.Voice.SHOT_TIGHT,
+		PlaylotVote.CUE_END: GSAudioSynth.Voice.DIE,
+		PlaylotVote.CUE_WARNING: GSAudioSynth.Voice.BLIP,
+		PlaylotVote.CUE_COUNT: GSAudioSynth.Voice.STEP,
+		BEACON_SOUND: GSAudioSynth.Voice.BLIP,
 		# Stand-ins only for a build without dot-props' toy files.
-		DotPropBodySounds.BOUNCE: DotAudioSynth.Voice.IMPACT,
-		DotPropBodySounds.THUMP: DotAudioSynth.Voice.IMPACT,
-		DotPropBodySounds.KNOCK: DotAudioSynth.Voice.IMPACT,
-		DotPropBodySounds.PIN: DotAudioSynth.Voice.CLICK,
-		DotPropBodySounds.WOOD: DotAudioSynth.Voice.IMPACT,
-		DotPropBodySounds.RUBBER: DotAudioSynth.Voice.IMPACT,
-		DotPropBodySounds.PUNCH: DotAudioSynth.Voice.HURT,
-		DotPropBodySounds.METAL: DotAudioSynth.Voice.CLICK,
-		DotPropBodySounds.BELL: DotAudioSynth.Voice.PICKUP,
-		DotPropBodySounds.CLICK: DotAudioSynth.Voice.CLICK,
-		DotPropBodySounds.WATER: DotAudioSynth.Voice.STEP,
-		DotPropBodySounds.BOING: DotAudioSynth.Voice.SPAWN,
-		DotPropBodySounds.HORN: DotAudioSynth.Voice.BLIP,
+		GSPropBodySounds.BOUNCE: GSAudioSynth.Voice.IMPACT,
+		GSPropBodySounds.THUMP: GSAudioSynth.Voice.IMPACT,
+		GSPropBodySounds.KNOCK: GSAudioSynth.Voice.IMPACT,
+		GSPropBodySounds.PIN: GSAudioSynth.Voice.CLICK,
+		GSPropBodySounds.WOOD: GSAudioSynth.Voice.IMPACT,
+		GSPropBodySounds.RUBBER: GSAudioSynth.Voice.IMPACT,
+		GSPropBodySounds.PUNCH: GSAudioSynth.Voice.HURT,
+		GSPropBodySounds.METAL: GSAudioSynth.Voice.CLICK,
+		GSPropBodySounds.BELL: GSAudioSynth.Voice.PICKUP,
+		GSPropBodySounds.CLICK: GSAudioSynth.Voice.CLICK,
+		GSPropBodySounds.WATER: GSAudioSynth.Voice.STEP,
+		GSPropBodySounds.BOING: GSAudioSynth.Voice.SPAWN,
+		GSPropBodySounds.HORN: GSAudioSynth.Voice.BLIP,
 		# Stand-ins only for a build without dot-player-char's files.
-		DotPlayerDeathReactions.SOUND_THUD: DotAudioSynth.Voice.IMPACT,
-		DotPlayerDeathReactions.SOUND_FACE_PLANT: DotAudioSynth.Voice.IMPACT,
-		DotPlayerDeathReactions.SOUND_SLUMP: DotAudioSynth.Voice.STEP,
-		DotPlayerDeathReactions.SOUND_WHOOSH: DotAudioSynth.Voice.SPAWN,
+		GSPlayerDeathReactions.SOUND_THUD: GSAudioSynth.Voice.IMPACT,
+		GSPlayerDeathReactions.SOUND_FACE_PLANT: GSAudioSynth.Voice.IMPACT,
+		GSPlayerDeathReactions.SOUND_SLUMP: GSAudioSynth.Voice.STEP,
+		GSPlayerDeathReactions.SOUND_WHOOSH: GSAudioSynth.Voice.SPAWN,
 	}
 
 # --- Effects ----------------------------------------------------------------
 
-static func fx_catalogue() -> DotFxCatalogue:
-	var c := DotFxCatalogue.new()
+static func fx_catalogue() -> GSFxCatalogue:
+	var c := GSFxCatalogue.new()
 
-	var puff := DotFxDef.new()
+	var puff := GSFxDef.new()
 	puff.id = &"prop_spawn"
 	puff.scene_path = "%s/spawn_puff.tscn" % FX_DIR
 	puff.lifetime_ms = 450
@@ -465,9 +465,9 @@ static func fx_catalogue() -> DotFxCatalogue:
 	puff.min_quality = 1
 	c.add(puff)
 
-	var beam := DotFxDef.new()
+	var beam := GSFxDef.new()
 	beam.id = &"tool_beam"
-	beam.kind = DotFxDef.Kind.BEAM
+	beam.kind = GSFxDef.Kind.BEAM
 	beam.scene_path = "%s/tool_beam.tscn" % FX_DIR
 	beam.lifetime_ms = 100
 	beam.cost = 1
@@ -475,15 +475,15 @@ static func fx_catalogue() -> DotFxCatalogue:
 	beam.max_distance = 0.0
 	c.add(beam)
 
-	var punt := DotFxDef.new()
+	var punt := GSFxDef.new()
 	punt.id = &"punt_shake"
-	punt.kind = DotFxDef.Kind.SHAKE
+	punt.kind = GSFxDef.Kind.SHAKE
 	punt.shake_trauma = 0.22
 	c.add(punt)
 
-	var wave := DotFxDef.new()
+	var wave := GSFxDef.new()
 	wave.id = &"wave_flash"
-	wave.kind = DotFxDef.Kind.SCREEN
+	wave.kind = GSFxDef.Kind.SCREEN
 	wave.flash_peak = 0.2
 	wave.flash_colour = Color(0.95, 0.55, 0.2)
 	wave.flash_decay_ms = 450

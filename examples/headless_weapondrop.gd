@@ -1,4 +1,4 @@
-extends DotGameCheckSuite
+extends GSGameCheckSuite
 
 const Playlot := preload("../game/playlot.gd")
 const PlaylotArena := preload("../game/playlot_arena.gd")
@@ -47,7 +47,7 @@ class FakeBridge extends RefCounted:
 
 
 func _ready() -> void:
-	DotLog.set_level(DotLog.Level.ERROR)
+	GSLog.set_level(GSLog.Level.ERROR)
 	_run.call_deferred()
 
 
@@ -100,10 +100,10 @@ func _test_wire() -> void:
 	_check(_client.weapon_layer != null and not _client.weapon_layer.drops.is_authority,
 		"the client game builds a mirror")
 	var pose := Transform3D(Basis(Quaternion(Vector3.UP, 0.7)), Vector3(12.5, 3.0, -40.0))
-	var settled := PlaylotWeaponNet.read_settled(DotNetReader.new(PlaylotWeaponNet.write_settled(9, pose)))
+	var settled := PlaylotWeaponNet.read_settled(GSNetReader.new(PlaylotWeaponNet.write_settled(9, pose)))
 	_check(bool(settled["ok"]) and int(settled["id"]) == 9 and (settled["at"] as Transform3D).origin.distance_to(pose.origin) < 0.05,
 		"a settled event round-trips")
-	_check(not _client_net.apply(PlaylotEvents.Kind.CHAT, DotNetReader.new(PackedByteArray()), _client.weapon_layer),
+	_check(not _client_net.apply(PlaylotEvents.Kind.CHAT, GSNetReader.new(PackedByteArray()), _client.weapon_layer),
 		"an event that is not a weapon's is left to the bridge")
 	_completed += 1
 
@@ -160,7 +160,7 @@ func _test_death_and_clearing() -> void:
 	var before = layer.drops.count()
 	for step in range(_server.tick_rate * 5):
 		_arena.tick(step, 1.0 / float(_server.tick_rate))
-	var _hit = _arena.hurt(&"u2", &"u1", 5000.0, 5.0, DotHitGroup.CHEST, true)
+	var _hit = _arena.hurt(&"u2", &"u1", 5000.0, 5.0, GSHitGroup.CHEST, true)
 	_check(layer.drops.count() == before + 1, "a kill leaves the dead player's gun lying", "%d vs %d armed=%s" % [layer.drops.count(), before, str(_server.players[&"u1"].zee_rig)])
 
 	layer.rules.on_death = false
@@ -176,7 +176,7 @@ func _test_death_and_clearing() -> void:
 
 	var _id = layer.throw_for(&"u2")
 	_check(layer.drops.count() == 1, "a gun lies again")
-	_server.maps.changed.emit(DotMapDef.new(), null)
+	_server.maps.changed.emit(GSMapDef.new(), null)
 	_check(layer.drops.count() == 0, "a map change clears the floor")
 
 	layer.rules.lifetime = 2.0
@@ -229,7 +229,7 @@ func _test_replication() -> void:
 	_bridge.wire = []
 	var late := _client_net
 	for entry in joined:
-		var _ok := late.apply(entry[1], DotNetReader.new(entry[2]), _client.weapon_layer)
+		var _ok := late.apply(entry[1], GSNetReader.new(entry[2]), _client.weapon_layer)
 	_check(mirror.count() == layer.drops.count(), "and the floor matches")
 
 	layer.clear()
@@ -244,5 +244,5 @@ func _kinds(kind: int) -> int:
 
 func _pump() -> void:
 	for item in _bridge.wire:
-		var _ok := _client_net.apply(item[1], DotNetReader.new(item[2]), _client.weapon_layer)
+		var _ok := _client_net.apply(item[1], GSNetReader.new(item[2]), _client.weapon_layer)
 	_bridge.wire.clear()

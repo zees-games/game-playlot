@@ -1,4 +1,4 @@
-extends DotGameServices
+extends GSGameServices
 
 const Playlot := preload("playlot.gd")
 const PlaylotNetBridge := preload("net/playlot_net_bridge.gd")
@@ -15,7 +15,7 @@ const PlaylotPlayer := preload("playlot_player.gd")
 ## a hand should be heard, and somebody in the corner reading should be able to stop
 ## reading the shouting.
 ##
-## [b]The sequence is [DotGameServices]'s.[/b] Moderation first, because it publishes the
+## [b]The sequence is [GSGameServices]'s.[/b] Moderation first, because it publishes the
 ## mute source both routers look up when they start; then chat, the website relay, voice.
 ## This was 557 lines of its own until 2026-09-27; what is left is what is this game's:
 ##
@@ -25,22 +25,22 @@ const PlaylotPlayer := preload("playlot_player.gd")
 ##   sent a line once it has said it can receive ([method _chat_peers]), a line is
 ##   attributed to the bridge's player id ([method _key_of]), and a punishment falls back
 ##   to a `local:` subject when there is no session — which is what lets `headless_net`
-##   run the real sequence with no [DotServer] at all;
+##   run the real sequence with no [GSServer] at all;
 ## - the one meta field this wire carries, `x.p`, stamped on every line
 ##   ([method _send_chat]);
 ## - [b]the backlog is the module's[/b] ([method _peer_can_receive] answers false): it is
 ##   sent from `PlaylotModule._welcome` once the peer is ready, never at seating;
-## - [b]the live tools are the module's too[/b] ([member DotGameServices.mod_tools_enabled]
+## - [b]the live tools are the module's too[/b] ([member GSGameServices.mod_tools_enabled]
 ##   is off): `PlaylotModTools` needs the arena's health, which is built after this,
 ##   and the module clears their return history on every map change. A second set built
 ##   here would bind the same command names to the same console.
 ##
-## [b]dot-server's own chat is cancelled, not run beside this.[/b] [DotChatRouter] has the
+## [b]dot-server's own chat is cancelled, not run beside this.[/b] [GSChatRouter] has the
 ## rules now, and [PlaylotModule] cancels `player_chat` so there is exactly one path.
 ## Two would be two sets of rules to keep in step, and the one that skipped the filter
 ## would be the one that leaked admin chat.
 
-# No `const CHANNEL` and no `RELAY_CONFIG_PATH`: [DotGameServices] declares both, and
+# No `const CHANNEL` and no `RELAY_CONFIG_PATH`: [GSGameServices] declares both, and
 # GDScript refuses a redeclaration. The relay reads `user://chat_relay.json` as it did.
 
 const CHANNEL_ALL := &"all"
@@ -75,13 +75,13 @@ var punishments_path: String:
 
 ## Builds all four layers, in the base's order.
 ##
-## [b]Not a coroutine.[/b] [method DotModuleHost.load_module] calls `_module_load()` with a
+## [b]Not a coroutine.[/b] [method GSModuleHost.load_module] calls `_module_load()` with a
 ## bare call and reads `result.ok` on the next line, so a module whose load suspends
 ## returns null there and the host crashes on a module that was working.
-func setup(p_server: DotServer, p_game: Object, p_link: Object) -> DotResult:
+func setup(p_server: GSServer, p_game: Object, p_link: Object) -> GSResult:
 	if bridge == null or not (p_game is Playlot):
-		return DotResult.fail(
-			DotError.CODE_STATE, "The services need a bridge and a game."
+		return GSResult.fail(
+			GSError.CODE_STATE, "The services need a bridge and a game."
 		)
 
 	# The module's, not the base's. See the class note.
@@ -114,19 +114,19 @@ func _voice_config() -> Object:
 ## and reachable — the base sets `position_fn` — so a deployment that wants it changes one
 ## line.
 func _voice_default_channel() -> int:
-	return DotVoiceRouter.Channel.ALL
+	return GSVoiceRouter.Channel.ALL
 
 
 ## The channels, as a static a client builds its chat box from without building this.
 ##
-## [b]Callers name the element type[/b] (`for channel: DotChatChannel in …`) rather than
+## [b]Callers name the element type[/b] (`for channel: GSChatChannel in …`) rather than
 ## inferring it: a script whose base class lives in the HOST build cannot hand its return
 ## type to a script in a mounted pack — mg-buses-from-hell measured that as a client scene
 ## that would not load on a real server.
-static func chat_channels() -> Array[DotChatChannel]:
-	var out: Array[DotChatChannel] = []
+static func chat_channels() -> Array[GSChatChannel]:
+	var out: Array[GSChatChannel] = []
 
-	var everyone := DotChatChannel.make(CHANNEL_ALL, "All", DotChatChannel.Scope.EVERYONE)
+	var everyone := GSChatChannel.make(CHANNEL_ALL, "All", GSChatChannel.Scope.EVERYONE)
 	everyone.colour = Color(0.93, 0.94, 0.96)
 	# A sandbox is a place people arrive at mid-conversation more than any other kind of
 	# server, because there is no round to wait for.
@@ -134,7 +134,7 @@ static func chat_channels() -> Array[DotChatChannel]:
 	everyone.history_limit = 300
 	out.append(everyone)
 
-	var near := DotChatChannel.make(CHANNEL_NEAR, "Near", DotChatChannel.Scope.RADIUS)
+	var near := GSChatChannel.make(CHANNEL_NEAR, "Near", GSChatChannel.Scope.RADIUS)
 	near.prefix = "[near]"
 	near.colour = Color(0.68, 0.83, 0.62)
 	near.radius = NEAR_RANGE
@@ -145,7 +145,7 @@ static func chat_channels() -> Array[DotChatChannel]:
 	near.history_limit = 150
 	out.append(near)
 
-	var admin := DotChatChannel.make(CHANNEL_ADMIN, "Admin", DotChatChannel.Scope.EVERYONE)
+	var admin := GSChatChannel.make(CHANNEL_ADMIN, "Admin", GSChatChannel.Scope.EVERYONE)
 	admin.prefix = "[ADMIN]"
 	admin.colour = Color(0.98, 0.72, 0.35)
 	admin.admin_only = true
@@ -155,8 +155,8 @@ static func chat_channels() -> Array[DotChatChannel]:
 	admin.backlog = 0
 	out.append(admin)
 
-	var whisper := DotChatChannel.make(
-		CHANNEL_WHISPER, "Whisper", DotChatChannel.Scope.DIRECT
+	var whisper := GSChatChannel.make(
+		CHANNEL_WHISPER, "Whisper", GSChatChannel.Scope.DIRECT
 	)
 	whisper.prefix = "[w]"
 	whisper.colour = Color(0.78, 0.71, 0.93)
@@ -171,8 +171,8 @@ static func chat_channels() -> Array[DotChatChannel]:
 ## Longer and chattier than a shooter's, because a sandbox is a place people talk in while
 ## they build — and `!` and `/` are both command prefixes, because this game's console
 ## surface is the largest in the family and half of it is meant to be reachable from chat.
-static func chat_rules() -> DotChatRules:
-	var rules := DotChatRules.new()
+static func chat_rules() -> GSChatRules:
+	var rules := GSChatRules.new()
 	rules.max_length = 200
 	rules.refuse_over_length = false
 	rules.allow_newlines = false
@@ -195,11 +195,11 @@ static func chat_rules() -> DotChatRules:
 
 ## The voice format, which both ends must agree on exactly.
 ##
-## Static, and read by the client too: [method DotVoiceConfig.format_fingerprint] exists
+## Static, and read by the client too: [method GSVoiceConfig.format_fingerprint] exists
 ## because a sample rate or a frame length that differs between two peers is a stream of
 ## packets the router refuses for being the wrong length, counted and said to nobody.
-static func voice_config() -> DotVoiceConfig:
-	var config := DotVoiceConfig.new()
+static func voice_config() -> GSVoiceConfig:
+	var config := GSVoiceConfig.new()
 	config.sample_rate = 16000
 	config.frame_ms = 20.0
 	config.codec_id = &"adpcm"
@@ -225,16 +225,16 @@ func _subject_for_peer(peer_id: int) -> String:
 	var session := _session_for(peer_id)
 
 	if session != null:
-		return DotPunishmentSubject.for_uid(session.uid())
+		return GSPunishmentSubject.for_uid(session.uid())
 
 	var player_id := bridge.player_for_peer(peer_id) if bridge != null else 0
-	return DotPunishmentSubject.for_uid("local:%d" % player_id) if player_id != 0 else ""
+	return GSPunishmentSubject.for_uid("local:%d" % player_id) if player_id != 0 else ""
 
 
 ## The key a chat line is attributed to: the bridge's player id, as a string.
 ##
 ## The player id IS the session's userid on a server (the module seats people with it), so
-## this is the base's answer there — and it is also an answer with no [DotServer], which
+## this is the base's answer there — and it is also an answer with no [GSServer], which
 ## the base's is not. [b]Not the account uid[/b]: two guests behind one device id share one.
 func _key_of(peer_id: int) -> String:
 	var session_id := bridge.player_for_peer(peer_id) if bridge != null else 0

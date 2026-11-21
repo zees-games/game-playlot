@@ -1,4 +1,4 @@
-extends DotGameVisualQaCapture
+extends GSGameVisualQaCapture
 
 ## Playlot's visual QA capture for the people (dot-game docs/visual-qa.md): one item per site skin
 ## (`person_a` .. `person_r`, the kit's eighteen, face, top and legs all that skin), each idling,
@@ -19,7 +19,7 @@ const CLIPS := {
 	"jump": [7.0, {"on_floor": false, "vertical": 3.0}],
 }
 
-var _fig: DotHumanoidFigure = null
+var _fig: GSHumanoidFigure = null
 var _item := ""
 
 
@@ -34,22 +34,22 @@ func _clips(_item_id: String) -> PackedStringArray:
 	return PackedStringArray(CLIPS.keys())
 
 
-func _stage(item: String, clip: String) -> DotResult:
+func _stage(item: String, clip: String) -> GSResult:
 	if _item != item:
 		if _fig != null:
 			_fig.queue_free()
 		var skin := PlaylotAvatars.LETTERS.find(item.trim_prefix("person_"))
 		if skin < 0:
-			return DotResult.fail(DotError.CODE_INVALID, "no skin for %s" % item)
+			return GSResult.fail(GSError.CODE_INVALID, "no skin for %s" % item)
 		var person := PlaylotFigure.build(PERSON_HEIGHT, PackedInt32Array([skin, skin, skin]), item)
 		_fig = PlaylotFigure.person_of(person)
 		if _fig == null:
-			return DotResult.fail(DotError.CODE_INVALID, "the people's art did not load")
+			return GSResult.fail(GSError.CODE_INVALID, "the people's art did not load")
 		root.add_child(_fig)
 		_item = item
 	_fig.position = Vector3(0.0, 0.0, -CIRCLE_RADIUS)
 	_fig.rotation = Vector3.ZERO
-	return DotResult.success(clip)
+	return GSResult.success(clip)
 
 
 func _subject(_item_id: String) -> Node3D:

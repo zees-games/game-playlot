@@ -11,12 +11,12 @@ extends RefCounted
 ##
 ## Everything goes through the capture's [code]key[/code], [code]turn[/code] and
 ## [code]click[/code], which are input events: the client's own bindings and its
-## [DotFpsSampler] read them, exactly as they read a player. The one exception is choosing
+## [GSFpsSampler] read them, exactly as they read a player. The one exception is choosing
 ## what E spawns: that is the Q menu's card, and this calls the handler the card's signal
 ## calls ([code]_on_prop_chosen[/code]) rather than clicking a card it would have to find.
 
 var _client: Node = null
-var _steps: DotAudioFootsteps = null
+var _steps: GSAudioFootsteps = null
 var _last := Vector3.INF
 var _check_ms := 0
 var _walked := 0.0
@@ -41,7 +41,7 @@ func drive(capture: SceneTree, ms: int) -> bool:
 			return false
 
 	var player: Node3D = _client.get("player")
-	var sampler: DotFpsSampler = (
+	var sampler: GSFpsSampler = (
 		_client.call(&"active_sampler") if _client.has_method(&"active_sampler") else _client.get("_sampler")
 	)
 	if player == null or sampler == null:
@@ -122,7 +122,7 @@ func drive(capture: SceneTree, ms: int) -> bool:
 	return true
 
 
-func _look_level(capture: SceneTree, sampler: DotFpsSampler, pitch: float) -> void:
+func _look_level(capture: SceneTree, sampler: GSFpsSampler, pitch: float) -> void:
 	var gap := pitch - sampler.pitch
 	if absf(gap) < 2.0:
 		return
@@ -162,8 +162,8 @@ func _find(n: Node) -> Node:
 	return null
 
 
-func _find_steps(n: Node) -> DotAudioFootsteps:
-	if n is DotAudioFootsteps:
+func _find_steps(n: Node) -> GSAudioFootsteps:
+	if n is GSAudioFootsteps:
 		return n
 	for child in n.get_children():
 		var hit := _find_steps(child)

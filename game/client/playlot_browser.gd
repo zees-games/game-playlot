@@ -1,4 +1,4 @@
-extends DotScreen
+extends GSScreen
 
 const Playlot := preload("../playlot.gd")
 const PlaylotUserFiles := preload("../playlot_user_files.gd")
@@ -18,7 +18,7 @@ const PlaylotUserFiles := preload("../playlot_user_files.gd")
 ##
 ## [b]Three sources, and only one needs a website.[/b] The servers this person has visited,
 ## whatever they type, and — when a site is configured — the site's listing of this game's
-## servers ([DotBrowserSourceBackbone], website-city's `/api/content/server/list`). The
+## servers ([GSBrowserSourceBackbone], website-city's `/api/content/server/list`). The
 ## listing is off unless `--browser-backbone-url` / `GS_BROWSER_BACKBONE_URL` names a site:
 ## a LAN game, a test or a fork must not reach out to a website the moment the list opens.
 ## It lists addresses only; every row is still asked what it is, like any other.
@@ -50,18 +50,18 @@ const REFRESH_INTERVAL := 8.0
 signal joined(address: String)
 
 
-var browser: DotBrowser = null
+var browser: GSBrowser = null
 
-var _table: DotTableView = null
+var _table: GSTableView = null
 var _status: Label = null
 var _entry: LineEdit = null
 var _mode: OptionButton = null
-var _rows: Array[DotBrowserEntry] = []
+var _rows: Array[GSBrowserEntry] = []
 var _selected: int = -1
 var _since_refresh: float = 0.0
 
 
-## Which screen this is on a [DotScreenStack].
+## Which screen this is on a [GSScreenStack].
 func _screen_id() -> StringName:
 	return &"servers"
 
@@ -71,7 +71,7 @@ func _ready() -> void:
 	# the mouse mode from one place — which is dot-ui's whole claim and the reason this
 	# game does not put the cursor back by hand anywhere.
 	blocks_input = true
-	mouse_mode = DotScreen.Mouse.VISIBLE
+	mouse_mode = GSScreen.Mouse.VISIBLE
 	closable = true
 
 	# `set_anchors_and_offsets_preset`, not `set_anchors_preset`. The anchors describe how
@@ -96,7 +96,7 @@ func _build() -> void:
 	title.add_theme_font_size_override("font_size", 24)
 	box.add_child(title)
 
-	_table = DotTableView.new()
+	_table = GSTableView.new()
 	_table.name = "Table"
 	_table.show_header = true
 	_table.max_rows = 64
@@ -163,7 +163,7 @@ func _build() -> void:
 
 
 func _start() -> void:
-	browser = DotBrowser.new()
+	browser = GSBrowser.new()
 	browser.name = "Browser"
 	browser.concurrency = 6
 	browser.timeout_ms = 2000
@@ -181,7 +181,7 @@ func _start() -> void:
 	browser.load_favourites()
 	_add_site_listing()
 
-	browser.entry_updated.connect(func(_entry: DotBrowserEntry) -> void: _redraw())
+	browser.entry_updated.connect(func(_entry: GSBrowserEntry) -> void: _redraw())
 	browser.refresh_finished.connect(func(online: int, total: int) -> void:
 		_status.text = "%d of %d answering." % [online, total]
 		_redraw()
@@ -199,13 +199,13 @@ func _start() -> void:
 func _add_site_listing() -> void:
 	var made := site_listing()
 	if not made.ok:
-		DotLog.warn(CHANNEL, "the server listing is misconfigured and was left out", {
+		GSLog.warn(CHANNEL, "the server listing is misconfigured and was left out", {
 			"error": str(made.error)
 		})
 		return
 
 	if made.value != null:
-		browser.add_source(made.value as DotBrowserSourceBackbone)
+		browser.add_source(made.value as GSBrowserSourceBackbone)
 
 
 ## The site a deploy bakes in for native builds. Empty means a native client lists no site
@@ -222,17 +222,17 @@ static var default_backbone_url: String = ""
 ## answers the listing and same-origin sidesteps CORS; [code]?backbone=[/code] overrides it
 ## for a client embedded somewhere else. Off the web it is [member default_backbone_url].
 ## [param probe] stands in for the page in a suite: [code]web[/code], [code]origin[/code],
-## [code]query[/code]. The capability is asked of [DotPlatform], never the OS name.
+## [code]query[/code]. The capability is asked of [GSPlatform], never the OS name.
 static func resolve_default_site(probe: Dictionary = {}) -> String:
-	var web: bool = probe.get("web", DotPlatform.is_web())
+	var web: bool = probe.get("web", GSPlatform.is_web())
 	if not web:
 		return default_backbone_url
 
-	var query: String = probe.get("query", "") if probe.has("query") else DotWeb.query_param("backbone")
+	var query: String = probe.get("query", "") if probe.has("query") else GSWeb.query_param("backbone")
 	if query.strip_edges() != "":
 		return query.strip_edges()
 
-	var origin: String = probe.get("origin", "") if probe.has("origin") else DotWeb.origin()
+	var origin: String = probe.get("origin", "") if probe.has("origin") else GSWeb.origin()
 	# A page opened from a file or an opaque origin reports "null"; that is no site.
 	return origin if origin.begins_with("http") else default_backbone_url
 
@@ -241,17 +241,17 @@ static func resolve_default_site(probe: Dictionary = {}) -> String:
 ## site is configured. Order: [code]--browser-backbone-url[/code] > [code]GS_BROWSER_BACKBONE_URL[/code]
 ## > [method resolve_default_site] (web: [code]?backbone=[/code] > page origin; native: the
 ## exported default). Static so a suite can ask without building the window.
-static func site_listing(probe: Dictionary = {}) -> DotResult:
-	var defaults := DotBrowserBackboneConfig.new()
+static func site_listing(probe: Dictionary = {}) -> GSResult:
+	var defaults := GSBrowserBackboneConfig.new()
 	defaults.app = SITE_APP
 	defaults.backbone_url = resolve_default_site(probe)
 
-	var made := DotBrowserSourceBackbone.from_config(defaults)
+	var made := GSBrowserSourceBackbone.from_config(defaults)
 	if not made.ok:
 		return made
 
-	var source: DotBrowserSourceBackbone = made.value
-	return DotResult.success(source if source.is_available() else null)
+	var source: GSBrowserSourceBackbone = made.value
+	return GSResult.success(source if source.is_available() else null)
 
 
 func _process(delta: float) -> void:
@@ -266,13 +266,13 @@ func _process(delta: float) -> void:
 
 
 func add_address(text: String) -> bool:
-	var parsed := DotBrowserTarget.parse(text.strip_edges(), DEFAULT_PORT)
+	var parsed := GSBrowserTarget.parse(text.strip_edges(), DEFAULT_PORT)
 
 	if not parsed.ok:
 		_status.text = "That is not an address: %s" % parsed.error.message
 		return false
 
-	browser.add_target(parsed.value as DotBrowserTarget)
+	browser.add_target(parsed.value as GSBrowserTarget)
 	browser.refresh()
 	return true
 
@@ -282,7 +282,7 @@ func _apply_filter() -> void:
 	var selected := _mode.get_selected_id()
 	var wanted: Variant = _mode.get_item_metadata(_mode.get_item_index(selected))
 
-	# [b]On the model, not in `_redraw`.[/b] `DotBrowserFilter` already knows how to match
+	# [b]On the model, not in `_redraw`.[/b] `GSBrowserFilter` already knows how to match
 	# a game id and how to sort what is left; a screen that filtered its own rows would be
 	# a second filter that disagrees with the one favourites are pinned by.
 	browser.filter.map = str(wanted) if wanted != null else ""

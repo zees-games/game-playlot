@@ -44,22 +44,22 @@ var directory: String = "user://builds"
 
 ## Everything [param owner_id] has in the world, relative to [param origin] and [param yaw]
 ## (degrees, the way they face). Fails when they own nothing or more than [member max_props].
-func capture(game: Node, owner_id: StringName, origin: Vector3, yaw: float) -> DotResult:
-	var spawner: DotPropSpawner = game.get("props")
-	var mine := spawner.props_of(owner_id).filter(func(p: DotPropInstance) -> bool:
+func capture(game: Node, owner_id: StringName, origin: Vector3, yaw: float) -> GSResult:
+	var spawner: GSPropSpawner = game.get("props")
+	var mine := spawner.props_of(owner_id).filter(func(p: GSPropInstance) -> bool:
 		return p.is_alive() and p.def != null and p.node is Node3D and not bool(p.def.meta.get("hidden", false)))
 
 	if mine.is_empty():
-		return DotResult.fail(DotError.CODE_STATE, "You have nothing in the world to save.")
+		return GSResult.fail(GSError.CODE_STATE, "You have nothing in the world to save.")
 	if max_props > 0 and mine.size() > max_props:
-		return DotResult.fail(DotError.CODE_INVALID, "A build can hold %d props; you have %d." % [max_props, mine.size()])
+		return GSResult.fail(GSError.CODE_INVALID, "A build can hold %d props; you have %d." % [max_props, mine.size()])
 
 	var frame := Transform3D(Basis(Vector3.UP, deg_to_rad(yaw)), origin)
 	var inverse := frame.affine_inverse()
 	var index_of := {}
 	var props: Array = []
 
-	for prop: DotPropInstance in mine:
+	for prop: GSPropInstance in mine:
 		index_of[prop.instance_id] = props.size()
 		var local := inverse * (prop.node as Node3D).global_transform
 		var q := local.basis.get_rotation_quaternion()
@@ -98,20 +98,20 @@ func capture(game: Node, owner_id: StringName, origin: Vector3, yaw: float) -> D
 			links.append(link)
 
 	var wires: Array = []
-	var io: DotPropIO = game.get("io")
+	var io: GSPropIO = game.get("io")
 	if io != null:
-		for prop: DotPropInstance in mine:
+		for prop: GSPropInstance in mine:
 			for w: Dictionary in io.links_from(prop.instance_id):
 				if index_of.has(int(w["to"])):
 					wires.append({"from": index_of[prop.instance_id], "output": String(w["output"]),
 						"to": index_of[int(w["to"])], "input": String(w["input"])})
 
-	return DotResult.success({
+	return GSResult.success({
 		"format": FORMAT, "kind": "build", "props": props, "links": links, "wires": wires,
 	})
 
 
-static func _index_of_body(spawner: DotPropSpawner, index_of: Dictionary, body: Node) -> Variant:
+static func _index_of_body(spawner: GSPropSpawner, index_of: Dictionary, body: Node) -> Variant:
 	if body == null:
 		return null
 	var prop := spawner.prop_for_node(body)
@@ -130,39 +130,39 @@ static func _vec(a: Variant) -> Vector3:
 
 ## Whether [param doc] is a build this server can put down: the format, the shape, and every
 ## prop id in [param catalogue]. Unknown ids are named, all of them, in the refusal.
-static func validate(doc: Variant, catalogue: DotPropCatalogue) -> DotResult:
+static func validate(doc: Variant, catalogue: GSPropCatalogue) -> GSResult:
 	if not (doc is Dictionary) or str((doc as Dictionary).get("kind", "")) != "build":
-		return DotResult.fail(DotError.CODE_PARSE, "That is not a saved build.")
+		return GSResult.fail(GSError.CODE_PARSE, "That is not a saved build.")
 	if int(doc.get("format", 0)) != FORMAT:
-		return DotResult.fail(DotError.CODE_VERSION, "That build was saved in format %s; this server reads %d." % [doc.get("format"), FORMAT])
+		return GSResult.fail(GSError.CODE_VERSION, "That build was saved in format %s; this server reads %d." % [doc.get("format"), FORMAT])
 
 	var props: Variant = doc.get("props")
 	if not (props is Array) or (props as Array).is_empty() or (max_props > 0 and (props as Array).size() > max_props):
-		return DotResult.fail(DotError.CODE_INVALID, "A build holds 1 to %d props." % max_props)
+		return GSResult.fail(GSError.CODE_INVALID, "A build holds 1 to %d props." % max_props)
 
 	var unknown := PackedStringArray()
 	for entry: Variant in props:
 		if not (entry is Dictionary):
-			return DotResult.fail(DotError.CODE_INVALID, "A prop in that build is not a prop.")
+			return GSResult.fail(GSError.CODE_INVALID, "A prop in that build is not a prop.")
 		var id := str((entry as Dictionary).get("id", ""))
 		if catalogue.get_prop(StringName(id)) == null and not unknown.has(id):
 			unknown.append(id)
 
 	if not unknown.is_empty():
-		return DotResult.fail(DotError.CODE_INVALID, "This build uses %s, which this server does not have." % ", ".join(
+		return GSResult.fail(GSError.CODE_INVALID, "This build uses %s, which this server does not have." % ", ".join(
 			Array(unknown).map(func(id: String) -> String: return "\"%s\"" % id)))
 
 	var count := (props as Array).size()
 	for list_key in ["links", "wires"]:
 		for item: Variant in doc.get(list_key, []):
 			if not (item is Dictionary):
-				return DotResult.fail(DotError.CODE_INVALID, "A %s entry in that build is malformed." % list_key)
+				return GSResult.fail(GSError.CODE_INVALID, "A %s entry in that build is malformed." % list_key)
 			for end in (["a", "b"] if list_key == "links" else ["from", "to"]):
 				var i := int((item as Dictionary).get(end, -2))
 				if i < (-1 if end == "b" else 0) or i >= count:
-					return DotResult.fail(DotError.CODE_INVALID, "A %s entry in that build names a prop it does not have." % list_key)
+					return GSResult.fail(GSError.CODE_INVALID, "A %s entry in that build names a prop it does not have." % list_key)
 
-	return DotResult.success(doc)
+	return GSResult.success(doc)
 
 
 # --- Putting it down -------------------------------------------------------------
@@ -170,8 +170,8 @@ static func validate(doc: Variant, catalogue: DotPropCatalogue) -> DotResult:
 ## Puts [param doc] down for [param owner_id] at [param origin], turned to [param yaw]. Whole
 ## or not at all: their limits are asked first, and a refusal mid-way takes back what this put
 ## down. Returns how many props it placed.
-func place(game: Node, owner_id: StringName, doc: Dictionary, origin: Vector3, yaw: float) -> DotResult:
-	var spawner: DotPropSpawner = game.get("props")
+func place(game: Node, owner_id: StringName, doc: Dictionary, origin: Vector3, yaw: float) -> GSResult:
+	var spawner: GSPropSpawner = game.get("props")
 	var checked := validate(doc, spawner.catalogue)
 	if not checked.ok:
 		return checked
@@ -181,7 +181,7 @@ func place(game: Node, owner_id: StringName, doc: Dictionary, origin: Vector3, y
 		return room
 
 	var frame := Transform3D(Basis(Vector3.UP, deg_to_rad(yaw)), origin)
-	var placed: Array[DotPropInstance] = []
+	var placed: Array[GSPropInstance] = []
 
 	for entry: Dictionary in doc["props"]:
 		var local := Transform3D(Basis(_quat(entry.get("turn"))), _vec(entry.get("at")))
@@ -190,7 +190,7 @@ func place(game: Node, owner_id: StringName, doc: Dictionary, origin: Vector3, y
 		if prop == null:
 			for done in placed:
 				var _gone := spawner.remove(done.instance_id)
-			return DotResult.fail(DotError.CODE_FORBIDDEN, "The build could not be put down: %s was refused." % str(entry["id"]))
+			return GSResult.fail(GSError.CODE_FORBIDDEN, "The build could not be put down: %s was refused." % str(entry["id"]))
 		placed.append(prop)
 		(prop.node as Node3D).global_transform = world
 		if prop.node.has_method("set_size_scale") and entry.has("scale"):
@@ -205,7 +205,7 @@ func place(game: Node, owner_id: StringName, doc: Dictionary, origin: Vector3, y
 				clampf(float(physics.get("friction", 1.0)), 0.0, 2.0),
 				clampf(float(physics.get("bounce", 0.0)), 0.0, 1.0))
 		if bool(entry.get("frozen", false)) or prop.frozen:
-			DotPhysGun.set_frozen(prop, true)
+			GSPhysGun.set_frozen(prop, true)
 			if game.has_method("reclassify_prop"):
 				game.call("reclassify_prop", prop.node, true, false)
 
@@ -219,22 +219,22 @@ func place(game: Node, owner_id: StringName, doc: Dictionary, origin: Vector3, y
 			var b_at := (b.to_global(_vec(link.get("b_at"))) if b != null else frame * _vec(link.get("b_at")))
 			match str(link.get("kind", "")):
 				"weld":
-					var _w: DotResult = constraints.call("weld", owner_id, a, b, a_at)
+					var _w: GSResult = constraints.call("weld", owner_id, a, b, a_at)
 				"nocollide":
 					if b != null:
-						var _n: DotResult = constraints.call("nocollide", owner_id, a, b)
+						var _n: GSResult = constraints.call("nocollide", owner_id, a, b)
 				"rope":
 					var slack := maxf(float(link.get("length", 0.0)) - a_at.distance_to(b_at), 0.0)
-					var _r: DotResult = constraints.call("rope", owner_id, a, a_at, b, b_at, slack)
+					var _r: GSResult = constraints.call("rope", owner_id, a, a_at, b, b_at, slack)
 
-	var io: DotPropIO = game.get("io")
+	var io: GSPropIO = game.get("io")
 	if io != null:
 		for w: Dictionary in doc.get("wires", []):
 			var _l := io.link(placed[int(w["from"])].instance_id, StringName(str(w["output"])),
 				placed[int(w["to"])].instance_id, StringName(str(w["input"])))
 
-	DotLog.info(CHANNEL, "a build was put down", {"player": String(owner_id), "props": placed.size()})
-	return DotResult.success(placed.size())
+	GSLog.info(CHANNEL, "a build was put down", {"player": String(owner_id), "props": placed.size()})
+	return GSResult.success(placed.size())
 
 
 static func _quat(a: Variant) -> Quaternion:
@@ -246,24 +246,24 @@ static func _quat(a: Variant) -> Quaternion:
 
 ## Whether [param owner_id] has room for every prop in [param doc], kind by kind, by the same
 ## limits a spawn asks. Asked before anything appears.
-static func _room_for(spawner: DotPropSpawner, owner_id: StringName, doc: Dictionary) -> DotResult:
+static func _room_for(spawner: GSPropSpawner, owner_id: StringName, doc: Dictionary) -> GSResult:
 	var wanted := {}
 	for entry: Dictionary in doc["props"]:
 		var def := spawner.catalogue.get_prop(StringName(str(entry["id"])))
-		var group := def.limit_group if def.limit_group != &"" else DotPropDef.GROUP_PROPS
+		var group := def.limit_group if def.limit_group != &"" else GSPropDef.GROUP_PROPS
 		wanted[group] = int(wanted.get(group, 0)) + 1
 
 	for group: StringName in wanted:
 		var cap := spawner.limit_for(owner_id, group)
 		if cap > 0 and spawner.group_count(owner_id, group) + int(wanted[group]) > cap:
-			return DotResult.fail(DotError.CODE_FORBIDDEN, "That build needs %d %s and your limit leaves room for %d." % [
+			return GSResult.fail(GSError.CODE_FORBIDDEN, "That build needs %d %s and your limit leaves room for %d." % [
 				int(wanted[group]), group, maxi(cap - spawner.group_count(owner_id, group), 0)])
-	return DotResult.success(null)
+	return GSResult.success(null)
 
 
 # --- Storage ---------------------------------------------------------------------------
 
-func save(key: String, name: String, doc: Dictionary) -> DotResult:
+func save(key: String, name: String, doc: Dictionary) -> GSResult:
 	var checked := _checked_name(name)
 	if not checked.ok:
 		return checked
@@ -271,24 +271,24 @@ func save(key: String, name: String, doc: Dictionary) -> DotResult:
 	DirAccess.make_dir_recursive_absolute(folder)
 	var file := FileAccess.open(folder.path_join(name + ".json"), FileAccess.WRITE)
 	if file == null:
-		return DotResult.fail(DotError.CODE_IO, "The build could not be written.", str(FileAccess.get_open_error()))
+		return GSResult.fail(GSError.CODE_IO, "The build could not be written.", str(FileAccess.get_open_error()))
 	file.store_string(JSON.stringify(doc, "\t"))
 	file.close()
-	DotWeb.sync_filesystem()
-	return DotResult.success(name)
+	GSWeb.sync_filesystem()
+	return GSResult.success(name)
 
 
-func load_build(key: String, name: String) -> DotResult:
+func load_build(key: String, name: String) -> GSResult:
 	var checked := _checked_name(name)
 	if not checked.ok:
 		return checked
 	var path := directory.path_join(_safe_key(key)).path_join(name + ".json")
 	if not FileAccess.file_exists(path):
-		return DotResult.fail(DotError.CODE_INVALID, "You have no build called \"%s\"." % name)
+		return GSResult.fail(GSError.CODE_INVALID, "You have no build called \"%s\"." % name)
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
 	if not (parsed is Dictionary):
-		return DotResult.fail(DotError.CODE_PARSE, "The build \"%s\" is not readable." % name)
-	return DotResult.success(parsed)
+		return GSResult.fail(GSError.CODE_PARSE, "The build \"%s\" is not readable." % name)
+	return GSResult.success(parsed)
 
 
 func names(key: String) -> PackedStringArray:
@@ -353,23 +353,23 @@ static func is_custom_prop(doc: Dictionary) -> bool:
 	return true
 
 
-func delete(key: String, name: String) -> DotResult:
+func delete(key: String, name: String) -> GSResult:
 	var checked := _checked_name(name)
 	if not checked.ok:
 		return checked
 	var path := directory.path_join(_safe_key(key)).path_join(name + ".json")
 	if not FileAccess.file_exists(path):
-		return DotResult.fail(DotError.CODE_INVALID, "You have no build called \"%s\"." % name)
+		return GSResult.fail(GSError.CODE_INVALID, "You have no build called \"%s\"." % name)
 	DirAccess.remove_absolute(path)
-	DotWeb.sync_filesystem()
-	return DotResult.success(name)
+	GSWeb.sync_filesystem()
+	return GSResult.success(name)
 
 
-static func _checked_name(name: String) -> DotResult:
+static func _checked_name(name: String) -> GSResult:
 	var pattern := RegEx.create_from_string(NAME_PATTERN)
 	if pattern.search(name) == null:
-		return DotResult.fail(DotError.CODE_INVALID, "A build's name is up to 32 letters, digits, - and _.")
-	return DotResult.success(name)
+		return GSResult.fail(GSError.CODE_INVALID, "A build's name is up to 32 letters, digits, - and _.")
+	return GSResult.success(name)
 
 
 ## A key as a folder name: anything that is not a letter, digit, - or _ becomes _.

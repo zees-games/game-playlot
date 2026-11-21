@@ -17,16 +17,16 @@ func spawn_entries() -> Array:
 		{"category": "NPCs", "id": "test_guard", "name": "Test guard", "kind": "npc",
 			"spawn": "npc_soldier", "cfg_hint": {"count": 2}},
 		{"category": "Bots", "id": "test_bot", "name": "Test bot", "kind": "bot",
-			"spawn": func(c: Dictionary) -> DotResult:
+			"spawn": func(c: Dictionary) -> GSResult:
 				custom_calls.append(c)
-				return DotResult.success("ok")},
+				return GSResult.success("ok")},
 		{"category": "Props", "id": "scene_npc", "name": "Scene NPC", "kind": "npc",
 			"spawn": "res://examples/fixtures/spawn_pack/scene_npc.tscn"},
 		{"category": "NPCs", "id": "stat_npc", "name": "Stat NPC", "kind": "npc",
 			"spawn": {"health": 50, "speed": 3.0},
-			"spawn_fn": func(c: Dictionary) -> DotResult:
+			"spawn_fn": func(c: Dictionary) -> GSResult:
 				custom_calls.append(c)
-				return DotResult.success("ok")},
+				return GSResult.success("ok")},
 		{"category": "NPCs", "id": "stat_only", "name": "Stats only", "kind": "npc", "spawn": {"health": 5}},
 		{"id": "", "kind": "npc"},
 		{"id": "bad_spawn", "kind": "npc", "spawn": 12},

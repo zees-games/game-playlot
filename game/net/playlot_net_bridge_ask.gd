@@ -32,7 +32,7 @@ func _spawn_for(id: StringName, prop_id: StringName) -> void:
 		if game.props.spawn(def.id, id, at_bag) != null:
 			var taken := game.inventory.take(bag, def.id)
 			if not taken.ok:
-				DotLog.warn(CHANNEL, "a prop spawned from a bag that then refused to give it up", {
+				GSLog.warn(CHANNEL, "a prop spawned from a bag that then refused to give it up", {
 					"player": String(id), "prop": String(def.id), "why": taken.error.message,
 				})
 		return
@@ -62,10 +62,10 @@ func _spawn_for(id: StringName, prop_id: StringName) -> void:
 		# The question said yes and the purse said no — nothing runs between the two on
 		# this thread, so this is a charge_fn with no may_charge_fn beside it, or two that
 		# disagree. Taken back out rather than left standing for free.
-		game.props.remove(spawned.instance_id, DotPropSpawner.REASON_CLEANUP)
+		game.props.remove(spawned.instance_id, GSPropSpawner.REASON_CLEANUP)
 		_tell(peer_for_player(session_of(id)), PlaylotEvents.Kind.NOTICE,
 			PlaylotEvents.write_notice(session_of(id), paid.error.message))
-		DotLog.warn(CHANNEL, "a spawn was refused its charge after it had been placed", {
+		GSLog.warn(CHANNEL, "a spawn was refused its charge after it had been placed", {
 			"player": String(id), "prop": String(def.id), "why": paid.error.message,
 		})
 
@@ -131,7 +131,7 @@ func _set_tool_mode(session_id: int, mode: StringName, payload: String) -> void:
 
 	var toy: PlaylotWeapon = _toy_of.get(session_id)
 	if toy != null and toy.has_method("set_mode"):
-		var set: DotResult = toy.call("set_mode", mode, settings)
+		var set: GSResult = toy.call("set_mode", mode, settings)
 		if not set.ok:
 			_tell(peer_for_player(session_id), PlaylotEvents.Kind.NOTICE,
 				PlaylotEvents.write_notice(session_id, set.error.message))
@@ -155,7 +155,7 @@ func _on_weapon_picked_up(player_id: StringName, weapon_id: StringName) -> void:
 
 ## What a toy's button did: a prop it spawned is paid for, and a refusal with a reason is
 ## told to the player, who otherwise pressed a button and saw nothing.
-func _toy_result(session_id: int, id: StringName, toy: PlaylotWeapon, res: DotResult) -> void:
+func _toy_result(session_id: int, id: StringName, toy: PlaylotWeapon, res: GSResult) -> void:
 	if res == null:
 		return
 	if not res.ok:
@@ -168,12 +168,12 @@ func _toy_result(session_id: int, id: StringName, toy: PlaylotWeapon, res: DotRe
 		_tell_selection(session_id, res.value)
 		return
 	# The remover answers with a count, the launcher with what it spawned.
-	if not (res.value is DotPropInstance):
+	if not (res.value is GSPropInstance):
 		return
-	var spawned: DotPropInstance = res.value
+	var spawned: GSPropInstance = res.value
 	var paid := _charge(id, spawned.def.id if spawned.def != null else toy.armed)
 	if not paid.ok:
-		game.props.remove(spawned.instance_id, DotPropSpawner.REASON_CLEANUP)
+		game.props.remove(spawned.instance_id, GSPropSpawner.REASON_CLEANUP)
 		_tell(peer_for_player(session_id), PlaylotEvents.Kind.NOTICE,
 			PlaylotEvents.write_notice(session_id, paid.error.message))
 
@@ -183,7 +183,7 @@ func _on_flash_blinded(player_id: StringName, seconds: float, strength: float) -
 	_tell(peer_for_player(session_of(player_id)), PlaylotEvents.Kind.PROJECTILE, PlaylotEvents.write_blind(seconds, strength))
 
 
-## One chat line to one peer. Server side, and what [member DotChatRouter.send_fn] points at.
+## One chat line to one peer. Server side, and what [member GSChatRouter.send_fn] points at.
 ## Peer by peer, never a broadcast: the router has already worked out who may hear a line
 ## (everybody, a radius, a whisper) and a broadcast would throw that away.
 func send_chat(peer_id: int, wire: Dictionary) -> void:
@@ -193,7 +193,7 @@ func send_chat(peer_id: int, wire: Dictionary) -> void:
 ## Somebody's health changed, or they died. Server side.
 func broadcast_combat(
 	player_id: int, health: int, armour: int, attacker_id: int, died: bool,
-	death: DotPlayerDeath = null
+	death: GSPlayerDeath = null
 ) -> void:
 	_broadcast(
 		PlaylotEvents.Kind.COMBAT,
@@ -201,7 +201,7 @@ func broadcast_combat(
 	)
 
 
-## The match clock. Server side. Sent rather than derived, because a mirroring client's [DotMatch]
+## The match clock. Server side. Sent rather than derived, because a mirroring client's [GSMatch]
 ## never runs: `seconds_remaining()` would be computed from a tick nothing ever wrote, and the
 ## client showed `IDLE` for ever while the server played a round.
 func broadcast_match(
@@ -261,7 +261,7 @@ func publish_loadout(pairs: Array) -> void:
 
 
 ## Everybody who has said they can receive. Server side. The set chat and voice are addressed
-## against, not [method DotServer.sessions]: a session exists from the moment a socket connects,
+## against, not [method GSServer.sessions]: a session exists from the moment a socket connects,
 ## a ready peer has built its scene and can be sent to.
 func ready_peers() -> PackedInt32Array:
 	var out := PackedInt32Array()

@@ -1,10 +1,10 @@
-extends DotGamePerfBench
+extends GSGamePerfBench
 
 const PlaylotConfig := preload("../game/playlot_config.gd")
 const PlaylotData := preload("../maps/pg_data.gd")
 const PlaylotPresentation := preload("../game/playlot_presentation.gd")
 
-## The offline sandbox benchmark: dot-game's DotGamePerfBench (flags, recording, sidecar; see it) on the playlot client. Run it windowed with `tools/perf_bench.sh --box staging02` (gamedev, from a checkout).
+## The offline sandbox benchmark: dot-game's GSGamePerfBench (flags, recording, sidecar; see it) on the playlot client. Run it windowed with `tools/perf_bench.sh --box staging02` (gamedev, from a checkout).
 ## `--bots N` NPCs (wanderers, chasers, soldiers) and `--props N` props (crates, barrels, balls) dropped in a pile in front of the player, so the run has physics, NPC brains and draw work; `--map ID` another map first (default pg_flatgrass).
 
 const NPC_IDS: Array[StringName] = [&"npc_wanderer", &"npc_chaser", &"npc_soldier"]
@@ -29,7 +29,7 @@ func _setup_client(c: Node) -> void:
 	# --fetch-content 1: the client downloads a content (world-pack) map from the content origin, so a pack map can be measured.
 	c.set("fetch_content", str(args.get("fetch-content", "0")) == "1")
 	c.set("mouse_capture_override", true)
-	# --batch-props 1: the drawn world bakes its static props into per-cell batches (DotMapPropBatch) (the default); 0 keeps one node per prop.
+	# --batch-props 1: the drawn world bakes its static props into per-cell batches (GSMapPropBatch) (the default); 0 keeps one node per prop.
 	PlaylotData.batch_props = str(args.get("batch-props", "1")) == "1"
 
 
@@ -40,7 +40,7 @@ func _select(_game: Object) -> void:
 		say("no playlot or player")
 		return
 	if map != "" and map != "pg_flatgrass":
-		var changed: DotResult = pg.call("change_map", StringName(map))
+		var changed: GSResult = pg.call("change_map", StringName(map))
 		say("change_map %s: %s" % [map, "ok" if changed.ok else changed.error.message])
 		await wait(3.0)
 		player = client.get("player")

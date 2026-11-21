@@ -10,14 +10,14 @@ extends "playlot_prop.gd"
 ## definition — which is the shape [PlaylotProp] already has.
 ##
 ## [b]The wheels are built here and they have to exist before the chassis binds.[/b]
-## [DotVehicleWheeled] walks the body's direct children for [VehicleWheel3D] once, in
+## [GSVehicleWheeled] walks the body's direct children for [VehicleWheel3D] once, in
 ## `bind`, and caches them; a wheel added afterwards is a wheel nothing drives, steers or
 ## brakes. So [Playlot] configures the body and THEN adopts it — a car with four
 ## wheels that does not move, with every number in its tunables correct, is what the
 ## other order produces.
 ##
 ## [b]It extends [PlaylotProp], and that is the point of the whole design.[/b] A
-## vehicle here is a [DotPropInstance] first: it counts against a prop budget, it can be
+## vehicle here is a [GSPropInstance] first: it counts against a prop budget, it can be
 ## undone, it goes when its owner leaves, a physics gun can pick it up and a gravity gun
 ## can punt it across the map. A car you cannot punt is not a sandbox car.
 
@@ -29,7 +29,7 @@ const DEFAULT_WHEEL_BASE := 2.2
 ## The vehicle definition this body is driven by, set by [Playlot] on adoption. Null
 ## until then, and null for ever on a client — where a vehicle is a body being drawn
 ## where the server says it is and nothing more.
-var vehicle_def: DotVehicleDef = null
+var vehicle_def: GSVehicleDef = null
 
 var _wheels: Array[VehicleWheel3D] = []
 
@@ -38,7 +38,7 @@ var _wheels: Array[VehicleWheel3D] = []
 ##
 ## [param p_def] is the PROP definition; the vehicle definition is looked up from it,
 ## because the prop catalogue is what a spawn names and what the Q menu lists.
-func configure(p_def: DotPropDef) -> void:
+func configure(p_def: GSPropDef) -> void:
 	super.configure(p_def)
 
 	# Continuous collision detection is inherited from PlaylotProp and is wrong here:
@@ -63,9 +63,9 @@ func configure(p_def: DotPropDef) -> void:
 ## [b]Front-steer, rear-drive, and not all four of both.[/b] `set_engine_force` writes
 ## the same figure onto every traction wheel, so a four-wheel-drive body given the whole
 ## number accelerates twice as hard as a rear-wheel-drive one from identical tunables —
-## which would make [member DotVehicleTunables.engine_force] mean two different things
+## which would make [member GSVehicleTunables.engine_force] mean two different things
 ## depending on a scene nobody reading the catalogue can see.
-func _build_wheels(p_def: DotPropDef) -> void:
+func _build_wheels(p_def: GSPropDef) -> void:
 	var radius := float(p_def.meta.get("wheel_radius", DEFAULT_WHEEL_RADIUS))
 	var track := float(p_def.meta.get("wheel_track", DEFAULT_WHEEL_TRACK))
 	var base := float(p_def.meta.get("wheel_base", DEFAULT_WHEEL_BASE))
@@ -75,7 +75,7 @@ func _build_wheels(p_def: DotPropDef) -> void:
 	var half_base := base * 0.5
 
 	# -Z is forward everywhere in this family. dot-vehicle's own note records that
-	# Godot's engine force drives +Z and that DotVehicleWheeled inverts it once, so the
+	# Godot's engine force drives +Z and that GSVehicleWheeled inverts it once, so the
 	# wheels are laid out in OUR convention and the addon does the translation.
 	for row in [
 		["FrontLeft", Vector3(-half_track, height, -half_base), true, false],
@@ -89,7 +89,7 @@ func _build_wheels(p_def: DotPropDef) -> void:
 		wheel.use_as_steering = bool(row[2])
 		wheel.use_as_traction = bool(row[3])
 		wheel.wheel_radius = radius
-		# Left where the tunables will overwrite them. DotVehicleWheeled writes travel,
+		# Left where the tunables will overwrite them. GSVehicleWheeled writes travel,
 		# stiffness, damping and friction onto every wheel at bind time, which is the
 		# whole reason handling is data rather than a scene.
 		add_child(wheel)

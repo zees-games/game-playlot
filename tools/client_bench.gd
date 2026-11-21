@@ -1,10 +1,10 @@
-extends DotGameClientBench
+extends GSGameClientBench
 
 const PlaylotConfig := preload("../game/playlot_config.gd")
 const PlaylotPlatform := preload("../game/playlot_platform.gd")
 const PlaylotPresentation := preload("../game/playlot_presentation.gd")
 
-## Client prediction bench (dot-game's DotGameClientBench): see that class for the flags.
+## Client prediction bench (dot-game's GSGameClientBench): see that class for the flags.
 ## Playlot has no server bots, so `--bots` is ignored; `--play` supplies the movement.
 
 
@@ -17,17 +17,17 @@ func _prepare(label: String) -> Variant:
 	return PlaylotPresentation.use_scratch_settings(label)
 
 
-func _boot_server(_bots_wanted: int, data_dir: String) -> DotNetManager:
+func _boot_server(_bots_wanted: int, data_dir: String) -> GSNetManager:
 	var dir := ProjectSettings.globalize_path(data_dir)
 	var config := make_server_config(data_dir)
 	config.max_players = 8
-	var server := DotServer.new()
+	var server := GSServer.new()
 	server.name = "Server"
 	server.config = config
 	add_child(server)
 	for _i in 60:
 		await get_tree().process_frame
-		if server.state == DotServer.State.RUNNING:
+		if server.state == GSServer.State.RUNNING:
 			break
 	var pg_config := PlaylotConfig.new()
 	pg_config.records_directory = ""
@@ -43,10 +43,10 @@ func _boot_server(_bots_wanted: int, data_dir: String) -> DotNetManager:
 	platform.name = "Identity"
 	platform.directory = "%s/identity" % dir
 	add_child(platform)
-	var _identity: DotResult = await platform.setup()
-	var _p: DotResult = await server.modules.load_module("res://addons/dot_platform/dot_platform_module.gd")
+	var _identity: GSResult = await platform.setup()
+	var _p: GSResult = await server.modules.load_module("res://addons/dot_platform/dot_platform_module.gd")
 	(load("res://game/playlot_module.gd") as GDScript).set("punishments_path", "%s/punishments.json" % dir)
-	var loaded: DotResult = await server.modules.load_module("res://game/playlot_module.gd")
+	var loaded: GSResult = await server.modules.load_module("res://game/playlot_module.gd")
 	if not loaded.ok:
 		printerr("client_bench server: ", loaded.error)
 		return null

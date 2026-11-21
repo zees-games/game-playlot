@@ -1,4 +1,4 @@
-extends DotGameCheckSuite
+extends GSGameCheckSuite
 
 const PlaylotBoxBatch := preload("../game/playlot_box_batch.gd")
 const PgData := preload("../maps/pg_data.gd")
@@ -15,7 +15,7 @@ const SECTIONS := 1
 
 
 func _ready() -> void:
-	DotLog.set_level(DotLog.Level.ERROR)
+	GSLog.set_level(GSLog.Level.ERROR)
 	_run.call_deferred()
 
 

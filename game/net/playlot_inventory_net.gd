@@ -7,7 +7,7 @@ const PlaylotInventory := preload("../playlot_inventory.gd")
 ## is told yes or no. Both halves in one file, because each is exactly the other's inverse
 ## and a reader has to be able to hold both at once.
 ##
-## [b]Before this, no inventory in the family had ever crossed a wire.[/b] `DotInvManager`
+## [b]Before this, no inventory in the family had ever crossed a wire.[/b] `GSInvManager`
 ## has `send_fn`, `confirm` and `rollback`, and all three had only ever been called by the
 ## addon's own suite, in one process, with the "server" a second manager in the same scene.
 ##
@@ -19,7 +19,7 @@ const PlaylotInventory := preload("../playlot_inventory.gd")
 ## itself something and a USE is what spawning does, which is the server's to do.
 ##
 ## [b]Every op carries a sequence number, and the manager's own matching is not trusted to
-## tell two ops apart.[/b] `DotInvManager.confirm` and `rollback` find an op by comparing its
+## tell two ops apart.[/b] `GSInvManager.confirm` and `rollback` find an op by comparing its
 ## dictionary, and two ops can be the same dictionary — "drop one of #3", twice. The wire
 ## needs an identity the content does not have, and a sequence number is also what makes an
 ## answer CUMULATIVE: acks come back in order on a reliable channel, so an ack for #6 when #5
@@ -28,7 +28,7 @@ const PlaylotInventory := preload("../playlot_inventory.gd")
 ## the client's bag for ever, neither confirmed nor rolled back.
 ##
 ## [b]A refusal rewinds everything in flight, newest first, and replays what this client
-## still believes in.[/b] The rewind is this file's, not `DotInvManager.rollback`'s, and
+## still believes in.[/b] The rewind is this file's, not `GSInvManager.rollback`'s, and
 ## that is on purpose rather than a workaround. `rollback(op)` undoes one op and re-applies
 ## everything predicted after it — which is right for a refusal with nothing lost before it,
 ## and not for the other case an answer can carry: an answer to #6 while #4 and #5 wait says
@@ -71,14 +71,14 @@ const CHANNEL := "pg.net.inventory"
 const RESYNC_AFTER_MS := 3000
 
 ## Past this many ops in flight a refusal asks for the bag rather than rolling back.
-## `DotInvManager` keeps 64 snapshots, and a rollback that reaches past the oldest finds
+## `GSInvManager` keeps 64 snapshots, and a rollback that reaches past the oldest finds
 ## nothing and restores nothing, silently.
 const MAX_ROLLBACK := 48
 
 ## What a client may ask for. Everything else changes what somebody HAS, and that is the
 ## server's to decide.
 const CLIENT_KINDS: Array[int] = [
-	DotInvOp.Kind.MOVE, DotInvOp.Kind.SPLIT, DotInvOp.Kind.MERGE, DotInvOp.Kind.DROP,
+	GSInvOp.Kind.MOVE, GSInvOp.Kind.SPLIT, GSInvOp.Kind.MERGE, GSInvOp.Kind.DROP,
 ]
 
 ## Client side: an op this client predicted was refused and has been rolled back.
@@ -98,7 +98,7 @@ var tell_fn: Callable = Callable()
 ## [code](peer_id: int, text: String) -> void[/code]. A line of text for one player.
 var notice_fn: Callable = Callable()
 
-## [code](player_id: StringName, thing_id: StringName) -> DotResult[/code]. The shop.
+## [code](player_id: StringName, thing_id: StringName) -> GSResult[/code]. The shop.
 var charge_fn: Callable = Callable()
 
 ## [code](session_id: int) -> String[/code]: who this session IS, for a bag that outlasts it.
@@ -215,7 +215,7 @@ func release(peer_id: int, session_id: int) -> void:
 
 
 ## Something a client asked about its own inventory.
-func on_ask(peer_id: int, session_id: int, reader: DotNetReader) -> void:
+func on_ask(peer_id: int, session_id: int, reader: GSNetReader) -> void:
 	if not is_server or inventory == null or peer_id <= 0 or session_id == 0:
 		return
 	var key: StringName = _bag_of_peer.get(peer_id, bag_key(session_id))
@@ -245,13 +245,13 @@ func _server_op(peer_id: int, session_id: int, key: StringName, seq: int, op_dic
 	if seq <= last:
 		# A sequence number going backwards is a client that is broken or replaying.
 		# Answered with nothing: the answer to #seq has already been sent once.
-		DotLog.debug(CHANNEL, "an op arrived out of sequence", {
+		GSLog.debug(CHANNEL, "an op arrived out of sequence", {
 			"peer": peer_id, "seq": seq, "last": last,
 		})
 		return
 	_last_seq[peer_id] = seq
 
-	var op := DotInvOp.from_dictionary(op_dict)
+	var op := GSInvOp.from_dictionary(op_dict)
 	if not CLIENT_KINDS.has(int(op.kind)):
 		_ack(peer_id, seq, false, "that is the server's to do")
 		return
@@ -280,13 +280,13 @@ func _ack(peer_id: int, seq: int, accepted: bool, reason: String) -> void:
 ## [b]Checked, then charged, then given — and the check includes room.[/b] See
 ## [method PlaylotInventory.may_give]: a purchase that is charged and then refused is
 ## the one thing a shop must not do.
-func buy(peer_id: int, session_id: int, item_id: StringName) -> DotResult:
+func buy(peer_id: int, session_id: int, item_id: StringName) -> GSResult:
 	if not is_server or inventory == null:
-		return DotResult.fail(DotError.CODE_STATE, "no inventory")
+		return GSResult.fail(GSError.CODE_STATE, "no inventory")
 	var key: StringName = _bag_of_peer.get(peer_id, bag_key(session_id))
 	var may := inventory.may_give(key, item_id)
 	if may.ok and charge_fn.is_valid():
-		may = charge_fn.call(_session_key(session_id), item_id) as DotResult
+		may = charge_fn.call(_session_key(session_id), item_id) as GSResult
 	if not may.ok:
 		if notice_fn.is_valid() and peer_id > 0:
 			notice_fn.call(peer_id, "Cannot buy %s: %s" % [item_id, may.error.message])
@@ -323,7 +323,7 @@ func _send_doc(peer_id: int, key: StringName, through: int) -> void:
 	if body.is_empty():
 		# An ERROR and not a WARN: the player's copy of their bag is now wrong and will stay
 		# wrong, which is the operation failing rather than something recoverable.
-		DotLog.error(CHANNEL, "a bag is too big to send", {"bag": String(key)})
+		GSLog.error(CHANNEL, "a bag is too big to send", {"bag": String(key)})
 		return
 	tell_fn.call(peer_id, body)
 	docs_sent += 1
@@ -351,14 +351,14 @@ func on_hello(session_id: int) -> void:
 
 
 ## This client's own bag, or null before the server has said whose it is.
-func local_manager() -> DotInvManager:
+func local_manager() -> GSInvManager:
 	if is_server or inventory == null or _bag_key == &"":
 		return null
 	var fresh := not inventory.has_bag(_bag_key)
 	var m := inventory.for_player(_bag_key)
 	if fresh:
 		m.send_fn = _on_predicted
-		m.applied.connect(func(_op: DotInvOp, _r: DotResult) -> void: changed.emit())
+		m.applied.connect(func(_op: GSInvOp, _r: GSResult) -> void: changed.emit())
 		m.reloaded.connect(func() -> void: changed.emit())
 	return m
 
@@ -407,7 +407,7 @@ func _on_predicted(op_dict: Dictionary) -> void:
 
 
 ## Something the server said about this client's bag.
-func on_tell(reader: DotNetReader) -> void:
+func on_tell(reader: GSNetReader) -> void:
 	if is_server or inventory == null:
 		return
 	match PlaylotEvents.read_inv_tell(reader):
@@ -420,7 +420,7 @@ func on_tell(reader: DotNetReader) -> void:
 			if bool(doc["ok"]):
 				_on_doc(int(doc["through"]), doc["doc"] as Dictionary)
 			else:
-				DotLog.warn(CHANNEL, "the server sent a bag this client could not read")
+				GSLog.warn(CHANNEL, "the server sent a bag this client could not read")
 
 
 func _index_of(seq: int) -> int:
@@ -471,7 +471,7 @@ func _on_ack(seq: int, accepted: bool, reason: String) -> void:
 	var diverged := false
 	if accepted:
 		_replaying = true
-		var again := m.apply(DotInvOp.from_dictionary(head["op"]))
+		var again := m.apply(GSInvOp.from_dictionary(head["op"]))
 		_replaying = false
 		if again.ok:
 			m.confirm(head["op"])
@@ -487,12 +487,12 @@ func _on_ack(seq: int, accepted: bool, reason: String) -> void:
 	_replay(m, rest)
 
 	if not accepted:
-		DotLog.debug(CHANNEL, "an inventory op was refused and rolled back", {
+		GSLog.debug(CHANNEL, "an inventory op was refused and rolled back", {
 			"seq": seq, "why": reason,
 		})
 		refused.emit(reason)
 	if at > 0:
-		DotLog.debug(CHANNEL, "inventory ops were never answered and were rolled back", {
+		GSLog.debug(CHANNEL, "inventory ops were never answered and were rolled back", {
 			"count": at,
 		})
 	if diverged:
@@ -507,17 +507,17 @@ func _on_ack(seq: int, accepted: bool, reason: String) -> void:
 ## off as a whole whichever of two identical ops the manager's content match picks. An op
 ## marked lost is not applied, and is skipped — the manager leaves a rollback of something
 ## it no longer holds alone.
-func _rewind(m: DotInvManager) -> void:
+func _rewind(m: GSInvManager) -> void:
 	for i in range(_in_flight.size() - 1, -1, -1):
 		if not bool(_in_flight[i]["lost"]):
 			m.rollback(_in_flight[i]["op"])
 
 
 ## Re-applies [param entries] on top of whatever the bag now is, without sending them again.
-func _replay(m: DotInvManager, entries: Array) -> void:
+func _replay(m: GSInvManager, entries: Array) -> void:
 	_replaying = true
 	for entry: Dictionary in entries:
-		var res := m.apply(DotInvOp.from_dictionary(entry["op"]))
+		var res := m.apply(GSInvOp.from_dictionary(entry["op"]))
 		entry["lost"] = not res.ok
 		_in_flight.append(entry)
 	_replaying = false
@@ -529,7 +529,7 @@ func _on_doc(through: int, doc: Dictionary) -> void:
 		return
 	var res := m.adopt(doc)
 	if not res.ok:
-		DotLog.warn(CHANNEL, "the server's bag would not load", {"why": res.error.message})
+		GSLog.warn(CHANNEL, "the server's bag would not load", {"why": res.error.message})
 		return
 	var rest: Array[Dictionary] = []
 	for entry in _in_flight:

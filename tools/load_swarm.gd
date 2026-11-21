@@ -4,7 +4,7 @@ const PlaylotNetBridge := preload("../game/net/playlot_net_bridge.gd")
 const PlaylotNetCommand := preload("../game/net/playlot_net_command.gd")
 const PlaylotNetLink := preload("../game/net/playlot_net_link.gd")
 
-## N synthetic clients in one process against tools/load_server.tscn, each a real [DotClientLink]
+## N synthetic clients in one process against tools/load_server.tscn, each a real [GSClientLink]
 ## on its own ENet connection; sends acks and random-walk inputs at the tick rate, decodes nothing.
 ## Driver: tools/load100.sh.
 
@@ -15,21 +15,21 @@ class Stub extends PlaylotNetBridge:
 	var bytes := 0
 	var events := 0
 
-	func receive_snapshot(payload: PackedByteArray) -> DotResult:
+	func receive_snapshot(payload: PackedByteArray) -> GSResult:
 		snapshots += 1
 		bytes += payload.size()
-		var tick := DotNetReader.new(payload).read_uint(32)
+		var tick := GSNetReader.new(payload).read_uint(32)
 		ack_tick = maxi(ack_tick, tick)
-		return DotResult.success(true)
+		return GSResult.success(true)
 
-	func receive_event(_payload: PackedByteArray) -> DotResult:
+	func receive_event(_payload: PackedByteArray) -> GSResult:
 		events += 1
-		return DotResult.success(true)
+		return GSResult.success(true)
 
 
 class Client extends RefCounted:
 	var root: Node = null
-	var link: DotClientLink = null
+	var link: GSClientLink = null
 	var net_link: PlaylotNetLink = null
 	var stub: Stub = null
 	var last_tick := 0
@@ -59,7 +59,7 @@ func _arg(name: String, fallback: String) -> String:
 
 
 func _ready() -> void:
-	DotLog.set_level(DotLog.Level.INFO if OS.get_cmdline_user_args().has("--verbose") else DotLog.Level.ERROR)
+	GSLog.set_level(GSLog.Level.INFO if OS.get_cmdline_user_args().has("--verbose") else GSLog.Level.ERROR)
 	_hz = int(_arg("--hz", "64"))
 	_port = int(_arg("--port", "27399"))
 	_seconds = float(_arg("--seconds", "30"))
@@ -77,7 +77,7 @@ func _run(count: int) -> void:
 		var holder := Node.new()
 		holder.name = "LoadServer"
 		c.root.add_child(holder)
-		c.link = DotClientLink.new()
+		c.link = GSClientLink.new()
 		c.link.name = "Server"
 		c.link.player_name = "Load%d" % i
 		c.link.transport_preference = "udp"
@@ -90,7 +90,7 @@ func _run(count: int) -> void:
 		c.net_link.name = PlaylotNetLink.NODE_NAME
 		c.link.add_child(c.net_link)
 		# The game scene is what makes a real client expensive and is not what is measured.
-		c.link.envelope.handle(DotEnvelope.LOAD_GAME, _stub_load.bind(c))
+		c.link.envelope.handle(GSEnvelope.LOAD_GAME, _stub_load.bind(c))
 		_clients.append(c)
 		if i == 0:
 			c.link.scoreboard_received.connect(_on_board)
@@ -104,7 +104,7 @@ func _run(count: int) -> void:
 		waited += 0.5
 	print("SWARM joined=%d/%d after %.1f s" % [_playing(), count, waited])
 	_print_stuck()
-	_clients[0].link.send_kind(DotEnvelope.SCOREBOARD_WANT, {"open": true})
+	_clients[0].link.send_kind(GSEnvelope.SCOREBOARD_WANT, {"open": true})
 	_started = Time.get_ticks_msec() / 1000.0
 	_last_report = _started
 	set_physics_process(true)
@@ -123,7 +123,7 @@ func _print_stuck() -> void:
 
 
 func _stub_load(_peer: int, _info: Dictionary, c: Client) -> void:
-	c.link.send_kind(DotEnvelope.LOADED)
+	c.link.send_kind(GSEnvelope.LOADED)
 	c.link._enter_playing()
 
 func _playing() -> int:
@@ -172,14 +172,14 @@ func _send(c: Client) -> void:
 	packet.tick = maxi(c.last_tick + 1, c.stub.ack_tick + 3)
 	c.last_tick = packet.tick
 	packet.delta = 1.0 / float(_hz)
-	packet.move = DotFpsCommand.new()
+	packet.move = GSFpsCommand.new()
 	packet.move.move = c.move
 	packet.move.yaw = c.yaw
 	c.history.append(packet)
 	if c.history.size() > 5:
 		c.history.pop_front()
-	var payload := DotNetWriter.new()
+	var payload := GSNetWriter.new()
 	payload.write_uint(c.stub.ack_tick, 32)
-	DotNetInput.write_batch(payload, c.history)
+	GSNetInput.write_batch(payload, c.history)
 	c.net_link.send_input(payload.to_bytes())
 	_sent += 1

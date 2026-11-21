@@ -27,13 +27,13 @@ static func skin_id(index: int) -> StringName:
 	return StringName("skin_%s" % LETTERS[clampi(index, 0, LETTERS.length() - 1)])
 
 
-static func schema() -> DotAvatarSchema:
-	var s := DotAvatarSchema.new()
+static func schema() -> GSAvatarSchema:
+	var s := GSAvatarSchema.new()
 	s.id = SCHEMA_ID
 	s.version = 1
 
 	for slot_id in SLOTS:
-		var slot := DotAvatarSlot.new()
+		var slot := GSAvatarSlot.new()
 		slot.id = slot_id
 		slot.display_name = String(slot_id).capitalize()
 		slot.required = true
@@ -41,7 +41,7 @@ static func schema() -> DotAvatarSchema:
 		s.slots.append(slot)
 
 		for i in range(LETTERS.length()):
-			var part := DotAvatarPart.new()
+			var part := GSAvatarPart.new()
 			part.id = StringName("%s_%s" % [slot_id, skin_id(i)])
 			part.slot = slot_id
 			part.display_name = "%s %s" % [String(slot_id).capitalize(), LETTERS[i].to_upper()]
@@ -55,8 +55,8 @@ static func schema() -> DotAvatarSchema:
 
 ## The look a player without one of their own wears: one skin, chosen from their id, so
 ## every client dresses the same guest the same way.
-static func stock_avatar(player_id: StringName) -> DotAvatar:
-	var avatar := DotAvatar.make(SCHEMA_ID)
+static func stock_avatar(player_id: StringName) -> GSAvatar:
+	var avatar := GSAvatar.make(SCHEMA_ID)
 	var index := stock_index(String(player_id))
 	for slot_id in SLOTS:
 		avatar.set_part(slot_id, StringName("%s_%s" % [slot_id, skin_id(index)]))
@@ -68,7 +68,7 @@ static func stock_index(key: String) -> int:
 
 
 ## [face, top, legs] as skin indices, or -1 for a slot the document does not fill.
-static func skins_of(avatar: DotAvatar) -> PackedInt32Array:
+static func skins_of(avatar: GSAvatar) -> PackedInt32Array:
 	var out := PackedInt32Array([-1, -1, -1])
 	if avatar == null or avatar.schema_id != SCHEMA_ID:
 		return out
@@ -81,8 +81,8 @@ static func skins_of(avatar: DotAvatar) -> PackedInt32Array:
 
 
 ## A member's site avatar in this game's terms, or null when it is not the site's.
-static func from_site(foreign: DotAvatar) -> DotAvatar:
-	var avatar := DotAvatar.make(SCHEMA_ID)
+static func from_site(foreign: GSAvatar) -> GSAvatar:
+	var avatar := GSAvatar.make(SCHEMA_ID)
 	var any := false
 
 	for slot_id in SLOTS:
@@ -110,7 +110,7 @@ static func from_site(foreign: DotAvatar) -> DotAvatar:
 
 ## The letter of the site's skin in [param slot], or "". The site files a part as
 ## `<slot>.<option>` (`top.skin-k`); a bare `skin-k` is read too.
-static func _site_skin(foreign: DotAvatar, slot: StringName) -> String:
+static func _site_skin(foreign: GSAvatar, slot: StringName) -> String:
 	if foreign == null or foreign.schema_id != &"builtin":
 		return ""
 

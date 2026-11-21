@@ -23,7 +23,7 @@ func _ready() -> void:
 	var _clips := PlaylotClientPrewarm.prefetch(config)
 
 	# Looked up when nobody handed it over: a pack's client scene is instantiated by
-	# `DotClientLink._on_load_game`, which sets nothing on it. The export still wins, so two shells
+	# `GSClientLink._on_load_game`, which sets nothing on it. The export still wins, so two shells
 	# in one process keep their own links.
 	if link == null and not platform.offline:
 		link = platform.link as Node
@@ -32,13 +32,13 @@ func _ready() -> void:
 		config.authoritative = false
 
 	# Before the playlot: `Playlot._ready` loads its first map inside `add_child`, and a
-	# generated map asks `DotRegistry` for a seed source then. One registered afterwards is silently
+	# generated map asks `GSRegistry` for a seed source then. One registered afterwards is silently
 	# ignored (a fixed seed is a legitimate fallback).
 	presentation = PlaylotPresentation.new()
 	presentation.name = "Presentation"
 	presentation.client = self
 	add_child(presentation)
-	DotLog.result("playlot.client", "the presentation layer", presentation.setup())
+	GSLog.result("playlot.client", "the presentation layer", presentation.setup())
 	_wire_chat_window()
 
 	playlot.config = config
@@ -63,10 +63,10 @@ func _ready() -> void:
 		await playlot.ready_for_players
 
 	if playlot.maps.current == null:
-		var loaded: DotResult = await playlot.change_map(FALLBACK_MAP)
+		var loaded: GSResult = await playlot.change_map(FALLBACK_MAP)
 
 		if not loaded.ok:
-			DotLog.error(CHANNEL, "could not load the first map", {
+			GSLog.error(CHANNEL, "could not load the first map", {
 				"why": loaded.error.message
 			})
 			return
@@ -79,7 +79,7 @@ func _ready() -> void:
 		var netcode := _build_netcode()
 
 		if not netcode.ok:
-			DotLog.error(CHANNEL, "the netcode would not start", {
+			GSLog.error(CHANNEL, "the netcode would not start", {
 				"why": netcode.error.message
 			})
 			return
@@ -138,14 +138,14 @@ func _add_dependency_maps() -> void:
 	if link == null:
 		return
 	for key: Variant in link.get("content_extra") if link.get("content_extra") != null else []:
-		var parts := DotGameDescriptor.split_key(str(key))
+		var parts := GSGameDescriptor.split_key(str(key))
 		var _added := playlot.add_map_directory(
-			DotCloudClient.mount_prefix_for(StringName(parts[0]), parts[1]).path_join("maps"))
+			GSCloudClient.mount_prefix_for(StringName(parts[0]), parts[1]).path_join("maps"))
 
 
 ## Why a dropped map cannot use [param id], or empty: a built-in or linked map keeps its id (`add_map_docs` keeps the first).
 func _map_id_taken(id: StringName) -> String:
-	var have: DotMapDef = playlot.maps.catalogue.get_map(id) if playlot.maps != null else null
+	var have: GSMapDef = playlot.maps.catalogue.get_map(id) if playlot.maps != null else null
 	if have == null or str(have.meta.get("doc", "")).begins_with(Playlot.USER_MAPS_DIR):
 		return ""
 	return "%s is already one of this game's maps; give the dropped one another id" % id
@@ -153,7 +153,7 @@ func _map_id_taken(id: StringName) -> String:
 
 ## `{id, title}` of the map converted from the Garry's Mod map [param source] (gm_fork: pgc_fork), or empty.
 func _map_converted_from(source: String) -> Dictionary:
-	var map: DotMapDef = PlaylotMapSources.find(playlot.maps.catalogue, source) if playlot.maps != null else null
+	var map: GSMapDef = PlaylotMapSources.find(playlot.maps.catalogue, source) if playlot.maps != null else null
 	return {} if map == null else {"id": map.id, "title": map.name_or_id()}
 
 
@@ -183,15 +183,15 @@ func _on_maps_dropped(result: Dictionary) -> void:
 
 
 ## Brings up the netcode and points it at the server's link, as the proven sibling client does.
-func _build_netcode() -> DotResult:
-	net = DotNetManager.new()
+func _build_netcode() -> GSResult:
+	net = GSNetManager.new()
 	net.name = "Net"
 	net.is_server = false
 	net.local_peer_id = multiplayer.get_unique_id() if multiplayer != null else 2
 	net.auto_tick = false
 	net.config_file = ""
 
-	var net_config := DotNetConfig.new()
+	var net_config := GSNetConfig.new()
 	net_config.tick_rate = playlot.tick_rate
 	net_config.snapshot_rate = Playlot.snapshot_rate_for(playlot.tick_rate)
 	net_config.enable_prediction = true
@@ -221,7 +221,7 @@ func _build_netcode() -> DotResult:
 		return attached
 
 	# A restarted server counts revisions from 0 again, so forget the old ones first.
-	var link_up := DotNetProfileLink.attach(net, playlot.profiles.runtime)
+	var link_up := GSNetProfileLink.attach(net, playlot.profiles.runtime)
 	if link_up != null:
 		playlot.profiles.runtime.begin_sync()
 		link_up.reply.connect(_on_profile_reply)
@@ -232,14 +232,14 @@ func _build_netcode() -> DotResult:
 			presentation.bind_profile_replies()
 
 	# Before the seal and in the server's order (after the bridge), or the actions stay local.
-	DotLog.result("playlot.client", "avatar action message", DotGameAvatarActionMessage.register(net))
-	workbench_remote = DotGameWorkbenchRemoteClient.attach(net)
+	GSLog.result("playlot.client", "avatar action message", GSGameAvatarActionMessage.register(net))
+	workbench_remote = GSGameWorkbenchRemoteClient.attach(net)
 	net.messages.seal()
 
 	bridge.hello_received.connect(_on_hello)
 	bridge.roster_changed.connect(_on_roster_changed)
 	bridge.weapon_changed.connect(_on_weapon_changed)
-	# dot-server's `chat_received` is NOT connected: [DotChatRouter] routes every line, and both would draw it twice.
+	# dot-server's `chat_received` is NOT connected: [GSChatRouter] routes every line, and both would draw it twice.
 	bridge.chat_received.connect(_on_chat_wire)
 	bridge.builds_received.connect(func(list: Array) -> void:
 		if menu != null:
@@ -255,7 +255,7 @@ func _build_netcode() -> DotResult:
 	if presentation != null and presentation.ambient != null:
 		presentation.ambient.follow_settings(presentation.settings, playlot.ambient_rules)
 	_build_ragdolls()
-	bridge.body_fell.connect(func(figure: Node3D, death: DotPlayerDeath) -> void:
+	bridge.body_fell.connect(func(figure: Node3D, death: GSPlayerDeath) -> void:
 		if ragdolls != null and figure.is_inside_tree():
 			_land_on_the_world()
 			var _fell := ragdolls.spawn(figure, death)
@@ -263,7 +263,7 @@ func _build_netcode() -> DotResult:
 	_connect_bridge_notices()
 
 	# Stock tunables until there is a player to ask; _adopt swaps them in when JOIN arrives.
-	_sampler = PlaylotTouch.make_sampler(DotFpsTunables.new(), _touch_ignores)
+	_sampler = PlaylotTouch.make_sampler(GSFpsTunables.new(), _touch_ignores)
 
 	# Nothing may be sent before the peer says it can receive: dot-server's signon ends before
 	# this scene exists, so earlier sends hit a missing node and the client never joins.
@@ -475,7 +475,7 @@ func _on_press_key(key: InputEventKey) -> void:
 		_cycle_weapon()
 	elif _wheel_cycle(key):
 		pass
-	elif key.is_action(DotMenuBindings.LOADOUT_ACTION) and loadout_menu != null and not arena_on:
+	elif key.is_action(GSMenuBindings.LOADOUT_ACTION) and loadout_menu != null and not arena_on:
 		# B opens the loadout only in the arena (the menu is disabled outside it, so the key
 		# reaches here): said, rather than a key that does nothing.
 		if hud != null:

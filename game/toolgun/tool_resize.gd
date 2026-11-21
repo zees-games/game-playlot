@@ -24,24 +24,24 @@ func schema() -> Array[Dictionary]:
 	}]
 
 
-func primary(_gun: Object, hit: Dictionary) -> DotResult:
+func primary(_gun: Object, hit: Dictionary) -> GSResult:
 	return _scale(hit, 1.0 + float(setting("step")))
 
 
-func secondary(_gun: Object, hit: Dictionary) -> DotResult:
+func secondary(_gun: Object, hit: Dictionary) -> GSResult:
 	return _scale(hit, 1.0 / (1.0 + float(setting("step"))))
 
 
-func reload(_gun: Object, hit: Dictionary) -> DotResult:
+func reload(_gun: Object, hit: Dictionary) -> GSResult:
 	var body := prop_body(hit)
 
 	if body == null:
 		return nothing_there()
 
-	return DotResult.success(body.call("set_size_scale", 1.0))
+	return GSResult.success(body.call("set_size_scale", 1.0))
 
 
-func _scale(hit: Dictionary, by: float) -> DotResult:
+func _scale(hit: Dictionary, by: float) -> GSResult:
 	var body := prop_body(hit)
 
 	if body == null:
@@ -51,9 +51,9 @@ func _scale(hit: Dictionary, by: float) -> DotResult:
 	var after := float(body.call("set_size_scale", before * by))
 
 	if is_equal_approx(before, after):
-		return DotResult.fail(
-			DotError.CODE_STATE,
+		return GSResult.fail(
+			GSError.CODE_STATE,
 			"That is as %s as it goes." % ("big" if by > 1.0 else "small")
 		)
 
-	return DotResult.success(after)
+	return GSResult.success(after)

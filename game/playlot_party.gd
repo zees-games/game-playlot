@@ -27,17 +27,17 @@ extends Node
 const CHANNEL := "playlot.party"
 
 signal open(code: String)
-signal closed(res: DotResult)
+signal closed(res: GSResult)
 
-var session: DotP2PSession = null
+var session: GSP2PSession = null
 
 @export var signalling_url: String = ""
 
-var _http: DotHttp = null
+var _http: GSHttp = null
 
 
-func setup() -> DotResult:
-	session = DotP2PSession.new()
+func setup() -> GSResult:
+	session = GSP2PSession.new()
 	session.name = "P2P"
 	session.config = _config()
 	add_child(session)
@@ -47,46 +47,46 @@ func setup() -> DotResult:
 		return res.wrap("the playlot's party session")
 
 	session.signaller = _make_signaller()
-	session.ended.connect(func(r: DotResult) -> void: closed.emit(r))
-	return DotResult.success(null)
+	session.ended.connect(func(r: GSResult) -> void: closed.emit(r))
+	return GSResult.success(null)
 
 
-func _config() -> DotP2PConfig:
-	var c := DotP2PConfig.new()
+func _config() -> GSP2PConfig:
+	var c := GSP2PConfig.new()
 	# Six. A sandbox's cost is the props rather than the players, and a domestic uplink
 	# carrying six people's worth of rigid-body transforms is already working hard.
 	c.max_peers = 6
 	# The host decides, which in a sandbox is what a friend hosting SHOULD be able to do.
-	c.trust = DotP2PConfig.Trust.HOST_AUTHORITATIVE
+	c.trust = GSP2PConfig.Trust.HOST_AUTHORITATIVE
 	# Off. See the class notes: the world is the host's physics state.
 	c.migrate_host = false
 	c.signalling_url = signalling_url
 	return c
 
 
-func _make_signaller() -> DotP2PSignaller:
+func _make_signaller() -> GSP2PSignaller:
 	if signalling_url.is_empty():
-		return DotP2PSignallerLoopback.new(session.local_id)
-	_http = DotHttp.new()
+		return GSP2PSignallerLoopback.new(session.local_id)
+	_http = GSHttp.new()
 	_http.name = "PartyHttp"
 	add_child(_http)
-	return DotP2PSignallerHttp.new(signalling_url, session.local_id, _http)
+	return GSP2PSignallerHttp.new(signalling_url, session.local_id, _http)
 
 
-func host(display_name: String) -> DotResult:
-	if not DotP2PSession.available():
-		return DotResult.fail(
-			DotError.CODE_UNSUPPORTED,
+func host(display_name: String) -> GSResult:
+	if not GSP2PSession.available():
+		return GSResult.fail(
+			GSError.CODE_UNSUPPORTED,
 			"this build cannot host a sandbox",
-			DotP2PSession.unavailable_reason()
+			GSP2PSession.unavailable_reason()
 		)
 	# Awaited: dot-peer-to-peer's session awaits its signaller since 37d47c1, because an
 	# HTTP rendezvous answers a frame later at best. A caller of this awaits it too.
-	var res: DotResult = await session.host(display_name)
+	var res: GSResult = await session.host(display_name)
 	if res.ok:
 		open.emit(str(res.value))
 		# Both halves said once, at the point somebody could still choose otherwise.
-		DotLog.info(
+		GSLog.info(
 			CHANNEL,
 			"a sandbox is open. Nothing is filed anywhere, and if the host leaves the "
 			+ "world goes with them.",
@@ -95,7 +95,7 @@ func host(display_name: String) -> DotResult:
 	return res
 
 
-func join(code: String, display_name: String) -> DotResult:
+func join(code: String, display_name: String) -> GSResult:
 	return await session.join(code, display_name)
 
 

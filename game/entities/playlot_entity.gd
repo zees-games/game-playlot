@@ -12,7 +12,7 @@ const PlaylotProp := preload("../playlot_prop.gd")
 ## mass and needs no code;
 ## a thing that walks about does. dot-props knows nothing of the difference — it
 ## instantiates a scene, places it and counts it against a budget — so the script is a
-## field of [member DotPropDef.meta] and [Playlot] attaches it on spawn. See
+## field of [member GSPropDef.meta] and [Playlot] attaches it on spawn. See
 ## [PlaylotSpawnables] for why it is named by path rather than by class.
 ##
 ## [b]An entity is a [RigidBody3D], and that is the whole reason this extends
@@ -39,7 +39,7 @@ const PlaylotProp := preload("../playlot_prop.gd")
 var game: Playlot = null
 
 ## This entity's row in the prop spawner: what owns it, and whether it is held.
-var instance: DotPropInstance = null
+var instance: GSPropInstance = null
 
 ## Simulated seconds since [method bind]. Not a wall clock — an entity that thought
 ## in wall time would move at a different speed on a server under load.
@@ -47,7 +47,7 @@ var age: float = 0.0
 
 ## This entity as dot-npc sees it: what it can perceive and what it has committed to.
 ##
-## [b]Built here rather than spawned by a [DotNpcSpawner], and that is deliberate.[/b]
+## [b]Built here rather than spawned by a [GSNpcSpawner], and that is deliberate.[/b]
 ## An entity in this game is a PROP first: it counts against a budget, it can be undone,
 ## it is cleaned up when its owner leaves, a physics gun can pick it up and a gravity gun
 ## can punt it across the map. An NPC you cannot pick up is the one thing a sandbox
@@ -56,7 +56,7 @@ var age: float = 0.0
 ##
 ## What dot-npc [i]does[/i] own here is the half that was wrong: perception. See
 ## [member Playlot.npc_senses].
-var npc: DotNpcInstance = null
+var npc: GSNpcInstance = null
 
 
 # --- Called by Playlot ---------------------------------------------------
@@ -66,7 +66,7 @@ var npc: DotNpcInstance = null
 ## Separate from `configure` rather than a longer signature on it, because
 ## `configure` is [PlaylotProp]'s and an override that widened it would mean an
 ## inert prop and an entity could no longer be built by the same call.
-func bind(p_game: Playlot, p_instance: DotPropInstance) -> void:
+func bind(p_game: Playlot, p_instance: GSPropInstance) -> void:
 	game = p_game
 	instance = p_instance
 	npc = _make_npc()
@@ -78,8 +78,8 @@ func bind(p_game: Playlot, p_instance: DotPropInstance) -> void:
 ## The perception envelope comes out of `meta`, so it is a line in the catalogue an
 ## operator can edit rather than a constant in a script — the same reason
 ## [method tune] exists, applied to the half of an NPC that decides who it goes after.
-func _make_npc() -> DotNpcInstance:
-	var npc_def := DotNpcDef.make(
+func _make_npc() -> GSNpcInstance:
+	var npc_def := GSNpcDef.make(
 		def.id if def != null else &"entity", def.scene_path if def != null else ""
 	)
 
@@ -93,11 +93,11 @@ func _make_npc() -> DotNpcInstance:
 	# nobody hides from a toy. A catalogue entry that wants it says so.
 	npc_def.require_line_of_sight = tune(&"line_of_sight", 0.0) > 0.0
 
-	var row := DotNpcInstance.new()
+	var row := GSNpcInstance.new()
 	row.def = npc_def
 	row.node = self
 	row.instance_id = get_instance_id()
-	# Built by hand rather than by a DotNpcSpawner, so nobody else seeds it. The id above is
+	# Built by hand rather than by a GSNpcSpawner, so nobody else seeds it. The id above is
 	# an identity; this is what the brain draws from.
 	row.seed = game.next_seed(&"entity") if game != null else 0
 	row.owner_id = instance.owner_id if instance != null else &""
@@ -165,7 +165,7 @@ func tune(key: StringName, fallback: float) -> float:
 ## [b]This is the port, and it is the whole reason dot-npc is installed here.[/b] The
 ## chaser used to call [method nearest_player] on every tick, which is the classic broken
 ## NPC: two players a metre apart make it turn back and forth for ever, and one who steps
-## behind a pillar makes it forget instantly and walk away mid-swing. [DotNpcSenses]
+## behind a pillar makes it forget instantly and walk away mid-swing. [GSNpcSenses]
 ## acquires at one threshold, drops at a weaker one, and keeps chasing for a grace period
 ## measured from the last sighting rather than from acquisition.
 ##
@@ -197,11 +197,11 @@ func target() -> PlaylotPlayer:
 
 ## A flash blinds this NPC for [param seconds] on the clock its senses read; dot-npc API 6.
 func blind_npc(seconds: float) -> void:
-	if npc != null and DotAddonApi.build_level("dot_npc") >= 6:
+	if npc != null and GSAddonApi.build_level("dot_npc") >= 6:
 		npc.blind_for(_senses_now(), seconds)
 
 
-## The clock [member npc] is handed to [method DotNpcSenses.update_target]; the soldier overrides it.
+## The clock [member npc] is handed to [method GSNpcSenses.update_target]; the soldier overrides it.
 func _senses_now() -> float:
 	return age
 

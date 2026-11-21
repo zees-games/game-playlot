@@ -32,9 +32,9 @@ func _ready() -> void:
 	# emptied first, never the player's.
 	_player_files_were = _player_files_stamp()
 	var _scratch := PlaylotPresentation.use_scratch_settings("headless_presentation")
-	DotLog.set_level(
-		DotLog.Level.DEBUG if "--verbose" in OS.get_cmdline_user_args()
-		else DotLog.Level.ERROR
+	GSLog.set_level(
+		GSLog.Level.DEBUG if "--verbose" in OS.get_cmdline_user_args()
+		else GSLog.Level.ERROR
 	)
 	_run.call_deferred()
 
@@ -107,14 +107,14 @@ func _test_escape_menu() -> void:
 		"its settings are a scratch document, not the player's",
 		PlaylotPresentation.settings_directory
 	)
-	var stack := DotScreenStack.new()
+	var stack := GSScreenStack.new()
 	stack.name = "Stack"
 	stack.register_service = false
 	stack.manage_mouse = false
 	add_child(stack)
 	stack.setup()
 
-	var pause := DotPauseScreen.new()
+	var pause := GSPauseScreen.new()
 	pause.name = "Pause"
 	_check(
 		pause.build(PackedStringArray(["Resume", "Settings", "Servers", "Leave"])).ok,
@@ -122,20 +122,20 @@ func _test_escape_menu() -> void:
 	)
 	stack.register(pause)
 
-	var screen := DotSettingsScreen.new()
+	var screen := GSSettingsScreen.new()
 	screen.name = "Settings"
 	_check(screen.build(p.settings).ok, "and a settings screen onto the real settings")
 	stack.register(screen)
 
-	var gm := DotMenu.new()
+	var gm := GSMenu.new()
 	gm.settings = p.settings
 	gm.open_on_escape = false
 	gm.manage_pointer = false
 	add_child(gm)
-	var gm_set: DotResult = gm.setup()
+	var gm_set: GSResult = gm.setup()
 	PlaylotClient.add_general_rows(gm)
 	var gm_image := gm.page(&"video").find_section(&"image")
-	var gm_gore: DotMenuRow = gm_image.find_row(&"gore") if gm_image != null else null
+	var gm_gore: GSMenuRow = gm_image.find_row(&"gore") if gm_image != null else null
 	_check(gm_gore != null and gm_gore.row_id() == &"gore" and p.settings.schema.has(&"gore"),
 		"the Video page's Image section has a Blood splatters row on the gore setting",
 		"%s %s %s" % [gm_set.ok, gm_image, gm_gore])
@@ -146,7 +146,7 @@ func _test_escape_menu() -> void:
 
 	# THAT THE PUSH LANDED, which is the check this section shipped without.
 	#
-	# `DotScreen`'s default id is the NODE NAME, so a screen called `Pause` registered as
+	# `GSScreen`'s default id is the NODE NAME, so a screen called `Pause` registered as
 	# `&"Pause"` and `push(&"pause")` answered "no such screen" -- reported, not fatal, so
 	# this game's pause menu never opened at all. Every check below passed anyway: a
 	# REGISTERED screen is sized and focusable whether or not it is on screen. A rendered
@@ -205,7 +205,7 @@ func _test_glance_pieces() -> void:
 			rig = PlaylotZee.arm(body, def, ZeeWeaponRig.Role.SERVER, true, 64, 0)
 			break
 	_check(rig != null, "a zee weapon is armed for the counter to read")
-	var stock_problems := DotWeaponSound.check_stock()
+	var stock_problems := GSWeaponSound.check_stock()
 	_check(stock_problems.is_empty(), "every weapon class resolves a non-silent, unclipped stock voice (%s)" % ", ".join(stock_problems))
 	if rig == null:
 		hud.queue_free()
@@ -226,7 +226,7 @@ func _test_glance_pieces() -> void:
 		"and nothing at all with a toy or empty hands", hud.ammo.count_text())
 	hud.show_weapon(rig)
 
-	hud.confirm_hit(Playlot.hit_victim_id(DotEntity.KIND_NPC, 41), 26.0, Vector3(0, 1, -5), true, false)
+	hud.confirm_hit(Playlot.hit_victim_id(GSEntity.KIND_NPC, 41), 26.0, Vector3(0, 1, -5), true, false)
 	_check(
 		hud.hit_marker.alpha() > 0.0 and hud.hit_marker.kill and Array(hud.damage_numbers.texts()).has("26"),
 		"a confirmed hit flashes the marker and puts the number up",
@@ -249,7 +249,7 @@ func _test_glance_pieces() -> void:
 	)
 
 	# A ballot where a shell draws one, top right, leaves it alone; one over it dims it.
-	var ballot := DotBallotPanel.new()
+	var ballot := GSBallotPanel.new()
 	ballot.name = "GlanceBallot"
 	ballot.panel_width = 360.0
 	add_child(ballot)
@@ -294,7 +294,7 @@ func _check_camera_motion(p: PlaylotPresentation) -> void:
 		"the camera motion settings reach the camera: bound at the picks, then each slider on its own",
 		"%s then %s" % [str(bound), str(moved)])
 	_check(p.settings.schema.find(&"camera_landing_dip") != null
-		and p.settings.schema.find(&"camera_landing_dip").scope == DotSettingsDef.Scope.ACCOUNT,
+		and p.settings.schema.find(&"camera_landing_dip").scope == GSSettingsDef.Scope.ACCOUNT,
 		"and they belong to the person, not the machine")
 	holder.queue_free()
 
@@ -303,23 +303,23 @@ func _check_camera_motion(p: PlaylotPresentation) -> void:
 ## requires.json dot-ci derives must ask for dot-ui 4, and nothing may lower it.
 ## The floor file exists to name the game addons solo play fetches; it must not lower dot-ui.
 func _check_ui_floor() -> void:
-	var asks := DotAddonApi.derive()
-	var floor_path := "res://" + DotAddonApi.FLOOR_FILE
+	var asks := GSAddonApi.derive()
+	var floor_path := "res://" + GSAddonApi.FLOOR_FILE
 	var floors := {}
 	if FileAccess.file_exists(floor_path):
-		var parsed := DotAddonApi.parse(FileAccess.get_file_as_string(floor_path), DotAddonApi.FLOOR_FILE)
+		var parsed := GSAddonApi.parse(FileAccess.get_file_as_string(floor_path), GSAddonApi.FLOOR_FILE)
 		floors = {"dot_ui": 0}
 		if parsed.ok:
 			floors = parsed.value
 	_check(
-		int(DotAddonApi.apply_floors(asks, floors).get("dot_ui", 0)) >= 4,
+		int(GSAddonApi.apply_floors(asks, floors).get("dot_ui", 0)) >= 4,
 		"the pack asks a shell for dot-ui level 4, the glance pieces",
 		str(asks.get("dot_ui"))
 	)
 
 
 ## `[p2p-await-games]`: a party over the HTTP rendezvous, host and join, each awaited end to end through
-## `PlaylotParty`, `DotP2PSession` and `DotP2PSignallerHttp`. The caller's answer must be the stub's, arriving at
+## `PlaylotParty`, `GSP2PSession` and `GSP2PSignallerHttp`. The caller's answer must be the stub's, arriving at
 ## least [member RendezvousStub.delay] frames after the call: a link that dropped its `await` fails here.
 func _test_party_over_http() -> void:
 	_section("A party that meets over HTTP waits for the answer")
@@ -347,8 +347,8 @@ func _test_party_over_http() -> void:
 
 	_check(
 		ada.setup().ok and bob.setup().ok
-			and ada.session.signaller is DotP2PSignallerHttp
-			and bob.session.signaller is DotP2PSignallerHttp,
+			and ada.session.signaller is GSP2PSignallerHttp
+			and bob.session.signaller is GSP2PSignallerHttp,
 		"two parties set up with a URL, and both meet over HTTP rather than the loopback"
 	)
 
@@ -356,12 +356,12 @@ func _test_party_over_http() -> void:
 	ada.open.connect(func(code: String) -> void: opened.append(code))
 
 	var before := Engine.get_process_frames()
-	var hosted: DotResult = await ada.host("Ada")
+	var hosted: GSResult = await ada.host("Ada")
 	var took := Engine.get_process_frames() - before
 	var code := str(hosted.value) if hosted != null and hosted.ok else ""
 
 	_check(
-		hosted != null and hosted.ok and DotP2PLobby.is_code_shaped(code, ada.session.config.code_length),
+		hosted != null and hosted.ok and GSP2PLobby.is_code_shaped(code, ada.session.config.code_length),
 		"host() hands back a join code",
 		str(hosted.error.message) if hosted != null and not hosted.ok else "null"
 	)
@@ -379,7 +379,7 @@ func _test_party_over_http() -> void:
 		"state %s, opened %s" % [ada.session.state(), str(opened)])
 
 	before = Engine.get_process_frames()
-	var joined: DotResult = await bob.join(code.to_lower(), "Bob")
+	var joined: GSResult = await bob.join(code.to_lower(), "Bob")
 	took = Engine.get_process_frames() - before
 
 	_check(joined != null and joined.ok and took >= stub.delay,
@@ -405,7 +405,7 @@ func _test_party_over_http() -> void:
 	add_child(carol)
 	var _set := carol.setup()
 	stub.refuse = 403
-	var refused: DotResult = await carol.host("Carol")
+	var refused: GSResult = await carol.host("Carol")
 	_check(refused != null and not refused.ok and not carol.active(),
 		"and a rendezvous that refuses leaves the party closed with a reason",
 		"null" if refused == null else ("ok" if refused.ok else refused.error.message))

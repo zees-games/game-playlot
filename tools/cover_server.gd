@@ -1,11 +1,11 @@
-extends DotCoverServer
+extends GSCoverServer
 
 const Playlot := preload("../game/playlot.gd")
 const PlaylotConfig := preload("../game/playlot_config.gd")
 const PlaylotPlatform := preload("../game/playlot_platform.gd")
 
 ## A headless dedicated playlot for tools/render_cover.gd to join: the same boot
-## examples/dedicated.gd does (DotServer, the game, the platform layer, the module), left
+## examples/dedicated.gd does (GSServer, the game, the platform layer, the module), left
 ## running. `pg_arena` is on so the damage path the cover guards is live.
 ##
 ## [codeblock]
@@ -40,8 +40,8 @@ func _boot(dir: String) -> void:
 	platform.name = "Identity"
 	platform.directory = "%s/identity" % dir
 	add_child(platform)
-	var _identity: DotResult = await platform.setup()
-	var _p: DotResult = await server.modules.load_module("res://addons/dot_platform/dot_platform_module.gd")
+	var _identity: GSResult = await platform.setup()
+	var _p: GSResult = await server.modules.load_module("res://addons/dot_platform/dot_platform_module.gd")
 	(load("res://game/playlot_module.gd") as GDScript).set("punishments_path", "%s/punishments.json" % dir)
-	var loaded: DotResult = await server.modules.load_module("res://game/playlot_module.gd")
+	var loaded: GSResult = await server.modules.load_module("res://game/playlot_module.gd")
 	print("cover_server: module loaded=%s port=%d" % [loaded.ok, port])

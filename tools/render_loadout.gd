@@ -14,7 +14,7 @@ const PlaylotPresentation := preload("../game/playlot_presentation.gd")
 ## [/codeblock]
 ##
 ## [b]The B menu is opened on the arena's own offer[/b] (`PlaylotArena.loadout_schema` through
-## a `DotLoadoutManager`'s `offer_for`, the dictionary the server's `/loadout` notice carries):
+## a `GSLoadoutManager`'s `offer_for`, the dictionary the server's `/loadout` notice carries):
 ## solo there is no arena, so B there only says so, which is the second frame.
 
 const OUT_DIR := "res://screenshots/loadout"
@@ -65,11 +65,11 @@ func _run() -> void:
 	await _shot("b_outside_the_arena")
 
 	# The arena's B: its offer, as the server sends it.
-	var loadouts := DotLoadoutManager.new()
+	var loadouts := GSLoadoutManager.new()
 	loadouts.schema = PlaylotArena.loadout_schema(_client.playlot.weapons)
 	loadouts.register_service = false
 	add_child(loadouts)
-	var offer: DotResult = await loadouts.offer_for("pg-player-00000001")
+	var offer: GSResult = await loadouts.offer_for("pg-player-00000001")
 	var menu: Object = _client.loadout_menu
 	if menu == null or not offer.ok:
 		print("no loadout menu, or no offer: %s" % [offer.error if not offer.ok else "menu"])
@@ -81,8 +81,8 @@ func _run() -> void:
 	get_tree().quit(0)
 
 
-## Frame sequence after each still (GS_SHOT_FRAMES, set by the .sh); see DotShotSeq.
-var _seq := DotShotSeq.new()
+## Frame sequence after each still (GS_SHOT_FRAMES, set by the .sh); see GSShotSeq.
+var _seq := GSShotSeq.new()
 
 
 func _shot(shot_name: String) -> void:

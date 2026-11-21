@@ -1,4 +1,4 @@
-extends DotModule
+extends GSModule
 ## The module's preloads, state and the chat, vote and map commands.
 
 
@@ -41,13 +41,13 @@ var game: Playlot = null
 ## The netcode, and the seam that joins it to the game. Built here because a module is
 ## what a dedicated server loads and unloads, so the netcode goes away with the game
 ## rather than outliving it.
-var net: DotNetManager = null
+var net: GSNetManager = null
 ## Carries admins' profile edits up and the edited values down. Null if the types would not register.
-var profile_link: DotNetProfileLink = null
+var profile_link: GSNetProfileLink = null
 ## The admin web page and API over the same profiles; closed unless `workbench.enabled` in cfg/server.yml.
-var workbench: DotGameWorkbench = null
+var workbench: GSGameWorkbench = null
 ## dot-team's block rules (`!block`, `!noblock`); null when dot-team is not in the build.
-var noblock: DotGameNoblock = null
+var noblock: GSGameNoblock = null
 var bridge: PlaylotNetBridge = null
 
 ## Chat, moderation and voice. Built here rather than in the game, because they are about
@@ -64,10 +64,10 @@ var arena: PlaylotArena = null
 ## dot-moderation's live tools, with this game's verbs (`PlaylotModTools`), and their
 ## commands. Built in the module rather than the services layer because health lives in
 ## the arena layer, which is the module's.
-var mod_tools: DotModTools = null
-var mod_commands: DotModToolCommands = null
+var mod_tools: GSModTools = null
+var mod_commands: GSModToolCommands = null
 ## The admin map-edit commands (`spawn_add`, `nav_link_add`, `mapdata_save` ...), which the spawn-point tool also drives. Null without dot-spawn.
-var map_edit: DotGameMapEdit = null
+var map_edit: GSGameMapEdit = null
 
 ## NPCs the server releases, paced by a director. Also off by default.
 var waves: PlaylotWaves = null
@@ -85,7 +85,7 @@ var downs: PlaylotDowns = null
 var progress: PlaylotProgress = null
 
 ## Only asked for keys: progress opens its own tracker sessions.
-var _stats_feed: DotGameStatsFeed = _new_stats_feed()
+var _stats_feed: GSGameStatsFeed = _new_stats_feed()
 
 ## What plays next, decided by the players.
 var vote: PlaylotVote = null
@@ -104,9 +104,9 @@ func _module_name() -> String:
 	return "playground"
 
 
-## A [DotQueryProvider] over this module. An inner class because it is one method and a
+## A [GSQueryProvider] over this module. An inner class because it is one method and a
 ## reference, which is game-fatal-contact's pattern for the same thing.
-class PlaylotQueryProvider extends DotQueryProvider:
+class PlaylotQueryProvider extends GSQueryProvider:
 	## Held as an [Object]: this script has no [code]class_name[/code] and an inner class
 	## cannot name the outer script it lives in.
 	var module: Object = null
@@ -114,7 +114,7 @@ class PlaylotQueryProvider extends DotQueryProvider:
 	func _provider_name() -> String:
 		return "playground"
 
-	func _contribute(snapshot: DotQuerySnapshot) -> void:
+	func _contribute(snapshot: GSQuerySnapshot) -> void:
 		if module == null or module.game == null:
 			return
 
@@ -140,27 +140,27 @@ class PlaylotQueryProvider extends DotQueryProvider:
 			snapshot.game[key] = values[key]
 
 
-## The running map's per-map cvars (dot-game's [DotGameMapConfig]); the previous map's values return on each change and on unload.
-var map_config: DotGameMapConfig = null
+## The running map's per-map cvars (dot-game's [GSGameMapConfig]); the previous map's values return on each change and on unload.
+var map_config: GSGameMapConfig = null
 
 
 ## Who is still behind their loading cover, from dot-game's roster used for that alone (this module is
-## not on DotGameModule). Loading runs from the spawn event until the cover lifts, again per map change.
+## not on GSGameModule). Loading runs from the spawn event until the cover lifts, again per map change.
 ## The arena asks it by player key (`u<userid>`); a bot is never seated, so never loading.
-var loading: DotGameRoster = null
+var loading: GSGameRoster = null
 var _handles_cover: bool = false
 
 
 ## The identity layer this module built, or null when it found one already running.
-var _identity: DotPlatformIdentity = null
+var _identity: GSPlatformIdentity = null
 var _loaded_platform := false
 
 
-var _board_feed: DotGameStatsFeed = null
+var _board_feed: GSGameStatsFeed = null
 
 
-## Somebody said something through dot-server's own chat path. Cancelled, not watched, so [DotChatRouter]'s rules are the only path.
-func _on_player_chat(event: DotEvent) -> void:
+## Somebody said something through dot-server's own chat path. Cancelled, not watched, so [GSChatRouter]'s rules are the only path.
+func _on_player_chat(event: GSEvent) -> void:
 	event.cancel("routed by the sandbox's chat", _module_name())
 
 	var session := event.get_session()
@@ -174,7 +174,7 @@ func _on_player_chat(event: DotEvent) -> void:
 
 
 func _on_say_requested(peer_id: int, channel_id: StringName, text: String) -> void:
-	var said: DotResult = services.chat.submit(peer_id, channel_id, text)
+	var said: GSResult = services.chat.submit(peer_id, channel_id, text)
 
 	if not said.ok and said.error != null:
 		# Back to the sender and nowhere else: dot-chat is deliberate that a rate-limited
@@ -186,7 +186,7 @@ func _on_voice_requested(peer_id: int, payload: PackedByteArray) -> void:
 	services.voice.relay(peer_id, payload)
 
 
-func _on_chat_accepted(message: DotChatMessage, _to: PackedInt32Array) -> void:
+func _on_chat_accepted(message: GSChatMessage, _to: PackedInt32Array) -> void:
 	if message.sender_peer > 0:
 		_last_spoke = message.sender_name
 
@@ -200,7 +200,7 @@ func _on_chat_command(peer_id: int, command: String, args: PackedStringArray) ->
 		return
 
 	if server.console.find_command(command) == null:
-		DotLog.debug(CHANNEL, "an unknown chat command was ignored", {
+		GSLog.debug(CHANNEL, "an unknown chat command was ignored", {
 			"peer": peer_id, "command": command,
 		})
 		return
@@ -208,7 +208,7 @@ func _on_chat_command(peer_id: int, command: String, args: PackedStringArray) ->
 	var ctx := session.make_context(
 		command,
 		args,
-		DotCmdContext.Source.CHAT,
+		GSCmdContext.Source.CHAT,
 		func(line: String) -> void:
 			services.chat.notice(peer_id, line, PlaylotServices.CHANNEL_ALL)
 	)
@@ -245,7 +245,7 @@ func _voter_is_admin(voter: StringName) -> bool:
 	# CHANGEMAP, not any flag: `is_admin()` is "holds a flag at all", which a reserved slot
 	# or admin chat satisfies, and this gates extending the map, an instant rtv and the
 	# nomination bypasses. The console's own extend asks for CHANGEMAP; the wire must too.
-	return session != null and session.has_permission(DotAdminFlags.CHANGEMAP)
+	return session != null and session.has_permission(GSAdminFlags.CHANGEMAP)
 
 
 func _on_vote_announced(line: String) -> void:
@@ -254,7 +254,7 @@ func _on_vote_announced(line: String) -> void:
 
 
 ## The vote picked a map. The game is what changes to it.
-func _on_vote_change_due(map_id: StringName, _choice: DotVoteChoice) -> void:
+func _on_vote_change_due(map_id: StringName, _choice: GSVoteChoice) -> void:
 	game.change_map(map_id)
 
 
@@ -264,7 +264,7 @@ func _on_loadout_requested(peer_id: int, pairs: Array) -> void:
 	if session_id == 0 or arena == null or arena.loadouts == null:
 		return
 
-	var loadout := DotLoadout.new()
+	var loadout := GSLoadout.new()
 
 	for pair in pairs:
 		var row: Array = pair
@@ -272,7 +272,7 @@ func _on_loadout_requested(peer_id: int, pairs: Array) -> void:
 
 	# Validated on the way in, conformed on the way out: a client must not make the server repair its way to a legal loadout, while `conform_on_load` keeps a player whose weapon changed able to spawn.
 	# Awaited (this handler is a coroutine): a publish must not report success before the store write returned.
-	var published: DotResult = await arena.loadouts.publish(
+	var published: GSResult = await arena.loadouts.publish(
 		loadout_key(session_id), loadout, 0
 	)
 
@@ -336,14 +336,14 @@ func _stats_key_for(player_id: StringName) -> String:
 	return _stats_key(session)
 
 
-static func _new_stats_feed() -> DotGameStatsFeed:
-	var feed := DotGameStatsFeed.new()
+static func _new_stats_feed() -> GSGameStatsFeed:
+	var feed := GSGameStatsFeed.new()
 	feed.open_sessions = false
 	return feed
 
 
 ## dot-game's stable per-server key (guests too), not the platform key alone.
-func _stats_key(session: DotClientSession) -> String:
+func _stats_key(session: GSClientSession) -> String:
 	return String(_stats_feed.key_for(session))
 
 
@@ -364,15 +364,15 @@ func _session_may_noclip(player_id: StringName) -> bool:
 	var session := server.session_by_userid(_session_of(player_id)) if server != null else null
 	if session == null:
 		return false
-	var flag := game.config.noclip_flag if game.config != null else DotAdminFlags.NOCLIP
-	return session.has_permission(flag) or session.has_permission(DotAdminFlags.CHEATS) \
-		or session.has_permission(DotAdminFlags.ROOT)
+	var flag := game.config.noclip_flag if game.config != null else GSAdminFlags.NOCLIP
+	return session.has_permission(flag) or session.has_permission(GSAdminFlags.CHEATS) \
+		or session.has_permission(GSAdminFlags.ROOT)
 
 
 ## Whether this player's admin session holds the map-edit flag (`config`) or root.
 func _session_may_edit_map(player_id: StringName) -> bool:
 	var session := server.session_by_userid(_session_of(player_id)) if server != null else null
-	return PlaylotMapEdit.session_may_edit(session, map_edit.map_edit_flag if map_edit != null else DotAdminFlags.CONFIG)
+	return PlaylotMapEdit.session_may_edit(session, map_edit.map_edit_flag if map_edit != null else GSAdminFlags.CONFIG)
 
 
 ## A world player id back to a dot-server session id, or zero.
@@ -383,12 +383,12 @@ func _session_of(player_id: StringName) -> int:
 
 ## The id the game files records under: the session's own scoped id, not a site account, so
 ## operators cannot correlate players across servers.
-func _player_id(session: DotClientSession) -> StringName:
+func _player_id(session: GSClientSession) -> StringName:
 	return StringName("u%d" % session.userid)
 
 
 ## The player a command is about: a named one for an admin, otherwise the caller.
-func _target(ctx: DotCmdContext, allow_named: bool = true) -> StringName:
+func _target(ctx: GSCmdContext, allow_named: bool = true) -> StringName:
 	if allow_named and ctx.args.size() > 0 and ctx.session == null:
 		# Only from the server console: letting a player name somebody else would be
 		# letting them restart a stranger's run.
@@ -400,7 +400,7 @@ func _target(ctx: DotCmdContext, allow_named: bool = true) -> StringName:
 	return _player_id(ctx.session)
 
 
-func _caller(ctx: DotCmdContext) -> PlaylotPlayer:
+func _caller(ctx: GSCmdContext) -> PlaylotPlayer:
 	var id := _target(ctx, false)
 
 	if id == &"":
@@ -410,7 +410,7 @@ func _caller(ctx: DotCmdContext) -> PlaylotPlayer:
 	return found if found is PlaylotPlayer else null
 
 
-func _cmd_restart(ctx: DotCmdContext) -> void:
+func _cmd_restart(ctx: GSCmdContext) -> void:
 	var id := _target(ctx)
 
 	if not game.players.has(id):
@@ -421,12 +421,12 @@ func _cmd_restart(ctx: DotCmdContext) -> void:
 	ctx.reply("Back at the start.")
 
 
-func _cmd_style(ctx: DotCmdContext) -> void:
+func _cmd_style(ctx: GSCmdContext) -> void:
 	if ctx.args.is_empty():
 		var lines := PackedStringArray(["Styles:"])
 
 		for style_id in game.style_order:
-			var style: DotFpsStyle = game.movement_styles[style_id]
+			var style: GSFpsStyle = game.movement_styles[style_id]
 			lines.append("  %-16s %s" % [String(style.id), style.display_name])
 
 		ctx.reply_lines(lines)
@@ -447,7 +447,7 @@ func _cmd_style(ctx: DotCmdContext) -> void:
 	ctx.reply("Style: %s" % String(wanted))
 
 
-func _cmd_map(ctx: DotCmdContext) -> void:
+func _cmd_map(ctx: GSCmdContext) -> void:
 	if ctx.args.is_empty():
 		var lines := PackedStringArray(["Maps:"])
 
@@ -482,13 +482,13 @@ func _cmd_map(ctx: DotCmdContext) -> void:
 
 	ctx.reply("Changing to %s." % found[0].name_or_id())
 
-	var changed: DotResult = await game.change_map(found[0].id)
+	var changed: GSResult = await game.change_map(found[0].id)
 
 	if not changed.ok:
 		ctx.reply_error(changed)
 
 
-func _cmd_nextmap(ctx: DotCmdContext) -> void:
+func _cmd_nextmap(ctx: GSCmdContext) -> void:
 	# With a ballot, the ballot's answer: its clock, its rock-the-vote and what it would
 	# play. The map session's are the ones that decide nothing then.
 	if vote != null and vote.director != null:
@@ -517,10 +517,10 @@ func _cmd_nextmap(ctx: DotCmdContext) -> void:
 ## registrar as a Callable so a check can bind them on a console of its own.
 func bind_map_commands(register: Callable) -> void:
 	var table := [
-		["pg_map", _cmd_map, "Change map, or list what there is", DotAdminFlags.CHANGEMAP],
+		["pg_map", _cmd_map, "Change map, or list what there is", GSAdminFlags.CHANGEMAP],
 		["pg_nextmap", _cmd_nextmap, "What plays next, and how long is left", ""],
 		["pg_rtv", _cmd_rtv, "Rock the vote", ""],
-		["pg_extend", _cmd_extend, "Extend the current map", DotAdminFlags.CHANGEMAP],
+		["pg_extend", _cmd_extend, "Extend the current map", GSAdminFlags.CHANGEMAP],
 	]
 
 	for row: Array in table:
@@ -532,10 +532,10 @@ func bind_map_commands(register: Callable) -> void:
 	# Not chat-typable by default: it is the operator's (CHANGEMAP), as it always was.
 	for name in game.command_names("pg_vote"):
 		var _cmd: Variant = register.call(
-			name, _cmd_vote, "pg_vote [open|next|status] — what plays next", DotAdminFlags.CHANGEMAP)
+			name, _cmd_vote, "pg_vote [open|next|status] — what plays next", GSAdminFlags.CHANGEMAP)
 
 
-func _cmd_rtv(ctx: DotCmdContext) -> void:
+func _cmd_rtv(ctx: GSCmdContext) -> void:
 	var id := _target(ctx, false)
 
 	if id == &"":
@@ -569,7 +569,7 @@ func _cmd_rtv(ctx: DotCmdContext) -> void:
 	])
 
 
-func _cmd_extend(ctx: DotCmdContext) -> void:
+func _cmd_extend(ctx: GSCmdContext) -> void:
 	var seconds := -1.0
 
 	if ctx.args.size() > 0 and ctx.args[0].is_valid_float():
@@ -591,7 +591,7 @@ func _cmd_extend(ctx: DotCmdContext) -> void:
 	ctx.reply("Extended. %s left." % game.maps.time_limit.formatted_remaining())
 
 
-func _cmd_prop(ctx: DotCmdContext) -> void:
+func _cmd_prop(ctx: GSCmdContext) -> void:
 	var player := _caller(ctx)
 
 	if player == null:
@@ -634,7 +634,7 @@ func _cmd_prop(ctx: DotCmdContext) -> void:
 var builds := PlaylotBuilds.new()
 
 
-func _build_key(ctx: DotCmdContext) -> String:
+func _build_key(ctx: GSCmdContext) -> String:
 	return PlaylotPlatform.key_for_session(server, ctx.session) if server != null and ctx.session != null else ""
 
 
@@ -673,7 +673,7 @@ func _apply_build_limit() -> void:
 		PlaylotBuilds.max_props = game.config.build_max_props
 
 
-func _cmd_save(ctx: DotCmdContext) -> void:
+func _cmd_save(ctx: GSCmdContext) -> void:
 	var player := _caller(ctx)
 	if player == null or ctx.args.is_empty():
 		ctx.reply("Usage: pg_save <name>, as a player.")
@@ -691,7 +691,7 @@ func _cmd_save(ctx: DotCmdContext) -> void:
 	ctx.reply("Saved \"%s\": %d props." % [ctx.args[0], (doc.value["props"] as Array).size()])
 
 
-func _cmd_load(ctx: DotCmdContext) -> void:
+func _cmd_load(ctx: GSCmdContext) -> void:
 	var player := _caller(ctx)
 	if player == null or ctx.args.is_empty():
 		ctx.reply("Usage: pg_load <name>, as a player.")
@@ -709,7 +709,7 @@ func _cmd_load(ctx: DotCmdContext) -> void:
 	ctx.reply("Put down \"%s\": %d props." % [ctx.args[0], int(placed.value)])
 
 
-func _cmd_builds(ctx: DotCmdContext) -> void:
+func _cmd_builds(ctx: GSCmdContext) -> void:
 	if ctx.session == null:
 		ctx.reply("Only a player has builds.")
 		return
@@ -717,7 +717,7 @@ func _cmd_builds(ctx: DotCmdContext) -> void:
 	ctx.reply("Your builds: %s" % (", ".join(listed) if not listed.is_empty() else "none yet (pg_save <name>)"))
 
 
-func _cmd_build_delete(ctx: DotCmdContext) -> void:
+func _cmd_build_delete(ctx: GSCmdContext) -> void:
 	if ctx.session == null or ctx.args.is_empty():
 		ctx.reply("Usage: pg_build_delete <name>, as a player.")
 		return
@@ -728,7 +728,7 @@ func _cmd_build_delete(ctx: DotCmdContext) -> void:
 	ctx.reply("Deleted \"%s\"." % ctx.args[0])
 
 
-func _cmd_undo(ctx: DotCmdContext) -> void:
+func _cmd_undo(ctx: GSCmdContext) -> void:
 	var id := _target(ctx, false)
 
 	if id == &"" or not game.undo(id):
@@ -738,28 +738,28 @@ func _cmd_undo(ctx: DotCmdContext) -> void:
 	ctx.reply("Removed.")
 
 
-func _cmd_props_clear(ctx: DotCmdContext) -> void:
+func _cmd_props_clear(ctx: GSCmdContext) -> void:
 	if ctx.args.is_empty():
-		var count := game.props.clear_all(DotPropSpawner.REASON_ADMIN)
+		var count := game.props.clear_all(GSPropSpawner.REASON_ADMIN)
 		ctx.reply("Removed %d props." % count)
 		return
 
 	var count := game.props.clear_player(
-		StringName(ctx.args[0]), DotPropSpawner.REASON_ADMIN
+		StringName(ctx.args[0]), GSPropSpawner.REASON_ADMIN
 	)
 	ctx.reply("Removed %d of %s's props." % [count, ctx.args[0]])
 
 
 const LOADOUT_COMMAND_SCRIPT := "res://addons/dot_loadout/integrations/dot_loadout_command.gd"
 
-## The B menu's server half (dot-loadout's `DotLoadoutCommand` over the arena's manager), or
+## The B menu's server half (dot-loadout's `GSLoadoutCommand` over the arena's manager), or
 ## null on a host whose dot-loadout predates it (API 2).
 var loadout_command: Object = null
 
 ## `pg_arena_on`: whether the arena is on, REPLICATED so a client's B knows whether there is a
 ## loadout to open (the lead's call: B opens it only in the arena, and says so outside). Also a
 ## switch: setting it is `pg_arena on/off`.
-var _arena_on: DotConVar = null
+var _arena_on: GSConVar = null
 
 
 ## The loadout key of session [param session_id]: dot-loadout keys are at least eight long, so
@@ -772,7 +772,7 @@ static func loadout_key(session_id: int) -> String:
 const LOADOUT_ARENA_ONLY := "Loadouts are in the arena."
 
 
-func _cmd_vote(ctx: DotCmdContext) -> void:
+func _cmd_vote(ctx: GSCmdContext) -> void:
 	match ctx.arg(0):
 		"open":
 			var opened := vote.director.open_vote()

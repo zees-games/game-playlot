@@ -22,7 +22,7 @@ const NOTICE_SECONDS := 4.0
 ## (a suite, a render) has the accent over dot-ui's defaults.
 static func piece_theme() -> Theme:
 	var t := Theme.new()
-	var type := DotHudPiece.THEME_TYPE
+	var type := GSHudPiece.THEME_TYPE
 	t.set_color(&"highlight", type, PlaylotGeometry.COLOUR_BOOST)
 	t.set_color(&"good", type, PlaylotGeometry.COLOUR_START)
 	return t
@@ -30,8 +30,8 @@ static func piece_theme() -> Theme:
 
 ## The theme's HUD colours onto a run timer's block (the time, the speed, the strafes), which is not a dot-ui piece and so does not read the theme the menu sets on this HUD.
 ## [param palette] is the menu's; null is the default theme. Kept so a timer block added later is themed too.
-func apply_theme(palette: DotMenuPalette = null) -> void:
-	_palette = palette if palette != null else DotMenuPalette.new()
+func apply_theme(palette: GSMenuPalette = null) -> void:
+	_palette = palette if palette != null else GSMenuPalette.new()
 	if timer_hud != null:
 		timer_hud.set("panel_colour", _palette.hud_plate)
 		timer_hud.set("neutral_colour", _palette.hud_text)
@@ -50,37 +50,37 @@ func set_timer_hud(block: Control) -> void:
 
 ## What is in hand and how much is in it: a zee weapon's magazine and reserve, bottom right.
 ## Empty with a toy or nothing in hand, which the tool line already names.
-var ammo: DotAmmoCounter = null
+var ammo: GSAmmoCounter = null
 ## The held weapon's sprite left of the counter (`cl_weapon_icons`); hidden when it has none.
-var weapon_icon: DotWeaponIconPlate = null
+var weapon_icon: GSWeaponIconPlate = null
 
 ## Every hit the server confirmed ([method confirm_hit]): a mark round the crosshair, and
 ## the number on the body. Never the local prediction.
-## The marker and numbers layer ([DotHitFeedback]); [member hit_marker] and
+## The marker and numbers layer ([GSHitFeedback]); [member hit_marker] and
 ## [member damage_numbers] are its two pieces.
-var hit_fx: DotHitFeedback = null
-var hit_marker: DotHitMarker = null
+var hit_fx: GSHitFeedback = null
+var hit_marker: GSHitMarker = null
 ## The key an action is on, as bound (`PlaylotClient.key_for`), for the lines that name one.
 var key_fn: Callable = Callable()
-var damage_numbers: DotDamageNumbers = null
+var damage_numbers: GSDamageNumbers = null
 
-## A run timer's HUD block (dot-timer's `DotTimerHud`), or null. See [method set_timer_hud].
+## A run timer's HUD block (dot-timer's `GSTimerHud`), or null. See [method set_timer_hud].
 var timer_hud: Control = null
 
 ## `func(player_id) -> PackedStringArray`: a run timer's parts of the status line (the
 ## track, the checkpoint, PRACTICE). Unset without one.
 var status_fn: Callable = Callable()
 
-var _palette: DotMenuPalette = null
+var _palette: GSMenuPalette = null
 
 var _notice: Label = null
 var _status: Label = null
 var _tools: Label = null
-var _crosshair: DotCrosshair = null
+var _crosshair: GSCrosshair = null
 ## Through a scoped zee gun at full aim: zee's circle and reticle (the gun is not drawn then).
 var scope: ZeeScopeOverlay = null
-## Whether the host's DotCrosshair fades while aiming (dot-ui API 5).
-var _crosshair_fades: bool = DotAddonApi.build_level("dot_ui") >= 5
+## Whether the host's GSCrosshair fades while aiming (dot-ui API 5).
+var _crosshair_fades: bool = GSAddonApi.build_level("dot_ui") >= 5
 var _notice_until: float = 0.0
 
 var playlot: Playlot = null
@@ -94,7 +94,7 @@ var player_id: StringName = &"local"
 ## client's session starts its own clock when it loads the map and nothing the server
 ## decides ever reaches it: an extend never arrived, and the deployed `trigger: rtv_only`
 ## with no limit had this counting down thirty minutes the server did not have.
-var clock_view: DotVoteClockView = null
+var clock_view: GSVoteClockView = null
 
 ## What the client says is in the player's hands, and what the menu last armed.
 ##
@@ -159,7 +159,7 @@ func _ready() -> void:
 	# First child, so drawn first: the run timer and the tool lines read over the black.
 	move_child(scope, 0)
 
-	_crosshair = DotCrosshair.new()
+	_crosshair = GSCrosshair.new()
 	_crosshair.name = "Crosshair"
 	_crosshair.set_anchors_preset(Control.PRESET_FULL_RECT)
 	# Offsets too (see above), or the crosshair draws in a zero-sized rect.
@@ -174,7 +174,7 @@ func _ready() -> void:
 
 	# Bottom right, where the chat box (bottom left) and a shell's ballot (top right) are
 	# not; it dims under a ballot that reaches it, which is the piece's own default.
-	ammo = DotAmmoCounter.new()
+	ammo = GSAmmoCounter.new()
 	ammo.name = "Ammo"
 	ammo.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
 	ammo.offset_left = -420.0
@@ -183,7 +183,7 @@ func _ready() -> void:
 	ammo.offset_bottom = -24.0
 	add_child(ammo)
 
-	weapon_icon = DotWeaponIconPlate.new()
+	weapon_icon = GSWeaponIconPlate.new()
 	weapon_icon.name = "WeaponIcon"
 	weapon_icon.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
 	weapon_icon.offset_left = -580.0
@@ -194,7 +194,7 @@ func _ready() -> void:
 	add_child(weapon_icon)
 
 	# Full rect, centred on the crosshair; both draw only what the server confirmed.
-	hit_fx = DotHitFeedback.mount(self)
+	hit_fx = GSHitFeedback.mount(self)
 	hit_marker = hit_fx.marker
 	damage_numbers = hit_fx.numbers
 
@@ -367,8 +367,8 @@ func show_weapon(rig: ZeeWeaponRig) -> void:
 ## "12/200 props" — the count against this player's props limit, which is the limit a
 ## builder meets. "no limit" when there is none rather than "/0", which reads as "none".
 func _props_line() -> String:
-	var used := playlot.props.group_count(player_id, DotPropDef.GROUP_PROPS)
-	var cap := playlot.props.limit_for(player_id, DotPropDef.GROUP_PROPS)
+	var used := playlot.props.group_count(player_id, GSPropDef.GROUP_PROPS)
+	var cap := playlot.props.limit_for(player_id, GSPropDef.GROUP_PROPS)
 	return "%d/%s props" % [used, str(cap) if cap > 0 else "no limit"]
 
 
@@ -434,13 +434,13 @@ func _on_run_filed(id: StringName, time: float, rank: int, reason: String) -> vo
 	notice("%s — rank %d" % [Playlot.format_time(time), rank])
 
 
-func _on_map_ready(map: DotMapDef) -> void:
+func _on_map_ready(map: GSMapDef) -> void:
 	notice("Now playing %s" % map.name_or_id())
 
 
 ## What the status line says about the map's time left: the server's clock when it has
 ## said anything — empty when that clock does not exist — and [param local] otherwise.
-static func time_left_text(view: DotVoteClockView, local: String, now: float) -> String:
+static func time_left_text(view: GSVoteClockView, local: String, now: float) -> String:
 	if view != null and view.known:
 		return view.formatted_at(now)
 
@@ -449,7 +449,7 @@ static func time_left_text(view: DotVoteClockView, local: String, now: float) ->
 
 ## Whether the viewer is alive, pushed from the replicated COMBAT health (dot-ui API 14).
 func set_alive(alive: bool) -> void:
-	if _crosshair != null and DotAddonApi.build_level("dot_ui") >= 14:
+	if _crosshair != null and GSAddonApi.build_level("dot_ui") >= 14:
 		_crosshair.call(&"set_alive", alive)
 
 

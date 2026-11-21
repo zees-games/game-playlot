@@ -1,4 +1,4 @@
-extends DotScreen
+extends GSScreen
 
 const PlaylotProfiles := preload("playlot_profiles.gd")
 const Readout := preload("playlot_profile_readout.gd")
@@ -35,18 +35,18 @@ const UNITS := {
 	"burst_interval_ticks": "ticks", "charge_ticks": "ticks", "deploy_ticks": "ticks", "holster_ticks": "ticks",
 }
 
-## `(req: Dictionary) -> DotResult`: where an edit goes. Set by the client.
+## `(req: Dictionary) -> GSResult`: where an edit goes. Set by the client.
 var submit: Callable = Callable()
 var profiles: PlaylotProfiles = null
-var tokens: DotFormTokens = DotFormTokens.dark()
-var form: DotUiForm = null
+var tokens: GSFormTokens = GSFormTokens.dark()
+var form: GSUiForm = null
 
 var _kind := ""
 var _id := ""
 var _pending := {}
 var _awaiting: Array[String] = []
 var _resync := false
-var _bound: DotProfileRuntime = null
+var _bound: GSProfileRuntime = null
 var _buttons := {}
 var _filter := ""
 
@@ -251,7 +251,7 @@ func _on_pop() -> void:
 
 
 func _bind_runtime() -> void:
-	var rt: DotProfileRuntime = profiles.runtime if profiles != null else null
+	var rt: GSProfileRuntime = profiles.runtime if profiles != null else null
 	if rt == _bound:
 		return
 	if _bound != null and _bound.profile_changed.is_connected(_on_changed):
@@ -285,7 +285,7 @@ func entries(kind: String) -> Array:
 		var res := set.load_profile(id)
 		if not res.ok:
 			continue
-		var p: DotProfile = res.value
+		var p: GSProfile = res.value
 		var menu: Dictionary = p.get_value("menu", {})
 		var group := str(menu.get("category", ""))
 		if group == "":
@@ -300,7 +300,7 @@ func entries(kind: String) -> Array:
 	return out
 
 
-func _profile_set(kind: String) -> DotProfileSet:
+func _profile_set(kind: String) -> GSProfileSet:
 	if profiles == null:
 		return null
 	match kind:
@@ -387,16 +387,16 @@ func current_id() -> String:
 
 
 ## Opens [param id] of [param kind] (`npc` or `weapon`) in the form. Pending edits go out first.
-func open_profile(kind: String, id: String) -> DotResult:
+func open_profile(kind: String, id: String) -> GSResult:
 	var set := _profile_set(kind)
 	if set == null:
-		return DotResult.fail(DotError.CODE_INVALID, "no profile kind '%s'" % kind)
+		return GSResult.fail(GSError.CODE_INVALID, "no profile kind '%s'" % kind)
 	if not set.has_id(id):
-		return DotResult.fail(DotError.CODE_INVALID, "%s/%s: no such profile" % [kind, id])
+		return GSResult.fail(GSError.CODE_INVALID, "%s/%s: no such profile" % [kind, id])
 	flush()
 	var base := _read(set, id, false)
 	if base.is_empty():
-		return DotResult.fail(DotError.CODE_INVALID, "%s/%s does not load" % [kind, id])
+		return GSResult.fail(GSError.CODE_INVALID, "%s/%s does not load" % [kind, id])
 	_kind = kind
 	_id = id
 	_resync = false
@@ -404,7 +404,7 @@ func open_profile(kind: String, id: String) -> DotResult:
 	_sync_form()
 	_mark_selection()
 	profile_opened.emit(kind, id)
-	return DotResult.success(null)
+	return GSResult.success(null)
 
 
 func _build_form(kind: String, id: String, schema: Array) -> void:
@@ -413,7 +413,7 @@ func _build_form(kind: String, id: String, schema: Array) -> void:
 		form.queue_free()
 	if _empty != null:
 		_empty.visible = false
-	form = DotUiForm.new()
+	form = GSUiForm.new()
 	form.tokens = tokens
 	form.compact_below = 640.0
 	form.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -432,7 +432,7 @@ func _build_form(kind: String, id: String, schema: Array) -> void:
 
 ## The profile's values, flattened: schema keys by name, the `extra:` numbers as `extra.<key>`.
 ## [param live] reads the runtime layer too; false reads the file tiers alone (the reset targets).
-func _read(set: DotProfileSet, id: String, live: bool) -> Dictionary:
+func _read(set: GSProfileSet, id: String, live: bool) -> Dictionary:
 	var kept := set.runtime_paths(id)
 	if not live and not kept.is_empty():
 		set.set_runtime(id, {})
@@ -441,7 +441,7 @@ func _read(set: DotProfileSet, id: String, live: bool) -> Dictionary:
 		set.set_runtime(id, kept)
 	if not res.ok:
 		return {}
-	var p: DotProfile = res.value
+	var p: GSProfile = res.value
 	var out: Dictionary = {}
 	for k in p.values:
 		if NPC_GROUPS.has(k) or WEAPON_GROUPS.has(k):
@@ -628,7 +628,7 @@ func _send(op: String, key: String, value: Variant) -> void:
 	if _id == "" or not submit.is_valid():
 		_say("Not connected to a server that takes edits.", true)
 		return
-	var res: DotResult = submit.call(DotProfileRuntime.make_request(op, _kind, _id, key, value))
+	var res: GSResult = submit.call(GSProfileRuntime.make_request(op, _kind, _id, key, value))
 	if not res.ok:
 		_say("Refused: " + res.error.message, true)
 		_sync_form()

@@ -1,6 +1,6 @@
-extends DotGameCheckSuite
+extends GSGameCheckSuite
 
-## PlaylotConfig through DotGameConfigBinder: fields, cvars, the arena and the shop reading them, strict refusal, the diff and the workbench round trip.
+## PlaylotConfig through GSGameConfigBinder: fields, cvars, the arena and the shop reading them, strict refusal, the diff and the workbench round trip.
 ##
 ## [codeblock]
 ## godot --headless --path . res://examples/headless_config.tscn
@@ -24,7 +24,7 @@ var _finished := 0
 
 
 func _ready() -> void:
-	DotLog.set_level(DotLog.Level.FATAL)
+	GSLog.set_level(GSLog.Level.FATAL)
 	_run.call_deferred()
 
 
@@ -43,7 +43,7 @@ func _run() -> void:
 	_entered += 1
 	var config := PlaylotConfig.new()
 	var binder := PlaylotConfig.make_binder(config)
-	_check(DotAddonConfig.game_names("game-playlot") == PackedStringArray(["game-playground", "game-playlot"]), "the binder registers game-playground as game-playlot's former id", str(DotAddonConfig.game_names("game-playlot")))  # legacy id
+	_check(GSAddonConfig.game_names("game-playlot") == PackedStringArray(["game-playground", "game-playlot"]), "the binder registers game-playground as game-playlot's former id", str(GSAddonConfig.game_names("game-playlot")))  # legacy id
 	binder.strict = true
 	_check(binder.load_layers().ok, "defaults load")
 	_check(binder.diff().is_empty(), "no diff at the code defaults")
@@ -53,9 +53,9 @@ func _run() -> void:
 	for k in ["arena_round_sec", "arena_score_limit", "arena_health", "arena_respawn_sec", "arena_friendly_fire", "wave_kill_reward", "arena_kill_reward", "max_players", "prop_budget", "map_seconds", "soldier_health_scale", "hunter_speed_scale", "wave_speed_scale", "move_speed", "jump_height", "move_gravity"]:
 		_check(keys.has(k), "%s is exposed" % k)
 
-	var console := DotConsole.new()
+	var console := GSConsole.new()
 	add_child(console)
-	binder.bind_cvars(console.cvar, DotConVar.FLAG_ARCHIVE, console.has_name)
+	binder.bind_cvars(console.cvar, GSConVar.FLAG_ARCHIVE, console.has_name)
 	console.set_cvar("pg_arena_score_limit", "7")
 	_check(config.arena_score_limit == 7 and binder.source_of("arena_score_limit") == "cvar", "a cvar writes the field")
 	_check(binder.diff_yaml().contains("arena_score_limit: 7"), "the diff names the edit")
@@ -82,17 +82,17 @@ func _run() -> void:
 	_finished += 1
 
 	_entered += 1
-	var wb := DotGameWorkbench.new()
+	var wb := GSGameWorkbench.new()
 	wb.panel_mode = 1
 	wb.config = {"enabled": false}
-	for set: DotProfileSet in binder.profile_sets():
+	for set: GSProfileSet in binder.profile_sets():
 		wb.add_set(set, set.rel_path)
 	add_child(wb)
 	_check(wb.start().ok, "the workbench starts")
 	binder.attach(wb.api.runtime)
 	var listed := PackedStringArray()
 	for kind: String in wb.api.kinds():
-		var got: DotResult = wb.api.handle(DotGameWorkbench.LOCAL_ACTOR, {"op": "get", "kind": kind, "id": binder.profile_id})
+		var got: GSResult = wb.api.handle(GSGameWorkbench.LOCAL_ACTOR, {"op": "get", "kind": kind, "id": binder.profile_id})
 		if got.ok:
 			listed.append_array(PackedStringArray((got.value as Dictionary).get("values", {}).keys()))
 	var missing := PackedStringArray()
@@ -100,7 +100,7 @@ func _run() -> void:
 		if not listed.has(k):
 			missing.append(k)
 	_check(missing.is_empty() and binder.profile_sets().size() >= 4, "the workbench lists all %d keys over %d files" % [keys.size(), binder.profile_sets().size()], ",".join(missing))
-	var res: DotResult = wb.api.handle(DotGameWorkbench.LOCAL_ACTOR, {"op": "set", "kind": "config_world", "id": binder.profile_id, "key": "wave_kill_reward", "value": 90})
+	var res: GSResult = wb.api.handle(GSGameWorkbench.LOCAL_ACTOR, {"op": "set", "kind": "config_world", "id": binder.profile_id, "key": "wave_kill_reward", "value": 90})
 	_check(res.ok and config.wave_kill_reward == 90, "a workbench edit reaches the live config")
 	var files: Dictionary = wb.exporter.call("collect")
 	var text: String = files.get("cfg/game/game-playlot/config_world/game.yml", "")
@@ -157,22 +157,22 @@ func _ambience_cvars() -> void:
 ## The pack ships only game/, maps/ and the committed addons/pg_*: a web shell carries dot_* alone, and solo play fetches every other addon from the names in requires.floor.json. A Zee* or Aw*
 ## class named in a shipped script whose addon the floor leaves out is a grey screen on playlot.app ("Could not find type ZeeViewModel"), so every such addon must be named, at a sound floor.
 func _pack_floor() -> void:
-	var derived := DotAddonApi.derive("res://")
+	var derived := GSAddonApi.derive("res://")
 	for dir in DirAccess.get_directories_at("res://addons"):
 		if dir.begins_with("pg_"):
-			derived.merge(DotAddonApi.derive("res://addons/%s" % dir))
+			derived.merge(GSAddonApi.derive("res://addons/%s" % dir))
 	var floors := {}
-	var path := "res://" + DotAddonApi.FLOOR_FILE
+	var path := "res://" + GSAddonApi.FLOOR_FILE
 	if FileAccess.file_exists(path):
-		var parsed := DotAddonApi.parse(FileAccess.get_file_as_string(path), DotAddonApi.FLOOR_FILE)
+		var parsed := GSAddonApi.parse(FileAccess.get_file_as_string(path), GSAddonApi.FLOOR_FILE)
 		if parsed.ok:
 			floors = parsed.value
 	var unnamed := PackedStringArray()
 	for addon: String in derived:
 		if not addon.begins_with("dot_") and not addon.begins_with("pg_") and not floors.has(addon):
 			unnamed.append(addon)
-	_check(derived.has("zee_weapons") and unnamed.is_empty(), "%s names every addon the shell does not carry" % DotAddonApi.FLOOR_FILE, ",".join(unnamed))
-	var audit := DotAddonApi.floor_audit(floors, derived, DotAddonApi.guarded("res://"))
+	_check(derived.has("zee_weapons") and unnamed.is_empty(), "%s names every addon the shell does not carry" % GSAddonApi.FLOOR_FILE, ",".join(unnamed))
+	var audit := GSAddonApi.floor_audit(floors, derived, GSAddonApi.guarded("res://"))
 	_check(not floors.is_empty() and audit.is_empty(), "its floors are sound", "; ".join(audit))
 
 
@@ -183,9 +183,9 @@ func _probe() -> void:
 	binder.strict = true
 	binder.roots = PackedStringArray([ProjectSettings.globalize_path(ROOT)])
 	var loaded := binder.load_layers()
-	var console := DotConsole.new()
+	var console := GSConsole.new()
 	add_child(console)
-	binder.bind_cvars(console.cvar, DotConVar.FLAG_ARCHIVE, console.has_name)
+	binder.bind_cvars(console.cvar, GSConVar.FLAG_ARCHIVE, console.has_name)
 	print("PROBE ok=%s secs=%s secs_src=%s budget=%s budget_src=%s cvar=%s score=%s score_src=%s max=%s max_src=%s" % [
 		loaded.ok, config.map_seconds, binder.source_of("map_seconds"), config.prop_budget, binder.source_of("prop_budget"),
 		console.find_cvar("pg_prop_budget").get_string(), config.arena_score_limit, binder.source_of("arena_score_limit"),
@@ -235,7 +235,7 @@ func _layers() -> void:
 
 
 ## The shipped cfg files hold every key, in step with PlaylotConfig, and change nothing as they are.
-func _templates(binder: DotGameConfigBinder) -> void:
+func _templates(binder: GSGameConfigBinder) -> void:
 	var files := binder.template_files()
 	# One file per config set (server, props, arena, world and whatever an addon adds), counted off the binder so a new set does not leave a stale number here.
 	_check(files.size() >= 4 and files.size() == binder.profile_sets().size(), "one shipped cfg file per config set", "%d files, %d sets" % [files.size(), binder.profile_sets().size()])

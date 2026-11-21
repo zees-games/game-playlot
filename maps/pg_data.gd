@@ -31,7 +31,7 @@ const PlaylotBoxBatch := preload("../game/playlot_box_batch.gd")
 ##  "lighting": {"sun": {...}, "fog": {...}, "sky_top": [r, g, b]}}
 ## [/codeblock]
 ##
-## `lighting` (optional) is a dot-lighting document, the keys `DotLightDocument` reads plus
+## `lighting` (optional) is a dot-lighting document, the keys `GSLightDocument` reads plus
 ## this game's `sky_top`; a map without one gets the game's daylight
 ## (`PlaylotLighting.DAYLIGHT`).
 ##
@@ -44,7 +44,7 @@ const PlaylotBoxBatch := preload("../game/playlot_box_batch.gd")
 ## box may not be turned, because a volume is asked about as an axis-aligned box. Foliage is
 ## not solid either, and not a liquid: drawn, walked through, hidden in, recorded nowhere.
 ##
-## A box with a `brush` (optional) is a [DotMapBrush] instead: `"brush": "stairs"` (wedge, ramp,
+## A box with a `brush` (optional) is a [GSMapBrush] instead: `"brush": "stairs"` (wedge, ramp,
 ## arch, cylinder, cone, spike, quarter_pipe, slab_holes), `size` is the brush's bounding box,
 ## `params` its [code]{steps, segments, thickness, holes}[/code], and `at`, `turn`, `colour` and
 ## `material` read as for a box. Convex pieces collide; the survey (boxes only) does not see them.
@@ -63,7 +63,7 @@ const PlaylotBoxBatch := preload("../game/playlot_box_batch.gd")
 ## by nobody in particular (`Playlot.MAP_OWNER`): a door with a button beside it, a stack
 ## of barrels, planks at the top of a slope. Frozen unless it says otherwise, because map
 ## furniture that falls over on load is not furniture. A wire joins two of them by index
-## through dot-props' DotPropIO, exactly as the tool gun's Wire mode does.
+## through dot-props' GSPropIO, exactly as the tool gun's Wire mode does.
 ##
 ## A box is centred on `at` (the [method PlaylotGeometry.box] convention) and turned
 ## about its own centre. `declared` is [method survey_declared]: ground only a noclip
@@ -88,7 +88,7 @@ const KINDS: Array[String] = [KIND, "playlot_map"]
 ## [method validate] by name, it is never cut short.
 static var max_boxes: int = 0
 
-## Whether the drawn world's static props are baked into per-cell batches (DotMapPropBatch) instead of one node each. A flag so
+## Whether the drawn world's static props are baked into per-cell batches (GSMapPropBatch) instead of one node each. A flag so
 ## the bench can A/B the same build (`--batch-props 0|1`). On since pgc_deadcity draws 4110 -> 2567 calls with it.
 static var batch_props: bool = true
 
@@ -119,12 +119,12 @@ var doc: Dictionary = {}
 ## server or test draws nothing, so it never reads one; a test that wants one sets this.
 var draw_world: bool = DisplayServer.get_name() != "headless"
 
-## Milliseconds of world build between frames ([DotFrameSlice]), so a map that loads during
+## Milliseconds of world build between frames ([GSFrameSlice]), so a map that loads during
 ## play does not freeze a frame on the web. 0 builds it in one call.
 var world_slice_ms: int = 40
 
 ## The drawn world pack, or null while the boxes are what is seen.
-var drawn_world: DotMapDrawnWorld = null
+var drawn_world: GSMapDrawnWorld = null
 
 ## The drawn world's credit line (its author, and the art whose licence asks for a name).
 var world_credits: String = ""
@@ -144,14 +144,14 @@ func _ready() -> void:
 ## Reads [param path] and builds the map it describes. Idempotent. A document that does not
 ## read leaves the fallback floor, so a broken custom map is a flat plate with a WARN rather
 ## than a player falling through nothing.
-func configure_doc(path: String) -> DotResult:
+func configure_doc(path: String) -> GSResult:
 	if _built:
-		return DotResult.success(self)
+		return GSResult.success(self)
 	_built = true
 
 	var read := read_doc(path)
 	if not read.ok:
-		DotLog.warn(CHANNEL, "a map document did not load; building a bare floor",
+		GSLog.warn(CHANNEL, "a map document did not load; building a bare floor",
 			{"path": path, "why": read.error.message})
 		_build_fallback()
 		return read
@@ -168,7 +168,7 @@ func configure_doc(path: String) -> DotResult:
 		# Not awaited: the boxes are the map from here on, and the pack replaces their look when
 		# it has been read and built.
 		load_world()
-	return DotResult.success(self)
+	return GSResult.success(self)
 
 
 # --- The drawn world ------------------------------------------------------------
@@ -208,45 +208,45 @@ static func world_spec(d: Dictionary) -> Dictionary:
 
 
 ## Where the pack of [param spec] for map [param id] is, beside the document at [param doc_path]:
-## the path without `.json`, as [method DotMapBspMesh.load_prefix] takes it.
+## the path without `.json`, as [method GSMapBspMesh.load_prefix] takes it.
 static func world_prefix(doc_path: String, spec: Dictionary, id: String) -> String:
 	return doc_path.get_base_dir().path_join(WORLD_DIR).path_join(str(spec["pack"])).path_join(id)
 
 
 ## Reads the document's world pack and draws it in place of the box meshes (dot-map's
-## [DotMapDrawnWorld], as hide-n-seek and zombie-zone draw theirs). Succeeds with true when the
+## [GSMapDrawnWorld], as hide-n-seek and zombie-zone draw theirs). Succeeds with true when the
 ## world is drawn, false when there is none to draw; anything else leaves the boxes drawn.
-func load_world() -> DotResult:
+func load_world() -> GSResult:
 	var spec := world_spec(doc)
 	if not draw_world or spec.is_empty() or drawn_world != null or _world_loading:
-		return DotResult.success(false)
+		return GSResult.success(false)
 	var id := str(doc["id"])
 	var prefix := world_prefix(_doc_path, spec, id)
 	if not FileAccess.file_exists(prefix + ".json"):
-		DotLog.warn(CHANNEL, "a map names a world pack that is not here; its boxes are drawn",
+		GSLog.warn(CHANNEL, "a map names a world pack that is not here; its boxes are drawn",
 			{"map": id, "at": prefix})
 		_boxes_stay_drawn()
-		return DotResult.fail(DotError.CODE_IO, "No world pack at %s." % prefix)
+		return GSResult.fail(GSError.CODE_IO, "No world pack at %s." % prefix)
 	_world_loading = true
-	var read: DotResult = await DotMapDrawnWorld.read(prefix, DotRegistry.get_service(&"dot_cloud_client"))
+	var read: GSResult = await GSMapDrawnWorld.read(prefix, GSRegistry.get_service(&"dot_cloud_client"))
 	if not read.ok:
 		_world_loading = false
-		DotLog.warn(CHANNEL, "a map's world pack would not read; its boxes are drawn",
+		GSLog.warn(CHANNEL, "a map's world pack would not read; its boxes are drawn",
 			{"map": id, "at": prefix, "why": read.error.message})
 		_boxes_stay_drawn()
 		return read
-	var world: DotMapBspMesh = read.value
+	var world: GSMapBspMesh = read.value
 	var wanted := float(spec["metres_per_unit"])
 	var made := float((world.manifest.get("units", {}) as Dictionary).get("metres_per_unit", 0.0))
 	if wanted > 0.0 and absf(made - wanted) > 1e-5:
 		_world_loading = false
-		DotLog.warn(CHANNEL, "a map's world pack was made at another scale; its boxes are drawn",
+		GSLog.warn(CHANNEL, "a map's world pack was made at another scale; its boxes are drawn",
 			{"map": id, "pack": made, "doc": wanted})
 		_boxes_stay_drawn()
-		return DotResult.fail(DotError.CODE_INVALID, "World pack %s is at %s metres a unit, the document %s." % [prefix, made, wanted])
-	var drawn: DotMapDrawnWorld = await attach_world(world, spec["offset"], is_original(spec))
+		return GSResult.fail(GSError.CODE_INVALID, "World pack %s is at %s metres a unit, the document %s." % [prefix, made, wanted])
+	var drawn: GSMapDrawnWorld = await attach_world(world, spec["offset"], is_original(spec))
 	_world_loading = false
-	return DotResult.success(drawn != null)
+	return GSResult.success(drawn != null)
 
 
 ## Lays [param world] over the map at [param offset] and hides what it replaces: every box and
@@ -255,7 +255,7 @@ func load_world() -> DotResult:
 ## seen. Liquids stay drawn. Null when the map went away during the build.
 ## [param original] draws the map's own textures the pack carries (the `_orig` variant).
 ## Props and vegetation the pack places are drawn too.
-func attach_world(world: DotMapBspMesh, offset: Vector3, original: bool = false) -> DotMapDrawnWorld:
+func attach_world(world: GSMapBspMesh, offset: Vector3, original: bool = false) -> GSMapDrawnWorld:
 	var environment: Environment = null
 	var lamps: Array = []
 	for child in get_children():
@@ -267,16 +267,16 @@ func attach_world(world: DotMapBspMesh, offset: Vector3, original: bool = false)
 		"transform": Transform3D(Basis.IDENTITY, offset),
 		"environment": environment,
 		"lamps": lamps,
-		"cloud": DotRegistry.get_service(&"dot_cloud_client"),
+		"cloud": GSRegistry.get_service(&"dot_cloud_client"),
 		"props": true,
 		"batch_props": batch_props,
 		"original_textures": original,
 	}
-	var drawn: DotMapDrawnWorld = null
+	var drawn: GSMapDrawnWorld = null
 	if world_slice_ms > 0:
-		drawn = await DotMapDrawnWorld.attach_async(self, world, options, DotFrameSlice.new(world_slice_ms))
+		drawn = await GSMapDrawnWorld.attach_async(self, world, options, GSFrameSlice.new(world_slice_ms))
 	else:
-		drawn = DotMapDrawnWorld.attach(self, world, options)
+		drawn = GSMapDrawnWorld.attach(self, world, options)
 	if drawn == null:
 		return null
 	var hidden := hide_box_meshes()
@@ -286,7 +286,7 @@ func attach_world(world: DotMapBspMesh, offset: Vector3, original: bool = false)
 		shade.queue_free()
 	drawn_world = drawn
 	world_credits = drawn.credits
-	DotLog.info(CHANNEL, "the map is drawn from its world pack",
+	GSLog.info(CHANNEL, "the map is drawn from its world pack",
 		{"map": str(doc.get("id", "")), "hidden": hidden, "lit": drawn.lit != null, "credits": world_credits})
 	return drawn
 
@@ -354,89 +354,89 @@ func _build_fallback() -> void:
 # --- The document --------------------------------------------------------------
 
 ## Reads and checks a map document.
-static func read_doc(path: String) -> DotResult:
+static func read_doc(path: String) -> GSResult:
 	if not FileAccess.file_exists(path):
-		return DotResult.fail(DotError.CODE_IO, "No map document at %s." % path)
+		return GSResult.fail(GSError.CODE_IO, "No map document at %s." % path)
 	var text := FileAccess.get_file_as_string(path)
 	var parsed: Variant = JSON.parse_string(text)
 	if not (parsed is Dictionary):
-		return DotResult.fail(DotError.CODE_PARSE, "%s is not a JSON object." % path)
+		return GSResult.fail(GSError.CODE_PARSE, "%s is not a JSON object." % path)
 	return validate(parsed)
 
 
 ## Whether a document's world [param spec] (from [method world_spec]) is the original variant:
 ## its pack ends in dot-map's `_orig` mark and carries the map's own textures.
 static func is_original(spec: Dictionary) -> bool:
-	return str(spec.get("pack", "")).ends_with(DotMapLocalMaps.ORIG_MARK)
+	return str(spec.get("pack", "")).ends_with(GSMapLocalMaps.ORIG_MARK)
 
 
 ## Whether a document is one this builds. Every field is checked before anything is built,
 ## so a bad map is refused whole rather than half drawn.
-static func validate(d: Dictionary) -> DotResult:
+static func validate(d: Dictionary) -> GSResult:
 	if int(d.get("format", 0)) != FORMAT or not KINDS.has(str(d.get("kind", ""))):
-		return DotResult.fail(DotError.CODE_VERSION,
+		return GSResult.fail(GSError.CODE_VERSION,
 			"Not a playlot map document of format %d." % FORMAT)
 	var id := str(d.get("id", ""))
 	if not id.is_valid_identifier():
-		return DotResult.fail(DotError.CODE_INVALID, "A map id must be an identifier, not \"%s\"." % id)
+		return GSResult.fail(GSError.CODE_INVALID, "A map id must be an identifier, not \"%s\"." % id)
 	if not _is_vec(d.get("spawn")):
-		return DotResult.fail(DotError.CODE_INVALID, "Map %s has no spawn." % id)
+		return GSResult.fail(GSError.CODE_INVALID, "Map %s has no spawn." % id)
 	var boxes: Variant = d.get("boxes")
 	if not (boxes is Array) or (boxes as Array).is_empty():
-		return DotResult.fail(DotError.CODE_INVALID, "Map %s needs at least 1 box." % id)
+		return GSResult.fail(GSError.CODE_INVALID, "Map %s needs at least 1 box." % id)
 	if max_boxes > 0 and (boxes as Array).size() > max_boxes:
-		return DotResult.fail(DotError.CODE_INVALID, "Map %s has %d boxes, past this host's max_boxes %d." % [
+		return GSResult.fail(GSError.CODE_INVALID, "Map %s has %d boxes, past this host's max_boxes %d." % [
 			id, (boxes as Array).size(), max_boxes])
 	for i in (boxes as Array).size():
 		var b: Variant = boxes[i]
 		if not (b is Dictionary) or not _is_vec(b.get("at")) or not _is_vec(b.get("size")):
-			return DotResult.fail(DotError.CODE_INVALID, "Map %s: box %d needs at and size." % [id, i])
+			return GSResult.fail(GSError.CODE_INVALID, "Map %s: box %d needs at and size." % [id, i])
 		var size := _vec(b["size"])
 		if size.x <= 0.0 or size.y <= 0.0 or size.z <= 0.0:
-			return DotResult.fail(DotError.CODE_INVALID, "Map %s: box %d has no volume." % [id, i])
+			return GSResult.fail(GSError.CODE_INVALID, "Map %s: box %d has no volume." % [id, i])
 		if _vec(b["at"]).length() > MAX_EXTENT:
-			return DotResult.fail(DotError.CODE_INVALID, "Map %s: box %d is out of the world." % [id, i])
+			return GSResult.fail(GSError.CODE_INVALID, "Map %s: box %d is out of the world." % [id, i])
 		if b.has("turn") and not (b["turn"] is Array and (b["turn"] as Array).size() == 4):
-			return DotResult.fail(DotError.CODE_INVALID, "Map %s: box %d's turn is [axis x, y, z, degrees]." % [id, i])
+			return GSResult.fail(GSError.CODE_INVALID, "Map %s: box %d's turn is [axis x, y, z, degrees]." % [id, i])
 		if b.has("brush"):
 			var spec := {"kind": str(b["brush"]), "size": b["size"], "params": b.get("params", {})}
-			var ok := DotMapBrush.validate(spec)
+			var ok := GSMapBrush.validate(spec)
 			if not ok.ok:
-				return DotResult.fail(DotError.CODE_INVALID, "Map %s: box %d's brush: %s" % [id, i, ok.error.message])
+				return GSResult.fail(GSError.CODE_INVALID, "Map %s: box %d's brush: %s" % [id, i, ok.error.message])
 			if PlaylotMaterials.is_volume(str(b.get("material", ""))):
-				return DotResult.fail(DotError.CODE_INVALID, "Map %s: box %d is a brush and a liquid; a brush is solid." % [id, i])
+				return GSResult.fail(GSError.CODE_INVALID, "Map %s: box %d is a brush and a liquid; a brush is solid." % [id, i])
 		if b.has("material"):
 			var material := str(b["material"])
 			if not PlaylotMaterials.is_known(material):
-				return DotResult.fail(DotError.CODE_INVALID, "Map %s: box %d is made of %s, which is not a material." % [id, i, material])
+				return GSResult.fail(GSError.CODE_INVALID, "Map %s: box %d is made of %s, which is not a material." % [id, i, material])
 			if PlaylotMaterials.is_liquid(material) and b.has("turn"):
-				return DotResult.fail(DotError.CODE_INVALID, "Map %s: box %d is %s and turned; a liquid is an axis-aligned volume." % [id, i, material])
+				return GSResult.fail(GSError.CODE_INVALID, "Map %s: box %d is %s and turned; a liquid is an axis-aligned volume." % [id, i, material])
 	if d.has("lighting") and not (d["lighting"] is Dictionary):
-		return DotResult.fail(DotError.CODE_INVALID, "Map %s: lighting is a dot-lighting document (an object)." % id)
+		return GSResult.fail(GSError.CODE_INVALID, "Map %s: lighting is a dot-lighting document (an object)." % id)
 	if d.has("world"):
 		var bad := _world_fault(d["world"])
 		if bad != "":
-			return DotResult.fail(DotError.CODE_INVALID, "Map %s: world %s" % [id, bad])
+			return GSResult.fail(GSError.CODE_INVALID, "Map %s: world %s" % [id, bad])
 	var props: Variant = d.get("props", [])
 	if not (props is Array) or (props as Array).size() > MAX_PROPS:
-		return DotResult.fail(DotError.CODE_INVALID, "Map %s: props is a list of at most %d." % [id, MAX_PROPS])
+		return GSResult.fail(GSError.CODE_INVALID, "Map %s: props is a list of at most %d." % [id, MAX_PROPS])
 	for i in (props as Array).size():
 		var p: Variant = props[i]
 		if not (p is Dictionary) or str(p.get("id", "")) == "" or not _is_vec(p.get("at")):
-			return DotResult.fail(DotError.CODE_INVALID, "Map %s: prop %d needs an id and at." % [id, i])
+			return GSResult.fail(GSError.CODE_INVALID, "Map %s: prop %d needs an id and at." % [id, i])
 		if _vec(p["at"]).length() > MAX_EXTENT:
-			return DotResult.fail(DotError.CODE_INVALID, "Map %s: prop %d is out of the world." % [id, i])
+			return GSResult.fail(GSError.CODE_INVALID, "Map %s: prop %d is out of the world." % [id, i])
 	var wires: Variant = d.get("wires", [])
 	if not (wires is Array):
-		return DotResult.fail(DotError.CODE_INVALID, "Map %s: wires is a list." % id)
+		return GSResult.fail(GSError.CODE_INVALID, "Map %s: wires is a list." % id)
 	for i in (wires as Array).size():
 		var w: Variant = wires[i]
 		var count := (props as Array).size()
 		if not (w is Dictionary) or int(w.get("from", -1)) < 0 or int(w.get("from", -1)) >= count \
 				or int(w.get("to", -1)) < 0 or int(w.get("to", -1)) >= count \
 				or str(w.get("out", "")) == "" or str(w.get("in", "")) == "":
-			return DotResult.fail(DotError.CODE_INVALID, "Map %s: wire %d needs from, out, to and in, naming props." % [id, i])
-	return DotResult.success(d)
+			return GSResult.fail(GSError.CODE_INVALID, "Map %s: wire %d needs from, out, to and in, naming props." % [id, i])
+	return GSResult.success(d)
 
 
 ## Builds a checked document's boxes under [param parent], and returns its liquid volumes:
@@ -474,7 +474,7 @@ static func build_into(parent: Node3D, d: Dictionary) -> Array:
 				basis = Basis(axis.normalized(), deg_to_rad(float(t[3])))
 		var body: StaticBody3D
 		if b.has("brush"):
-			body = DotMapBrush.build_body({"kind": str(b["brush"]), "size": b["size"],
+			body = GSMapBrush.build_body({"kind": str(b["brush"]), "size": b["size"],
 				"params": b.get("params", {})}, PlaylotGeometry._material(colour))
 			body.transform = Transform3D(basis, at)
 			parent.add_child(body)
@@ -500,7 +500,7 @@ static func _liquid_mesh(at: Vector3, size: Vector3, colour: Color, index: int) 
 	# Water, lava and foliage have no collider by design: a body is swum or pushed through,
 	# not stood on, and the bed under it is solid. The audit's lenient pass would pass it on
 	# the bed's shape; this says it is meant.
-	mesh.set_meta(DotCollisionAudit.META, true)
+	mesh.set_meta(GSCollisionAudit.META, true)
 	return mesh
 
 

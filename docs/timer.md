@@ -12,7 +12,7 @@ Nothing else is configured: the tick rate comes from `sv_tickrate` as before ([s
 
 ## What the adapter does
 
-`addons/pg_timer/playlot_hook.gd` loads every dot-timer script by path and calls through `Object.call`, because a script naming `DotTimerManager` does not compile in a checkout without the addon, and the parse pass checks every tracked script. The playlot calls only the duck-typed surface on `run_timer` (`tick`, `set_tick_rate`, `add_player`, `remove_player`, `on_seated`, `on_unseated`, `on_map_changing`, `on_map_changed`, `tracks`, `track_of`, `start_for`, `retire_legacy_records`, `describe`, and for the client and module `attach_hud`, `on_key`, `checkpoint`, `bind_commands`), and each is a no-op when it is null.
+`addons/pg_timer/playlot_hook.gd` loads every dot-timer script by path and calls through `Object.call`, because a script naming `GSTimerManager` does not compile in a checkout without the addon, and the parse pass checks every tracked script. The playlot calls only the duck-typed surface on `run_timer` (`tick`, `set_tick_rate`, `add_player`, `remove_player`, `on_seated`, `on_unseated`, `on_map_changing`, `on_map_changed`, `tracks`, `track_of`, `start_for`, `retire_legacy_records`, `describe`, and for the client and module `attach_hud`, `on_key`, `checkpoint`, `bind_commands`), and each is a no-op when it is null.
 
 - **Ticks after the move**, from `Playlot._simulate_tick`, with the position the move produced.
 - **Zones** come from the map: its own `timer_zones()` if it has one, otherwise the `<map>.zones.json` dot-map read beside the scene. Neither built-in map has any; a server's own maps bring theirs.
@@ -21,7 +21,7 @@ Nothing else is configured: the tick rate comes from `sv_tickrate` as before ([s
 - **Vehicles**: getting in stops the run unless the map says the track is driven (`track_is_driven`); getting out of a driven track ends it.
 - **Records** file on the authority, keyed by the account (`Playlot.record_key`), onto the `fastest`, `top_speed` and `points` boards the hook defines; the verdict is emitted as `Playlot.run_filed` and sent to the client as an addon message.
 - **Commands** `pg_timer`, `pg_track`, `pg_top`, `pg_cp`, `pg_tp`, `pg_cp_clear`. The game binds no keys for them. Without the timer the commands are not registered.
-- **The HUD block** is dot-timer's `DotTimerHud`, top left, placed by the hook.
+- **The HUD block** is dot-timer's `GSTimerHud`, top left, placed by the hook.
 
 ## What did not come back
 

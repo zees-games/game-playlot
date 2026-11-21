@@ -38,7 +38,7 @@ static func source_of(doc: Dictionary) -> String:
 
 
 ## The map in [param catalogue] converted from the Source map [param text] (`meta.source_map`), or null.
-static func find(catalogue: DotMapCatalogue, text: String) -> DotMapDef:
+static func find(catalogue: GSMapCatalogue, text: String) -> GSMapDef:
 	var wanted := name_of(text.strip_edges())
 	if catalogue == null or wanted == "":
 		return null

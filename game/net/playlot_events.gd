@@ -33,13 +33,13 @@ const INV_CELL_MAX := 254
 
 
 ## Whether every sub-kind fits its field: [enum InvAsk] and [enum InvTell] in
-## [constant INV_SUB_BITS], dot-inventory's [enum DotInvOp.Kind] (an enum that grows outside
+## [constant INV_SUB_BITS], dot-inventory's [enum GSInvOp.Kind] (an enum that grows outside
 ## this game, written clamped) in [constant INV_OP_KIND_BITS], and [enum ProjectileTell] in
 ## [constant PROJECTILE_SUB_BITS]. What headless_net reads.
 static func sub_kinds_fit() -> bool:
 	return int(InvAsk.values().max()) < (1 << INV_SUB_BITS) \
 		and int(InvTell.values().max()) < (1 << INV_SUB_BITS) \
-		and int(DotInvOp.Kind.values().max()) < (1 << INV_OP_KIND_BITS) \
+		and int(GSInvOp.Kind.values().max()) < (1 << INV_OP_KIND_BITS) \
 		and int(ProjectileTell.values().max()) < (1 << PROJECTILE_SUB_BITS)
 
 
@@ -71,13 +71,13 @@ static func write_inv_op(seq: int, op: Dictionary) -> PackedByteArray:
 
 
 ## Reads the sub-kind every [constant Ask.INVENTORY] starts with.
-static func read_inv_ask(r: DotNetReader) -> int:
+static func read_inv_ask(r: GSNetReader) -> int:
 	return r.read_uint(INV_SUB_BITS)
 
 
 ## The rest of an [constant InvAsk.OP], after [method read_inv_ask]. The op comes back as
-## the dictionary [method DotInvOp.from_dictionary] reads.
-static func read_inv_op(r: DotNetReader) -> Dictionary:
+## the dictionary [method GSInvOp.from_dictionary] reads.
+static func read_inv_op(r: GSNetReader) -> Dictionary:
 	var seq := r.read_varint()
 	var op := {
 		"kind": r.read_uint(INV_OP_KIND_BITS),
@@ -101,7 +101,7 @@ static func write_inv_resync(seq: int) -> PackedByteArray:
 	return w.to_bytes()
 
 
-static func read_inv_resync(r: DotNetReader) -> Dictionary:
+static func read_inv_resync(r: GSNetReader) -> Dictionary:
 	var seq := r.read_varint()
 	return {"seq": seq, "ok": r.ok()}
 
@@ -113,7 +113,7 @@ static func write_inv_buy(item_id: StringName) -> PackedByteArray:
 	return w.to_bytes()
 
 
-static func read_inv_buy(r: DotNetReader) -> Dictionary:
+static func read_inv_buy(r: GSNetReader) -> Dictionary:
 	var item := StringName(r.read_string(ID_BYTES))
 	return {"item": item, "ok": r.ok()}
 
@@ -128,18 +128,18 @@ static func write_inv_ack(seq: int, ok: bool, reason: String) -> PackedByteArray
 
 
 ## Reads the sub-kind every [constant Kind.INVENTORY] starts with.
-static func read_inv_tell(r: DotNetReader) -> int:
+static func read_inv_tell(r: GSNetReader) -> int:
 	return r.read_uint(INV_SUB_BITS)
 
 
-static func read_inv_ack(r: DotNetReader) -> Dictionary:
+static func read_inv_ack(r: GSNetReader) -> Dictionary:
 	var seq := r.read_varint()
 	var accepted := r.read_bool()
 	var reason := r.read_string(INV_REASON_BYTES)
 	return {"seq": seq, "accepted": accepted, "reason": reason, "ok": r.ok()}
 
 
-## The whole bag, as the JSON [method DotInvDoc.to_dictionary] was written to survive.
+## The whole bag, as the JSON [method GSInvDoc.to_dictionary] was written to survive.
 ##
 ## JSON on purpose: it is the saved format. Refused, not truncated, when too big (truncating leaves
 ## JSON the client cannot parse); an empty result is one [method PlaylotNetBridge._tell] refuses.
@@ -154,7 +154,7 @@ static func write_inv_doc(through_seq: int, doc: Dictionary) -> PackedByteArray:
 	return w.to_bytes()
 
 
-static func read_inv_doc(r: DotNetReader) -> Dictionary:
+static func read_inv_doc(r: GSNetReader) -> Dictionary:
 	var through := r.read_varint()
 	var text := r.read_string(INV_DOC_BYTES)
 	if not r.ok():
@@ -170,7 +170,7 @@ static func read_inv_doc(r: DotNetReader) -> Dictionary:
 ## A projectile left a weapon. Floats in full for the velocity and the fuse numbers: a client
 ## flies its copy from these, and a quantised velocity is an arc that lands somewhere else.
 static func write_launch(
-	serial: int, spawn: DotWeaponSpawn, owner_id: StringName, sticks: bool
+	serial: int, spawn: GSWeaponSpawn, owner_id: StringName, sticks: bool
 ) -> PackedByteArray:
 	var w := _w()
 	w.write_uint(ProjectileTell.LAUNCH, PROJECTILE_SUB_BITS)
@@ -190,11 +190,11 @@ static func write_launch(
 	return w.to_bytes()
 
 
-## Reads what [method write_launch] wrote, after the sub-kind, as a [DotWeaponSpawn] a
+## Reads what [method write_launch] wrote, after the sub-kind, as a [GSWeaponSpawn] a
 ## client can fly. Damage is not sent: a client's copy hurts nobody.
-static func read_launch(r: DotNetReader) -> Dictionary:
+static func read_launch(r: GSNetReader) -> Dictionary:
 	var serial := r.read_varint()
-	var spawn := DotWeaponSpawn.new()
+	var spawn := GSWeaponSpawn.new()
 	spawn.id = StringName(r.read_string(ID_BYTES))
 	var owner_id := StringName(r.read_string(ID_BYTES))
 	spawn.origin = r.read_vector3_range(-WORLD_EXTENT, WORLD_EXTENT, POS_BITS)
@@ -222,7 +222,7 @@ static func write_detonate(serial: int, at: Vector3, radius: float, fx: int = 0,
 	return w.to_bytes()
 
 
-static func read_detonate(r: DotNetReader) -> Dictionary:
+static func read_detonate(r: GSNetReader) -> Dictionary:
 	var serial := r.read_varint()
 	var at := r.read_vector3_range(-WORLD_EXTENT, WORLD_EXTENT, POS_BITS)
 	var radius := r.read_float32()
@@ -240,7 +240,7 @@ static func write_blind(seconds: float, strength: float = 1.0) -> PackedByteArra
 	return w.to_bytes()
 
 
-static func read_blind(r: DotNetReader) -> Dictionary:
+static func read_blind(r: GSNetReader) -> Dictionary:
 	var seconds := r.read_float32()
 	var strength := r.read_float_range(0.0, 1.0, 5)
 	return {"seconds": seconds, "strength": strength, "ok": r.ok()}
@@ -261,7 +261,7 @@ static func write_addon(addon: String, body: Dictionary) -> PackedByteArray:
 
 ## [code]ok[/code] is false for a body that is not a JSON object, so a hook is never handed
 ## something it did not expect to be a dictionary.
-static func read_addon(r: DotNetReader) -> Dictionary:
+static func read_addon(r: GSNetReader) -> Dictionary:
 	var addon := r.read_string(ADDON_NAME_BYTES)
 	var parsed: Variant = JSON.parse_string(r.read_string(ADDON_BODY_BYTES))
 	return {"addon": addon, "body": parsed if parsed is Dictionary else {},
@@ -289,7 +289,7 @@ static func write_builds(list: Array) -> PackedByteArray:
 	return w.to_bytes()
 
 
-static func read_builds(r: DotNetReader) -> Dictionary:
+static func read_builds(r: GSNetReader) -> Dictionary:
 	var out: Array[Dictionary] = []
 	var count := mini(r.read_uint(7), BUILDS_MAX)
 	for i in count:
@@ -316,7 +316,7 @@ static func write_selection(net_id: int, prop_name: String, settings: Dictionary
 	return w.to_bytes()
 
 
-static func read_selection(r: DotNetReader) -> Dictionary:
+static func read_selection(r: GSNetReader) -> Dictionary:
 	var net_id := r.read_varint()
 	var prop_name := r.read_string(NAME_BYTES)
 	var text := r.read_string(SELECTION_SETTINGS_BYTES)
@@ -337,7 +337,7 @@ static func write_pane(index: int) -> PackedByteArray:
 	return w.to_bytes()
 
 
-static func read_pane(r: DotNetReader) -> Dictionary:
+static func read_pane(r: GSNetReader) -> Dictionary:
 	var index := r.read_varint()
 	return {"index": index, "ok": r.ok()}
 
@@ -349,7 +349,7 @@ static func write_shatter(at: Vector3, material: int) -> PackedByteArray:
 	return w.to_bytes()
 
 
-static func read_shatter(r: DotNetReader) -> Dictionary:
+static func read_shatter(r: GSNetReader) -> Dictionary:
 	var at := r.read_vector3_range(-WORLD_EXTENT, WORLD_EXTENT, POS_BITS)
 	var material := r.read_uint(3)
 	return {"at": at, "material": material, "ok": r.ok()}
@@ -367,7 +367,7 @@ static func write_toys(map_id: StringName, net_ids: PackedInt64Array) -> PackedB
 	return w.to_bytes()
 
 
-static func read_toys(r: DotNetReader) -> Dictionary:
+static func read_toys(r: GSNetReader) -> Dictionary:
 	var map_id := StringName(r.read_string(ID_BYTES))
 	var count := r.read_varint()
 	var ids := PackedInt64Array()
@@ -385,19 +385,19 @@ static func read_toys(r: DotNetReader) -> Dictionary:
 ## whole id is a kind times 10^12 and does not fit a field worth sending.
 static func write_hit(victim: int, amount: float, point: Vector3, killed: bool, headshot: bool) -> PackedByteArray:
 	var w := _w()
-	w.write_uint(clampi(victim / DotEntity.STRIDE, 0, 15), 4)
-	w.write_uint(posmod(victim, DotEntity.STRIDE) & 0xFFFFFFFF, 32)
+	w.write_uint(clampi(victim / GSEntity.STRIDE, 0, 15), 4)
+	w.write_uint(posmod(victim, GSEntity.STRIDE) & 0xFFFFFFFF, 32)
 	w.write_float_range(clampf(amount, 0.0, 1000.0), 0.0, 1000.0, 14)
 	w.write_vector3_range(point, -WORLD_EXTENT, WORLD_EXTENT, POS_BITS)
 	w.write_uint((1 if killed else 0) | (2 if headshot else 0), 2)
 	return w.to_bytes()
 
 
-static func read_hit(r: DotNetReader) -> Dictionary:
+static func read_hit(r: GSNetReader) -> Dictionary:
 	var kind := r.read_uint(4)
 	var serial := r.read_uint(32)
 	var amount := r.read_float_range(0.0, 1000.0, 14)
 	var point := r.read_vector3_range(-WORLD_EXTENT, WORLD_EXTENT, POS_BITS)
 	var flags := r.read_uint(2)
-	return {"victim": kind * DotEntity.STRIDE + serial, "amount": amount, "point": point,
+	return {"victim": kind * GSEntity.STRIDE + serial, "amount": amount, "point": point,
 		"killed": flags & 1 != 0, "headshot": flags & 2 != 0, "ok": r.ok()}

@@ -1,6 +1,6 @@
 extends RefCounted
 
-## Builds dot-game's `DotGameMapEdit` for this game: the point set, the map-data store and where a typed command stands.
+## Builds dot-game's `GSGameMapEdit` for this game: the point set, the map-data store and where a typed command stands.
 ##
 ## The point set and the store are found by path so a build without dot-spawn or dot-map has no map editing
 ## ([method make] gives null) rather than a script that does not parse.
@@ -18,7 +18,7 @@ class StoreAdapter extends RefCounted:
 	func load(game: String, map_id: String, version: String) -> Variant:
 		# The file store logs an engine error for a map it holds nothing on, which is every map at first.
 		if "root" in inner and not DirAccess.dir_exists_absolute(str(inner.get("root")).path_join(game).path_join(map_id)):
-			return DotResult.fail("not_found", "No data for %s %s." % [map_id, version])
+			return GSResult.fail("not_found", "No data for %s %s." % [map_id, version])
 
 		return await inner.call("fetch", game, map_id, version)
 
@@ -45,7 +45,7 @@ static func make(game: Object, store: Object = null) -> Object:
 	if not ResourceLoader.exists(POINT_SET):
 		return null
 
-	var edit := DotGameMapEdit.new()
+	var edit := GSGameMapEdit.new()
 	edit.points = (load(POINT_SET) as GDScript).new()
 	edit.store = _adapt(store if store != null else _default_store())
 	edit.map_fn = func() -> Dictionary: return map_of(game)
@@ -102,7 +102,7 @@ static func _default_store() -> Object:
 
 	var config: Object = (load(STORE_CONFIG) as GDScript).new()
 	var made: Variant = config.call("make_store")
-	return (made as DotResult).value if made is DotResult and (made as DotResult).ok else null
+	return (made as GSResult).value if made is GSResult and (made as GSResult).ok else null
 
 
 static func _adapt(store: Object) -> Object:

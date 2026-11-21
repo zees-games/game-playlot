@@ -1,4 +1,4 @@
-extends DotNetBehaviour
+extends GSNetBehaviour
 
 const PlaylotNetBridge := preload("playlot_net_bridge.gd")
 const PlaylotNetCommand := preload("playlot_net_command.gd")
@@ -64,7 +64,7 @@ var _seen_fire_seq: int = 0
 
 ## Retained, not cleared: a player whose packet was lost keeps moving in a straight line
 ## rather than stopping dead. The controller says the same of its own command.
-var last_move: DotFpsCommand = DotFpsCommand.new()
+var last_move: GSFpsCommand = GSFpsCommand.new()
 
 ## The aim button of the last command a peer sent (a zee gun's sights up), which the server builds the rig's weapon command from; the motor reads the rig.
 var last_aim: bool = false
@@ -72,8 +72,8 @@ var last_state_tick: int = -1
 
 
 func _register_net_vars() -> void:
-	for spec in DotFpsNetSync.state_specs():
-		var declaration := replicate(spec["property"], DotNetVar.Type[spec["type"]])
+	for spec in GSFpsNetSync.state_specs():
+		var declaration := replicate(spec["property"], GSNetVar.Type[spec["type"]])
 		if int(spec["bits"]) > 0:
 			declaration.bits(int(spec["bits"]))
 		if bool(spec["interpolated"]):
@@ -82,10 +82,10 @@ func _register_net_vars() -> void:
 			declaration.range_of(0.0, 1.0)
 
 	# Owner-only jump timers, appended after the movement specs (declaration order is wire order).
-	# Guarded: a shell without API 10 has no DotFpsNetSync.rewind_specs().
-	if DotAddonApi.build_level("dot_player_controller") >= 10:
-		for spec in DotFpsNetSync.rewind_specs():
-			var _timers := replicate(spec["property"], DotNetVar.Type[spec["type"]]).bits(int(spec["bits"])).to_owner_only()
+	# Guarded: a shell without API 10 has no GSFpsNetSync.rewind_specs().
+	if GSAddonApi.build_level("dot_player_controller") >= 10:
+		for spec in GSFpsNetSync.rewind_specs():
+			var _timers := replicate(spec["property"], GSNetVar.Type[spec["type"]]).bits(int(spec["bits"])).to_owner_only()
 
 	# The four below are server-driven: only pull() writes them, so a change is not a misprediction.
 	# [b]Per-player state rather than an event, and that is what makes both of these
@@ -102,12 +102,12 @@ func _register_net_vars() -> void:
 	# one reaches every client however far away they are with nothing added — and a beacon
 	# that switched relevance off when it was lifted would cut every player it had ever
 	# marked out of everybody else's world.
-	replicate(&"net_blind", DotNetVar.Type.BOOL).to_owner_only().server_driven()
-	replicate(&"net_beacon", DotNetVar.Type.BOOL).server_driven()
-	replicate(&"net_creative", DotNetVar.Type.BOOL).server_driven()
+	replicate(&"net_blind", GSNetVar.Type.BOOL).to_owner_only().server_driven()
+	replicate(&"net_beacon", GSNetVar.Type.BOOL).server_driven()
+	replicate(&"net_creative", GSNetVar.Type.BOOL).server_driven()
 
 	for spec in ZeeWeaponNet.all_specs():
-		var weapon := replicate(spec["property"], DotNetVar.Type[spec["type"]])
+		var weapon := replicate(spec["property"], GSNetVar.Type[spec["type"]])
 		if int(spec["bits"]) > 0:
 			weapon.bits(int(spec["bits"]))
 		if bool(spec["interpolated"]):
@@ -116,11 +116,11 @@ func _register_net_vars() -> void:
 			var _owner := weapon.to_owner_only()
 
 	# Last, so the fields before it keep their places in the schema.
-	replicate(&"net_downed", DotNetVar.Type.BOOL).server_driven()
-	replicate(&"net_flashlight", DotNetVar.Type.BOOL).server_driven()
+	replicate(&"net_downed", GSNetVar.Type.BOOL).server_driven()
+	replicate(&"net_flashlight", GSNetVar.Type.BOOL).server_driven()
 
 
-func _net_apply_input(input: DotNetInput, _tick: int) -> void:
+func _net_apply_input(input: GSNetInput, _tick: int) -> void:
 	var command := input as PlaylotNetCommand
 	if command != null:
 		last_move = command.move
@@ -156,9 +156,9 @@ func _net_simulate(tick: int, delta: float) -> void:
 
 
 func pull() -> void:
-	var t := DotFrameCost.now()
+	var t := GSFrameCost.now()
 	if player != null:
-		DotFpsNetSync.pull(player.controller.state, self)
+		GSFpsNetSync.pull(player.controller.state, self)
 		net_blind = player.blinded
 		net_beacon = player.beacon
 		net_creative = player.creative
@@ -167,7 +167,7 @@ func pull() -> void:
 		# A rig that has gone leaves the last values: the counter stops, so nothing fires.
 		if player.zee_rig != null:
 			ZeeWeaponNet.pull(player.zee_rig, self)
-	DotFrameCost.add(&"pn.pull", t)
+	GSFrameCost.add(&"pn.pull", t)
 
 
 ## The server's answer, adopted wholesale. On the owner it is the rewind half of
@@ -176,7 +176,7 @@ func _net_state_applied(tick: int) -> void:
 	if player == null:
 		return
 	last_state_tick = tick
-	DotFpsNetSync.push(self, player.controller.state)
+	GSFpsNetSync.push(self, player.controller.state)
 	player.blinded = net_blind
 	player.beacon = net_beacon
 	player.creative = net_creative
@@ -202,7 +202,7 @@ func _net_state_applied(tick: int) -> void:
 func _net_interpolated(_tick: int) -> void:
 	if player == null:
 		return
-	DotFpsNetSync.push(self, player.controller.state)
+	GSFpsNetSync.push(self, player.controller.state)
 	player.global_position = player.controller.state.position
 
 

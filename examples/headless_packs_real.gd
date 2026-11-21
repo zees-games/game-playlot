@@ -1,4 +1,4 @@
-extends DotGameCheckSuite
+extends GSGameCheckSuite
 
 const Playlot := preload("../game/playlot.gd")
 const PlaylotConfig := preload("../game/playlot_config.gd")
@@ -35,7 +35,7 @@ var _npc_rows: Array = []
 
 
 func _ready() -> void:
-	DotLog.set_level(DotLog.Level.ERROR)
+	GSLog.set_level(GSLog.Level.ERROR)
 	var _scratch := PlaylotPresentation.use_scratch_settings("headless_packs_real")
 	_run.call_deferred()
 
@@ -100,7 +100,7 @@ func _test_menu() -> void:
 	menu.catalogue = _game.props.catalogue
 	menu.weapons = _game.weapons
 	add_child(menu)
-	var stack := DotScreenStack.new()
+	var stack := GSScreenStack.new()
 	add_child(stack)
 	stack.setup()
 	stack.register(menu)
@@ -138,7 +138,7 @@ func _test_weapons() -> void:
 	var rigs := true
 	for row in _weapon_rows:
 		picked.clear()
-		var res: DotResult = _game.activate_addon_item(str(row["key"]), 0, at, &"bot")
+		var res: GSResult = _game.activate_addon_item(str(row["key"]), 0, at, &"bot")
 		var ok: bool = res.ok and picked.size() == 1 and picked[0][0] == &"bot"
 		gave_all = gave_all and ok
 		if not ok:
@@ -172,7 +172,7 @@ func _test_alive_and_undo() -> void:
 	_check(not row.is_empty(), "the raptor has a menu row")
 	var before := _bodies()
 	var at := bot.global_position + Vector3(0, 0, -8)
-	var res: DotResult = _game.activate_addon_item(str(row["key"]), 0, at, &"bot")
+	var res: GSResult = _game.activate_addon_item(str(row["key"]), 0, at, &"bot")
 	_check(res.ok, "it spawns", "" if res.ok else res.error.message)
 	await get_tree().physics_frame
 	var fresh := _bodies().filter(func(n: Node) -> bool: return not before.has(n) and n.has_method(&"effective_anim"))
@@ -208,7 +208,7 @@ func _test_monsters() -> void:
 	var near := true
 	for row in _npc_rows:
 		var before := _bodies()
-		var res: DotResult = _game.activate_addon_item(str(row["key"]), 0, at, &"bot")
+		var res: GSResult = _game.activate_addon_item(str(row["key"]), 0, at, &"bot")
 		await get_tree().physics_frame
 		var fresh := _bodies().filter(func(n: Node) -> bool: return not before.has(n))
 		var ok: bool = res.ok and not fresh.is_empty()
@@ -239,10 +239,10 @@ func _test_map_change_clears() -> void:
 	await get_tree().physics_frame
 	var held := _game.addons._runtime_npcs(_game.world)
 	_check(held.size() >= 2, "two monsters stand on the first map", str(held.size()))
-	var spawner: DotNpcSpawner = held[held.keys()[0]]
+	var spawner: GSNpcSpawner = held[held.keys()[0]]
 	spawner.damage(held.keys()[0], 100000.0, &"bot")
 	_check(_game.undo_stack.count(&"bot") >= 1, "and the undo history holds them")
-	var changed: DotResult = await _game.change_map(&"pg_flatgrass")
+	var changed: GSResult = await _game.change_map(&"pg_flatgrass")
 	_check(changed.ok, "the map changes", "" if changed.ok else changed.error.message)
 	await get_tree().physics_frame
 	await get_tree().physics_frame
@@ -286,7 +286,7 @@ func _test_monster_damage() -> void:
 		var at := Vector3(float(slot) * 9.0 - 20.0, 1.0, 0.0)
 		slot += 1
 		var before := _monsters()
-		var res: DotResult = _game.activate_addon_item(key, 0, at, &"bot")
+		var res: GSResult = _game.activate_addon_item(key, 0, at, &"bot")
 		await get_tree().physics_frame
 		await get_tree().physics_frame
 		var fresh := _monsters().filter(func(m: Dictionary) -> bool: return not before.any(func(b: Dictionary) -> bool: return b["npc"] == m["npc"]))
@@ -294,9 +294,9 @@ func _test_monster_damage() -> void:
 			_check(false, "%s spawns to be shot" % species)
 			continue
 		var mon: Dictionary = fresh[0]
-		var npc: DotNpcInstance = mon["npc"]
+		var npc: GSNpcInstance = mon["npc"]
 		var body := npc.node as Node3D
-		var spawner: DotNpcSpawner = mon["spawner"]
+		var spawner: GSNpcSpawner = mon["spawner"]
 		var start := npc.health
 
 		# Hitscan: the game's own trace, the way every rifle shot goes.
@@ -308,7 +308,7 @@ func _test_monster_damage() -> void:
 
 		# Explosion: a grenade's blast through the projectile layer.
 		var after_shot := npc.health
-		var frag := DotWeaponSpawn.new()
+		var frag := GSWeaponSpawn.new()
 		frag.id = &"frag"
 		frag.origin = body.global_position + Vector3(1.2, 0.8, 0)
 		frag.gravity_scale = 0.0
@@ -340,13 +340,13 @@ func _test_monster_damage() -> void:
 	_done()
 
 
-func _shot_outcome(origin: Vector3, damage: float) -> DotWeaponOutcome:
-	var shot := DotShot.new()
+func _shot_outcome(origin: Vector3, damage: float) -> GSWeaponOutcome:
+	var shot := GSShot.new()
 	shot.origin = origin
 	shot.direction = Vector3(0, 0, -1)
 	shot.damage = damage
 	shot.max_range = 50.0
-	var outcome := DotWeaponOutcome.new()
+	var outcome := GSWeaponOutcome.new()
 	outcome.used = true
 	outcome.shots.append(shot)
 	return outcome
@@ -358,7 +358,7 @@ func _monsters() -> Array:
 	for runtime in _game.world.get_children():
 		if not runtime.has_meta(&"zhm_runtime"):
 			continue
-		var spawner: DotNpcSpawner = runtime.get("spawner")
+		var spawner: GSNpcSpawner = runtime.get("spawner")
 		for npc in spawner.all_npcs():
 			out.append({"npc": npc, "spawner": spawner})
 	return out
@@ -434,25 +434,25 @@ func _test_live_edit() -> void:
 		return
 	var tick := [0]
 	var before := _shot_damage(rig, tick)
-	var req := DotConsoleProfileEdit.parse(PackedStringArray(["set", "weapon", "m4", "extra.damage", "77"]))
+	var req := GSConsoleProfileEdit.parse(PackedStringArray(["set", "weapon", "m4", "extra.damage", "77"]))
 	var denied := rt.handle_request("uid-player", req.value)
-	_check(not denied.ok and denied.error.code == DotError.CODE_FORBIDDEN, "a non-admin's weapon edit is refused")
+	_check(not denied.ok and denied.error.code == GSError.CODE_FORBIDDEN, "a non-admin's weapon edit is refused")
 	_check(_shot_damage(rig, tick) == before and before > 0.0, "and the next shot is unchanged", str(before))
 	var done := rt.handle_request("uid-admin", req.value)
 	_check(done.ok, "an admin's edit is accepted", "" if done.ok else done.error.message)
 	_check(_shot_damage(rig, tick) == 77.0, "and the next shot does 77")
 
 	var mace := _game_def("mace")
-	var mace_was := (_pack_def(mace).tuning as DotWeaponBallistics).damage
-	var med := DotConsoleProfileEdit.parse(PackedStringArray(["set", "weapon", "mace", "extra.damage", "123"]))
+	var mace_was := (_pack_def(mace).tuning as GSWeaponBallistics).damage
+	var med := GSConsoleProfileEdit.parse(PackedStringArray(["set", "weapon", "mace", "extra.damage", "123"]))
 	_check(rt.handle_request("uid-admin", med.value).ok, "the other pack's weapon edits through the same kind")
-	_check((_pack_def(mace).tuning as DotWeaponBallistics).damage == 123.0 and mace_was != 123.0, "and its definition changed", "%s -> %s" % [mace_was, (_pack_def(mace).tuning as DotWeaponBallistics).damage])
+	_check((_pack_def(mace).tuning as GSWeaponBallistics).damage == 123.0 and mace_was != 123.0, "and its definition changed", "%s -> %s" % [mace_was, (_pack_def(mace).tuning as GSWeaponBallistics).damage])
 	_check(_shot_damage(rig, tick) == 77.0, "while the first pack's edit stays")
 
-	rt.handle_request("uid-admin", DotProfileRuntime.make_request("reset", "weapon", "m4"))
-	rt.handle_request("uid-admin", DotProfileRuntime.make_request("reset", "weapon", "mace"))
+	rt.handle_request("uid-admin", GSProfileRuntime.make_request("reset", "weapon", "m4"))
+	rt.handle_request("uid-admin", GSProfileRuntime.make_request("reset", "weapon", "mace"))
 	_check(_shot_damage(rig, tick) == before, "a reset puts the shot back")
-	_check((_pack_def(mace).tuning as DotWeaponBallistics).damage == mace_was, "and the other pack's too")
+	_check((_pack_def(mace).tuning as GSWeaponBallistics).damage == mace_was, "and the other pack's too")
 	PlaylotZee.disarm(bot)
 	rt.permit = old_permit
 	_done()
@@ -489,7 +489,7 @@ func _test_workbench() -> void:
 	var before := _shot_damage(rig, tick)
 	var listed := _http(wb, "GET", "/api/profiles/weapon", "wb-s3cret")
 	_check(listed["status"] == 200 and "m4" in listed["text"], "an authorised list shows the weapon profiles", str(listed["status"]))
-	var denied_actor := _game.profiles.runtime.handle_request("uid-player", DotConsoleProfileEdit.parse(PackedStringArray(["set", "weapon", "m4", "extra.damage", "5"])).value)
+	var denied_actor := _game.profiles.runtime.handle_request("uid-player", GSConsoleProfileEdit.parse(PackedStringArray(["set", "weapon", "m4", "extra.damage", "5"])).value)
 	_check(not denied_actor.ok, "the game's own permit still refuses a player")
 	var body := JSON.stringify({"op": "set", "kind": "weapon", "id": "m4", "key": "extra.damage", "value": 88})
 	var set := _http(wb, "POST", "/api", "wb-s3cret", body)
@@ -502,7 +502,7 @@ func _test_workbench() -> void:
 		var _bad := _http(wb, "POST", "/api", "wrong", body)
 	var locked := _http(wb, "POST", "/api", "wrong", body)
 	_check(locked["status"] == 429, "repeated bad tokens are 429", str(locked["status"]))
-	_game.profiles.runtime.handle_request(PlaylotProfiles.LOCAL_ACTOR, DotProfileRuntime.make_request("reset", "weapon", "m4"))
+	_game.profiles.runtime.handle_request(PlaylotProfiles.LOCAL_ACTOR, GSProfileRuntime.make_request("reset", "weapon", "m4"))
 	PlaylotZee.disarm(bot)
 	wb.queue_free()
 	DirAccess.remove_absolute(dir + "/workbench.token")
@@ -518,7 +518,7 @@ func _test_workbench_identity() -> void:
 	var resolver := func(token: String) -> Variant:
 		return {"uid": token.trim_prefix("t-")} if token.begins_with("t-") else null
 	var admin_permit := func(uid: String, flag: String) -> bool: return uid == "boss" and flag == "cvar"
-	var _gate := DotGameWorkbenchAuth.attach(wb, resolver, admin_permit)
+	var _gate := GSGameWorkbenchAuth.attach(wb, resolver, admin_permit)
 	_check(res.ok and wb.running_http, "an identity resolver alone is enough to start", "" if res.ok else res.error.message)
 	if not wb.running_http:
 		_done()
@@ -539,28 +539,28 @@ func _check_ticket_gate() -> void:
 	var key := crypto.generate_rsa(2048)
 	var priv := key.save_to_string(false)
 	var pub := key.save_to_string(true)
-	var who := DotAuthIdentity.new()
+	var who := GSAuthIdentity.new()
 	who.uid = "backbone:boss"
 	who.display_name = "Boss"
 	who.provider = "backbone"
-	var good := DotAuthTicket.issue(who, "srv", priv, "iss", 60)
-	var got: Variant = DotGameWorkbenchAuth.identity_of_ticket(good.value, pub, "srv", 0)
+	var good := GSAuthTicket.issue(who, "srv", priv, "iss", 60)
+	var got: Variant = GSGameWorkbenchAuth.identity_of_ticket(good.value, pub, "srv", 0)
 	_check(got != null and got.uid == "backbone:boss", "a fresh ticket for this server resolves")
-	_check(DotGameWorkbenchAuth.identity_of_ticket(good.value, pub, "other", 0) == null, "a ticket for another server is refused")
-	var stale := DotAuthTicket.issue(who, "srv", priv, "iss", -120)
-	_check(DotGameWorkbenchAuth.identity_of_ticket(stale.value, pub, "srv", 0) == null, "an expired ticket is refused")
-	var claims := DotJwt.base_claims("iss", "backbone:boss", "srv", 60)
+	_check(GSGameWorkbenchAuth.identity_of_ticket(good.value, pub, "other", 0) == null, "a ticket for another server is refused")
+	var stale := GSAuthTicket.issue(who, "srv", priv, "iss", -120)
+	_check(GSGameWorkbenchAuth.identity_of_ticket(stale.value, pub, "srv", 0) == null, "an expired ticket is refused")
+	var claims := GSJwt.base_claims("iss", "backbone:boss", "srv", 60)
 	claims.erase("exp")
-	var forever := DotJwt.encode_rs256(claims, priv)
-	_check(DotGameWorkbenchAuth.identity_of_ticket(forever.value, pub, "srv", 0) == null, "a ticket with no expiry is refused")
+	var forever := GSJwt.encode_rs256(claims, priv)
+	_check(GSGameWorkbenchAuth.identity_of_ticket(forever.value, pub, "srv", 0) == null, "a ticket with no expiry is refused")
 	var parts := String(good.value).split(".")
 	var forged := "%s.%s.%s" % [parts[0], parts[1], parts[2].reverse()]
-	_check(DotGameWorkbenchAuth.identity_of_ticket(forged, pub, "srv", 0) == null, "a tampered signature is refused")
+	_check(GSGameWorkbenchAuth.identity_of_ticket(forged, pub, "srv", 0) == null, "a tampered signature is refused")
 
 
 ## A workbench with no panel over [param config], in the tree so it polls.
-func _new_workbench(config: Dictionary) -> DotGameWorkbench:
-	var wb := DotGameWorkbench.new()
+func _new_workbench(config: Dictionary) -> GSGameWorkbench:
+	var wb := GSGameWorkbench.new()
 	wb.panel_mode = 1
 	wb.config = config
 	wb.add_set(_game.profiles.npcs)
@@ -569,7 +569,7 @@ func _new_workbench(config: Dictionary) -> DotGameWorkbench:
 	return wb
 
 
-func _http(wb: DotGameWorkbench, method: String, path: String, token: String, body: String = "") -> Dictionary:
+func _http(wb: GSGameWorkbench, method: String, path: String, token: String, body: String = "") -> Dictionary:
 	var head := "%s %s HTTP/1.1\r\nHost: x\r\nContent-Length: %d\r\n" % [method, path, body.to_utf8_buffer().size()]
 	if token != "":
 		head += "Authorization: Bearer %s\r\n" % token
@@ -606,7 +606,7 @@ func _game_def(zee_id: String) -> PlaylotWeaponDef:
 	return null
 
 
-func _pack_def(def: PlaylotWeaponDef) -> DotWeaponDef:
+func _pack_def(def: PlaylotWeaponDef) -> GSWeaponDef:
 	return def.meta["pack_def"]
 
 
@@ -614,12 +614,12 @@ func _pack_def(def: PlaylotWeaponDef) -> DotWeaponDef:
 func _shot_damage(rig: ZeeWeaponRig, tick: Array) -> float:
 	for _i in 600:
 		tick[0] += 1
-		var command := DotWeaponCommand.new()
-		command.set_button(DotWeaponCommand.BUTTON_ATTACK, true)
+		var command := GSWeaponCommand.new()
+		command.set_button(GSWeaponCommand.BUTTON_ATTACK, true)
 		command.slot = rig.current_def().slot
 		var outcome := rig.simulate_tick(command, tick[0])
 		if outcome.used and not outcome.shots.is_empty():
-			var released := DotWeaponCommand.new()
+			var released := GSWeaponCommand.new()
 			released.slot = command.slot
 			for _j in 40:
 				tick[0] += 1
@@ -629,9 +629,9 @@ func _shot_damage(rig: ZeeWeaponRig, tick: Array) -> float:
 
 
 func _damage(script: GDScript, id: String) -> float:
-	for def: DotWeaponDef in script.weapon_defs():
+	for def: GSWeaponDef in script.weapon_defs():
 		if String(def.id) == id:
-			return (def.tuning as DotWeaponBallistics).damage
+			return (def.tuning as GSWeaponBallistics).damage
 	return -2.0
 
 

@@ -1,4 +1,4 @@
-extends DotGameCheckSuite
+extends GSGameCheckSuite
 
 const Playlot := preload("../game/playlot.gd")
 const PlaylotConfig := preload("../game/playlot_config.gd")
@@ -46,8 +46,8 @@ var _completed := 0
 
 var _server_game: Playlot = null
 var _client_game: Playlot = null
-var _server_net: DotNetManager = null
-var _client_net: DotNetManager = null
+var _server_net: GSNetManager = null
+var _client_net: GSNetManager = null
 var _server_bridge: PlaylotNetBridge = null
 var _client_bridge: PlaylotNetBridge = null
 
@@ -123,24 +123,24 @@ class EngineErrors extends Logger:
 ## panel and an edit that applies and replicates; a guest, a non-admin, a revoked admin and the cvar off are refused.
 var _trw_flags: Dictionary
 var _trw_state: Dictionary
-var _trw_snet: DotNetManager
-var _trw_cnet: DotNetManager
+var _trw_snet: GSNetManager
+var _trw_cnet: GSNetManager
 var _trw_sconfig: PlaylotConfig
-var _trw_sbinder: DotGameConfigBinder
-var _trw_swb: DotGameWorkbench
-var _trw_slink: DotNetProfileLink
-var _trw_cremote: DotGameWorkbenchRemoteClient
-var _trw_crt: DotProfileRuntime
-var _trw_clink: DotNetProfileLink
-var _trw_remote: DotGameWorkbenchRemote
-var _trw_cwb: DotGameWorkbench
+var _trw_sbinder: GSGameConfigBinder
+var _trw_swb: GSGameWorkbench
+var _trw_slink: GSNetProfileLink
+var _trw_cremote: GSGameWorkbenchRemoteClient
+var _trw_crt: GSProfileRuntime
+var _trw_clink: GSNetProfileLink
+var _trw_remote: GSGameWorkbenchRemote
+var _trw_cwb: GSGameWorkbench
 var _trw_kind: String
 var _trw_edit: Dictionary
-var _trw_srt: DotProfileRuntime
+var _trw_srt: GSProfileRuntime
 
 func _test_the_remote_workbench() -> void:
 	_section("[a flagged admin edits the server's profiles, and nobody else can]")
-	if not DotGameWorkbench.available():
+	if not GSGameWorkbench.available():
 		print("  dot-workbench is not linked: skipped")
 		_passed += 16
 		_done()
@@ -155,26 +155,26 @@ func _test_the_remote_workbench() -> void:
 	var cbinder := PlaylotConfig.make_binder(cconfig)
 	var _l1 := _trw_sbinder.load_layers()
 	var _l2 := cbinder.load_layers()
-	var set: DotProfileSet = null
-	for candidate: DotProfileSet in _trw_sbinder.profile_sets():
+	var set: GSProfileSet = null
+	for candidate: GSProfileSet in _trw_sbinder.profile_sets():
 		if candidate.rel_path.ends_with("props"):
 			set = candidate
-	var cset: DotProfileSet = null
-	for candidate: DotProfileSet in cbinder.profile_sets():
+	var cset: GSProfileSet = null
+	for candidate: GSProfileSet in cbinder.profile_sets():
 		if candidate.rel_path.ends_with("props"):
 			cset = candidate
-	_trw_swb = DotGameWorkbench.new()
+	_trw_swb = GSGameWorkbench.new()
 	_trw_swb.dedicated = true
 	_trw_swb.config = {"enabled": false}
 	_trw_swb.add_set(set, "Game settings")
 	add_child(_trw_swb)
 	var started := _trw_swb.start()
 	_trw_sbinder.attach(_trw_swb.api.runtime)
-	var made := DotGameWorkbenchRemote.serve(_trw_snet)
-	_trw_slink = DotNetProfileLink.attach(_trw_snet, _trw_swb.api.runtime as DotProfileRuntime)
-	_trw_cremote = DotGameWorkbenchRemoteClient.attach(_trw_cnet)
-	_trw_crt = DotProfileRuntime.new()
-	_trw_clink = DotNetProfileLink.attach(_trw_cnet, _trw_crt)
+	var made := GSGameWorkbenchRemote.serve(_trw_snet)
+	_trw_slink = GSNetProfileLink.attach(_trw_snet, _trw_swb.api.runtime as GSProfileRuntime)
+	_trw_cremote = GSGameWorkbenchRemoteClient.attach(_trw_cnet)
+	_trw_crt = GSProfileRuntime.new()
+	_trw_clink = GSNetProfileLink.attach(_trw_cnet, _trw_crt)
 	_trw_snet.messages.seal()
 	_trw_cnet.messages.seal()
 	_trw_remote = _trw_swb.serve_remote(_trw_snet)
@@ -190,8 +190,8 @@ func _test_the_remote_workbench() -> void:
 	_trw_remote.connected_fn = func(_p: int) -> bool: return true
 	_trw_remote.permit_uid_fn = func(uid: String, flag: String) -> bool: return (_trw_flags.get(uid, []) as Array).has(flag)
 	_trw_remote.now_fn = func() -> int: return _trw_state["now"]
-	_trw_remote.limiter = DotRateLimiter.new(1000.0, 1000.0)
-	_trw_cwb = DotGameWorkbench.new()
+	_trw_remote.limiter = GSRateLimiter.new(1000.0, 1000.0)
+	_trw_cwb = GSGameWorkbench.new()
 	_trw_cwb.panel_mode = 2
 	_trw_cwb.config = {"enabled": false}
 	_trw_cwb.remote_client = _trw_cremote
@@ -202,7 +202,7 @@ func _test_the_remote_workbench() -> void:
 	_check(cstarted.ok and _trw_cwb.overlay == null, "the client's workbench starts with no panel")
 	_trw_kind = set.rel_path
 	_trw_edit = {"op": "set", "kind": _trw_kind, "id": _trw_sbinder.profile_id, "key": "allow_props", "value": false}
-	_trw_srt = _trw_swb.api.runtime as DotProfileRuntime
+	_trw_srt = _trw_swb.api.runtime as GSProfileRuntime
 
 	_trw_state["uid"] = "boss"
 	_trw_cremote.ask()
@@ -217,7 +217,7 @@ func _test_the_remote_workbench_2() -> void:
 	_trw_cremote.ask()
 	_check(_trw_cremote.allowed and _trw_cremote.flags.has("cvar"), "with the cvar on an admin is told the flags it holds")
 	_check(_trw_cwb.overlay != null, "and gets the panel")
-	var applied: DotResult = _trw_cwb.api.handle(DotGameWorkbenchRemoteClient.ACTOR, _trw_edit)
+	var applied: GSResult = _trw_cwb.api.handle(GSGameWorkbenchRemoteClient.ACTOR, _trw_edit)
 	_check(applied.ok and not _trw_sconfig.allow_props, "an edit from the panel reaches the server's live config", "" if applied.ok else applied.error.message)
 	_check(_trw_crt.revision(_trw_kind, _trw_sbinder.profile_id) > 0 and _trw_crt.revision(_trw_kind, _trw_sbinder.profile_id) == _trw_srt.revision(_trw_kind, _trw_sbinder.profile_id), "and its row replicated to the client")
 
@@ -274,7 +274,7 @@ func _done() -> void:
 func _test_command_wire() -> void:
 	_section("a command survives the wire")
 
-	var command := DotFpsCommand.new()
+	var command := GSFpsCommand.new()
 	command.move = Vector2(0.7, -0.3)
 	command.yaw = 42.5
 	command.pitch = -12.0
@@ -283,11 +283,11 @@ func _test_command_wire() -> void:
 	var sent := PlaylotNetCommand.new()
 	sent.move = command
 
-	var writer := DotNetWriter.new()
+	var writer := GSNetWriter.new()
 	sent.write(writer)
 
 	var got := PlaylotNetCommand.new()
-	got.read(DotNetReader.new(writer.to_bytes()))
+	got.read(GSNetReader.new(writer.to_bytes()))
 
 	_check(absf(got.move.yaw - 42.5) < 1.0, "the yaw arrives", "%.2f" % got.move.yaw)
 	_check(got.move.buttons == 5, "and the buttons", str(got.move.buttons))
@@ -302,22 +302,22 @@ func _test_command_wire() -> void:
 		one.aim = i != 1
 		one.move.yaw = 10.0 * float(i)
 		one.move.move = Vector2(0.0, 1.0)
-		one.move.set_button(DotFpsCommand.BUTTON_USER_0, i == 2)
+		one.move.set_button(GSFpsCommand.BUTTON_USER_0, i == 2)
 		batch.append(one)
-	var batch_writer := DotNetWriter.new()
-	DotNetInput.write_batch(batch_writer, batch)
-	var back := DotNetInput.read_batch(batch_writer.to_reader(), func() -> DotNetInput: return PlaylotNetCommand.new())
+	var batch_writer := GSNetWriter.new()
+	GSNetInput.write_batch(batch_writer, batch)
+	var back := GSNetInput.read_batch(batch_writer.to_reader(), func() -> GSNetInput: return PlaylotNetCommand.new())
 	var round_trip := back.size() == 3
 	for i in range(mini(back.size(), 3)):
 		var one_back := back[i] as PlaylotNetCommand
 		round_trip = round_trip and one_back != null and one_back.aim == (i != 1) \
-			and one_back.move.is_pressed(DotFpsCommand.BUTTON_USER_0) == (i == 2) and absf(one_back.move.yaw - 10.0 * float(i)) < 1.0
+			and one_back.move.is_pressed(GSFpsCommand.BUTTON_USER_0) == (i == 2) and absf(one_back.move.yaw - 10.0 * float(i)) < 1.0
 	_check(round_trip, "a batch of commands keeps each one's aim bit and buttons", "%d back" % back.size())
 	var plain := PlaylotNetCommand.new()
-	var bits_plain := DotNetWriter.new()
+	var bits_plain := GSNetWriter.new()
 	plain._write(bits_plain)
 	plain.aim = true
-	var bits_aim := DotNetWriter.new()
+	var bits_aim := GSNetWriter.new()
 	plain._write(bits_aim)
 	_check(bits_plain.to_bytes().size() == bits_aim.to_bytes().size() and plain._equals(plain) and not plain._equals(PlaylotNetCommand.new()),
 		"the bit costs no byte, and a command with it is not equal to one without", "%d bytes" % bits_aim.to_bytes().size())
@@ -333,7 +333,7 @@ func _test_event_wire() -> void:
 	_section("every event round-trips")
 
 	var hello := PlaylotEvents.read_hello(
-		DotNetReader.new(PlaylotEvents.write_hello(9, 128, 4242, &"pg_flatgrass"))
+		GSNetReader.new(PlaylotEvents.write_hello(9, 128, 4242, &"pg_flatgrass"))
 	)
 	_check(int(hello["player_id"]) == 9, "hello: the player id")
 	_check(int(hello["tick_rate"]) == 128, "hello: the tick rate", str(hello["tick_rate"]))
@@ -341,23 +341,23 @@ func _test_event_wire() -> void:
 	_check(hello["map_id"] == &"pg_flatgrass", "hello: the map")
 	_check(bool(hello["ok"]), "hello: the reader was not exhausted")
 	_check(hello["movement"] == Vector3(7.0, 1.15, 20.0), "hello: the default movement numbers", str(hello["movement"]))
-	var odd := PlaylotEvents.read_hello(DotNetReader.new(PlaylotEvents.write_hello(9, 128, 1, &"x", Vector3(4.5, 2.0, 12.0))))
+	var odd := PlaylotEvents.read_hello(GSNetReader.new(PlaylotEvents.write_hello(9, 128, 1, &"x", Vector3(4.5, 2.0, 12.0))))
 	_check(odd["movement"] == Vector3(4.5, 2.0, 12.0), "hello: the movement numbers round-trip")
 	var old := PackedByteArray(PlaylotEvents.write_hello(9, 128, 1, &"x"))
 	old.resize(old.size() - 12)
-	var older := PlaylotEvents.read_hello(DotNetReader.new(old))
+	var older := PlaylotEvents.read_hello(GSNetReader.new(old))
 	_check(bool(older["ok"]) and older["movement"] == Vector3.ZERO, "hello: a server without the movement numbers still reads")
-	_check(PlaylotEvents.read_movement(DotNetReader.new(PlaylotEvents.write_movement(Vector3(9999.0, 1.0, 20.0)))) == Vector3.ZERO, "movement: an absurd value is refused")
+	_check(PlaylotEvents.read_movement(GSNetReader.new(PlaylotEvents.write_movement(Vector3(9999.0, 1.0, 20.0)))) == Vector3.ZERO, "movement: an absurd value is refused")
 
 	var join := PlaylotEvents.read_join(
-		DotNetReader.new(PlaylotEvents.write_join(9, 31, "Ada", 2))
+		GSNetReader.new(PlaylotEvents.write_join(9, 31, "Ada", 2))
 	)
 	_check(int(join["player_id"]) == 9 and int(join["net_id"]) == 31, "join: the ids")
 	_check(str(join["name"]) == "Ada", "join: the name")
 	_check(int(join["style_index"]) == 2, "join: the style")
 
 	var prop := PlaylotEvents.read_prop(
-		DotNetReader.new(
+		GSNetReader.new(
 			PlaylotEvents.write_prop(77, &"crate", 9, false, Vector3(1.5, 2.5, -3.5))
 		)
 	)
@@ -371,30 +371,30 @@ func _test_event_wire() -> void:
 	)
 
 	var gone := PlaylotEvents.read_prop_gone(
-		DotNetReader.new(PlaylotEvents.write_prop_gone(77, &"undo"))
+		GSNetReader.new(PlaylotEvents.write_prop_gone(77, &"undo"))
 	)
 	_check(int(gone["net_id"]) == 77 and gone["reason"] == &"undo" and not gone.has("death"),
 		"prop_gone: id and reason, and no fall for a prop that was not killed")
-	var npc_fall := DotPlayerDeath.new()
-	npc_fall.reaction = DotPlayerDeathReactions.CRUMPLE
+	var npc_fall := GSPlayerDeath.new()
+	npc_fall.reaction = GSPlayerDeathReactions.CRUMPLE
 	npc_fall.roll_seed = 31
 	var killed_npc := PlaylotEvents.read_prop_gone(
-		DotNetReader.new(PlaylotEvents.write_prop_gone(78, &"killed", npc_fall))
+		GSNetReader.new(PlaylotEvents.write_prop_gone(78, &"killed", npc_fall))
 	)
 	_check(bool(killed_npc["ok"]) and killed_npc.get("death") != null
-			and (killed_npc["death"] as DotPlayerDeath).reaction == DotPlayerDeathReactions.CRUMPLE
-			and (killed_npc["death"] as DotPlayerDeath).roll_seed == 31,
+			and (killed_npc["death"] as GSPlayerDeath).reaction == GSPlayerDeathReactions.CRUMPLE
+			and (killed_npc["death"] as GSPlayerDeath).roll_seed == 31,
 		"prop_gone: a killed NPC carries how it falls", str(killed_npc))
 
 	var notice := PlaylotEvents.read_notice(
-		DotNetReader.new(PlaylotEvents.write_notice(9, "Budget reached."))
+		GSNetReader.new(PlaylotEvents.write_notice(9, "Budget reached."))
 	)
 	_check(str(notice["text"]) == "Budget reached.", "notice: the text")
 
 	# --- chat, and the one meta field this wire carries ---
 	# Every encoder against its decoder: they must be exact inverses and nothing else checks it.
-	var line := DotChatMessage.make(
-		DotChatMessage.Kind.SAY, PlaylotServices.CHANNEL_NEAR, "7", "Ada", "over here"
+	var line := GSChatMessage.make(
+		GSChatMessage.Kind.SAY, PlaylotServices.CHANNEL_NEAR, "7", "Ada", "over here"
 	)
 	line.seq = 5
 	line.sent_at = 1700000000
@@ -408,7 +408,7 @@ func _test_event_wire() -> void:
 func _test_event_wire_2() -> void:
 
 	var chat := PlaylotEvents.read_chat(
-		DotNetReader.new(PlaylotEvents.write_chat(_ew_wire))
+		GSNetReader.new(PlaylotEvents.write_chat(_ew_wire))
 	)
 	_check(bool(chat["ok"]), "chat: the reader was not exhausted")
 	_check(String(chat["m"]) == "over here", "chat: the text")
@@ -426,12 +426,12 @@ func _test_event_wire_2() -> void:
 	# case in the parser.
 	var kinds_ok := true
 
-	for kind in DotChatMessage.Kind.values():
-		var one := DotChatMessage.make(
-			kind as DotChatMessage.Kind, PlaylotServices.CHANNEL_ALL, "1", "A", "x"
+	for kind in GSChatMessage.Kind.values():
+		var one := GSChatMessage.make(
+			kind as GSChatMessage.Kind, PlaylotServices.CHANNEL_ALL, "1", "A", "x"
 		)
 		var back := PlaylotEvents.read_chat(
-			DotNetReader.new(PlaylotEvents.write_chat(one.to_dictionary()))
+			GSNetReader.new(PlaylotEvents.write_chat(one.to_dictionary()))
 		)
 
 		if String(back["k"]) != one.kind_name():
@@ -440,7 +440,7 @@ func _test_event_wire_2() -> void:
 	_check(kinds_ok, "chat: every kind survives, not just the common one")
 
 	var said := PlaylotEvents.read_say(
-		DotNetReader.new(
+		GSNetReader.new(
 			PlaylotEvents.write_say(PlaylotServices.CHANNEL_NEAR, "anybody?")
 		)
 	)
@@ -452,24 +452,24 @@ func _test_event_wire_2() -> void:
 
 	# --- combat, the match clock and progress ---
 	var hit := PlaylotEvents.read_combat(
-		DotNetReader.new(PlaylotEvents.write_combat(9, 63, 25, 12, false))
+		GSNetReader.new(PlaylotEvents.write_combat(9, 63, 25, 12, false))
 	)
 	_check(
 		bool(hit["ok"]) and int(hit["health"]) == 63 and int(hit["armour"]) == 25
 			and int(hit["attacker_id"]) == 12 and not bool(hit["died"]),
 		"combat: health, armour, who did it and whether it was fatal"
 	)
-	var player_fall := DotPlayerDeath.new()
-	player_fall.reaction = DotPlayerDeathReactions.HEADSHOT_LAUNCH
+	var player_fall := GSPlayerDeath.new()
+	player_fall.reaction = GSPlayerDeathReactions.HEADSHOT_LAUNCH
 	player_fall.headshot = true
 	player_fall.direction = Vector3(0.0, 0.0, 1.0)
 	var died := PlaylotEvents.read_combat(
-		DotNetReader.new(PlaylotEvents.write_combat(9, 0, 0, 12, true, player_fall))
+		GSNetReader.new(PlaylotEvents.write_combat(9, 0, 0, 12, true, player_fall))
 	)
-	var carried: DotPlayerDeath = died.get("death")
+	var carried: GSPlayerDeath = died.get("death")
 	_check(
 		bool(died["ok"]) and bool(died["died"]) and carried != null
-			and carried.reaction == DotPlayerDeathReactions.HEADSHOT_LAUNCH and carried.headshot
+			and carried.reaction == GSPlayerDeathReactions.HEADSHOT_LAUNCH and carried.headshot
 			and carried.direction.distance_to(Vector3(0.0, 0.0, 1.0)) < 0.05,
 		"combat: a death carries the server's fall", str(died)
 	)
@@ -477,7 +477,7 @@ func _test_event_wire_2() -> void:
 func _test_event_wire_3() -> void:
 
 	var clock := PlaylotEvents.read_match(
-		DotNetReader.new(PlaylotEvents.write_match(2, 96.0, 3, "Live"))
+		GSNetReader.new(PlaylotEvents.write_match(2, 96.0, 3, "Live"))
 	)
 	_check(
 		bool(clock["ok"]) and int(clock["state"]) == 2 and int(clock["round"]) == 3
@@ -491,7 +491,7 @@ func _test_event_wire_3() -> void:
 	)
 
 	var earned := PlaylotEvents.read_progress(
-		DotNetReader.new(PlaylotEvents.write_progress(9, &"build_50", "Getting started", 10))
+		GSNetReader.new(PlaylotEvents.write_progress(9, &"build_50", "Getting started", 10))
 	)
 	_check(
 		bool(earned["ok"]) and String(earned["id"]) == "build_50"
@@ -501,7 +501,7 @@ func _test_event_wire_3() -> void:
 
 	# --- the map vote's cue, which is the other direction's vote traffic ---
 	var cue := PlaylotEvents.read_vote_cue(
-		DotNetReader.new(PlaylotEvents.write_vote_cue("vote_count", 7, true))
+		GSNetReader.new(PlaylotEvents.write_vote_cue("vote_count", 7, true))
 	)
 	_check(
 		bool(cue["ok"]) and String(cue["cue"]) == "vote_count"
@@ -516,13 +516,13 @@ func _test_event_wire_3() -> void:
 	# --- votes and loadouts ---
 	_check(
 		PlaylotEvents.read_vote(
-			DotNetReader.new(PlaylotEvents.write_vote("nominate pg_flatgrass"))
+			GSNetReader.new(PlaylotEvents.write_vote("nominate pg_flatgrass"))
 		) == "nominate pg_flatgrass",
 		"vote: a token, which is a token because what an id MEANS is a source's business"
 	)
 
 	var loadout := PlaylotEvents.read_loadout(
-		DotNetReader.new(
+		GSNetReader.new(
 			PlaylotEvents.write_loadout([["primary", "impulse"], ["tool", "physgun"]])
 		)
 	)
@@ -538,7 +538,7 @@ func _test_event_wire_3() -> void:
 
 	# A truncated packet must NOT decode as a valid message about nothing.
 	var truncated := PlaylotEvents.write_join(9, 31, "Ada", 2)
-	var short := PlaylotEvents.read_join(DotNetReader.new(truncated.slice(0, 2)))
+	var short := PlaylotEvents.read_join(GSNetReader.new(truncated.slice(0, 2)))
 	_check(not bool(short["ok"]), "a truncated join is reported as exhausted, not as zeros")
 
 func _test_event_wire_4() -> void:
@@ -547,7 +547,7 @@ func _test_event_wire_4() -> void:
 	# `StreamPeerBuffer` reads past its end by returning zeros rather than failing, so a
 	# replay truncated inside its header parsed as a valid replay of nothing.
 	var short_chat := PlaylotEvents.read_chat(
-		DotNetReader.new(PlaylotEvents.write_chat(_ew_wire).slice(0, 3))
+		GSNetReader.new(PlaylotEvents.write_chat(_ew_wire).slice(0, 3))
 	)
 	_check(
 		not bool(short_chat["ok"]),
@@ -558,24 +558,24 @@ func _test_event_wire_4() -> void:
 	# smaller kind: game-zombie-zone sent HURT and AMMO as HELLO and MAP that way.
 	_check(PlaylotEvent.fits(), "every event kind fits the event's kind field",
 		"%d kinds in %d bits" % [PlaylotEvents.Kind.size(), PlaylotEvent.KIND_BITS])
-	var landed := PlaylotEvents.read_hit(DotNetReader.new(PlaylotEvents.write_hit(
-		Playlot.hit_victim_id(DotEntity.KIND_NPC, 26491176217), 17.5, Vector3(1.0, 1.4, -6.0), true, true)))
-	_check(bool(landed["ok"]) and DotEntity.kind_of(int(landed["victim"])) == DotEntity.KIND_NPC
+	var landed := PlaylotEvents.read_hit(GSNetReader.new(PlaylotEvents.write_hit(
+		Playlot.hit_victim_id(GSEntity.KIND_NPC, 26491176217), 17.5, Vector3(1.0, 1.4, -6.0), true, true)))
+	_check(bool(landed["ok"]) and GSEntity.kind_of(int(landed["victim"])) == GSEntity.KIND_NPC
 		and absf(float(landed["amount"]) - 17.5) < 0.1 and bool(landed["killed"]) and bool(landed["headshot"])
 		and (landed["point"] as Vector3).distance_to(Vector3(1.0, 1.4, -6.0)) < 0.01,
 		"HIT keeps the victim's kind, the amount, the point and both flags", str(landed))
-	var shattered := PlaylotEvents.read_shatter(DotNetReader.new(PlaylotEvents.write_shatter(Vector3(4.0, 1.0, -9.0), 2)))
+	var shattered := PlaylotEvents.read_shatter(GSNetReader.new(PlaylotEvents.write_shatter(Vector3(4.0, 1.0, -9.0), 2)))
 	_check(bool(shattered["ok"]) and int(shattered["material"]) == 2
 		and (shattered["at"] as Vector3).distance_to(Vector3(4.0, 1.0, -9.0)) < 0.05,
 		"SHATTER keeps where a prop broke and what it was made of", str(shattered))
 	_check(PlaylotRequest.fits(), "every request kind fits the request's kind field",
 		"%d kinds in %d bits" % [PlaylotEvents.Ask.size(), PlaylotRequest.KIND_BITS])
 	_check(PlaylotEvents.chat_kinds_fit(), "every chat kind fits the chat line's kind field",
-		"%d kinds in %d bits" % [DotChatMessage.KIND_NAMES.size(), PlaylotEvents.CHAT_KIND_BITS])
+		"%d kinds in %d bits" % [GSChatMessage.KIND_NAMES.size(), PlaylotEvents.CHAT_KIND_BITS])
 	_check(PlaylotEvents.sub_kinds_fit(), "every inventory and projectile sub-kind fits its field",
 		"inv asks %d, tells %d in %d bits; ops %d in %d; projectile %d in %d" % [
 			PlaylotEvents.InvAsk.size(), PlaylotEvents.InvTell.size(), PlaylotEvents.INV_SUB_BITS,
-			DotInvOp.Kind.size(), PlaylotEvents.INV_OP_KIND_BITS,
+			GSInvOp.Kind.size(), PlaylotEvents.INV_OP_KIND_BITS,
 			PlaylotEvents.ProjectileTell.size(), PlaylotEvents.PROJECTILE_SUB_BITS])
 
 	_done()
@@ -605,8 +605,8 @@ func _make_game(server: bool, scope: StringName, parent: Node) -> Playlot:
 
 func _make_manager(
 	server: bool, scope: StringName, peer_id: int, parent: Node, tick_rate: int
-) -> DotNetManager:
-	var manager := DotNetManager.new()
+) -> GSNetManager:
+	var manager := GSNetManager.new()
 	manager.name = "Server" if server else "Client"
 	manager.is_server = server
 	manager.local_peer_id = peer_id
@@ -614,7 +614,7 @@ func _make_manager(
 	manager.auto_tick = false
 	manager.config_file = ""
 
-	var config := DotNetConfig.new()
+	var config := GSNetConfig.new()
 	config.tick_rate = tick_rate
 	config.snapshot_rate = SNAPSHOT_RATE
 	config.enable_lag_compensation = false
@@ -700,7 +700,7 @@ func _build_2() -> bool:
 	# This suite stamps every command itself (`_tick + INPUT_LEAD`), so the client must not ask for
 	# dot-net's input-lead report: steered by reports about commands it never stamped, the clock
 	# ran away. Set by constant map, so it parses against a dot-net without the report.
-	var lead_bit := int((DotNetMessageRegistry as Script).get_script_constant_map().get("FEATURE_INPUT_LEAD", 0))
+	var lead_bit := int((GSNetMessageRegistry as Script).get_script_constant_map().get("FEATURE_INPUT_LEAD", 0))
 	_client_net.messages.features &= ~lead_bit
 
 	_server_bridge = PlaylotNetBridge.new()
@@ -722,7 +722,7 @@ func _build_2() -> bool:
 	add_child(wrong)
 	var refused := wrong.attach(_client_game, _server_net, self)
 	_check(
-		not refused.ok and refused.error.code == DotError.CODE_STATE,
+		not refused.ok and refused.error.code == GSError.CODE_STATE,
 		"a client game on a server manager is refused"
 	)
 	wrong.queue_free()
@@ -736,7 +736,7 @@ func _build_2() -> bool:
 
 	_server_bridge.link.loopback = _on_server_send
 	_client_bridge.link.loopback = _on_client_send
-	# What a real client wires to DotClientLink.ping_ms(). Nothing in dot-net writes an
+	# What a real client wires to GSClientLink.ping_ms(). Nothing in dot-net writes an
 	# RTT sample, and a client that feeds none has a clock that believes the link is
 	# instant — so every command it stamps arrives after its tick has passed.
 	_client_bridge.rtt_source = func() -> float:

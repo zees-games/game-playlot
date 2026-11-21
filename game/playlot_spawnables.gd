@@ -11,7 +11,7 @@ const PlaylotZee := preload("playlot_zee.gd")
 ## division and it is the right one: a crate is a shape with a mass, and a thing that
 ## walks about needs code. dot-props does not know the difference and does not need
 ## to — it instantiates a scene, places it, and counts it against a budget — so the
-## difference lives in [member DotPropDef.meta] and is applied by [Playlot] on
+## difference lives in [member GSPropDef.meta] and is applied by [Playlot] on
 ## spawn.
 ##
 ## [codeblock]
@@ -43,7 +43,7 @@ enum Kind {
 	PROP,
 	## A prop with a script attached at spawn, ticked by the simulation.
 	ENTITY,
-	## A prop that is also a [DotVehicleInstance]: it has seats and it drives.
+	## A prop that is also a [GSVehicleInstance]: it has seats and it drives.
 	##
 	## [b]Still a prop, and that is the decision.[/b] It counts against the same budget,
 	## it is on the same undo stack, it goes when its owner leaves, and a gravity gun can
@@ -59,7 +59,7 @@ enum Kind {
 ## by an operator who has not heard of entities, is a catalogue of props — which is
 ## both true and the safe reading, because the failure mode of guessing "entity" is a
 ## script path that does not exist.
-static func kind_of(def: DotPropDef) -> Kind:
+static func kind_of(def: GSPropDef) -> Kind:
 	if def == null:
 		return Kind.PROP
 
@@ -73,7 +73,7 @@ static func kind_of(def: DotPropDef) -> Kind:
 
 
 ## The script an entity runs, or empty.
-static func script_of(def: DotPropDef) -> String:
+static func script_of(def: GSPropDef) -> String:
 	return str(def.meta.get("script", "")) if def != null else ""
 
 
@@ -82,15 +82,15 @@ static func script_of(def: DotPropDef) -> String:
 ## [b]Every failure here is loud.[/b] A script that does not load leaves a body that
 ## sits there being a crate, which is indistinguishable from an NPC that has nothing
 ## to do — and "the NPC does not move" would send somebody to the movement code.
-static func load_script(def: DotPropDef) -> GDScript:
+static func load_script(def: GSPropDef) -> GDScript:
 	var path := script_of(def)
 
 	if path == "":
-		DotLog.error(CHANNEL, "an entity has no script", {"entity": String(def.id)})
+		GSLog.error(CHANNEL, "an entity has no script", {"entity": String(def.id)})
 		return null
 
 	if not ResourceLoader.exists(path):
-		DotLog.error(CHANNEL, "an entity's script is not there", {
+		GSLog.error(CHANNEL, "an entity's script is not there", {
 			"entity": String(def.id), "script": path
 		})
 		return null
@@ -98,7 +98,7 @@ static func load_script(def: DotPropDef) -> GDScript:
 	var res: Resource = load(path)
 
 	if not (res is GDScript):
-		DotLog.error(CHANNEL, "an entity's script is not a script", {
+		GSLog.error(CHANNEL, "an entity's script is not a script", {
 			"entity": String(def.id), "script": path
 		})
 		return null
@@ -132,12 +132,12 @@ const STOCK_KITS: Array[String] = ["furniture", "food", "survival", "nature", "m
 
 
 ## [param base] plus the stock model packs plus whatever is in [param drop_dir].
-static func with_models(base: DotPropCatalogue, drop_dir: String) -> DotPropCatalogue:
+static func with_models(base: GSPropCatalogue, drop_dir: String) -> GSPropCatalogue:
 	for kit in STOCK_KITS:
 		var dir := PlaylotPaths.rebase("res://assets/props/%s" % kit)
-		var res := DotPropFolder.load_into(base, dir, SCENE_PROP, {"measure": false})
+		var res := GSPropFolder.load_into(base, dir, SCENE_PROP, {"measure": false})
 		if not res.ok:
-			DotLog.warn(CHANNEL, "a stock prop pack was not read", {"kit": kit, "why": res.error.message})
+			GSLog.warn(CHANNEL, "a stock prop pack was not read", {"kit": kit, "why": res.error.message})
 
 	add_drop_ins(base, drop_dir)
 	return base
@@ -145,20 +145,20 @@ static func with_models(base: DotPropCatalogue, drop_dir: String) -> DotPropCata
 
 ## Models in [param drop_dir] that are not in [param catalogue] yet. A dropped file never
 ## replaces a built-in (the loader's default), so it cannot take over an id a client trusts.
-static func add_drop_ins(catalogue: DotPropCatalogue, drop_dir: String) -> PackedStringArray:
+static func add_drop_ins(catalogue: GSPropCatalogue, drop_dir: String) -> PackedStringArray:
 	if drop_dir == "":
 		return PackedStringArray()
 
-	var res := DotPropFolder.load_into(catalogue, drop_dir, SCENE_PROP, {"category": "custom"})
+	var res := GSPropFolder.load_into(catalogue, drop_dir, SCENE_PROP, {"category": "custom"})
 	if not res.ok:
-		DotLog.warn(CHANNEL, "the prop drop-in folder was not read", {"dir": drop_dir, "why": res.error.message})
+		GSLog.warn(CHANNEL, "the prop drop-in folder was not read", {"dir": drop_dir, "why": res.error.message})
 		return PackedStringArray()
 
 	return (res.value as Dictionary)["added"]
 
 
-static func catalogue() -> DotPropCatalogue:
-	var out := DotPropCatalogue.new()
+static func catalogue() -> GSPropCatalogue:
+	var out := GSPropCatalogue.new()
 	_add_props(out)
 	_add_entities(out)
 
@@ -180,43 +180,43 @@ static func catalogue() -> DotPropCatalogue:
 
 
 ## The plain props, split out of [method catalogue].
-static func _add_props(out: DotPropCatalogue) -> void:
+static func _add_props(out: GSPropCatalogue) -> void:
 	# id, name, category, shape, extent, colour, mass kg, cost, size
 	var props := [
 		[&"plank", "Plank", &"construction", "box", Vector3(3.0, 0.15, 0.6),
-			"c9a227", 30.0, 1, DotPropDef.Size.SMALL],
+			"c9a227", 30.0, 1, GSPropDef.Size.SMALL],
 		[&"beam", "Beam", &"construction", "box", Vector3(6.0, 0.4, 0.4),
-			"8a6a3a", 80.0, 2, DotPropDef.Size.MEDIUM],
+			"8a6a3a", 80.0, 2, GSPropDef.Size.MEDIUM],
 		[&"panel", "Panel", &"construction", "box", Vector3(4.0, 0.1, 4.0),
-			"6f7480", 60.0, 2, DotPropDef.Size.MEDIUM],
+			"6f7480", 60.0, 2, GSPropDef.Size.MEDIUM],
 		[&"slab", "Slab", &"construction", "box", Vector3(6.0, 0.6, 6.0),
-			"4a4e57", 400.0, 4, DotPropDef.Size.LARGE],
+			"4a4e57", 400.0, 4, GSPropDef.Size.LARGE],
 		[&"pillar", "Pillar", &"construction", "cylinder", Vector3(1.0, 4.0, 1.0),
-			"7d8189", 120.0, 2, DotPropDef.Size.MEDIUM],
+			"7d8189", 120.0, 2, GSPropDef.Size.MEDIUM],
 		[&"platform", "Platform", &"construction", "box", Vector3(4.0, 0.4, 4.0),
-			"46586a", 300.0, 3, DotPropDef.Size.LARGE],
+			"46586a", 300.0, 3, GSPropDef.Size.LARGE],
 
 		[&"crate", "Crate", &"containers", "box", Vector3(1.0, 1.0, 1.0),
-			"b8873f", 20.0, 1, DotPropDef.Size.SMALL],
+			"b8873f", 20.0, 1, GSPropDef.Size.SMALL],
 		[&"crate_large", "Large crate", &"containers", "box",
-			Vector3(2.0, 2.0, 2.0), "9c7134", 90.0, 2, DotPropDef.Size.MEDIUM],
+			Vector3(2.0, 2.0, 2.0), "9c7134", 90.0, 2, GSPropDef.Size.MEDIUM],
 		[&"barrel", "Barrel", &"containers", "cylinder", Vector3(1.0, 1.4, 1.0),
-			"3f6a55", 40.0, 1, DotPropDef.Size.SMALL],
+			"3f6a55", 40.0, 1, GSPropDef.Size.SMALL],
 		[&"can", "Can", &"containers", "cylinder", Vector3(0.4, 0.5, 0.4),
-			"9aa3ad", 4.0, 1, DotPropDef.Size.TINY],
+			"9aa3ad", 4.0, 1, GSPropDef.Size.TINY],
 
 		[&"ball", "Ball", &"toys", "sphere", Vector3(1.0, 1.0, 1.0),
-			"c25b4a", 8.0, 1, DotPropDef.Size.TINY],
+			"c25b4a", 8.0, 1, GSPropDef.Size.TINY],
 		[&"beach_ball", "Beach ball", &"toys", "sphere", Vector3(2.4, 2.4, 2.4),
-			"e0c14a", 2.0, 1, DotPropDef.Size.SMALL],
+			"e0c14a", 2.0, 1, GSPropDef.Size.SMALL],
 		[&"boulder", "Boulder", &"toys", "sphere", Vector3(3.0, 3.0, 3.0),
-			"5b5750", 900.0, 3, DotPropDef.Size.LARGE],
+			"5b5750", 900.0, 3, GSPropDef.Size.LARGE],
 		[&"die", "Die", &"toys", "box", Vector3(0.8, 0.8, 0.8),
-			"ddd6c8", 12.0, 1, DotPropDef.Size.TINY],
+			"ddd6c8", 12.0, 1, GSPropDef.Size.TINY],
 	]
 
 	for row in props:
-		var prop := DotPropDef.make(row[0], SCENE_PROP)
+		var prop := GSPropDef.make(row[0], SCENE_PROP)
 		# Breakable only with `destruction` on (PlaylotConfig); the health is always
 		# declared, so turning it on needs nothing but the switch.
 		prop.max_health = float(BREAKABLE.get(row[0], 0.0))
@@ -353,10 +353,10 @@ static func _armed_rows() -> Array:
 
 
 ## The NPCs, turrets and armed NPCs, split out of [method catalogue].
-static func _add_entities(out: DotPropCatalogue) -> void:
+static func _add_entities(out: GSPropCatalogue) -> void:
 	var entities := _entity_rows()
 	for row in entities:
-		var entity := DotPropDef.make(row[0], SCENE_ENTITY)
+		var entity := GSPropDef.make(row[0], SCENE_ENTITY)
 		entity.display_name = row[1]
 		entity.category = &"entities"
 		# Something that thinks about players is an NPC and counts against `pg_max_npcs`;
@@ -366,7 +366,7 @@ static func _add_entities(out: DotPropCatalogue) -> void:
 		entity.limit_group = &"npcs" if String(row[0]).begins_with("npc_") else &"entities"
 		entity.mass = row[5]
 		entity.cost = row[6]
-		entity.size = DotPropDef.Size.MEDIUM
+		entity.size = GSPropDef.Size.MEDIUM
 
 		# `meta` is assembled rather than assigned from the row, so an entity's own
 		# settings and the fields every spawnable has cannot collide by accident: a
@@ -396,14 +396,14 @@ const BREAKABLE := {
 
 
 ## Things that say and hear: a button, a lever and a door, wired with the tool gun's Wire
-## mode and pressed with F. dot-props' [DotPropIO] reads `outputs` and `inputs` here; what
+## mode and pressed with F. dot-props' [GSPropIO] reads `outputs` and `inputs` here; what
 ## each one does is [Playlot]'s (`_on_io_input`, `use_prop`).
 ##
 ## [b]A door is a frozen body the server swings[/b], round the hinge on its left edge, by
 ## writing its transform each tick: a static body teleported is exactly where it is told, which
 ## a door that people stand in the way of needs (mg-wipeout's finding about moving parts).
-static func _machines() -> Array[DotPropDef]:
-	var out: Array[DotPropDef] = []
+static func _machines() -> Array[GSPropDef]:
+	var out: Array[GSPropDef] = []
 	# id, name, extent, colour, mass, meta
 	var rows := [
 		[&"button", "Button", Vector3(0.6, 0.6, 0.25), "c23b3b", 6.0, {"outputs": ["pressed"]}],
@@ -412,12 +412,12 @@ static func _machines() -> Array[DotPropDef]:
 			{"inputs": ["toggle", "open", "close"], "outputs": ["opened", "closed"], "door": true}],
 	]
 	for row in rows:
-		var def := DotPropDef.make(row[0], SCENE_PROP)
+		var def := GSPropDef.make(row[0], SCENE_PROP)
 		def.display_name = row[1]
 		def.category = &"machines"
 		def.mass = row[4]
 		def.cost = 1
-		def.size = DotPropDef.Size.SMALL if row[0] != &"door" else DotPropDef.Size.MEDIUM
+		def.size = GSPropDef.Size.SMALL if row[0] != &"door" else GSPropDef.Size.MEDIUM
 		var meta := {"shape": "box", "extent": [row[2].x, row[2].y, row[2].z], "colour": row[3]}
 		meta.merge(row[5])
 		def.meta = meta
@@ -428,14 +428,14 @@ static func _machines() -> Array[DotPropDef]:
 ## A piece of something broken: hidden, owned by nobody, cleaned up after a few seconds by
 ## [method Playlot._expire_debris]. A plain prop, so it tumbles, is shoved and is drawn on
 ## every client through the spawner like any other.
-static func _debris() -> DotPropDef:
-	var def := DotPropDef.make(&"debris", SCENE_PROP)
+static func _debris() -> GSPropDef:
+	var def := GSPropDef.make(&"debris", SCENE_PROP)
 	def.display_name = "Debris"
 	def.category = &"debris"
 	def.limit_group = &"debris"
 	def.mass = 3.0
 	def.cost = 1
-	def.size = DotPropDef.Size.TINY
+	def.size = GSPropDef.Size.TINY
 	def.meta = {
 		"shape": "box",
 		"extent": [0.35, 0.35, 0.35],
@@ -447,14 +447,14 @@ static func _debris() -> DotPropDef:
 
 ## A balloon, as the tool gun ties on. Hidden from the menu — it is the tool's, not a prop to
 ## place — and counted against `balloons`, not `props`.
-static func _balloon() -> DotPropDef:
-	var def := DotPropDef.make(&"balloon", SCENE_ENTITY)
+static func _balloon() -> GSPropDef:
+	var def := GSPropDef.make(&"balloon", SCENE_ENTITY)
 	def.display_name = "Balloon"
 	def.category = &"tools"
 	def.limit_group = &"balloons"
 	def.mass = 0.4
 	def.cost = 1
-	def.size = DotPropDef.Size.SMALL
+	def.size = GSPropDef.Size.SMALL
 	def.meta = {
 		"kind": "entity",
 		"script": PlaylotPaths.rebase("res://game/entities/balloon.gd"),
@@ -468,14 +468,14 @@ static func _balloon() -> DotPropDef:
 
 ## A patrol waypoint, as the waypoint tool lays them. Hidden from the menu (the tool is how
 ## one is placed) and counted against `waypoints`, so a patrol cannot eat the NPC allowance.
-static func _waypoint() -> DotPropDef:
-	var def := DotPropDef.make(&"waypoint", SCENE_ENTITY)
+static func _waypoint() -> GSPropDef:
+	var def := GSPropDef.make(&"waypoint", SCENE_ENTITY)
 	def.display_name = "Waypoint"
 	def.category = &"tools"
 	def.limit_group = &"waypoints"
 	def.mass = 5.0
 	def.cost = 0
-	def.size = DotPropDef.Size.SMALL
+	def.size = GSPropDef.Size.SMALL
 	def.meta = {
 		"kind": "entity",
 		"script": PlaylotPaths.rebase("res://game/entities/waypoint.gd"),
@@ -488,14 +488,14 @@ static func _waypoint() -> DotPropDef:
 
 
 ## An NPC spawn point, as the spawner tool lays them. Hidden and counted against `spawners`.
-static func _spawn_point() -> DotPropDef:
-	var def := DotPropDef.make(&"spawn_point", SCENE_ENTITY)
+static func _spawn_point() -> GSPropDef:
+	var def := GSPropDef.make(&"spawn_point", SCENE_ENTITY)
 	def.display_name = "NPC spawn point"
 	def.category = &"tools"
 	def.limit_group = &"spawners"
 	def.mass = 5.0
 	def.cost = 0
-	def.size = DotPropDef.Size.SMALL
+	def.size = GSPropDef.Size.SMALL
 	def.meta = {
 		"kind": "entity",
 		"script": PlaylotPaths.rebase("res://game/entities/spawn_point.gd"),
@@ -509,15 +509,15 @@ static func _spawn_point() -> DotPropDef:
 
 ## A weapon lying in the world. Hidden from the props and entities tabs — it is spawned
 ## from the weapons tab with a right click — and counted against `weapons`.
-static func _pickup(weapon: Object) -> DotPropDef:
+static func _pickup(weapon: Object) -> GSPropDef:
 	var weapon_id := StringName(str(weapon.get("id")))
-	var def := DotPropDef.make(StringName("pickup_%s" % String(weapon_id).replace(":", "_")), SCENE_ENTITY)
+	var def := GSPropDef.make(StringName("pickup_%s" % String(weapon_id).replace(":", "_")), SCENE_ENTITY)
 	def.display_name = str(weapon.call("name_or_id"))
 	def.category = &"weapons"
 	def.limit_group = &"weapons"
 	def.mass = 4.0
 	def.cost = 1
-	def.size = DotPropDef.Size.SMALL
+	def.size = GSPropDef.Size.SMALL
 	def.meta = {
 		"kind": "entity",
 		"script": PlaylotPaths.rebase("res://game/entities/weapon_pickup.gd"),
@@ -531,7 +531,7 @@ static func _pickup(weapon: Object) -> DotPropDef:
 
 
 ## Scales the built-in NPCs' tuning from the config: soldiers' `health`, hunters' `speed`. Reads the base from the def's `meta` once and stores it under `base_*`, so scaling twice from the same catalogue does not compound.
-static func apply_npc_scales(catalogue: DotPropCatalogue, soldier_health: float, hunter_speed: float) -> void:
+static func apply_npc_scales(catalogue: GSPropCatalogue, soldier_health: float, hunter_speed: float) -> void:
 	for def in catalogue.props:
 		var meta: Dictionary = def.meta
 		var script := String(meta.get("script", "")).get_file().get_basename()
@@ -569,14 +569,14 @@ static func _merged(a: Dictionary, b: Dictionary) -> Dictionary:
 ## the tunables, so a catalogue saying 620 kg over a chassis saying 900 is a state this
 ## build cannot reach. Two hand-kept copies is exactly the shape that gave dot-props a
 ## prop a gun refused for being too heavy and a gravity gun threw like a beach ball.
-static func _vehicle_prop(vehicle: DotVehicleDef) -> DotPropDef:
-	var def := DotPropDef.make(vehicle.id, PlaylotVehicles.SCENE)
+static func _vehicle_prop(vehicle: GSVehicleDef) -> GSPropDef:
+	var def := GSPropDef.make(vehicle.id, PlaylotVehicles.SCENE)
 	def.display_name = vehicle.name_or_id()
 	def.category = &"vehicles"
 	def.limit_group = &"vehicles"
 	def.mass = vehicle.tuning().mass
 	def.cost = vehicle.cost
-	def.size = DotPropDef.Size.LARGE
+	def.size = GSPropDef.Size.LARGE
 
 	var meta := {
 		"kind": "vehicle",

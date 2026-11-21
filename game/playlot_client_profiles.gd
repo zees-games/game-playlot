@@ -64,7 +64,7 @@ func _pick_map_edit() -> void:
 ## The server answers a harmless request by who asked: an unknown profile for an admin, "needs
 ## cvar" for anybody else. There is no "am I an admin" message, and this is the cheapest honest one.
 func _probe_profile_admin() -> void:
-	var link: DotNetProfileLink = presentation.profile_link if presentation != null else null
+	var link: GSNetProfileLink = presentation.profile_link if presentation != null else null
 	if link == null:
 		if hud != null:
 			hud.notice("Profile editing is not available on this server.")
@@ -73,7 +73,7 @@ func _probe_profile_admin() -> void:
 		return
 	_profile_probing = true
 	_mute_profile_replies(true)
-	var sent := link.submit(DotProfileRuntime.make_request("reset_key", "npc", "", ""))
+	var sent := link.submit(GSProfileRuntime.make_request("reset_key", "npc", "", ""))
 	if not sent.ok:
 		_profile_probing = false
 		_mute_profile_replies(false)

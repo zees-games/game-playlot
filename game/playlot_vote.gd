@@ -1,11 +1,11 @@
-extends DotVoteTimedGame
+extends GSVoteTimedGame
 
 const Playlot := preload("playlot.gd")
 const PlaylotUserFiles := preload("playlot_user_files.gd")
 
 ## What plays next, decided by the players.
 ##
-## [b]This game already had a rock-the-vote and it was `DotMapTimeLimit`'s, which is half
+## [b]This game already had a rock-the-vote and it was `GSMapTimeLimit`'s, which is half
 ## of one.[/b] That half is real — it counts a fraction of the players and fires — and what
 ## it cannot do is offer a ballot, take nominations, break a tie, respect a cooldown, or
 ## give somebody the option to extend. dot-vote is fifty-five settings over exactly those,
@@ -13,23 +13,23 @@ const PlaylotUserFiles := preload("playlot_user_files.gd")
 ##
 ## [b]The source is dot-map's catalogue, not dot-server's games.[/b] game-hungario votes
 ## over games because its modes are games; this one votes over **maps**, and
-## `DotVoteMapSource` applies through the [DotMapSession] this game already drives. One
+## `GSVoteMapSource` applies through the [GSMapSession] this game already drives. One
 ## engine, two sources, and neither this file nor that one names the other — which is the
-## whole reason `DotVoteSource` exists.
+## whole reason `GSVoteSource` exists.
 
 const CHANNEL := "playlot.vote"
 
 ## Where a server owner configures this game's map vote. Empty skips the file.
 ##
 ## [b][method vote_rules] is this game's DEFAULTS, not its configuration.[/b] They layer
-## the way every [DotConfig] in the family does, so an owner changes a number without
+## the way every [GSConfig] in the family does, so an owner changes a number without
 ## touching code:
 ##
 ## [codeblock]
 ## vote_rules()  <  game.yml metadata: map_vote:  <  this file  <  DOT_VOTE_*  <  --vote-*
 ## [/codeblock]
 ##
-## The file is JSON, keyed exactly as [DotVoteRules] is, enums by name. The end-of-map
+## The file is JSON, keyed exactly as [GSVoteRules] is, enums by name. The end-of-map
 ## vote and its extend option, which is what an owner usually wants to change:
 ##
 ## [codeblock]
@@ -82,26 +82,26 @@ func _init() -> void:
 	announce_fn = func(line: String) -> void: announced.emit(line)
 
 
-## dot-map's own source, over the session this game already drives. Nothing here loads a map: `DotVoteMapSource.apply` calls
-## `DotMapSession.change_to`, which is the path that already works, including the cloud fetch for a delivered map.
-func _make_source() -> DotVoteSource:
-	return DotVoteMapSource.from_session(game.maps)
+## dot-map's own source, over the session this game already drives. Nothing here loads a map: `GSVoteMapSource.apply` calls
+## `GSMapSession.change_to`, which is the path that already works, including the cloud fetch for a delivered map.
+func _make_source() -> GSVoteSource:
+	return GSVoteMapSource.from_session(game.maps)
 
 
-func _rules() -> DotVoteRules:
+func _rules() -> GSVoteRules:
 	return vote_rules()
 
 
-func _configure_director(d: DotVoteDirector) -> void:
+func _configure_director(d: GSVoteDirector) -> void:
 	# This game counts heads (player_count_fn), it has no voter list.
 	d.voters_fn = Callable()
 
 
 ## The vote's policy. Fifty-five settings, and these are the ones a sandbox changes.
-static func vote_rules() -> DotVoteRules:
-	var rules := DotVoteRules.new()
+static func vote_rules() -> GSVoteRules:
+	var rules := GSVoteRules.new()
 	rules.enabled = true
-	rules.trigger = DotVoteRules.Trigger.TIME_LIMIT
+	rules.trigger = GSVoteRules.Trigger.TIME_LIMIT
 	# Forty-five minutes, dot-vote's default and right here: a sandbox map is a place people
 	# build in, and a short limit throws away the thing they built. The deployed sandbox
 	# runs around the clock instead (`duration_sec: 0` in its game.yml).
@@ -112,8 +112,8 @@ static func vote_rules() -> DotVoteRules:
 	rules.max_options = 5
 	rules.include_extend = true
 	rules.include_current = false
-	rules.method = DotVoteRules.Method.PLURALITY
-	rules.tie_break = DotVoteRules.TieBreak.BALLOT_ORDER
+	rules.method = GSVoteRules.Method.PLURALITY
+	rules.tie_break = GSVoteRules.TieBreak.BALLOT_ORDER
 	# [b]Off, and this is the setting dot-vote found a bug in.[/b] With it on, "extend" is
 	# erased from a tie and the tie goes to the new map; with it off the ordinary tie-break
 	# runs — and every pseudo-option sorts last in ballot order, so `BALLOT_ORDER` hands
@@ -127,7 +127,7 @@ static func vote_rules() -> DotVoteRules:
 	rules.rtv_fraction = 0.6
 	rules.rtv_min_players = 1
 	# [b]Measured against elapsed time, which is the other bug dot-vote found.[/b]
-	# `DotVoteClock.running` used to mean "has a limit" rather than "has started", so a
+	# `GSVoteClock.running` used to mean "has a limit" rather than "has started", so a
 	# server with no time limit never accumulated elapsed time and rocking the vote was
 	# refused for ever — on exactly the deployment whose only way to change anything is
 	# the vote.
@@ -140,10 +140,10 @@ static func vote_rules() -> DotVoteRules:
 	rules.nomination_seconding = true
 	# A ballot filled by what people actually asked for, which is the fill that needs
 	# seconding to work at all.
-	rules.fill = DotVoteRules.Fill.MOST_NOMINATED
+	rules.fill = GSVoteRules.Fill.MOST_NOMINATED
 	rules.cooldown = 2
-	rules.cooldown_mode = DotVoteRules.Cooldown.PLAYS
-	rules.apply = DotVoteRules.Apply.IMMEDIATE
+	rules.cooldown_mode = GSVoteRules.Cooldown.PLAYS
+	rules.apply = GSVoteRules.Apply.IMMEDIATE
 	rules.apply_delay_sec = 5.0
 	# The ids PlaylotPresentation's catalogue plays. dot-vote ships every cue empty.
 	rules.cue_vote_start = String(CUE_START)
@@ -155,14 +155,14 @@ static func vote_rules() -> DotVoteRules:
 
 
 ## Rock the vote, nominate, or cast one. The token comes off the wire.
-func submit(voter: StringName, token: String) -> DotResult:
+func submit(voter: StringName, token: String) -> GSResult:
 	if director == null:
-		return DotResult.fail(DotError.CODE_STATE, "There is no vote here.")
+		return GSResult.fail(GSError.CODE_STATE, "There is no vote here.")
 
 	var parts := token.strip_edges().split(" ", false)
 
 	if parts.is_empty():
-		return DotResult.fail(DotError.CODE_INVALID, "Vote for what?")
+		return GSResult.fail(GSError.CODE_INVALID, "Vote for what?")
 
 	match parts[0].to_lower():
 		"rtv":
@@ -172,8 +172,8 @@ func submit(voter: StringName, token: String) -> DotResult:
 			# an empty id, which matched nothing, so taking back a rock-the-vote said
 			# "done" and left the vote counted.
 			return (
-				DotResult.success(null) if director.clock.unrock(voter)
-				else DotResult.fail(DotError.CODE_STATE, "You had not rocked the vote.")
+				GSResult.success(null) if director.clock.unrock(voter)
+				else GSResult.fail(GSError.CODE_STATE, "You had not rocked the vote.")
 			)
 		"nominate":
 			if parts.size() > 1:
@@ -185,13 +185,13 @@ func submit(voter: StringName, token: String) -> DotResult:
 			# An admin's, not a player's: extending without a vote is what the ballot's
 			# "extend" option exists to make a decision of the players.
 			if not _is_admin(voter):
-				return DotResult.fail(
-					DotError.CODE_FORBIDDEN, "Only an admin can extend without a vote."
+				return GSResult.fail(
+					GSError.CODE_FORBIDDEN, "Only an admin can extend without a vote."
 				)
 
 			return director.extend()
 
-	return DotResult.fail(DotError.CODE_INVALID, "That is not something to vote.")
+	return GSResult.fail(GSError.CODE_INVALID, "That is not something to vote.")
 
 
 ## The world is on [param map_id] now (a vote, an operator, or the boot): the clock starts over and the history gains an entry.

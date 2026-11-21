@@ -8,12 +8,12 @@ The maps named below (`pg_lobby`, `pg_surf_intro`, `pg_bhop_intro`) and their ti
 
 One line each; the detail is in [bugs-found.md](../../../docs/bugs-found.md) or the addon's own docs.
 
-- **dot-timer: `DotTimer.effect_requested` was emitted by nothing**, so RESPAWN, SLAY and TELEPORT zones did nothing anywhere and a player who fell off a surf map fell for ever. A value consumed by two games and produced by nobody. It also quietly invalidated a passing timer-game check that had counted a bot falling through the void as "surfing".
+- **dot-timer: `GSTimer.effect_requested` was emitted by nothing**, so RESPAWN, SLAY and TELEPORT zones did nothing anywhere and a player who fell off a surf map fell for ever. A value consumed by two games and produced by nobody. It also quietly invalidated a passing timer-game check that had counted a bot falling through the void as "surfing".
 - **dot-timer: `note_stats` guarded on "only while the run is active"** and discarded the one call that matters, at the finish.
-- **dot-props: `DotPropDef.mass` was never put on the body.** Visible only here, where every prop is the same scene.
-- **dot-ui: `set_anchors_preset` does not set offsets**, in `DotScreenStack`, `DotCrosshair`, `DotHud` and `DotTableView`. The spawn menu, the first screen on a stack whose parent is a plain `Node`, came out 0 × 0.
+- **dot-props: `GSPropDef.mass` was never put on the body.** Visible only here, where every prop is the same scene.
+- **dot-ui: `set_anchors_preset` does not set offsets**, in `GSScreenStack`, `GSCrosshair`, `GSHud` and `GSTableView`. The spawn menu, the first screen on a stack whose parent is a plain `Node`, came out 0 × 0.
 - **The prespeed clamp was dead in this game and the timer game alike**: `is_inside(START)` answers only for effect zones. Use `in_zone`.
-- **dot-npc-ai: `has_reacted()` was false for ever**, measured from `engaged_at`, which dot-npc refreshes on every pass the target is perceived. A bot that never acts on what it sees looks bad rather than broken. `DotNpcInstance.target_since` was added for it.
+- **dot-npc-ai: `has_reacted()` was false for ever**, measured from `engaged_at`, which dot-npc refreshes on every pass the target is perceived. A bot that never acts on what it sees looks bad rather than broken. `GSNpcInstance.target_since` was added for it.
 - **dot-npc-ai's brain wiped a squad the game had chosen** with the definition's empty `squad` on bind.
 - **dot-inventory, four at once** (fixed there; see its docs, "What a real wire found"): the server's own changes spent the player's rate budget; `validate` passed an ADD into a full bag and `_do_add` then logged ERROR; `rollback` undid every later prediction and nothing applied a server op to a predicting manager; a MOVE re-allocated the entry's uid, so a chained op named whatever the server had since allocated that number to.
 - **dot-net: the interpolation delay was in the wrong unit** (snapshots subtracted from ticks), so every remote entity in the family was extrapolated. Found by `tools/screenshot_net.sh`'s per-frame probe.
@@ -39,7 +39,7 @@ One line each; the detail is in [bugs-found.md](../../../docs/bugs-found.md) or 
 
 **Edit mode's outline was a translucent fill**, which showed a red crate as pink in the one mode whose sliders include colour.
 
-**A first-person view that was built and never ran** (found 2026-10-11, looking at dot-player-controller's new landing dip in this game). `_build_view` added a `DotFpsView` after the controller had looked for one, so `controller.view` was null: no landing dip, no strafe lean, no widening, no step smoothing, and the zee recoil handed to `view.external_angles` went nowhere, for as long as the client had existed. Every check passed, because the client writes the camera itself and nothing asked what the view did. The `field_of_view` setting was applied by nothing either. Camera motion is now `DotFpsViewMotion` in `PlaylotPlayer.present_camera`, the one place the camera is written; `headless_playlot` drops, hops, strafes and flies a player through it.
+**A first-person view that was built and never ran** (found 2026-10-11, looking at dot-player-controller's new landing dip in this game). `_build_view` added a `GSFpsView` after the controller had looked for one, so `controller.view` was null: no landing dip, no strafe lean, no widening, no step smoothing, and the zee recoil handed to `view.external_angles` went nowhere, for as long as the client had existed. Every check passed, because the client writes the camera itself and nothing asked what the view did. The `field_of_view` setting was applied by nothing either. Camera motion is now `GSFpsViewMotion` in `PlaylotPlayer.present_camera`, the one place the camera is written; `headless_playlot` drops, hops, strafes and flies a player through it.
 
 ## Netcode
 
@@ -77,7 +77,7 @@ One line each; the detail is in [bugs-found.md](../../../docs/bugs-found.md) or 
 
 **Two unknown players were zero metres apart** (one sentinel position), so a rescuer who did not exist revived a casualty who did not exist. **One player had two entity ids** depending on which modes were on: a fallback hash, with a comment above it describing exactly that cost.
 
-**A `DotDamage` with no tick is refused by spawn protection for ever**: every shot did nothing, found by the arena's very first hit.
+**A `GSDamage` with no tick is refused by spawn protection for ever**: every shot did nothing, found by the arena's very first hit.
 
 **A wheel above the chassis box**: a car at full throttle that did not move, every tunable correct. **A car placed with a negated `looking_at`** reversed 12 m into the finish and reported a 0.36 s lap with no splits, a plausible pass if the only assertion is "it finished". **A passenger was drawn on every other machine where they got in**, because the seat moved the node and nothing wrote the movement state.
 
@@ -103,7 +103,7 @@ One line each; the detail is in [bugs-found.md](../../../docs/bugs-found.md) or 
 
 **The server browser shipped against a server that answered nothing**: `dedicated` had `query_enabled = false`, no query host was attached and the module contributed no provider. dot-browser's own suite queries a server it built.
 
-**Nobody in the sandbox had an avatar**: `PlaylotPlatform` was built only by `examples/dedicated.tscn`, and a module that is not a `DotGameModule` loads no dot-platform by itself.
+**Nobody in the sandbox had an avatar**: `PlaylotPlatform` was built only by `examples/dedicated.tscn`, and a module that is not a `GSGameModule` loads no dot-platform by itself.
 
 ## The suites
 
@@ -115,7 +115,7 @@ One line each; the detail is in [bugs-found.md](../../../docs/bugs-found.md) or 
 
 **`dedicated` printed "Attempt to call RPC with unknown peer ID: 8101" on every green run.** 8101 is a session the saved-builds section adopts with no socket behind it, and the Builds tab's click is answered with a NOTICE to the clicker, which went to the link as a real `rpc_id`. The section now catches that one call on the link's loopback and checks the clicker alone was told, so the line in its stderr would now be a real one.
 
-**A method `DotTimerZone` does not have took two checks out of a run that reported "0 failed".** `dedicated` had no section counter or CHECKS total until then.
+**A method `GSTimerZone` does not have took two checks out of a run that reported "0 failed".** `dedicated` had no section counter or CHECKS total until then.
 
 **"With picking up off, nobody is held" was aiming the beam the wrong way** and passed with nobody in it. **The glass sprint path ran into the end of a wall** and broke it, correctly. **A button at a falling player's eye height** was pressed once by luck.
 

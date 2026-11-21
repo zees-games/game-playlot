@@ -37,8 +37,8 @@ func _run() -> void:
 	get_tree().quit(0 if moved else 1)
 
 
-## Frame sequence after each still (GS_SHOT_FRAMES, set by the .sh); see DotShotSeq.
-var _seq := DotShotSeq.new()
+## Frame sequence after each still (GS_SHOT_FRAMES, set by the .sh); see GSShotSeq.
+var _seq := GSShotSeq.new()
 
 
 func _shot(shot_name: String) -> Transform3D:

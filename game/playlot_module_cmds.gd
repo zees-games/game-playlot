@@ -6,8 +6,8 @@ extends "playlot_module_base.gd"
 ## A role is a dot-server admin group by name, plus `admin` and `root`. Slot count follows the
 ## server's `sv_maxplayers`; a non-default `pg_max_players` is the operator's and wins.
 func _bind_slots() -> void:
-	var slots: DotConVar = server.console.find_cvar("sv_maxplayers") if server != null else null
-	var roster: DotPlayerRoster = game.player_stack.roster if game.player_stack != null else null
+	var slots: GSConVar = server.console.find_cvar("sv_maxplayers") if server != null else null
+	var roster: GSPlayerRoster = game.player_stack.roster if game.player_stack != null else null
 	if slots == null or roster == null:
 		return
 	if game.config.max_players != PlaylotConfig.new().max_players:
@@ -40,7 +40,7 @@ func _bind_limits() -> void:
 	)
 	# Refused at the console rather than half-applied: a typo in one role must not leave
 	# the others changed and this one silently ignored.
-	roles.with_validator(func(text: String) -> DotResult: return PlaylotLimits.new().set_roles_from(text))
+	roles.with_validator(func(text: String) -> GSResult: return PlaylotLimits.new().set_roles_from(text))
 	roles.changed.connect(func(_old: String, value: String) -> void:
 		var _set := limits.set_roles_from(value)
 	)
@@ -60,7 +60,7 @@ func _bind_pickup() -> void:
 	pickup.roles_fn = _roles_of
 
 	var on := add_cvar("pg_pickup", "1" if pickup.enabled else "0",
-		"1 lets the physics gun pick up players; 0 refuses it.", DotConVar.FLAG_NOTIFY)
+		"1 lets the physics gun pick up players; 0 refuses it.", GSConVar.FLAG_NOTIFY)
 	on.changed.connect(func(_old: String, value: String) -> void:
 		pickup.enabled = value.to_int() != 0
 		if not pickup.enabled:
@@ -86,7 +86,7 @@ func _bind_pickup() -> void:
 func _bind_creative() -> void:
 	var allowed := add_cvar("pg_creative", "1" if game.config.allow_creative else "0",
 		"1 lets players switch on creative mode (!creative); 0 refuses it and ends it for everybody.",
-		DotConVar.FLAG_NOTIFY)
+		GSConVar.FLAG_NOTIFY)
 	allowed.changed.connect(func(_old: String, value: String) -> void:
 		game.config.allow_creative = value.to_int() != 0
 		if not game.config.allow_creative:
@@ -103,7 +103,7 @@ func _bind_creative() -> void:
 func _bind_props_feel() -> void:
 	var destruction := add_cvar("pg_destruction", "1" if game.config.destruction else "0",
 		"1 lets shots and blasts break crates, planks and barrels into debris; 0 makes props unbreakable.",
-		DotConVar.FLAG_NOTIFY)
+		GSConVar.FLAG_NOTIFY)
 	destruction.changed.connect(func(_old: String, value: String) -> void:
 		game.config.destruction = value.to_int() != 0
 	)
@@ -111,7 +111,7 @@ func _bind_props_feel() -> void:
 	game.panes_break = game.config.breakable_glass
 	var glass := add_cvar("pg_breakable_glass", "1" if game.config.breakable_glass else "0",
 		"1 lets shots, blasts and fast impacts break a map's glass; 0 makes it as hard as the walls.",
-		DotConVar.FLAG_NOTIFY)
+		GSConVar.FLAG_NOTIFY)
 	glass.changed.connect(func(_old: String, value: String) -> void:
 		game.config.breakable_glass = value.to_int() != 0
 		game.panes_break = game.config.breakable_glass
@@ -119,13 +119,13 @@ func _bind_props_feel() -> void:
 
 	var surf := add_cvar("pg_prop_surf", "1" if game.config.prop_surfing else "0",
 		"1 lets a moving prop carry whoever stands on it; 0 leaves props still under your feet.",
-		DotConVar.FLAG_NOTIFY)
+		GSConVar.FLAG_NOTIFY)
 	surf.changed.connect(func(_old: String, value: String) -> void:
 		game.config.prop_surfing = value.to_int() != 0
 	)
 
 
-func _cmd_creative(ctx: DotCmdContext) -> void:
+func _cmd_creative(ctx: GSCmdContext) -> void:
 	var player := _caller(ctx)
 
 	if player == null:
@@ -158,13 +158,13 @@ func _roles_of(player_id: StringName) -> PackedStringArray:
 	if not session.permissions.is_empty():
 		out.append("admin")
 
-	if session.permissions.has(DotAdminFlags.ROOT):
+	if session.permissions.has(GSAdminFlags.ROOT):
 		out.append("root")
 
 	return out
 
 
-func _cmd_limits(ctx: DotCmdContext) -> void:
+func _cmd_limits(ctx: GSCmdContext) -> void:
 	var who := StringName(ctx.arg(0)) if ctx.arg(0) != "" else &""
 
 	if who == &"" and ctx.session != null:
@@ -181,7 +181,7 @@ func _cmd_limits(ctx: DotCmdContext) -> void:
 	))
 
 
-func _cmd_status(ctx: DotCmdContext) -> void:
+func _cmd_status(ctx: GSCmdContext) -> void:
 	ctx.reply_lines(game.describe_lines())
 
 	if _last_spoke != "":
@@ -192,11 +192,11 @@ func _cmd_status(ctx: DotCmdContext) -> void:
 			ctx.reply_lines(layer.describe_lines())
 
 
-func _cmd_services(ctx: DotCmdContext) -> void:
+func _cmd_services(ctx: GSCmdContext) -> void:
 	ctx.reply_lines(services.describe_lines())
 
 
-func _cmd_arena(ctx: DotCmdContext) -> void:
+func _cmd_arena(ctx: GSCmdContext) -> void:
 	match ctx.arg(0):
 		"on":
 			set_arena(true)
@@ -230,14 +230,14 @@ func set_arena(on: bool) -> void:
 func _build_loadout_command() -> void:
 	_arena_on = add_cvar("pg_arena_on", "1" if arena.enabled else "0",
 		"Whether the arena is on (pg_arena); clients read it to know B has a loadout to open",
-		DotConVar.FLAG_REPLICATED)
+		GSConVar.FLAG_REPLICATED)
 	if _arena_on != null:
 		# A method, never a lambda: a lambda captures this module and the cvar would keep it alive.
 		_arena_on.changed.connect(_on_arena_on_changed)
 	arena.respawned.connect(func(id: StringName) -> void:
 		var _armed: Variant = await _arm_from_loadout(PlaylotNetBridge.session_of(id)))
 
-	if DotAddonApi.build_level("dot_loadout") < 2 or not ResourceLoader.exists(LOADOUT_COMMAND_SCRIPT) \
+	if GSAddonApi.build_level("dot_loadout") < 2 or not ResourceLoader.exists(LOADOUT_COMMAND_SCRIPT) \
 			or arena.loadouts == null:
 		return
 	loadout_command = (load(LOADOUT_COMMAND_SCRIPT) as GDScript).new()
@@ -270,10 +270,10 @@ func rearm_if_allowed(session_id: int) -> bool:
 func _arm_from_loadout(session_id: int) -> bool:
 	if arena == null or arena.loadouts == null or bridge == null or session_id <= 0:
 		return false
-	var res: DotResult = await arena.loadouts.active_for(loadout_key(session_id))
+	var res: GSResult = await arena.loadouts.active_for(loadout_key(session_id))
 	if not res.ok:
 		return false
-	var weapon := (res.value as DotLoadout).item_in(&"primary")
+	var weapon := (res.value as GSLoadout).item_in(&"primary")
 	var id := PlaylotNetBridge._player_key(session_id)
 	if weapon == &"" or not game.players.has(id):
 		return false
@@ -281,7 +281,7 @@ func _arm_from_loadout(session_id: int) -> bool:
 	return true
 
 
-func _cmd_waves(ctx: DotCmdContext) -> void:
+func _cmd_waves(ctx: GSCmdContext) -> void:
 	match ctx.arg(0):
 		"on":
 			waves.set_enabled(true)
@@ -300,8 +300,8 @@ func _cmd_waves(ctx: DotCmdContext) -> void:
 
 
 ## `pg_spec` — watch somebody else. In a sandbox watching is not about being dead: the interesting thing is what somebody is making.
-func _cmd_spec(ctx: DotCmdContext) -> void:
-	var session: DotClientSession = ctx.session
+func _cmd_spec(ctx: GSCmdContext) -> void:
+	var session: GSClientSession = ctx.session
 
 	if session == null:
 		ctx.reply("Only a player can watch somebody.")
@@ -355,7 +355,7 @@ func _player_named(text: String) -> StringName:
 
 
 ## `pg_shop` — turn the price list on, off, or read it. Off by default: installing an addon must not turn a sandbox into a game.
-func _cmd_shop(ctx: DotCmdContext) -> void:
+func _cmd_shop(ctx: GSCmdContext) -> void:
 	match ctx.arg(0):
 		"on":
 			shop.set_enabled(true)
@@ -373,7 +373,7 @@ func _cmd_shop(ctx: DotCmdContext) -> void:
 
 
 ## `pg_credits` — read a balance, or hand somebody a few.
-func _cmd_credits(ctx: DotCmdContext) -> void:
+func _cmd_credits(ctx: GSCmdContext) -> void:
 	var who := ctx.arg(0)
 
 	if who == "":
@@ -406,7 +406,7 @@ func _cmd_credits(ctx: DotCmdContext) -> void:
 
 ## `pg_give` — put something in somebody's bag, as the server. It reaches their client as
 ## the whole bag, like any change the server makes; see [PlaylotInventoryNet].
-func _cmd_give(ctx: DotCmdContext) -> void:
+func _cmd_give(ctx: GSCmdContext) -> void:
 	var target := _player_named(ctx.arg(0))
 	var item := StringName(ctx.arg(1))
 
@@ -430,7 +430,7 @@ func _cmd_give(ctx: DotCmdContext) -> void:
 
 
 ## `pg_inv` — what somebody is carrying, as the server has it.
-func _cmd_inv(ctx: DotCmdContext) -> void:
+func _cmd_inv(ctx: GSCmdContext) -> void:
 	var target := _player_named(ctx.arg(0))
 
 	if target == &"":
@@ -445,8 +445,8 @@ func _cmd_inv(ctx: DotCmdContext) -> void:
 	ctx.reply_lines(game.inventory.for_player(bag).describe_lines())
 
 
-func _cmd_achievements(ctx: DotCmdContext) -> void:
-	var session: DotClientSession = ctx.session
+func _cmd_achievements(ctx: GSCmdContext) -> void:
+	var session: GSClientSession = ctx.session
 
 	if ctx.args.size() > 0:
 		var found := server.find_sessions(ctx.arg(0), ctx.session)
@@ -482,16 +482,16 @@ func _cmd_achievements(ctx: DotCmdContext) -> void:
 		])
 
 
-func _cmd_gag(ctx: DotCmdContext) -> void:
-	await _punish(ctx, DotPunishment.Kind.GAG, "gagged")
+func _cmd_gag(ctx: GSCmdContext) -> void:
+	await _punish(ctx, GSPunishment.Kind.GAG, "gagged")
 
 
-func _cmd_mute(ctx: DotCmdContext) -> void:
-	await _punish(ctx, DotPunishment.Kind.VOICE_MUTE, "muted")
+func _cmd_mute(ctx: GSCmdContext) -> void:
+	await _punish(ctx, GSPunishment.Kind.VOICE_MUTE, "muted")
 
 
 ## The shared half of gag and mute: dot-moderation models both as one record, differing only in kind.
-func _punish(ctx: DotCmdContext, kind: DotPunishment.Kind, verb: String) -> void:
+func _punish(ctx: GSCmdContext, kind: GSPunishment.Kind, verb: String) -> void:
 	if ctx.args.size() < 2:
 		ctx.reply("Usage: %s <who> <seconds, 0 for permanent> [reason]" % ctx.command)
 		return
@@ -513,9 +513,9 @@ func _punish(ctx: DotCmdContext, kind: DotPunishment.Kind, verb: String) -> void
 	var seconds := maxi(0, ctx.arg_int(1))
 	var reason := ctx.rest(2) if ctx.args.size() > 2 else "No reason given."
 
-	var issued: DotResult = await services.moderation.issue(
+	var issued: GSResult = await services.moderation.issue(
 		kind,
-		DotPunishmentSubject.for_uid(session.uid()),
+		GSPunishmentSubject.for_uid(session.uid()),
 		reason,
 		ctx.caller_label(),
 		seconds,
@@ -527,13 +527,13 @@ func _punish(ctx: DotCmdContext, kind: DotPunishment.Kind, verb: String) -> void
 		return
 
 	ctx.reply("%s %s: %s" % [
-		session.display_name, verb, DotPunishment.format_duration(seconds)
+		session.display_name, verb, GSPunishment.format_duration(seconds)
 	])
 
 	# Told to the person it happened to, on the channel they are reading. A mute nobody is
 	# told about is a microphone that has stopped working, which is what they report.
 	services.chat.notice(
 		session.peer_id,
-		(issued.value as DotPunishment).player_message(),
+		(issued.value as GSPunishment).player_message(),
 		PlaylotServices.CHANNEL_ALL
 	)

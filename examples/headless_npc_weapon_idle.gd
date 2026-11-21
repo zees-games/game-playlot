@@ -1,4 +1,4 @@
-extends DotGameCheckSuite
+extends GSGameCheckSuite
 
 const Playlot := preload("../game/playlot.gd")
 const PlaylotConfig := preload("../game/playlot_config.gd")
@@ -20,7 +20,7 @@ var _game: Playlot = null
 
 
 func _ready() -> void:
-	DotLog.set_level(DotLog.Level.ERROR)
+	GSLog.set_level(GSLog.Level.ERROR)
 	_run.call_deferred()
 
 
@@ -91,8 +91,8 @@ func _test_parity() -> void:
 		var on: Node = a if w % 2 == 0 else b
 		var off: Node = b if w % 2 == 0 else a
 		rng.seed = hash(String(weapon))
-		var armed_a: DotResult = a.call("arm_with", weapon)
-		var armed_b: DotResult = b.call("arm_with", weapon)
+		var armed_a: GSResult = a.call("arm_with", weapon)
+		var armed_b: GSResult = b.call("arm_with", weapon)
 		_check(armed_a.ok and armed_b.ok, "%s: both hold it" % weapon)
 		var mismatch := -1
 		var detail := ""

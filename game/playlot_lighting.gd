@@ -5,8 +5,8 @@ extends RefCounted
 ##
 ## [b]Every map carries a document[/b]: a built-in map takes [constant DAYLIGHT], a custom
 ## map document may name its own under `lighting` (the same keys, dot-lighting's), and a
-## map that says nothing gets [constant DAYLIGHT] too. [DotLightRig] does the work; what
-## stays here is this game's: which [DotLightProfile] a machine gets and the zenith
+## map that says nothing gets [constant DAYLIGHT] too. [GSLightRig] does the work; what
+## stays here is this game's: which [GSLightProfile] a machine gets and the zenith
 ## (`sky_top`). The reasoning is in docs/maps.md, "The look".
 
 ## A clear afternoon: a warm sun high in the south-west, a blue sky, a little haze far off.
@@ -50,7 +50,7 @@ const SHADOW_DISTANCE := 140.0
 ## [param parent] and returns the sun.
 static func build(parent: Node3D, lighting: Dictionary = {}) -> DirectionalLight3D:
 	var doc := lighting if not lighting.is_empty() else DAYLIGHT
-	var sun := DotLightRig.apply(parent, DotLightDocument.from_dictionary(doc), profile())
+	var sun := GSLightRig.apply(parent, GSLightDocument.from_dictionary(doc), profile())
 	_paint_sky_top(parent, doc)
 	if sun != null and sun.shadow_enabled:
 		sun.directional_shadow_max_distance = SHADOW_DISTANCE
@@ -89,7 +89,7 @@ static func _paint_sky_top(parent: Node3D, lighting: Dictionary) -> void:
 ## world. [b]A browser keeps dot-lighting's `web()`, shadows off[/b]: these maps are large
 ## (the sandbox alone is 200 m with a hundred boxes and whatever the players spawn) and
 ## the shadow pass draws all of it again.
-static func profile() -> DotLightProfile:
-	var p := DotLightProfile.painted()
+static func profile() -> GSLightProfile:
+	var p := GSLightProfile.painted()
 	p.sky_below_horizon = true
 	return p

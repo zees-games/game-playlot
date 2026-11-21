@@ -33,7 +33,7 @@ const PlaylotWorkbenchSets := preload("playlot_workbench_sets.gd")
 
 const CHANNEL := "playlot.client"
 
-## Where dot-server's client publishes its [DotClientLink] before a game scene loads.
+## Where dot-server's client publishes its [GSClientLink] before a game scene loads.
 const LINK_SERVICE := &"dot_client_link"
 
 ## Ids the tools are addressed by, here and in [PlaylotSpawnMenu].
@@ -78,17 +78,17 @@ var playground: Playlot:
 	get:
 		return playlot
 ## Asks a server whether this player may edit it (sv_workbench_remote); null offline.
-var workbench_remote: DotGameWorkbenchRemoteClient = null
-var net: DotNetManager = null
+var workbench_remote: GSGameWorkbenchRemoteClient = null
+var net: GSNetManager = null
 var bridge: PlaylotNetBridge = null
 var player: PlaylotPlayer = null
 var hud: PlaylotHud = null
-## Takes maps dropped on the window or the executable (a DotMapDropIntake); null on a dot-map older than API 26.
+## Takes maps dropped on the window or the executable (a GSMapDropIntake); null on a dot-map older than API 26.
 var map_drop: Node = null
 
 ## The client half of chat: the channels, the history, the unread counts and the gap
 ## detection. It decides nothing — every rule is the server's.
-var chat: DotChatClient = null
+var chat: GSChatClient = null
 
 ## The client half of voice. Every call on it is guarded, because "there is no microphone"
 ## is a legitimate machine rather than an error.
@@ -102,11 +102,11 @@ var match_seconds: float = 0.0
 var camera: Camera3D = null
 ## Keeps the screen covered, and the local body and the input still, until the level, the
 ## player and the camera are all in. See [method _build_gate].
-var gate: DotLoadGate = null
+var gate: GSLoadGate = null
 
 ## dot-game's platform layer: builds the gate, answers link and offline, flushes the browser's
 ## filesystem, and says when input is blocked. Not its settings, console, pointer or board.
-var platform: DotGameClient = null
+var platform: GSGameClient = null
 ## Whether an offline client fetches the world's art slices and the locked pack; a suite sets it false so it needs no network.
 var fetch_content: bool = true
 
@@ -114,17 +114,17 @@ var fetch_content: bool = true
 ## belongs to whatever loaded this client (a shell, an embedded page, a development scene).
 signal leave_requested()
 
-var screens: DotScreenStack = null
+var screens: GSScreenStack = null
 
 ## The escape menu: dot-menu's, with the settings behind it, help, the server list and
 ## Leave. See [method _build_pause]. Also holds the Tab scoreboard.
-var game_menu: DotMenu = null
+var game_menu: GSMenu = null
 
 ## What pushes the window, frame-rate and theme settings at the engine. The presentation
 ## applies its own (volumes, view, effects) as it always did.
-var applier: DotMenuApplier = null
+var applier: GSMenuApplier = null
 ## Every key this client reads ([PlaylotBindings]), as the player has it bound.
-var keys: DotMenuBindings = null
+var keys: GSMenuBindings = null
 var menu: PlaylotSpawnMenu = null
 
 ## The server list, on the same stack as the spawn menu.
@@ -175,7 +175,7 @@ var _zee_buttons: int = 0
 ## come up and the lens zooms. Presentation only.
 var _aiming: bool = false
 ## The hit flinch the platform drives; `blocked()` refuses the sights for a moment after a hit (sv_unscope_hit).
-var _hit_flinch: DotGameHitFlinch = null
+var _hit_flinch: GSGameHitFlinch = null
 
 ## Whether the pointer was a look input at the last frame; see the click branch of
 ## `_unhandled_input`, and the 'Click to play' notice in `_process`.
@@ -183,7 +183,7 @@ var _was_driving: bool = false
 
 ## Whether the physics gun's button is down.
 var _holding: bool = false
-var _wheel: DotWeaponWheel
+var _wheel: GSWeaponWheel
 
 ## Whether the gravity gun is pulling.
 var _pulling: bool = false
@@ -198,9 +198,9 @@ var _menu_down_at: float = 0.0
 var _menu_pinned: bool = false
 
 ## Input sampling, on a networked client only. A local player samples through their own
-## [DotFpsSampler]; a networked one is handed a command by this loop instead, because
+## [GSFpsSampler]; a networked one is handed a command by this loop instead, because
 ## the command has to be stamped for a tick and kept for reconciliation.
-var _sampler: DotFpsSampler = null
+var _sampler: GSFpsSampler = null
 
 ## The phone's on-screen buttons; null off a touch device.
 var _touch: RefCounted = null
@@ -215,7 +215,7 @@ var _net_buttons: int = 0
 ## the join backlog replays every existing prop through the same PROP event.
 ## The load gate: the screen stays covered, and the body and input stay still, until the level, player and camera are ready.
 func _build_gate() -> void:
-	platform = DotGameClient.new()
+	platform = GSGameClient.new()
 	platform.name = "Platform"
 	platform.force_offline = link == null and OS.get_cmdline_user_args().has("--offline")
 	platform.link = link
@@ -247,10 +247,10 @@ func _wire_gate_to_maps() -> void:
 	_build_prewarm()
 	gate.release(&"map")
 	playlot.maps.changing.connect(
-		func(_from: DotMapDef, _to: DotMapDef) -> void: gate.hold(&"map", "Loading the map")
+		func(_from: GSMapDef, _to: GSMapDef) -> void: gate.hold(&"map", "Loading the map")
 	)
 	playlot.maps.changed.connect(
-		func(_map: DotMapDef, _loaded: Node) -> void: gate.release(&"map")
+		func(_map: GSMapDef, _loaded: Node) -> void: gate.release(&"map")
 	)
 
 
@@ -293,7 +293,7 @@ var selfie_camera: Camera3D = null
 var arms_pivot: Node3D = null
 var view_arms: Node = null
 ## Where the arms hold the zee weapon in hand (dot-player-char API 8); null with nothing held.
-var held_grip: DotViewGrip = null
+var held_grip: GSViewGrip = null
 var _arms_down := false
 ## Where the avatar's firing hand rests in first person, in the camera's metres. The avatar's, not the
 ## weapon's: every weapon is moved so its grip sits here, so the arms keep one place, one size and one
@@ -307,7 +307,7 @@ var _seated_for: StringName = &""
 
 ## The downed player's own arms (dot-player-char API 7); nothing on an older build.
 func _build_view_arms() -> void:
-	if DotAddonApi.build_level("dot_player_char") < 7 or not ResourceLoader.exists(VIEW_ARMS_SCRIPT):
+	if GSAddonApi.build_level("dot_player_char") < 7 or not ResourceLoader.exists(VIEW_ARMS_SCRIPT):
 		return
 	arms_pivot = Node3D.new()
 	arms_pivot.name = "ArmsYaw"
@@ -362,13 +362,13 @@ func _on_combat(state: Dictionary) -> void:
 
 ## Where the dead lie: dot-player-char's ragdolls under the server's rules. Connected only:
 ## a solo sandbox has no arena and nobody dies.
-var ragdolls: DotPlayerRagdolls = null
+var ragdolls: GSPlayerRagdolls = null
 
 
 func _build_ragdolls() -> void:
 	if ragdolls != null:
 		return
-	ragdolls = DotPlayerRagdolls.new()
+	ragdolls = GSPlayerRagdolls.new()
 	ragdolls.name = "Ragdolls"
 	ragdolls.rules = playlot.ragdoll_rules
 	ragdolls.sound_fn = func(id: StringName, at: Vector3, volume: float) -> void:
@@ -376,7 +376,7 @@ func _build_ragdolls() -> void:
 			var _played := presentation.on_body(id, at, volume)
 	add_child(ragdolls)
 	# A body on the old map's floor would hang in the new one's air.
-	playlot.map_ready.connect(func(_map: DotMapDef) -> void:
+	playlot.map_ready.connect(func(_map: GSMapDef) -> void:
 		ragdolls.clear()
 		for id: Variant in playlot.players.keys():
 			rise(StringName(id))
@@ -386,7 +386,7 @@ func _build_ragdolls() -> void:
 ## [param id]'s body falls the way the server picked ([param death]; null is a plain drop),
 ## copied from the body this client draws, which stays hidden until [method rise]. Null when
 ## the style hides bodies or nobody here draws that body: your own in first person.
-func fall(id: StringName, death: DotPlayerDeath) -> DotPlayerRagdoll:
+func fall(id: StringName, death: GSPlayerDeath) -> GSPlayerRagdoll:
 	var who: PlaylotPlayer = playlot.players.get(id, null) if playlot != null else null
 	if who == null or ragdolls == null or who.character == null:
 		return null
@@ -395,7 +395,7 @@ func fall(id: StringName, death: DotPlayerDeath) -> DotPlayerRagdoll:
 		return null
 	_land_on_the_world()
 	var velocity := who.controller.state.velocity if who.controller != null else Vector3.ZERO
-	var fell := ragdolls.spawn(body, death if death != null else DotPlayerDeath.new(), velocity)
+	var fell := ragdolls.spawn(body, death if death != null else GSPlayerDeath.new(), velocity)
 	# The gun in the hand falls as a short-lived prop (sv_ragdoll_weapon_drop); the hand's copy hides.
 	var held := who.zee_world as Node3D
 	if held != null and is_instance_valid(held) and held.is_inside_tree() and held.visible:
@@ -420,7 +420,7 @@ func rise(id: StringName) -> void:
 		who.character.body().visible = true
 
 
-## The match clock, taken from the wire: nothing ticks a mirroring client's [DotMatch], so
+## The match clock, taken from the wire: nothing ticks a mirroring client's [GSMatch], so
 ## `seconds_remaining()` would derive from a tick still zero.
 func _on_match(state: Dictionary) -> void:
 	match_label = str(state["label"])
@@ -468,17 +468,17 @@ func _suspend_input(blocked: bool) -> void:
 ## dot-team's block rules followed from the server, and the F9 tuning panel where this process hosts the game.
 func _add_noblock_and_workbench() -> void:
 	if link != null:
-		DotLog.result(CHANNEL, "noblock", platform.add_noblock(playlot, Callable(playlot, "team_of_side")))
+		GSLog.result(CHANNEL, "noblock", platform.add_noblock(playlot, Callable(playlot, "team_of_side")))
 		_start_remote_workbench()
 		return
-	var wb := DotGameWorkbench.new()
+	var wb := GSGameWorkbench.new()
 	wb.name = "Workbench"
 	wb.lazy_panel = true
 	wb.listen_host_fn = func() -> bool: return true
 	PlaylotWorkbenchSets.add_sets(wb, playlot, func() -> bool: return arena_on)
 	add_child(wb)
 	var started := wb.start(playlot.profiles.runtime)
-	DotLog.result(CHANNEL, "the workbench", started)
+	GSLog.result(CHANNEL, "the workbench", started)
 	if started.ok and playlot.config_binder != null:
 		playlot.config_binder.attach(playlot.profiles.runtime)
 	if started.ok and playlot.flashlight_binder != null:
@@ -490,7 +490,7 @@ func _add_noblock_and_workbench() -> void:
 func _start_remote_workbench() -> void:
 	if workbench_remote == null:
 		return
-	var wb := DotGameWorkbench.new()
+	var wb := GSGameWorkbench.new()
 	wb.name = "Workbench"
 	wb.remote_client = workbench_remote
 	wb.remote_fn = func() -> bool: return true
@@ -498,7 +498,7 @@ func _start_remote_workbench() -> void:
 	PlaylotWorkbenchSets.add_sets(wb, playlot, func() -> bool: return arena_on)
 	add_child(wb)
 	var started := wb.start(playlot.profiles.runtime)
-	DotLog.result(CHANNEL, "the remote workbench", started)
+	GSLog.result(CHANNEL, "the remote workbench", started)
 	if not started.ok:
 		wb.queue_free()
 		return
@@ -521,15 +521,15 @@ func _follow_hud() -> void:
 
 ## This game's rows on dot-menu's General page: the sandbox's own, and the camera motion.
 ## Static so `tools/screenshot_menus` draws the page the client builds rather than a copy.
-static func add_general_rows(game_menu: DotMenu) -> void:
+static func add_general_rows(game_menu: GSMenu) -> void:
 	var settings := game_menu.settings
 	var video := game_menu.page(&"video")
-	DotMenuStock.add_gore_row(video)
+	GSMenuStock.add_gore_row(video)
 	var general := game_menu.page(&"general")
 	if general != null:
 		general.section("Playlot") \
-			.add(DotMenuRow.toggle(&"hold_to_open_menu", "Hold the spawn-menu key", "Off: pressing it opens the spawn menu and pressing it again closes it.")) \
-			.add(DotMenuRow.toggle(&"prop_sounds", "Prop sounds", "Crates, barrels and everything else you knock about."))
+			.add(GSMenuRow.toggle(&"hold_to_open_menu", "Hold the spawn-menu key", "Off: pressing it opens the spawn menu and pressing it again closes it.")) \
+			.add(GSMenuRow.toggle(&"prop_sounds", "Prop sounds", "Crates, barrels and everything else you knock about."))
 		# Camera motion beside the sandbox's own rows: the dip, the lean and the widening, each a
 		# slider to Off for a player whom motion makes sick. The words are the settings' own.
 		var motion := general.section("Camera motion")
@@ -538,14 +538,14 @@ static func add_general_rows(game_menu: DotMenu) -> void:
 			[&"camera_strafe_roll", "Strafe lean"],
 			[&"camera_speed_fov", "Speed widening"],
 		]:
-			var def: DotSettingsDef = settings.schema.find(row[0]) if settings != null else null
-			var _added := motion.add(DotMenuRow.slider(row[0], row[1], def.description if def != null else "")
+			var def: GSSettingsDef = settings.schema.find(row[0]) if settings != null else null
+			var _added := motion.add(GSMenuRow.slider(row[0], row[1], def.description if def != null else "")
 				.formatted(func(v: float) -> String: return "Off" if v <= 0.0 else "%d%%" % roundi(v * 100.0)))
 
 
 ## The help screen's goal and modes; the keys come from [PlaylotBindings]. Static so
 ## `tools/screenshot_menus` draws what the client builds.
-static func fill_help(help: DotMenuHelp) -> void:
+static func fill_help(help: GSMenuHelp) -> void:
 	if help == null:
 		return
 	help.about = "A sandbox: hold Q, pick a prop, an NPC, a vehicle or a weapon, and click it into the world. Pick things up with the physics gun, freeze them, throw them, weld and wire them, and undo what you made."
@@ -557,18 +557,18 @@ static func fill_help(help: DotMenuHelp) -> void:
 ## ping. Online the server's roster; offline, this world's players.
 func _prepare_board(made: Object) -> void:
 	# Typed: `columns` is a typed array, which an untyped Object will not assign to.
-	var board := made as DotMenuScoreboard
+	var board := made as GSMenuScoreboard
 	board.title_text = "Zee's Playlot"
 	board.columns = [
 		{"key": &"name", "title": "Player", "width": 3.0},
-		{"key": &"score", "title": "Score", "kind": DotMenuScoreboard.KIND_NUMBER},
-		{"key": &"seconds", "title": "Time", "kind": DotMenuScoreboard.KIND_DURATION},
-		{"key": &"ping", "title": "Ping", "kind": DotMenuScoreboard.KIND_PING},
+		{"key": &"score", "title": "Score", "kind": GSMenuScoreboard.KIND_NUMBER},
+		{"key": &"seconds", "title": "Time", "kind": GSMenuScoreboard.KIND_DURATION},
+		{"key": &"ping", "title": "Ping", "kind": GSMenuScoreboard.KIND_PING},
 	]
 	# Online the server's roster carries its own stat columns; offline the local tally does.
 	if bridge == null:
 		for stat: StringName in OFFLINE_STATS:
-			board.columns.append({"key": stat, "title": String(stat).capitalize(), "kind": DotMenuScoreboard.KIND_NUMBER})
+			board.columns.append({"key": stat, "title": String(stat).capitalize(), "kind": GSMenuScoreboard.KIND_NUMBER})
 
 
 ## The board offline. Public so a suite can read it.
@@ -606,7 +606,7 @@ var _started_msec: int = Time.get_ticks_msec()
 ## turned the way they look. Per frame, not per tick, or remote players step at the snapshot rate.
 ## [param alpha] is how far through the tick the frame is (-1 asks the engine). Returns the body count.
 static func present_frame(
-	p_net: DotNetManager, p_game: Playlot, alpha: float = -1.0, own: PlaylotPlayer = null
+	p_net: GSNetManager, p_game: Playlot, alpha: float = -1.0, own: PlaylotPlayer = null
 ) -> int:
 	var networked := p_net != null and p_net.is_running()
 
@@ -682,11 +682,11 @@ func mouse_drives_view() -> bool:
 
 ## Points the applier's look settings (`sensitivity`) at the tunables every sampler reads, and
 ## applies them now. Called again in [method _adopt]. Only look fields are written, which
-## `DotFpsTunables.fingerprint` leaves out, so a client cannot disagree with its server.
+## `GSFpsTunables.fingerprint` leaves out, so a client cannot disagree with its server.
 func _bind_look() -> void:
 	if applier == null:
 		return
-	for sampler: DotFpsSampler in [_sampler, player.sampler if player != null else null]:
+	for sampler: GSFpsSampler in [_sampler, player.sampler if player != null else null]:
 		if sampler != null and sampler.tunables != null:
 			applier.bind_look(sampler.tunables)
 
@@ -696,7 +696,7 @@ func _aim_wanted() -> bool:
 	return _aiming and not (_hit_flinch != null and _hit_flinch.blocked())
 
 
-func active_sampler() -> DotFpsSampler:
+func active_sampler() -> GSFpsSampler:
 	if link != null:
 		return _sampler
 
@@ -711,7 +711,7 @@ func key_for(action: StringName) -> String:
 
 
 ## Puts a refusal on the HUD, and says nothing about a success. An empty message is a refusal
-## already told through `DotPropSpawner.refused`; printing it again would show the line twice.
+## already told through `GSPropSpawner.refused`; printing it again would show the line twice.
 var _wet: Dictionary = {}
 
 

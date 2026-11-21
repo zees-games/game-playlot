@@ -11,16 +11,16 @@ const DARK_MOODS: PackedStringArray = ["interior_horror", "cave_tunnel"]
 
 
 ## A config with this game's defaults: T (F is use), off on a lit map, on in a dark mood.
-static func make_config() -> DotFlashlightConfig:
-	var cfg := DotFlashlightConfig.new()
+static func make_config() -> GSFlashlightConfig:
+	var cfg := GSFlashlightConfig.new()
 	cfg.key = "T"
 	cfg.dark_moods = DARK_MOODS
 	return cfg
 
 
 ## The binder: `pg_flashlight_<field>` cvars, `cfg/game/game-playlot/flashlight/game.yml`, a workbench set.
-static func make_binder(cfg: DotFlashlightConfig) -> DotGameConfigBinder:
-	var b := DotGameConfigBinder.create(cfg, GAME_ID, "pg_flashlight")
+static func make_binder(cfg: GSFlashlightConfig) -> GSGameConfigBinder:
+	var b := GSGameConfigBinder.create(cfg, GAME_ID, "pg_flashlight")
 	b.profile_kind = "flashlight"
 	return b
 
@@ -35,5 +35,5 @@ static func mood_of(map_id: String) -> String:
 
 
 ## Whether a player starts on [param map_id] with the light on.
-static func starts_on(cfg: DotFlashlightConfig, map_id: String, mood: String = "") -> bool:
-	return DotFlashlightRules.start_on(cfg, map_id, 1.0, mood if mood != "" else mood_of(map_id))
+static func starts_on(cfg: GSFlashlightConfig, map_id: String, mood: String = "") -> bool:
+	return GSFlashlightRules.start_on(cfg, map_id, 1.0, mood if mood != "" else mood_of(map_id))

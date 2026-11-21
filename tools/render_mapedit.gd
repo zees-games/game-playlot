@@ -60,7 +60,7 @@ func _run() -> void:
 	for spec in [[Vector2(5.0, -2.5), "player"], [Vector2(6.0, 0.0), "npc"], [Vector2(8.0, 2.5), "both"]]:
 		var at: Vector3 = body.global_position + forward * (spec[0] as Vector2).x + right * (spec[0] as Vector2).y
 		gun.call("set_mode", &"spawnpoint", {"kind": spec[1]})
-		var placed: DotResult = gun.call("primary", space, at + Vector3.UP * 4.0, Vector3.DOWN)
+		var placed: GSResult = gun.call("primary", space, at + Vector3.UP * 4.0, Vector3.DOWN)
 		print("place %s: ok=%s %s" % [spec[1], placed.ok, str(placed.value) if placed.ok else placed.error.message])
 		failed += 0 if placed.ok else 1
 		await _seconds(0.2)

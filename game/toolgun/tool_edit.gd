@@ -27,7 +27,7 @@ const ToolColour := preload("tool_colour.gd")
 const ToolPhysprop := preload("tool_physprop.gd")
 
 ## The prop being edited, or null.
-var selected: DotPropInstance = null
+var selected: GSPropInstance = null
 
 ## The gun that picked it, weakly: the gun holds this mode, so a strong reference back
 ## would be a cycle neither ever frees.
@@ -60,31 +60,31 @@ func schema() -> Array[Dictionary]:
 	]
 
 
-func primary(gun: Object, hit: Dictionary) -> DotResult:
+func primary(gun: Object, hit: Dictionary) -> GSResult:
 	var body := prop_body(hit)
 	var prop: Variant = hit.get("prop")
 
-	if body == null or not (prop is DotPropInstance):
+	if body == null or not (prop is GSPropInstance):
 		return nothing_there()
 
 	selected = prop
 	_gun_ref = weakref(gun)
 	_refused = ""
 	settings = read_from(body)
-	return DotResult.success(selection_report())
+	return GSResult.success(selection_report())
 
 
-func secondary(_gun: Object, _hit: Dictionary) -> DotResult:
+func secondary(_gun: Object, _hit: Dictionary) -> GSResult:
 	cancel()
-	return DotResult.success(selection_report())
+	return GSResult.success(selection_report())
 
 
-func reload(gun: Object, hit: Dictionary) -> DotResult:
+func reload(gun: Object, hit: Dictionary) -> GSResult:
 	# Reload on a prop that is not the selected one picks it first: "put that back" means
 	# the thing under the crosshair.
 	var prop: Variant = hit.get("prop")
 
-	if prop is DotPropInstance and prop != selected:
+	if prop is GSPropInstance and prop != selected:
 		var picked := primary(gun, hit)
 		if not picked.ok:
 			return picked
@@ -101,7 +101,7 @@ func reload(gun: Object, hit: Dictionary) -> DotResult:
 	own["colour"] = _own_colour(selected.node).to_html(false)
 	own["frozen"] = settings.get("frozen", false)
 	apply_settings(own)
-	return DotResult.success(selection_report())
+	return GSResult.success(selection_report())
 
 
 func cancel() -> void:
@@ -175,9 +175,9 @@ func write_to(body: RigidBody3D, gun: Object) -> void:
 		body.call("set_tint", Color(0, 0, 0, 0) if colour.is_equal_approx(_own_colour(body)) else colour)
 
 	if bool(now["frozen"]) != bool(settings["frozen"]):
-		var froze := _may_freeze(gun) if bool(settings["frozen"]) else DotResult.success(null)
+		var froze := _may_freeze(gun) if bool(settings["frozen"]) else GSResult.success(null)
 		if froze.ok:
-			DotPhysGun.set_frozen(selected, bool(settings["frozen"]))
+			GSPhysGun.set_frozen(selected, bool(settings["frozen"]))
 		else:
 			_refused = froze.error.message
 			settings["frozen"] = now["frozen"]
@@ -205,17 +205,17 @@ func _alive() -> bool:
 		and is_instance_valid(selected.node)
 
 
-func _may_freeze(gun: Object) -> DotResult:
+func _may_freeze(gun: Object) -> GSResult:
 	if selected.def != null and not selected.def.can_freeze:
-		return DotResult.fail(DotError.CODE_FORBIDDEN, "That cannot be frozen.")
+		return GSResult.fail(GSError.CODE_FORBIDDEN, "That cannot be frozen.")
 
 	var spawner: Variant = gun.get("spawner") if gun != null else null
 	var wielder: Variant = gun.get("wielder") if gun != null else null
 
-	if spawner is DotPropSpawner and wielder != null:
-		return (spawner as DotPropSpawner).may_freeze(StringName(str(wielder)))
+	if spawner is GSPropSpawner and wielder != null:
+		return (spawner as GSPropSpawner).may_freeze(StringName(str(wielder)))
 
-	return DotResult.success(null)
+	return GSResult.success(null)
 
 
 static func _own_colour(body: Node) -> Color:

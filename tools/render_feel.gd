@@ -49,7 +49,7 @@ func _initialize() -> void:
 		if args.is_empty() or args.has(name) or (args.size() == 1 and args.has("--off")):
 			_scenarios.append(name)
 
-	DotLog.set_level(DotLog.Level.ERROR)
+	GSLog.set_level(GSLog.Level.ERROR)
 	DirAccess.make_dir_recursive_absolute(OUT_DIR)
 
 	var config := PlaylotConfig.new()
@@ -141,7 +141,7 @@ func _start(name: String) -> void:
 		"speed":
 			_save_every = 3
 			_player.teleport(_home + Vector3(0.0, 40.0, 0.0), _home_yaw)
-			_player.controller.state.velocity = DotFpsMotor.forward_for(_home_yaw) * 22.0
+			_player.controller.state.velocity = GSFpsMotor.forward_for(_home_yaw) * 22.0
 			_player.controller.apply_command(_command(Vector2.ZERO))
 
 
@@ -176,11 +176,11 @@ func _finished() -> bool:
 	return true
 
 
-func _command(move: Vector2, jump: bool = false) -> DotFpsCommand:
-	var c := DotFpsCommand.new()
+func _command(move: Vector2, jump: bool = false) -> GSFpsCommand:
+	var c := GSFpsCommand.new()
 	c.move = move
 	c.yaw = _home_yaw
 	c.pitch = 0.0
 	if jump:
-		c.set_button(DotFpsCommand.BUTTON_JUMP, true)
+		c.set_button(GSFpsCommand.BUTTON_JUMP, true)
 	return c

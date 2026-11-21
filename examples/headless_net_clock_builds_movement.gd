@@ -15,7 +15,7 @@ var _cw_after
 func _test_clock_wire() -> void:
 	_section("the vote's clock over the link")
 
-	var round_trip := PlaylotEvents.read_clock(DotNetReader.new(
+	var round_trip := PlaylotEvents.read_clock(GSNetReader.new(
 		PlaylotEvents.write_clock({"has_clock": true, "seconds_left": 1234, "running": true})
 	))
 	_check(
@@ -93,7 +93,7 @@ func _test_clock_wire_2() -> void:
 
 	# The deployed shape: `metadata: map_vote: {trigger: rtv_only, duration_sec: 0}`.
 	_cw_vote.director.rules.duration_sec = 0.0
-	_cw_vote.director.rules.trigger = DotVoteRules.Trigger.RTV_ONLY
+	_cw_vote.director.rules.trigger = GSVoteRules.Trigger.RTV_ONLY
 	_cw_vote.note_playing(_server_game.maps.current.id)
 	_cw_vote.advance(_cw_dt)
 	_flush()
@@ -112,7 +112,7 @@ func _test_clock_wire_2() -> void:
 	)
 
 	_client_bridge.clock_received.disconnect(_cw_on_clock)
-	_client_bridge.clock_view = DotVoteClockView.new()
+	_client_bridge.clock_view = GSVoteClockView.new()
 	remove_child(_cw_vote)
 	_cw_vote.free()
 	_done()
@@ -181,7 +181,7 @@ func _test_edit_over_the_wire() -> void:
 		_check(false, "a crate in front of the player")
 		_done()
 		return
-	DotPhysGun.set_frozen(crate, true)
+	GSPhysGun.set_frozen(crate, true)
 	(crate.node as Node3D).call("set_tint", Color.html("e05252"))
 
 	var got: Array = []
@@ -195,8 +195,8 @@ func _test_edit_over_the_wire() -> void:
 	_exchange()
 	await _steps(4)
 
-	var fire := DotFpsCommand.new()
-	fire.set_button(DotFpsCommand.BUTTON_USER_0, true)
+	var fire := GSFpsCommand.new()
+	fire.set_button(GSFpsCommand.BUTTON_USER_0, true)
 	await _steps(2, fire)
 	_exchange()
 	await _steps(6)
@@ -246,7 +246,7 @@ func _test_map_props_over_the_wire() -> void:
 	_section("a map's own props over the wire")
 
 	var before: StringName = _server_game.maps.current.id
-	var _changed: DotResult = await _server_game.change_map(&"pgc_town")
+	var _changed: GSResult = await _server_game.change_map(&"pgc_town")
 	for i in 240:
 		_exchange()
 		await _steps(1)
@@ -259,9 +259,9 @@ func _test_map_props_over_the_wire() -> void:
 	var mirrors := 0
 	for behaviour: Variant in _client_bridge._prop_nets.values():
 		var node: Variant = behaviour.get("prop")
-		if node is Node and is_instance_valid(node) and node.get("def") is DotPropDef:
+		if node is Node and is_instance_valid(node) and node.get("def") is GSPropDef:
 			mirrors += 1
-			if (node.get("def") as DotPropDef).id == &"door":
+			if (node.get("def") as GSPropDef).id == &"door":
 				doors += 1
 	_check(_client_game.maps.current != null and _client_game.maps.current.id == &"pgc_town", "the client follows the server to pgc_town")
 	_check(server_count == 44 and mirrors >= server_count, "and draws every prop the map put down on the server",
@@ -269,7 +269,7 @@ func _test_map_props_over_the_wire() -> void:
 	_check(doors == 5, "its five doors among them", "%d doors" % doors)
 	_check(_client_game.props.props_of(_client_game.MAP_OWNER).is_empty(), "and spawned none of its own")
 
-	var _back: DotResult = await _server_game.change_map(before)
+	var _back: GSResult = await _server_game.change_map(before)
 	for i in 240:
 		_exchange()
 		await _steps(1)
@@ -295,8 +295,8 @@ func _test_held_over_the_wire() -> void:
 	# `_drive_tools` grabs on the press and lets go when the button is up.
 	_client_bridge.ask_tool(&"phys")
 	await _exchange_steps(4)
-	var fire := DotFpsCommand.new()
-	fire.set_button(DotFpsCommand.BUTTON_USER_0, true)
+	var fire := GSFpsCommand.new()
+	fire.set_button(GSFpsCommand.BUTTON_USER_0, true)
 	for i in 12:
 		_exchange()
 		await _steps(1, fire)
@@ -329,7 +329,7 @@ func _test_glass_over_the_wire() -> void:
 	_section("glass broken on the server is gone on the client")
 
 	var before: StringName = _server_game.maps.current.id
-	var _changed: DotResult = await _server_game.change_map(&"pgc_nature")
+	var _changed: GSResult = await _server_game.change_map(&"pgc_nature")
 	for i in 240:
 		_exchange()
 		await _steps(1)
@@ -355,7 +355,7 @@ func _test_glass_over_the_wire() -> void:
 	var _broke := _server_game.hurt_pane(server_node, 1000.0, &"u%d" % SESSION)
 	await _exchange_steps(8)
 	_client_bridge.hit_received.disconnect(on_hit)
-	_check(hits.size() == 1 and DotEntity.kind_of(int(hits[0][0])) == DotEntity.KIND_OTHER
+	_check(hits.size() == 1 and GSEntity.kind_of(int(hits[0][0])) == GSEntity.KIND_OTHER
 		and absf(float(hits[0][1]) - health) < 0.2 and bool(hits[0][2]),
 		"the player who broke it is told their hit landed: what it had left, and that it broke",
 		"%s for %.1f left" % [str(hits), health])
@@ -368,7 +368,7 @@ func _test_glass_over_the_wire() -> void:
 	_check(heard == [index], "with the signal its sound plays from", str(heard))
 
 	_client_game.pane_broken.disconnect(on_broken)
-	var _back: DotResult = await _server_game.change_map(before)
+	var _back: GSResult = await _server_game.change_map(before)
 	for i in 240:
 		_exchange()
 		await _steps(1)
@@ -378,7 +378,7 @@ func _test_glass_over_the_wire() -> void:
 	_done()
 
 
-func _toy_of(game: Playlot, id: String) -> DotPropBody:
+func _toy_of(game: Playlot, id: String) -> GSPropBody:
 	if game.toys == null:
 		return null
 	for t in game.toys.toys:
@@ -395,7 +395,7 @@ func _test_map_toys_over_the_wire() -> void:
 
 	var on_lobby := _server_game.maps.current != null and _server_game.maps.current.id == &"pg_flatgrass"
 	if not on_lobby:
-		var _changed: DotResult = await _server_game.change_map(&"pg_flatgrass")
+		var _changed: GSResult = await _server_game.change_map(&"pg_flatgrass")
 	for i in 240:
 		_exchange()
 		await _steps(1)
@@ -446,7 +446,7 @@ func _test_map_toys_over_the_wire() -> void:
 		"client %s, server %s" % [str(ride.get("yaw")), str(server_ride.get("yaw"))])
 
 	# A map change and back: the old entities go on both ends, the new ones are paired again.
-	var _away: DotResult = await _server_game.change_map(&"pgc_plots")
+	var _away: GSResult = await _server_game.change_map(&"pgc_plots")
 	for i in 240:
 		_exchange()
 		await _steps(1)
@@ -455,7 +455,7 @@ func _test_map_toys_over_the_wire() -> void:
 	var plots := _server_game.toys.count()
 	_check(plots > 0 and _client_bridge.toy_count() == plots and _client_game.toys.count() == plots,
 		"a map change replaces them on both ends", "%d on the server, %d paired on the client" % [plots, _client_bridge.toy_count()])
-	var _back: DotResult = await _server_game.change_map(&"pg_flatgrass")
+	var _back: GSResult = await _server_game.change_map(&"pg_flatgrass")
 	await _test_map_toys_over_the_wire_2()
 
 func _test_map_toys_over_the_wire_2() -> void:
@@ -475,7 +475,7 @@ func _test_swimming_over_the_wire() -> void:
 	_section("swimming, predicted by a connected client")
 
 	var before: StringName = _server_game.maps.current.id
-	var _changed: DotResult = await _server_game.change_map(&"pgc_harbour")
+	var _changed: GSResult = await _server_game.change_map(&"pgc_harbour")
 	for i in 240:
 		_exchange()
 		await _steps(1)
@@ -512,7 +512,7 @@ func _test_swimming_over_the_wire() -> void:
 	_check(entered_at > 0 and corrections == 0, "walking in and swimming costs the prediction nothing", "%d corrections" % corrections)
 	_check(gap < 0.1, "and the client ends where the server does", "%.3f m" % gap)
 
-	var _back: DotResult = await _server_game.change_map(before)
+	var _back: GSResult = await _server_game.change_map(before)
 	for i in 240:
 		_exchange()
 		await _steps(1)
@@ -522,7 +522,7 @@ func _test_swimming_over_the_wire() -> void:
 	_done()
 
 
-func _step(command: DotFpsCommand = null, aim: bool = false) -> void:
+func _step(command: GSFpsCommand = null, aim: bool = false) -> void:
 	_tick += 1
 	_client_net.clock.advance(1.0 / float(maxi(_client_game.tick_rate, 1)))
 	_server_bridge.server_tick(_tick)
@@ -530,19 +530,19 @@ func _step(command: DotFpsCommand = null, aim: bool = false) -> void:
 	# A real client stamps its command far enough ahead to cover the trip; the lead grows
 	# with the transit delay for the same reason.
 	_client_bridge.client_tick(
-		_tick + INPUT_LEAD + _delay_ticks, command if command != null else DotFpsCommand.new(), aim
+		_tick + INPUT_LEAD + _delay_ticks, command if command != null else GSFpsCommand.new(), aim
 	)
 	_flush()
 	await get_tree().physics_frame
 
 
-func _steps(count: int, command: DotFpsCommand = null, aim: bool = false) -> void:
+func _steps(count: int, command: GSFpsCommand = null, aim: bool = false) -> void:
 	for _i in range(count):
 		await _step(command, aim)
 
 
-func _forward() -> DotFpsCommand:
-	var c := DotFpsCommand.new()
+func _forward() -> GSFpsCommand:
+	var c := GSFpsCommand.new()
 	c.move = Vector2(0.0, 1.0)
 	return c
 
@@ -555,7 +555,7 @@ func _test_avatars_over_the_wire() -> void:
 	_section("what a member wears reaches every client")
 
 	# The translation: a site avatar's face, top and legs, each its own skin.
-	var site := DotAvatar.new()
+	var site := GSAvatar.new()
 	site.schema_id = &"builtin"
 	site.set_part(&"face", &"face.skin-b")
 	site.set_part(&"top", &"top.skin-k")
@@ -565,16 +565,16 @@ func _test_avatars_over_the_wire() -> void:
 		PlaylotAvatars.skins_of(translated) == PackedInt32Array([1, 10, 17]),
 		"a site avatar is three skins, face, top and legs", str(PlaylotAvatars.skins_of(translated))
 	)
-	var other := DotAvatar.new()
+	var other := GSAvatar.new()
 	other.schema_id = &"some_game"
 	_check(PlaylotAvatars.from_site(other) == null, "and somebody else's document is not guessed at")
 
 	# The wire: skins after the style byte, and a JOIN without them still reads.
 	var with_skins := PlaylotEvents.write_join(7, 9, "Ada", 1, PackedInt32Array([1, 10, 17]))
-	var read := PlaylotEvents.read_join(DotNetReader.new(with_skins))
+	var read := PlaylotEvents.read_join(GSNetReader.new(with_skins))
 	_check(bool(read["ok"]) and read["skins"] == PackedInt32Array([1, 10, 17]), "JOIN carries them", str(read["skins"]))
 	var old := with_skins.slice(0, with_skins.size() - 3)
-	var read_old := PlaylotEvents.read_join(DotNetReader.new(old))
+	var read_old := PlaylotEvents.read_join(GSNetReader.new(old))
 	_check(bool(read_old["ok"]) and (read_old["skins"] as PackedInt32Array).is_empty() and int(read_old["style_index"]) == 1,
 		"and a JOIN from before them reads with none", str(read_old))
 
@@ -591,11 +591,11 @@ func _test_avatars_over_the_wire() -> void:
 		str(mine.skins) if mine != null else "no player")
 	var figure: Node = mine.character.rig.find_child("Figure", true, false) if mine != null and mine.character != null else null
 	# The figure is one of the family's people: the face's skin is its skin colour.
-	var person := figure as DotHumanoidFigure
-	var wanted_skin := Color(DotHumanoidLook.SITE_SKINS[PlaylotAvatars.LETTERS[face]][0])
+	var person := figure as GSHumanoidFigure
+	var wanted_skin := Color(GSHumanoidLook.SITE_SKINS[PlaylotAvatars.LETTERS[face]][0])
 	_check(person != null and person.look != null and person.look.skin.is_equal_approx(wanted_skin),
 		"and draws the member's face on the figure", str(person.look.to_dict()) if person != null and person.look != null else "no person")
-	if person != null and DotAddonApi.build_level("dot_player_char") >= 11:
+	if person != null and GSAddonApi.build_level("dot_player_char") >= 11:
 		var clip: AnimationPlayer = person.get("_anim")
 		Engine.time_scale = 0.05
 		mine.character.move_person({"speed": 3.0})

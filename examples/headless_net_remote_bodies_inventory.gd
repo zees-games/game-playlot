@@ -64,7 +64,7 @@ func _test_somebody_else_is_drawn() -> void:
 	# Running, with the client drawing FRAMES_PER_TICK frames between ticks. Driven the way a
 	# peer drives them: the command their input would have carried, applied by the server.
 	_seid_bea_net = _seid_server_bea.get_node("Net") as PlaylotPlayerNet
-	var run := DotFpsCommand.new()
+	var run := GSFpsCommand.new()
 	run.move = Vector2(0.0, 1.0)
 	run.yaw = 90.0
 	_seid_bea_net.last_move = run
@@ -87,7 +87,7 @@ func _test_somebody_else_is_drawn_2() -> void:
 			if _seid_theirs.character != null and i >= 60:
 				_seid_drawn.append(_seid_theirs.character.rig.global_position)
 
-	_seid_bea_net.last_move = DotFpsCommand.new()
+	_seid_bea_net.last_move = GSFpsCommand.new()
 
 	var from := _seid_server_track[0]
 	var to := _seid_server_track[_seid_server_track.size() - 1]
@@ -162,34 +162,34 @@ func _test_somebody_else_is_drawn_3() -> void:
 func _test_inventory_wire() -> void:
 	_section("the inventory's wire round-trips, and carries no state a client wrote")
 
-	var sent := DotInvOp.move(BACKPACK, 12, BACKPACK, Vector2i(3, 4), true).to_dictionary()
+	var sent := GSInvOp.move(BACKPACK, 12, BACKPACK, Vector2i(3, 4), true).to_dictionary()
 	sent["state"] = {"serial": "forged"}
-	var r := DotNetReader.new(PlaylotEvents.write_inv_op(41, sent))
+	var r := GSNetReader.new(PlaylotEvents.write_inv_op(41, sent))
 	var sub := PlaylotEvents.read_inv_ask(r)
 	var got := PlaylotEvents.read_inv_op(r)
-	var back := DotInvOp.from_dictionary(got["op"])
+	var back := GSInvOp.from_dictionary(got["op"])
 	_check(
 		sub == PlaylotEvents.InvAsk.OP and bool(got["ok"]) and int(got["seq"]) == 41,
 		"an op arrives with its sequence number"
 	)
 	_check(
-		back.kind == DotInvOp.Kind.MOVE and back.from_uid == 12 and back.to_cell == Vector2i(3, 4)
+		back.kind == GSInvOp.Kind.MOVE and back.from_uid == 12 and back.to_cell == Vector2i(3, 4)
 			and back.to_rotated and back.from_container == BACKPACK and back.to_container == BACKPACK,
 		"and every field of it",
 		back.describe_line()
 	)
 	_check(back.state.is_empty(), "but not a state the client wrote into it", str(back.state))
 
-	var add := DotNetReader.new(PlaylotEvents.write_inv_op(2, DotInvOp.add(&"crate", 1, BACKPACK).to_dictionary()))
+	var add := GSNetReader.new(PlaylotEvents.write_inv_op(2, GSInvOp.add(&"crate", 1, BACKPACK).to_dictionary()))
 	PlaylotEvents.read_inv_ask(add)
 	var add_got := PlaylotEvents.read_inv_op(add)
-	var add_back := DotInvOp.from_dictionary(add_got["op"])
+	var add_back := GSInvOp.from_dictionary(add_got["op"])
 	_check(
-		add_back.kind == DotInvOp.Kind.ADD and add_back.to_cell == Vector2i(-1, -1) and add_back.item == &"crate",
+		add_back.kind == GSInvOp.Kind.ADD and add_back.to_cell == Vector2i(-1, -1) and add_back.item == &"crate",
 		"an ADD's 'anywhere' cell survives, so a refusal matches what was predicted"
 	)
 
-	var ack_r := DotNetReader.new(PlaylotEvents.write_inv_ack(9, false, "no room"))
+	var ack_r := GSNetReader.new(PlaylotEvents.write_inv_ack(9, false, "no room"))
 	var ack_sub := PlaylotEvents.read_inv_tell(ack_r)
 	var ack := PlaylotEvents.read_inv_ack(ack_r)
 	_check(
@@ -205,7 +205,7 @@ func _test_inventory_wire() -> void:
 		}},
 		"parents": {}, "max_depth": 3, "next_child": 1,
 	}
-	var doc_r := DotNetReader.new(PlaylotEvents.write_inv_doc(17, doc))
+	var doc_r := GSNetReader.new(PlaylotEvents.write_inv_doc(17, doc))
 	var doc_sub := PlaylotEvents.read_inv_tell(doc_r)
 	var doc_got := PlaylotEvents.read_inv_doc(doc_r)
 	var entry: Dictionary = {}
@@ -226,9 +226,9 @@ func _test_inventory_wire() -> void:
 		"a bag too big to send is refused rather than truncated into JSON nobody can read"
 	)
 
-	var rs := DotNetReader.new(PlaylotEvents.write_inv_resync(5))
+	var rs := GSNetReader.new(PlaylotEvents.write_inv_resync(5))
 	var rs_sub := PlaylotEvents.read_inv_ask(rs)
-	var buy := DotNetReader.new(PlaylotEvents.write_inv_buy(&"barrel"))
+	var buy := GSNetReader.new(PlaylotEvents.write_inv_buy(&"barrel"))
 	var buy_sub := PlaylotEvents.read_inv_ask(buy)
 	_check(
 		rs_sub == PlaylotEvents.InvAsk.RESYNC and int(PlaylotEvents.read_inv_resync(rs)["seq"]) == 5
@@ -239,18 +239,18 @@ func _test_inventory_wire() -> void:
 	_done()
 
 
-func _server_bag(session: int = SESSION) -> DotInvManager:
+func _server_bag(session: int = SESSION) -> GSInvManager:
 	return _server_game.inventory.for_player(_server_bridge.inventory_net.bag_key(session))
 
 
-func _client_bag() -> DotInvManager:
+func _client_bag() -> GSInvManager:
 	return _client_bridge.inventory_manager()
 
 
 ## A bag as what two ends must agree on: every entry's uid, item, cell and rotation, and the next uid.
 ##
 ## The uids are the point: the next op names an entry by uid, so identical layouts under different uids diverge one op later.
-static func _bag_summary(m: DotInvManager) -> String:
+static func _bag_summary(m: GSInvManager) -> String:
 	if m == null or m.doc == null:
 		return "-"
 	var c := m.doc.get_container(BACKPACK)
@@ -269,7 +269,7 @@ static func _bag_summary(m: DotInvManager) -> String:
 	return "%s next=%d" % [",".join(parts), int(c.to_dictionary().get("next_uid", 0))]
 
 
-static func _uid_at(m: DotInvManager, cell: Vector2i) -> int:
+static func _uid_at(m: GSInvManager, cell: Vector2i) -> int:
 	if m == null or m.doc == null:
 		return 0
 	var c := m.doc.get_container(BACKPACK)
@@ -280,7 +280,7 @@ static func _uid_at(m: DotInvManager, cell: Vector2i) -> int:
 	return 0
 
 
-static func _cell_of(m: DotInvManager, item: StringName) -> Vector2i:
+static func _cell_of(m: GSInvManager, item: StringName) -> Vector2i:
 	if m == null or m.doc == null:
 		return Vector2i(-9, -9)
 	var c := m.doc.get_container(BACKPACK)
@@ -293,7 +293,7 @@ static func _cell_of(m: DotInvManager, item: StringName) -> Vector2i:
 
 
 ## The first free cell in the backpack, row-major — what first-fit will choose next.
-static func _first_free(m: DotInvManager) -> Vector2i:
+static func _first_free(m: GSInvManager) -> Vector2i:
 	var c := m.doc.get_container(BACKPACK)
 	var taken := c.occupied_cells(m.catalogue)
 	for y in range(c.height):
@@ -303,13 +303,13 @@ static func _first_free(m: DotInvManager) -> Vector2i:
 	return Vector2i(-1, -1)
 
 
-static func _free_cells(m: DotInvManager) -> int:
+static func _free_cells(m: GSInvManager) -> int:
 	var c := m.doc.get_container(BACKPACK)
 	return c.width * c.height - c.occupied_cells(m.catalogue).size()
 
 
 func _request_bytes(kind: int, body: PackedByteArray = PackedByteArray()) -> PackedByteArray:
-	var writer := DotNetWriter.new()
+	var writer := GSNetWriter.new()
 	var _encoded := _client_net.messages.encode(PlaylotRequest.new(kind, body), writer)
 	return writer.to_bytes()
 
@@ -320,7 +320,7 @@ func _inventory_events(peer_id: int) -> Array[Dictionary]:
 	for sent in _server_events:
 		if int(sent["peer"]) != peer_id:
 			continue
-		var decoded := _client_net.messages.decode(DotNetReader.new(sent["payload"]), 1, false)
+		var decoded := _client_net.messages.decode(GSNetReader.new(sent["payload"]), 1, false)
 		if not decoded.ok:
 			continue
 		var event := decoded.value as PlaylotEvent
@@ -387,7 +387,7 @@ func _test_inventory_predicted() -> void:
 
 	var ball := _uid_at(mine, _cell_of(mine, &"beach_ball"))
 	var requests: int = _client_bridge.link.requests_sent
-	var moved := mine.apply(DotInvOp.move(BACKPACK, ball, BACKPACK, Vector2i(6, 3)))
+	var moved := mine.apply(GSInvOp.move(BACKPACK, ball, BACKPACK, Vector2i(6, 3)))
 	_check(moved.ok, "the client moves the ball")
 	_check(
 		_cell_of(mine, &"beach_ball") == Vector2i(6, 3)
@@ -426,8 +426,8 @@ func _test_inventory_predicted() -> void:
 
 ## Two refusals: one the client could have known about, sent with a good op behind it, and
 ## one it could not — the server had changed the bag and not yet said so.
-var _ir_mine: DotInvManager
-var _ir_server: DotInvManager
+var _ir_mine: GSInvManager
+var _ir_server: GSInvManager
 var _ir_on_refused
 
 func _test_inventory_refused() -> void:
@@ -446,13 +446,13 @@ func _test_inventory_refused() -> void:
 
 	# A client giving itself something. Predicted like any other op, because a client
 	# cannot know what it may do — and a predicting manager applies it before asking.
-	var gift := _ir_mine.apply(DotInvOp.add(&"crate", 1, BACKPACK))
+	var gift := _ir_mine.apply(GSInvOp.add(&"crate", 1, BACKPACK))
 	_check(
 		gift.ok and _ir_mine.doc.count_of(&"crate") == crates + 1,
 		"a client that gives itself a crate sees it, locally"
 	)
 	var crate := _uid_at(_ir_mine, _cell_of(_ir_mine, &"crate"))
-	var behind := _ir_mine.apply(DotInvOp.move(BACKPACK, crate, BACKPACK, Vector2i(9, 5)))
+	var behind := _ir_mine.apply(GSInvOp.move(BACKPACK, crate, BACKPACK, Vector2i(9, 5)))
 	_check(
 		behind.ok and net_half.in_flight_count() == 2,
 		"and moves its real crate right behind it, both in flight before either is answered"
@@ -471,7 +471,7 @@ func _test_inventory_refused() -> void:
 	)
 	_check(
 		_uid_at(_ir_mine, Vector2i(9, 5)) != 0 and _uid_at(_ir_server, Vector2i(9, 5)) != 0,
-		"while the move sent behind it survives the rollback — DotInvManager.rollback alone restores the snapshot from before the refused op, which undoes this one too"
+		"while the move sent behind it survives the rollback — GSInvManager.rollback alone restores the snapshot from before the refused op, which undoes this one too"
 	)
 	_check(
 		_ir_mine.pending_count() == 0 and net_half.in_flight_count() == 0,
@@ -490,7 +490,7 @@ func _test_inventory_refused() -> void:
 	var gave := _server_game.inventory.give(_server_bridge.inventory_net.bag_key(SESSION), &"barrel")
 	_check(gave.ok and _cell_of(_ir_server, &"barrel") == where, "the server puts a barrel in the first free cell")
 	var ball_was := _cell_of(_ir_mine, &"beach_ball")
-	var into := _ir_mine.apply(DotInvOp.move(BACKPACK, _uid_at(_ir_mine, ball_was), BACKPACK, where))
+	var into := _ir_mine.apply(GSInvOp.move(BACKPACK, _uid_at(_ir_mine, ball_was), BACKPACK, where))
 	_check(into.ok, "and the client, not yet told, moves its ball into that same cell")
 	_flush()
 	_flush()
@@ -524,13 +524,13 @@ func _test_inventory_lost() -> void:
 
 	# In the middle: the answer to the op behind it is what says it never arrived.
 	var ball_was := _cell_of(mine, &"beach_ball")
-	var a := mine.apply(DotInvOp.move(BACKPACK, _uid_at(mine, ball_was), BACKPACK, Vector2i(3, 3)))
+	var a := mine.apply(GSInvOp.move(BACKPACK, _uid_at(mine, ball_was), BACKPACK, Vector2i(3, 3)))
 	var dropped: bool = a.ok and not _to_server.is_empty() and _to_server.back()["method"] == &"request"
 	if dropped:
 		_to_server.pop_back()
 	_check(dropped, "an op is predicted and its request is lost on the way")
 	var crate_was := _cell_of(mine, &"crate")
-	var b := mine.apply(DotInvOp.move(BACKPACK, _uid_at(mine, crate_was), BACKPACK, Vector2i(4, 4)))
+	var b := mine.apply(GSInvOp.move(BACKPACK, _uid_at(mine, crate_was), BACKPACK, Vector2i(4, 4)))
 	_check(b.ok and net_half.in_flight_count() == 2, "and a second op is sent behind it")
 	_exchange()
 	_check(
@@ -545,7 +545,7 @@ func _test_inventory_lost() -> void:
 	)
 
 	# At the tail: nothing after it will ever be answered, so nothing can say it was lost.
-	var t := mine.apply(DotInvOp.move(BACKPACK, _uid_at(mine, ball_was), BACKPACK, Vector2i(2, 2)))
+	var t := mine.apply(GSInvOp.move(BACKPACK, _uid_at(mine, ball_was), BACKPACK, Vector2i(2, 2)))
 	var tail: bool = t.ok and not _to_server.is_empty() and _to_server.back()["method"] == &"request"
 	if tail:
 		_to_server.pop_back()
@@ -583,9 +583,9 @@ func _test_inventory_from_the_server() -> void:
 	_section("what the server changes reaches the owner: a purchase, a spawn from the bag")
 
 	_ifts_charged = []
-	_server_bridge.charge_fn = func(_id: StringName, thing: StringName) -> DotResult:
+	_server_bridge.charge_fn = func(_id: StringName, thing: StringName) -> GSResult:
 		_ifts_charged.append(thing)
-		return DotResult.success(null)
+		return GSResult.success(null)
 
 	_ifts_bag = _server_bridge.inventory_net.bag_key(SESSION)
 	var barrels := _server_game.inventory.carries(_ifts_bag, &"barrel")
@@ -653,9 +653,9 @@ func _test_inventory_from_the_server_2() -> void:
 	# room now, and this is the check that says so from here.
 	var filled := _ifts_inv.give(_ifts_bag, &"beach_ball", _free_cells(_server_bag()))
 	_check(filled.ok and _free_cells(_server_bag()) == 0, "the server fills the bag to the last cell")
-	var validated := _server_bag().validate(DotInvOp.add(&"crate", 1, BACKPACK))
+	var validated := _server_bag().validate(GSInvOp.add(&"crate", 1, BACKPACK))
 	_check(
-		not validated.ok and validated.code() == DotError.CODE_QUOTA,
+		not validated.ok and validated.code() == GSError.CODE_QUOTA,
 		"and dot-inventory's own validate says there is no room for a crate"
 	)
 	var paid := _ifts_charged.size()
@@ -768,7 +768,7 @@ func _event_kinds(peer_id: int) -> Array[int]:
 	for sent in _server_events:
 		if int(sent["peer"]) != peer_id:
 			continue
-		var decoded := _client_net.messages.decode(DotNetReader.new(sent["payload"]), 1, false)
+		var decoded := _client_net.messages.decode(GSNetReader.new(sent["payload"]), 1, false)
 		if decoded.ok and decoded.value is PlaylotEvent:
 			out.append((decoded.value as PlaylotEvent).kind)
 	return out

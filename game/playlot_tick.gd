@@ -17,7 +17,7 @@ func _ready() -> void:
 	var loaded := config_binder.load_layers()
 
 	if not loaded.ok:
-		DotGameConfigBinder.fail_boot(get_tree(), loaded)
+		GSGameConfigBinder.fail_boot(get_tree(), loaded)
 		return
 
 	authoritative = config.authoritative
@@ -28,13 +28,13 @@ func _ready() -> void:
 			config.records_directory = records
 	tick_rate = _resolve_tick_rate()
 
-	DotLog.info(CHANNEL, "playlot starting", {
+	GSLog.info(CHANNEL, "playlot starting", {
 		"config": config.describe_summary(),
 		"tick_rate": tick_rate,
 		"authoritative": authoritative,
 	})
 
-	DotRegistry.register(DotRegistry.scoped_name(SERVICE, service_scope), self)
+	GSRegistry.register(GSRegistry.scoped_name(SERVICE, service_scope), self)
 
 	world = Node3D.new()
 	world.name = "World"
@@ -72,11 +72,11 @@ func _ready() -> void:
 	if authoritative and asked != &"" and maps.catalogue.get_map(asked) != null:
 		first = asked
 	elif asked != &"":
-		DotLog.warn(CHANNEL, "the shell's start map is not one this game has; the usual first map", {"map": asked})
+		GSLog.warn(CHANNEL, "the shell's start map is not one this game has; the usual first map", {"map": asked})
 
 	if first != &"":
-		var started: DotResult = await change_map(first)
-		DotLog.result(CHANNEL, "loading the first map", started)
+		var started: GSResult = await change_map(first)
+		GSLog.result(CHANNEL, "loading the first map", started)
 
 	booted = true
 	ready_for_players.emit()
@@ -85,12 +85,12 @@ func _ready() -> void:
 ## Runs a menu entry an addon registered, as [param player_id] looking at [param at].
 func activate_addon_item(
 	key: String, player_id: int = 0, at: Vector3 = Vector3.ZERO, who: StringName = &""
-) -> DotResult:
+) -> GSResult:
 	if addons == null:
-		return DotResult.fail(DotError.CODE_STATE, "the addons are not built yet")
+		return GSResult.fail(GSError.CODE_STATE, "the addons are not built yet")
 
 	if not authoritative:
-		return DotResult.fail(DotError.CODE_FORBIDDEN, "only the authority starts an addon item")
+		return GSResult.fail(GSError.CODE_FORBIDDEN, "only the authority starts an addon item")
 
 	var ctx := PlaylotAddons.Context.new()
 	ctx.authoritative = true
@@ -121,7 +121,7 @@ func _physics_process(delta: float) -> void:
 		_simulate_tick(step)
 
 	if _accumulator >= step:
-		DotLog.debug(CHANNEL, "tick budget exhausted; dropping simulation time", {
+		GSLog.debug(CHANNEL, "tick budget exhausted; dropping simulation time", {
 			"dropped_s": snappedf(_accumulator, 0.001)
 		})
 		_accumulator = 0.0
@@ -131,75 +131,75 @@ func _physics_process(delta: float) -> void:
 ## position the move produced. Timing first shifts every run by one tick, a different amount at each tickrate.
 func _simulate_tick(step: float) -> void:
 	_advance_flashlights()
-	var _t_props_maps := DotFrameCost.now()
+	var _t_props_maps := GSFrameCost.now()
 	props.advance(step)
 	maps.advance(step)
-	DotFrameCost.add(&"tick.props_maps", _t_props_maps)
+	GSFrameCost.add(&"tick.props_maps", _t_props_maps)
 
 	# Drivers' intent, then the chassis, before the players move: a rider's own move is skipped.
-	var _t_vehicles := DotFrameCost.now()
+	var _t_vehicles := GSFrameCost.now()
 	_drive_vehicles()
 	vehicles.tick(step)
-	DotFrameCost.add(&"tick.vehicles", _t_vehicles)
+	GSFrameCost.add(&"tick.vehicles", _t_vehicles)
 
 	# What the entities can see, rebuilt before any of them thinks: a list built at the end of a tick is last tick's positions,
 	# and a chaser steering at them lags its target by one tick.
-	var _t_npc_candidates := DotFrameCost.now()
+	var _t_npc_candidates := GSFrameCost.now()
 	_rebuild_npc_candidates()
-	DotFrameCost.add(&"tick.npc_candidates", _t_npc_candidates)
+	GSFrameCost.add(&"tick.npc_candidates", _t_npc_candidates)
 
-	var _t_npc_world := DotFrameCost.now()
+	var _t_npc_world := GSFrameCost.now()
 	if npc_world != null:
 		npc_world.advance(step)
-	DotFrameCost.add(&"tick.npc_world", _t_npc_world)
+	GSFrameCost.add(&"tick.npc_world", _t_npc_world)
 
-	var _t_entities := DotFrameCost.now()
+	var _t_entities := GSFrameCost.now()
 	_tick_entities(step)
-	DotFrameCost.add(&"tick.entities", _t_entities)
+	GSFrameCost.add(&"tick.entities", _t_entities)
 
 	if authoritative:
 		_sync_noclip_permits()
 
-	var _t_players_simulate := DotFrameCost.now()
+	var _t_players_simulate := GSFrameCost.now()
 	_simulate_players(step)
-	DotFrameCost.add(&"tick.players_simulate", _t_players_simulate)
+	GSFrameCost.add(&"tick.players_simulate", _t_players_simulate)
 
 	# The toys after everybody moved: a walk into a ball pushes it, weight tips a see-saw.
-	var _t_toys := DotFrameCost.now()
+	var _t_toys := GSFrameCost.now()
 	_advance_toys(step)
-	DotFrameCost.add(&"tick.toys", _t_toys)
+	GSFrameCost.add(&"tick.toys", _t_toys)
 
 	# Held players after every holder has moved and aimed, and before the timers.
-	var _t_pickup_weapons := DotFrameCost.now()
+	var _t_pickup_weapons := GSFrameCost.now()
 	pickup.tick(players, step)
 	weapon_layer.tick(step)
-	DotFrameCost.add(&"tick.pickup_weapons", _t_pickup_weapons)
+	GSFrameCost.add(&"tick.pickup_weapons", _t_pickup_weapons)
 
 	# After everybody has moved, so a grenade is swept against the world as the tick
 	# leaves it, which is also where anybody it could hit now is.
-	var _t_projectiles := DotFrameCost.now()
+	var _t_projectiles := GSFrameCost.now()
 	if projectiles != null:
 		projectiles.tick(step)
-	DotFrameCost.add(&"tick.projectiles", _t_projectiles)
+	GSFrameCost.add(&"tick.projectiles", _t_projectiles)
 
-	var _t_debris_doors_liquid := DotFrameCost.now()
+	var _t_debris_doors_liquid := GSFrameCost.now()
 	_expire_debris()
 	_swing_doors(step)
 	_liquid_tick(step)
 	_pane_impacts()
-	DotFrameCost.add(&"tick.debris_doors_liquid", _t_debris_doors_liquid)
+	GSFrameCost.add(&"tick.debris_doors_liquid", _t_debris_doors_liquid)
 
 	# After the moves and before the timers, which is the same ordering rule: a rider's
 	# position for this tick is where the vehicle carried them, not where they were.
-	var _t_riders := DotFrameCost.now()
+	var _t_riders := GSFrameCost.now()
 	_carry_riders()
-	DotFrameCost.add(&"tick.riders", _t_riders)
+	GSFrameCost.add(&"tick.riders", _t_riders)
 
 	# Locomotion state from the movement just done: fed last tick's position it animates a tick late.
-	var _t_drive_character := DotFrameCost.now()
+	var _t_drive_character := GSFrameCost.now()
 	for id in players:
 		(players[id] as PlaylotPlayer).drive_character(step)
-	DotFrameCost.add(&"tick.drive_character", _t_drive_character)
+	GSFrameCost.add(&"tick.drive_character", _t_drive_character)
 
 	# The run timer last, with the positions every move above produced.
 	if run_timer != null:
@@ -270,7 +270,7 @@ func set_tick_rate(rate: int) -> bool:
 	for id in players:
 		(players[id] as PlaylotPlayer).tick_rate = tick_rate
 
-	DotLog.info(CHANNEL, "tick rate adopted", {"tick_rate": tick_rate})
+	GSLog.info(CHANNEL, "tick rate adopted", {"tick_rate": tick_rate})
 	return true
 
 
@@ -309,7 +309,7 @@ func _liquid_tick(step: float) -> void:
 	# bounced clear in between: a timer reset by every bounce let a light crate ride a lava lake.
 	var still := _melting_next
 	still.clear()
-	for prop: DotPropInstance in props.all_props():
+	for prop: GSPropInstance in props.all_props():
 		var node := prop.node as Node3D
 		if node == null or not prop.is_alive():
 			continue
@@ -328,10 +328,10 @@ func _liquid_tick(step: float) -> void:
 	for instance_id: int in still.keys():
 		if float(still[instance_id]) >= MELT_SECONDS:
 			_melting.erase(instance_id)
-			var _gone := props.remove(instance_id, DotPropSpawner.REASON_CLEANUP)
+			var _gone := props.remove(instance_id, GSPropSpawner.REASON_CLEANUP)
 
 
-## Buoyancy and drag on every loose prop in a liquid, on the authority (props are not predicted), by [DotPropBuoyancy]. Density is
+## Buoyancy and drag on every loose prop in a liquid, on the authority (props are not predicted), by [GSPropBuoyancy]. Density is
 ## the catalogue's `density` when given (rock, concrete: the catalogue's masses are tuned for a physics gun and a 900 kg boulder
 ## works out lighter than water), else mass over volume.
 func _float_props(step: float) -> void:
@@ -339,29 +339,29 @@ func _float_props(step: float) -> void:
 		return
 	var gravity := float(ProjectSettings.get_setting("physics/3d/default_gravity", 9.8))
 	var surface := func(material: Variant) -> Variant: return PlaylotMaterials.surface(String(material))
-	for prop: DotPropInstance in props.all_props():
+	for prop: GSPropInstance in props.all_props():
 		var body := prop.node as RigidBody3D
 		if body == null or body.freeze or not body.is_inside_tree() or prop.held_by != &"":
 			continue
-		if not DotPropBuoyancy.near_liquid(body.global_position, liquids):
+		if not GSPropBuoyancy.near_liquid(body.global_position, liquids):
 			continue
 		var volume := _volume_of(prop)
 		var density := float(prop.def.meta.get("density", body.mass / maxf(volume, 0.001))) if prop.def != null else body.mass / maxf(volume, 0.001)
-		var _acted := DotPropBuoyancy.apply(body, volume, _half_height_of(prop), density, liquids, surface, step, gravity)
+		var _acted := GSPropBuoyancy.apply(body, volume, _half_height_of(prop), density, liquids, surface, step, gravity)
 
 
-## DotPropBuoyancy's shape names, indexed by [enum PlaylotProp.Shape] (a constant, so the per-prop water step allocates nothing).
+## GSPropBuoyancy's shape names, indexed by [enum PlaylotProp.Shape] (a constant, so the per-prop water step allocates nothing).
 const _BUOYANCY_SHAPES: Array[String] = ["box", "sphere", "cylinder"]
 
 
-static func _volume_of(prop: DotPropInstance) -> float:
+static func _volume_of(prop: GSPropInstance) -> float:
 	if prop.def == null:
 		return 1.0
 	var scale := float(prop.node.get("size_scale")) if prop.node != null and prop.node.get("size_scale") != null else 1.0
-	return DotPropBuoyancy.volume_of(PlaylotProp.extent_of(prop.def), scale, _BUOYANCY_SHAPES[PlaylotProp.shape_of(prop.def)])
+	return GSPropBuoyancy.volume_of(PlaylotProp.extent_of(prop.def), scale, _BUOYANCY_SHAPES[PlaylotProp.shape_of(prop.def)])
 
 
-static func _half_height_of(prop: DotPropInstance) -> float:
+static func _half_height_of(prop: GSPropInstance) -> float:
 	if prop.def == null:
 		return 0.5
 	var scale := float(prop.node.get("size_scale")) if prop.node != null and prop.node.get("size_scale") != null else 1.0
@@ -402,7 +402,7 @@ func _rebuild_npc_candidates() -> void:
 		var loudness := player.speed() * 0.9
 
 		npc_candidates.append(
-			DotNpcSenses.Candidate.new(id, player.global_position, &"player", loudness)
+			GSNpcSenses.Candidate.new(id, player.global_position, &"player", loudness)
 		)
 
 		# The armed NPCs see the players and each other: a soldier on `hostile` and a rebel on `player` are candidates for one
@@ -414,7 +414,7 @@ func _rebuild_npc_candidates() -> void:
 			continue
 
 		var faction := StringName(entity.call("tune_string", &"faction", "hostile"))
-		npc_candidates_all.append(DotNpcSenses.Candidate.new(
+		npc_candidates_all.append(GSNpcSenses.Candidate.new(
 			npc_id_of(entity), (entity as Node3D).global_position, faction, 0.0
 		))
 
@@ -438,7 +438,7 @@ func nearest_waypoint(owner: StringName, at: Vector3, radius: float = 80.0) -> N
 		var node := point as Node3D
 		var instance: Variant = point.get("instance")
 
-		if instance == null or (instance as DotPropInstance).owner_id != owner:
+		if instance == null or (instance as GSPropInstance).owner_id != owner:
 			continue
 
 		var d := node.global_position.distance_to(at)
@@ -484,7 +484,7 @@ func candidate_position(id: StringName, fallback: Vector3 = Vector3.ZERO) -> Vec
 ## How a dead NPC's body falls (a sandbox soldier, a wave): the reaction rule over the server's `sv_ragdoll_reactions`, pushed away
 ## from [param by] when that is a player, from [method next_seed]. Kept as `pg_death` for the bridge, which sends it with the PROP_GONE;
 ## every client copies a ragdoll from the figure it drew.
-func decide_npc_death(body: Node3D, by: StringName, damage: float = 0.0) -> DotPlayerDeath:
+func decide_npc_death(body: Node3D, by: StringName, damage: float = 0.0) -> GSPlayerDeath:
 	if body == null:
 		return null
 	var direction := Vector3.ZERO
@@ -492,7 +492,7 @@ func decide_npc_death(body: Node3D, by: StringName, damage: float = 0.0) -> DotP
 	if killer != null and killer.controller != null:
 		direction = body.global_position - killer.controller.state.position
 		direction.y = 0.0
-	var death := DotPlayerDeath.decide(
+	var death := GSPlayerDeath.decide(
 		ragdoll_rules.reactions(), false, damage, direction, next_seed(&"npc_death")
 	)
 	body.set_meta(&"pg_death", death)
@@ -538,11 +538,11 @@ func _expire_debris() -> void:
 	for instance_id: int in _debris_expiry.keys():
 		if now >= float(_debris_expiry[instance_id]):
 			_debris_expiry.erase(instance_id)
-			var _gone := props.remove(instance_id, DotPropSpawner.REASON_CLEANUP)
+			var _gone := props.remove(instance_id, GSPropSpawner.REASON_CLEANUP)
 
 
 ## Turns each driver's movement keys into what their vehicle is being asked for. The mapping is here, not in dot-vehicle, which has no
-## input at all: a [DotVehicleCommand] is built from a keyboard, pad, touch layout or bot. Reuses [DotFpsCommand] rather than a second
+## input at all: a [GSVehicleCommand] is built from a keyboard, pad, touch layout or bot. Reuses [GSFpsCommand] rather than a second
 ## wire format: a client already sends one per tick, sanitised, replayed by the predictor and quantised.
 func _drive_vehicles() -> void:
 	if vehicles == null or vehicles.ride.rider_count() == 0:
@@ -569,22 +569,22 @@ func _drive_vehicles() -> void:
 
 ## One tick of driving, from one tick of movement input. Static and public because it is the whole mapping, and a suite that had
 ## to build a player to test it would be testing something else.
-static func drive_command(move: DotFpsCommand) -> DotVehicleCommand:
-	var cmd := DotVehicleCommand.new()
+static func drive_command(move: GSFpsCommand) -> GSVehicleCommand:
+	var cmd := GSVehicleCommand.new()
 
 	if move == null:
 		return cmd
 
-	# W and S. `move.y` is forward in DotFpsCommand and +1 is forward in
-	# DotVehicleCommand, so this is not a coincidence worth inverting.
+	# W and S. `move.y` is forward in GSFpsCommand and +1 is forward in
+	# GSVehicleCommand, so this is not a coincidence worth inverting.
 	cmd.throttle = move.move.y
 	# A and D. `move.x` strafes right and +1 steers right.
 	cmd.steer = move.move.x
 
 	# Crouch brakes and jump is the handbrake. Both are chosen so a player who gets into
 	# a car with their fingers where they were still has a brake under one of them.
-	cmd.brake = 1.0 if move.is_pressed(DotFpsCommand.BUTTON_CROUCH) else 0.0
-	cmd.handbrake = move.is_pressed(DotFpsCommand.BUTTON_JUMP)
+	cmd.brake = 1.0 if move.is_pressed(GSFpsCommand.BUTTON_CROUCH) else 0.0
+	cmd.handbrake = move.is_pressed(GSFpsCommand.BUTTON_JUMP)
 
 	cmd.aim_yaw = deg_to_rad(move.yaw)
 	cmd.aim_pitch = deg_to_rad(move.pitch)
@@ -629,7 +629,7 @@ func _swing_doors(step: float) -> void:
 func _apply_body_mask(player: PlaylotPlayer) -> void:
 	if player_stack == null or player == null or player.controller == null:
 		return
-	var layout: DotPhysicsLayout = player_stack.physics.layout if player_stack.physics != null else null
+	var layout: GSPhysicsLayout = player_stack.physics.layout if player_stack.physics != null else null
 	var players_layer := layout.layer_mask(&"player") if layout != null else 0
 	body_rules.apply_to(player.controller, player_stack.player_collision_mask(), players_layer)
 	var tunables := player.controller.tunables
@@ -657,11 +657,11 @@ func apply_pass_through() -> void:
 
 
 ## The flashlight config, made on first use.
-func flashlight_conf() -> DotFlashlightConfig:
+func flashlight_conf() -> GSFlashlightConfig:
 	if flashlight_config == null:
 		flashlight_config = PlaylotFlashlight.make_config()
 		flashlight_binder = PlaylotFlashlight.make_binder(flashlight_config)
-		DotLog.result(CHANNEL, "flashlight config", flashlight_binder.load_layers())
+		GSLog.result(CHANNEL, "flashlight config", flashlight_binder.load_layers())
 	return flashlight_config
 
 
@@ -697,7 +697,7 @@ func toggle_flashlight(id: StringName) -> bool:
 
 	if body == null or body.downed \
 			or (player_stack != null and player_stack.spectate != null and player_stack.spectate.is_spectating(String(id))) \
-			or not DotFlashlightRules.allowed_on(flashlight_conf(), flashlight_map_id()):
+			or not GSFlashlightRules.allowed_on(flashlight_conf(), flashlight_map_id()):
 		return false
 
 	body.flashlight = not body.flashlight

@@ -1,4 +1,4 @@
-extends DotGameCheckSuite
+extends GSGameCheckSuite
 ## The header, counts and helpers of the dedicated-server suite, and the first sections.
 
 
@@ -41,7 +41,7 @@ const SERVER_DIR := "user://pg_dedicated"
 
 var _sections_done := 0
 
-var server: DotServer = null
+var server: GSServer = null
 var game: Playlot = null
 var platform: PlaylotPlatform = null
 
@@ -51,9 +51,9 @@ const APP_URL := "playground"
 
 
 ## The loaded module, looked up every time because `_test_module_unloads_cleanly` unloads it. Typed
-## as [DotModule]: `playlot_module.gd` has no `class_name` (a pack-delivered module is loaded by
+## as [GSModule]: `playlot_module.gd` has no `class_name` (a pack-delivered module is loaded by
 ## path), so its fields come back through `get()`.
-func _module() -> DotModule:
+func _module() -> GSModule:
 	return server.modules.get_module("playground")
 
 
@@ -87,13 +87,13 @@ func _test_query() -> void:
 		_check(false, "the module is loaded")
 		return
 
-	var snapshot := DotQuerySnapshot.new()
+	var snapshot := GSQuerySnapshot.new()
 
 	for provider in module._query_providers:
 		provider.call("_contribute", snapshot)
 
 	# Through `get()`, because this module has no `class_name` — the shape a module
-	# delivered in a dot-cloud pack must have. Same reason `_module()` is typed DotModule.
+	# delivered in a dot-cloud pack must have. Same reason `_module()` is typed GSModule.
 	var joined: Dictionary = module.get("_joined")
 	var arena: Object = module.get("arena")
 
@@ -132,7 +132,7 @@ func _test_stats_report() -> void:
 	print("")
 	print("stats_report")
 
-	var cv: DotConVar = server.console.find_cvar("stats_report")
+	var cv: GSConVar = server.console.find_cvar("stats_report")
 	var progress: Object = _module().get("progress")
 	_check(cv != null and cv.get_string() == "0", "stats_report is registered and off by default")
 	_check(progress != null and progress.stats != null and not progress.stats.report_to_backbone,
@@ -147,20 +147,20 @@ func _test_stats_report() -> void:
 	script.source_code = "extends Node\nfunc post_integration(_a = null, _b = null, _c = null): return null\n"
 	var _reloaded := script.reload()
 	client.set_script(script)
-	DotRegistry.register(&"dot_backbone_client", client)
+	GSRegistry.register(&"dot_backbone_client", client)
 	var _r0 := cv.set_value("0")
 	var _r1 := cv.set_value("1")
 	_check(progress.stats.report_to_backbone, "on with a backbone client makes the tracker report")
-	_check(progress.stats.get_node_or_null(DotGameStatsReport.TIMER_NAME) != null, "and adds the flush timer")
+	_check(progress.stats.get_node_or_null(GSGameStatsReport.TIMER_NAME) != null, "and adds the flush timer")
 	var _r2 := cv.set_value("0")
 	_check(not progress.stats.report_to_backbone, "off stops it again")
-	DotRegistry.unregister_instance(&"dot_backbone_client", client)
+	GSRegistry.unregister_instance(&"dot_backbone_client", client)
 	client.free()
 	_section_done()
 
 
 ## Runs a console command as the local console and returns what it replied. The reply sink is
-## captured in an [Array]: [method DotConsole.execute] copies only the sink into a FRESH context,
+## captured in an [Array]: [method GSConsole.execute] copies only the sink into a FRESH context,
 ## and a lambda captures by value, so a [PackedStringArray] appended to inside one is unchanged.
 func _forget_learned_heat() -> void:
 	var dir := "user://npc_heat"
@@ -177,7 +177,7 @@ func _forget_learned_heat() -> void:
 func _run_command(line: String) -> PackedStringArray:
 	var captured: Array[String] = []
 
-	var template := DotCmdContext.console("", PackedStringArray())
+	var template := GSCmdContext.console("", PackedStringArray())
 	template.reply_sink = func(text: String) -> void: captured.append(text)
 
 	server.console.execute(line, template)
@@ -295,30 +295,30 @@ func _test_permissions() -> void:
 
 	# Changing the map is CHANGEMAP, not GENERIC: what everybody plays next is the map
 	# admin's call, and a reserved slot holds a flag without holding that one.
-	var map_cmd: DotConCommand = server.console.find_command("pg_map")
+	var map_cmd: GSConCommand = server.console.find_command("pg_map")
 	_check(map_cmd != null, "pg_map is registered")
 
 	if map_cmd != null:
 		_check(
-			map_cmd.permission == DotAdminFlags.CHANGEMAP,
+			map_cmd.permission == GSAdminFlags.CHANGEMAP,
 			"and needs the changemap flag",
 			map_cmd.permission
 		)
 
-	var rtv_cmd: DotConCommand = server.console.find_command("pg_rtv")
+	var rtv_cmd: GSConCommand = server.console.find_command("pg_rtv")
 	_check(
 		rtv_cmd != null and rtv_cmd.permission == "",
 		"while rocking the vote needs nothing"
 	)
 
-	var clear_cmd: DotConCommand = server.console.find_command("pg_props_clear")
+	var clear_cmd: GSConCommand = server.console.find_command("pg_props_clear")
 	_check(
-		clear_cmd != null and clear_cmd.permission == DotAdminFlags.GENERIC,
+		clear_cmd != null and clear_cmd.permission == GSAdminFlags.GENERIC,
 		"and clearing everybody's props is an admin action"
 	)
 
-	var edit_cmd: DotConCommand = server.console.find_command("spawn_add")
-	_check(edit_cmd != null and edit_cmd.permission == DotAdminFlags.CONFIG, "the map-edit commands are installed behind the config flag")
+	var edit_cmd: GSConCommand = server.console.find_command("spawn_add")
+	_check(edit_cmd != null and edit_cmd.permission == GSAdminFlags.CONFIG, "the map-edit commands are installed behind the config flag")
 	var shared: Object = _module().get("game")
 	_check(shared.get("map_edit") != null and shared.get("map_edit") == _module().get("map_edit"), "the spawn-point tool is handed the same editor")
 	_check(not bool((shared.get("map_edit_allowed_fn") as Callable).call(&"u4040")), "and a player with no admin session may not use it")
@@ -331,29 +331,29 @@ func _test_moderation() -> void:
 	print("moderation")
 
 	var services: PlaylotServices = _module().get("services")
-	var subject := DotPunishmentSubject.for_uid("uid-pg-test")
+	var subject := GSPunishmentSubject.for_uid("uid-pg-test")
 
-	var gagged: DotResult = await services.moderation.issue(
-		DotPunishment.Kind.GAG, subject, "testing", "console", 60
+	var gagged: GSResult = await services.moderation.issue(
+		GSPunishment.Kind.GAG, subject, "testing", "console", 60
 	)
 	_check(gagged.ok, "a gag is issued and stored", str(gagged.error))
 
-	var reloaded := DotModerationManager.new()
-	reloaded.store = DotPunishmentStoreFile.new(services.punishments_path)
+	var reloaded := GSModerationManager.new()
+	reloaded.store = GSPunishmentStoreFile.new(services.punishments_path)
 	reloaded.register_mute_source = false
 	reloaded.register_ban_source = false
 	add_child(reloaded)
 	reloaded.load_all()
 
-	var found := reloaded.active_of_kind(subject, DotPunishment.Kind.GAG)
+	var found := reloaded.active_of_kind(subject, GSPunishment.Kind.GAG)
 	_check(
-		found != null and found.kind == DotPunishment.Kind.GAG,
+		found != null and found.kind == GSPunishment.Kind.GAG,
 		"and comes back off disk as a GAG rather than as a WARN",
 		"the kind is written and read through one table for exactly this reason"
 	)
 
-	var muted: DotResult = await services.moderation.issue(
-		DotPunishment.Kind.VOICE_MUTE, subject, "testing", "console", 60
+	var muted: GSResult = await services.moderation.issue(
+		GSPunishment.Kind.VOICE_MUTE, subject, "testing", "console", 60
 	)
 	_check(muted.ok, "a voice mute is issued", str(muted.error))
 	_check(
@@ -377,7 +377,7 @@ func _test_arena_loadout() -> void:
 	_check(cmd != null and server.console.find_command("loadout") != null and server.console.find_cvar("mp_loadout_menu") != null
 		and server.console.find_cvar("mp_loadout_allow") != null and server.console.find_cvar("mp_loadout_fixed") != null,
 		"the server has the loadout command and the owner's mp_loadout_* cvars")
-	_check(on_cvar != null and on_cvar.has_flag(DotConVar.FLAG_REPLICATED) and on_cvar.get_string() == "0"
+	_check(on_cvar != null and on_cvar.has_flag(GSConVar.FLAG_REPLICATED) and on_cvar.get_string() == "0"
 		and not arena.enabled, "pg_arena_on is replicated and says the arena is off")
 	if cmd == null or on_cvar == null:
 		_section_done()
@@ -396,7 +396,7 @@ func _test_arena_loadout() -> void:
 
 	var current := arena.loadouts.schema.slot(&"primary").default_item
 	var other := &""
-	for item in arena.loadouts.schema.choices_for(&"primary", DotLoadoutEntitlements.none()):
+	for item in arena.loadouts.schema.choices_for(&"primary", GSLoadoutEntitlements.none()):
 		if item.id != current:
 			other = item.id
 			break
@@ -635,23 +635,23 @@ func _test_progress() -> void:
 
 	_check_hit_zones_and_rank(progress)
 
-	var written: DotResult = await progress.achievements.flush()
+	var written: GSResult = await progress.achievements.flush()
 	_check(written.ok, "progress writes to disk", str(written.error))
 	_section_done()
 
 
 ## A hit with a body zone is filed by zone, and the rank score builds on the stored lifetime.
 func _check_hit_zones_and_rank(progress: PlaylotProgress) -> void:
-	var zoned := DotDamage.make(1, 2, 5.0, _module().get("arena").combat.damage_type(&"kinetic"))
-	zoned.hit_group = DotHitGroup.NECK
+	var zoned := GSDamage.make(1, 2, 5.0, _module().get("arena").combat.damage_type(&"kinetic"))
+	zoned.hit_group = GSHitGroup.NECK
 	zoned.weapon_id = &"probe"
 	_module().get("arena").damage_landed.emit(&"pg-test", &"pg-victim", zoned)
 	_check(
-		progress.stats.session_values(&"pg-test").get_cell(DotStatsHitzones.HITS, "zone:neck") >= 1.0,
+		progress.stats.session_values(&"pg-test").get_cell(GSStatsHitzones.HITS, "zone:neck") >= 1.0,
 		"a hit with a hit_group is filed by body zone through the dot-stats hitzone hook"
 	)
 
-	var held := DotStatsValues.new()
+	var held := GSStatsValues.new()
 	held.values = {"kills": 10.0}
 	progress.rank.seed_baseline(&"pg-test", held)
 	progress.note(&"pg-test", &"deaths", 2.0)
@@ -673,7 +673,7 @@ func _test_status_clock(vote: PlaylotVote) -> void:
 	# A known clock, so the numbers mean something whatever the config shipped — which is
 	# `trigger: rtv_only` with no duration, and so no clock at all.
 	rules.duration_sec = 600.0
-	rules.trigger = DotVoteRules.Trigger.TIME_LIMIT
+	rules.trigger = GSVoteRules.Trigger.TIME_LIMIT
 	rules.max_extends = 0
 	clock.start()
 
@@ -701,7 +701,7 @@ func _test_status_clock(vote: PlaylotVote) -> void:
 	)
 
 	rules.duration_sec = 0.0
-	rules.trigger = DotVoteRules.Trigger.RTV_ONLY
+	rules.trigger = GSVoteRules.Trigger.RTV_ONLY
 	clock.start()
 	var status := _run_command("pg_status")
 	_check(

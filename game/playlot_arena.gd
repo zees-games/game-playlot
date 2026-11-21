@@ -29,7 +29,7 @@ const PlaylotWeaponDef := preload("weapons/playlot_weapon_def.gd")
 ## [b]The weapons are this game's own and are not re-declared.[/b] `PlaylotWeapons`
 ## already has an arsenal — a script path per weapon, loaded and checked — and a second
 ## catalogue of the same three would be two lists to keep in step, which is this tree's
-## most repeated bug. The loadout schema's items are **built from it**, and a `DotItem` is
+## most repeated bug. The loadout schema's items are **built from it**, and a `GSItem` is
 ## the same id with a cost and an entitlement on it.
 
 const CHANNEL := "playlot.arena"
@@ -73,9 +73,9 @@ signal respawned(id: StringName)
 signal clock_changed(state: int, seconds_left: float, round_number: int, label: String)
 
 
-var combat: DotCombatManager = null
-var match_node: DotMatch = null
-var loadouts: DotLoadoutManager = null
+var combat: GSCombatManager = null
+var match_node: GSMatch = null
+var loadouts: GSLoadoutManager = null
 
 var game: Playlot = null
 
@@ -83,11 +83,11 @@ var game: Playlot = null
 var enabled: bool = false
 
 ## Whether a player's client is still behind its loading cover: `func(player_key: StringName) -> bool`.
-## The server module fills it from its [DotGameRoster]; unset (offline, a suite, a bot) nobody is
+## The server module fills it from its [GSGameRoster]; unset (offline, a suite, a bot) nobody is
 ## loading, so every offline suite is unchanged. See [method hurt].
 var loading_fn: Callable = Callable()
 
-## player id -> [DotHealth].
+## player id -> [GSHealth].
 var _health: Dictionary = {}
 
 ## dot-combat keys entities by int and this game keys players by [StringName]. Two id
@@ -112,15 +112,15 @@ var _weapon_defs: Dictionary = {}
 ## [b]Built FROM `PlaylotWeapons` rather than beside it.[/b] The arsenal is already
 ## declared once — an id, a name, a script path — and a loadout catalogue that restated it
 ## would be a second list, which in this tree has now gone stale in `setup.sh`,
-## `tools/check.sh`, `tools/package_check.sh` and `bootstrap`. What a `DotItem` adds is the
+## `tools/check.sh`, `tools/package_check.sh` and `bootstrap`. What a `GSItem` adds is the
 ## two things a weapon definition has no business knowing: what it costs against a budget
 ## and what unlocks it.
-static func item_catalogue(weapons: Array[PlaylotWeaponDef]) -> DotItemCatalogue:
-	var out := DotItemCatalogue.new()
-	var items: Array[DotItem] = []
+static func item_catalogue(weapons: Array[PlaylotWeaponDef]) -> GSItemCatalogue:
+	var out := GSItemCatalogue.new()
+	var items: Array[GSItem] = []
 
 	for weapon in weapons:
-		var item := DotItem.make(weapon.id, DotItem.KIND_WEAPON)
+		var item := GSItem.make(weapon.id, GSItem.KIND_WEAPON)
 		item.display_name = weapon.name_or_id()
 		item.slots = [&"primary"]
 		item.cost = int(weapon.meta.get("cost", 1))
@@ -142,20 +142,20 @@ static func item_catalogue(weapons: Array[PlaylotWeaponDef]) -> DotItemCatalogue
 
 
 ## One slot: the weapon an arena spawn puts in the hands (B, `PlaylotModule._arm_from_loadout`).
-static func loadout_schema(weapons: Array[PlaylotWeaponDef]) -> DotLoadoutSchema:
+static func loadout_schema(weapons: Array[PlaylotWeaponDef]) -> GSLoadoutSchema:
 	# [b]Required, and therefore it must have a default.[/b] dot-loadout refuses a schema
 	# whose required slot has none, and the refusal is exactly right: a loadout missing a
 	# required slot cannot be *repaired* — `conform_on_load` has nothing to put there — so
 	# it can only be refused, and a player who has never chosen could then never spawn.
 	# The default is derived from the catalogue rather than written in, so a server that
 	# retires a weapon does not end up with a schema pointing at nothing.
-	var primary := DotLoadoutSlot.make(&"primary", true, _default_weapon(weapons))
+	var primary := GSLoadoutSlot.make(&"primary", true, _default_weapon(weapons))
 	primary.display_name = "Weapon"
-	primary.kinds = [DotItem.KIND_WEAPON]
+	primary.kinds = [GSItem.KIND_WEAPON]
 	primary.arsenal_slot = 1
 	primary.order = 0
 
-	var schema := DotLoadoutSchema.new()
+	var schema := GSLoadoutSchema.new()
 	schema.id = &"pg_arena"
 	schema.display_name = "Sandbox arena"
 	schema.slots = [primary]
@@ -182,7 +182,7 @@ static func _default_weapon(weapons: Array[PlaylotWeaponDef]) -> StringName:
 
 # --- Lifecycle -------------------------------------------------------------
 
-func setup(p_game: Playlot) -> DotResult:
+func setup(p_game: Playlot) -> GSResult:
 	game = p_game
 
 	var fought := _build_combat()
@@ -198,8 +198,8 @@ func setup(p_game: Playlot) -> DotResult:
 	return _build_loadouts()
 
 
-func _build_combat() -> DotResult:
-	var rules := DotDamageRules.new()
+func _build_combat() -> GSResult:
+	var rules := GSDamageRules.new()
 	# A sandbox has no teams, so nothing is friendly — said explicitly rather than left,
 	# because a mode that adds teams changes exactly this line.
 	rules.friendly_fire = game.config.arena_friendly_fire
@@ -213,10 +213,10 @@ func _build_combat() -> DotResult:
 	rules.minimum = 0.0
 	rules.maximum = 0.0
 
-	var config := DotCombatConfig.new()
+	var config := GSCombatConfig.new()
 	config.tick_rate = game.tick_rate
 
-	combat = DotCombatManager.new()
+	combat = GSCombatManager.new()
 	combat.name = "Combat"
 	combat.is_authority = true
 	combat.register_service = false
@@ -231,7 +231,7 @@ func _build_combat() -> DotResult:
 	if not ready.ok:
 		return ready.wrap("dot-combat could not be set up")
 
-	var kinetic := DotDamageType.make(DAMAGE_ID, "Kinetic")
+	var kinetic := GSDamageType.make(DAMAGE_ID, "Kinetic")
 	kinetic.falloff_start = 12.0
 	kinetic.falloff_end = 60.0
 	kinetic.falloff_floor = 0.3
@@ -241,7 +241,7 @@ func _build_combat() -> DotResult:
 	combat.register_damage_type(kinetic)
 
 	# [b]The spawn window, asked at the one point every hit goes through.[/b] `hurt`'s
-	# comment above already names what an unstamped tick does to `DotHealth`'s window;
+	# comment above already names what an unstamped tick does to `GSHealth`'s window;
 	# this is the session-scoped record of the same idea, granted per respawn in
 	# `_on_respawn_due` and drained every tick, which until now nothing ever asked.
 	# A veto applied at the damage sites instead is one applied at the sites somebody
@@ -251,15 +251,15 @@ func _build_combat() -> DotResult:
 	combat.damage_applied.connect(_on_damage)
 	combat.entity_killed.connect(_on_killed)
 
-	return DotResult.success(null)
+	return GSResult.success(null)
 
 
 ## Refuses a hit on somebody inside their spawn window.
 ##
 ## Self damage and world damage are not blocked, and neither decision is made here:
-## [DotSpawnProtection.blocks] answers about the pair so that a protected player who
+## [GSSpawnProtection.blocks] answers about the pair so that a protected player who
 ## falls into a pit still dies in it.
-func _adjust_damage(damage: DotDamage) -> void:
+func _adjust_damage(damage: GSDamage) -> void:
 	if damage == null or game == null or game.player_stack == null:
 		return
 
@@ -281,8 +281,8 @@ func _adjust_damage(damage: DotDamage) -> void:
 		damage.refuse("spawn protection")
 
 
-func _build_match() -> DotResult:
-	var rules := DotMatchRules.new()
+func _build_match() -> GSResult:
+	var rules := GSMatchRules.new()
 	rules.id = &"pg_arena"
 	rules.display_name = "Sandbox arena"
 	rules.score_limit = game.config.arena_score_limit
@@ -298,7 +298,7 @@ func _build_match() -> DotResult:
 	# statically checked. Setting it here is what makes it a decision.
 	rules.pause_when_empty = true
 
-	var config := DotMatchConfig.new()
+	var config := GSMatchConfig.new()
 	config.tick_rate = game.tick_rate
 	# The game owns the tick — `Playlot._simulate_tick` — so the match must not also
 	# start itself from a `_ready`.
@@ -308,7 +308,7 @@ func _build_match() -> DotResult:
 	# person who is building.
 	config.idle_seconds = 0.0
 
-	match_node = DotMatch.new()
+	match_node = GSMatch.new()
 	match_node.name = "Match"
 	match_node.rules = rules
 	match_node.config = config
@@ -329,11 +329,11 @@ func _build_match() -> DotResult:
 		return health != null and health.alive
 	match_node.respawn_due.connect(_on_respawn_due)
 
-	return DotResult.success(null)
+	return GSResult.success(null)
 
 
-func _build_loadouts() -> DotResult:
-	var config := DotLoadoutConfig.new()
+func _build_loadouts() -> GSResult:
+	var config := GSLoadoutConfig.new()
 	config.backend = "memory"
 	config.allow_default_loadout = true
 	# [b]On for LOADING and off for PUBLISHING, which is the asymmetry that matters.[/b]
@@ -345,7 +345,7 @@ func _build_loadouts() -> DotResult:
 	config.enforce_entitlements = true
 	config.allow_live_changes = false
 
-	loadouts = DotLoadoutManager.new()
+	loadouts = GSLoadoutManager.new()
 	loadouts.name = "Loadouts"
 	loadouts.config = config
 	loadouts.config_file = ""
@@ -353,7 +353,7 @@ func _build_loadouts() -> DotResult:
 	loadouts.schema = loadout_schema(game.weapons)
 	loadouts.register_service = false
 	# Adds what the site store says the player owns (no-op without a backbone client).
-	DotGameStoreEntitlements.attach(loadouts)
+	GSGameStoreEntitlements.attach(loadouts)
 	add_child(loadouts)
 
 	return loadouts.setup().wrap("dot-loadout could not be set up")
@@ -399,7 +399,7 @@ func admit(id: StringName, display_name: String) -> void:
 	if not enabled or _health.has(id):
 		return
 
-	var health := DotHealth.new()
+	var health := GSHealth.new()
 	health.name = "Health_%s" % String(id)
 	health.max_health = game.config.arena_health
 	health.max_armour = game.config.arena_armour
@@ -430,18 +430,18 @@ func admit(id: StringName, display_name: String) -> void:
 
 	if entity_id == 0:
 		var opened := game.entity_table.open(
-			DotEntity.KIND_PLAYER, health, &"", id, float(_tick) / float(maxi(game.tick_rate, 1))
+			GSEntity.KIND_PLAYER, health, &"", id, float(_tick) / float(maxi(game.tick_rate, 1))
 		)
 
 		if not opened.ok:
-			DotLog.error(CHANNEL, "could not open an entity for an admitted player", {
+			GSLog.error(CHANNEL, "could not open an entity for an admitted player", {
 				"player": String(id), "why": opened.error.message,
 			})
 			health.queue_free()
 			_health.erase(id)
 			return
 
-		entity_id = (opened.value as DotEntityHandle).id
+		entity_id = (opened.value as GSEntityHandle).id
 
 	combat.register_health(entity_id, health)
 	match_node.add_player(String(id), display_name, _tick)
@@ -472,7 +472,7 @@ func release(id: StringName) -> void:
 	_health.erase(id)
 
 	if ours:
-		game.entity_table.close(handle.id, DotEntityTable.REASON_DESPAWN)
+		game.entity_table.close(handle.id, GSEntityTable.REASON_DESPAWN)
 
 	match_node.remove_player(String(id))
 
@@ -485,13 +485,13 @@ func _forget(id: StringName) -> void:
 
 	var health: Variant = _health.get(id)
 
-	if health is DotHealth:
-		(health as DotHealth).queue_free()
+	if health is GSHealth:
+		(health as GSHealth).queue_free()
 
 
-func health_of(id: StringName) -> DotHealth:
+func health_of(id: StringName) -> GSHealth:
 	var found: Variant = _health.get(id)
-	return found as DotHealth if found is DotHealth else null
+	return found as GSHealth if found is GSHealth else null
 
 
 func entity_id_of(id: StringName) -> int:
@@ -523,7 +523,7 @@ func tick(current_tick: int, delta: float) -> void:
 		return
 
 	for id in _health.keys():
-		var health: DotHealth = _health[id]
+		var health: GSHealth = _health[id]
 		health.tick(current_tick, delta)
 
 		var found: Variant = game.players.get(id)
@@ -557,15 +557,15 @@ func _announce_clock() -> void:
 
 func _state_label() -> String:
 	match match_node.state:
-		DotMatch.State.WARMUP:
+		GSMatch.State.WARMUP:
 			return "Warm-up"
-		DotMatch.State.COUNTDOWN:
+		GSMatch.State.COUNTDOWN:
 			return "Starting"
-		DotMatch.State.LIVE:
+		GSMatch.State.LIVE:
 			return "Live"
-		DotMatch.State.INTERMISSION:
+		GSMatch.State.INTERMISSION:
 			return "Round over"
-		DotMatch.State.MATCH_END:
+		GSMatch.State.MATCH_END:
 			return "Match over"
 		_:
 			return "Idle"
@@ -581,8 +581,8 @@ func _state_label() -> String:
 ## cannot change.
 func hurt(
 	attacker: StringName, victim: StringName, amount: float, distance: float,
-	group: StringName = DotHitGroup.CHEST, admin: bool = false
-) -> DotDamage:
+	group: StringName = GSHitGroup.CHEST, admin: bool = false
+) -> GSDamage:
 	if not enabled:
 		return null
 
@@ -597,22 +597,22 @@ func hurt(
 	# and lava would then send the player to the spawn instead. An [param admin] call (slay,
 	# slap) is the operator's and passes.
 	if not admin and loading_fn.is_valid() and bool(loading_fn.call(victim)):
-		var refused := DotDamage.make(
+		var refused := GSDamage.make(
 			entity_id_of(attacker), entity_id_of(victim), amount, combat.damage_type(DAMAGE_ID)
 		)
 		refused.refuse("loading")
-		DotLog.debug(CHANNEL, "a hit was refused", {"why": "loading", "victim": String(victim)})
+		GSLog.debug(CHANNEL, "a hit was refused", {"why": "loading", "victim": String(victim)})
 		return refused
 
-	var damage := DotDamage.make(
+	var damage := GSDamage.make(
 		entity_id_of(attacker), entity_id_of(victim), amount,
 		combat.damage_type(DAMAGE_ID)
 	)
 	damage.distance = distance
 	damage.hit_group = group
-	# [b]The tick, and leaving it out is a silent kill switch.[/b] `DotHealth.apply`
+	# [b]The tick, and leaving it out is a silent kill switch.[/b] `GSHealth.apply`
 	# refuses anything whose `tick` is at or before `invulnerable_until_tick`, and a
-	# `DotDamage` starts at tick 0 — so an event that never got stamped is refused by spawn
+	# `GSDamage` starts at tick 0 — so an event that never got stamped is refused by spawn
 	# protection FOR EVER, on every player, with `refused` set and nothing erroring
 	# anywhere. Every shot on the server does nothing and the only symptom is that combat
 	# does not work. Found by this game's own suite on the first run of the arena section.
@@ -622,10 +622,10 @@ func hurt(
 
 
 ## A damage event between two players, for the stats layer.
-signal damage_landed(attacker: StringName, victim: StringName, damage: DotDamage)
+signal damage_landed(attacker: StringName, victim: StringName, damage: GSDamage)
 
 
-func _on_damage(damage: DotDamage) -> void:
+func _on_damage(damage: GSDamage) -> void:
 	var victim := game.entity_table.key_for_id(damage.victim) as StringName
 
 	if victim == &"":
@@ -658,10 +658,10 @@ func _on_damage(damage: DotDamage) -> void:
 		if at == Vector3.ZERO and player != null:
 			at = player.controller.state.position + Vector3.UP * 1.5
 		game.confirm_hit(attacker, damage.victim, damage.health_lost, at, damage.lethal,
-			damage.hit_group == DotHitGroup.HEAD)
+			damage.hit_group == GSHitGroup.HEAD)
 
 
-func _on_killed(entity_id: int, damage: DotDamage) -> void:
+func _on_killed(entity_id: int, damage: GSDamage) -> void:
 	var victim := game.entity_table.key_for_id(entity_id) as StringName
 	var killer := game.entity_table.key_for_id(damage.attacker) as StringName
 
@@ -676,7 +676,7 @@ func _on_killed(entity_id: int, damage: DotDamage) -> void:
 		var what := StringName(str(death_rule_fn.call(victim)))
 
 		if what == &"down":
-			DotLog.debug(CHANNEL, "a player went down rather than dying", {
+			GSLog.debug(CHANNEL, "a player went down rather than dying", {
 				"player": String(victim), "by": String(killer),
 			})
 			return
@@ -700,7 +700,7 @@ func _on_killed(entity_id: int, damage: DotDamage) -> void:
 ## weapon's def (the sniper and the launcher always throw the body). The push is the shot's,
 ## or away from the killer. [param named] is a reaction asked for outright, for a death that is
 ## not a weapon's: a downed player bleeding out crumples where they lay.
-func decide_death(victim: StringName, damage: DotDamage, named: StringName = &"") -> DotPlayerDeath:
+func decide_death(victim: StringName, damage: GSDamage, named: StringName = &"") -> GSPlayerDeath:
 	if _weapon_defs.is_empty():
 		_weapon_defs = ZeeWeaponPack.table()
 	var player: PlaylotPlayer = game.players.get(victim, null)
@@ -710,18 +710,18 @@ func decide_death(victim: StringName, damage: DotDamage, named: StringName = &""
 		if attacker != null and attacker != player:
 			direction = player.controller.state.position - attacker.controller.state.position
 	direction.y = 0.0
-	return DotPlayerDeath.decide(
+	return GSPlayerDeath.decide(
 		game.ragdoll_rules.reactions(),
-		damage != null and damage.hit_group == DotHitGroup.HEAD,
+		damage != null and damage.hit_group == GSHitGroup.HEAD,
 		damage.amount if damage != null else 0.0,
 		direction,
-		DotPlayerDeath.seed_of(entity_id_of(victim), _tick),
+		GSPlayerDeath.seed_of(entity_id_of(victim), _tick),
 		_weapon_defs.get(damage.weapon_id) if damage != null else null,
 		-1.0, named
 	)
 
 
-func _on_state_changed(_from: DotMatch.State, _to: DotMatch.State) -> void:
+func _on_state_changed(_from: GSMatch.State, _to: GSMatch.State) -> void:
 	_announce_clock()
 
 
@@ -730,7 +730,7 @@ func _on_state_changed(_from: DotMatch.State, _to: DotMatch.State) -> void:
 ## [b]The addon decides and the game acts, which is dot-timer's division exactly.[/b] What
 ## "respawn" means differs between a first-person game, a 2D one and a replay being
 ## scrubbed, and dot-match knowing any of that would make it a game.
-func _on_respawn_due(key: String, spawn: DotSpawnPoint, _tick_value: int) -> void:
+func _on_respawn_due(key: String, spawn: GSSpawnPoint, _tick_value: int) -> void:
 	var id := StringName(key)
 	var health := health_of(id)
 
@@ -782,7 +782,7 @@ func describe_lines() -> PackedStringArray:
 	out.append_array(combat.describe_lines())
 
 	for id in _health.keys():
-		var health: DotHealth = _health[id]
+		var health: GSHealth = _health[id]
 		out.append("  %-20s %5.0f hp %5.0f ap" % [String(id), health.health, health.armour])
 
 	return out

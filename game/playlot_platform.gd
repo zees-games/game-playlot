@@ -4,9 +4,9 @@ extends Node
 ##
 ## dot-auth says who a connection belongs to, dot-user turns that into a profile that
 ## follows them between servers, dot-user-avatar says what they may wear, and
-## [DotPlatformHub] joins the three into one admission. This builds all of them with this
+## [GSPlatformHub] joins the three into one admission. This builds all of them with this
 ## sandbox's settings and then gets out of the way: the admission itself is
-## [DotPlatformModule]'s, which the dedicated example loads beside [PlaylotModule].
+## [GSPlatformModule]'s, which the dedicated example loads beside [PlaylotModule].
 ##
 ## [b]It is optional and the sandbox must work without it.[/b] A LAN server somebody runs
 ## for an evening has no accounts, and that is the most common deployment there is — so
@@ -25,9 +25,9 @@ const CHANNEL := "playlot.platform"
 
 const DEFAULT_DIR := "user://playlot_identity"
 
-var users: DotUserManager = null
-var avatars: DotAvatarManager = null
-var hub: DotPlatformHub = null
+var users: GSUserManager = null
+var avatars: GSAvatarManager = null
+var hub: GSPlatformHub = null
 
 var directory: String = DEFAULT_DIR
 
@@ -49,37 +49,37 @@ var service_scope: StringName = &""
 ## Called from an application's own setup rather than from a module's `_module_load`,
 ## because dot-server's module host does not await that and a module whose load suspends
 ## returns null to it.
-func setup() -> DotResult:
+func setup() -> GSResult:
 	# The default folder had the old Playlot name until 2026-11-17; adopt it once.
 	directory = PlaylotUserFiles.resolve(directory)
-	var profiled: DotResult = await _build_users()
+	var profiled: GSResult = await _build_users()
 
 	if not profiled.ok:
-		DotLog.result(CHANNEL, "profiles could not start", profiled)
+		GSLog.result(CHANNEL, "profiles could not start", profiled)
 		return profiled
 
-	var dressed: DotResult = await _build_avatars()
+	var dressed: GSResult = await _build_avatars()
 
 	if not dressed.ok:
-		DotLog.result(CHANNEL, "avatars could not start", dressed)
+		GSLog.result(CHANNEL, "avatars could not start", dressed)
 		return dressed
 
-	var joined: DotResult = await _build_hub()
+	var joined: GSResult = await _build_hub()
 
 	if not joined.ok:
-		DotLog.result(CHANNEL, "the platform hub could not start", joined)
+		GSLog.result(CHANNEL, "the platform hub could not start", joined)
 		return joined
 
 	# Where profiles live and under which scope: the two things an operator needs to find
 	# somebody's record, or to know why a returning player was not recognised.
-	DotLog.info(CHANNEL, "identity is up: guest profiles, fixed names, local storage", {
+	GSLog.info(CHANNEL, "identity is up: guest profiles, fixed names, local storage", {
 		"scope": scope, "directory": directory,
 	})
 	return joined
 
 
-func _build_users() -> DotResult:
-	users = DotUserManager.new()
+func _build_users() -> GSResult:
+	users = GSUserManager.new()
 	users.name = "Users"
 	users.register_service = true
 	users.service_scope = service_scope
@@ -87,7 +87,7 @@ func _build_users() -> DotResult:
 	users.config_file = ""
 	users.server_id = scope
 
-	var config := DotUserConfig.new()
+	var config := GSUserConfig.new()
 	config.backend = "local"
 	config.directory = "%s/profiles" % directory
 	config.scope = scope
@@ -109,8 +109,8 @@ func _build_users() -> DotResult:
 	return await users.setup()
 
 
-func _build_avatars() -> DotResult:
-	avatars = DotAvatarManager.new()
+func _build_avatars() -> GSResult:
+	avatars = GSAvatarManager.new()
 	avatars.name = "Avatars"
 	avatars.register_service = true
 	avatars.service_scope = service_scope
@@ -121,7 +121,7 @@ func _build_avatars() -> DotResult:
 	# set, and a dedicated server answers it without ever loading a mesh.
 	avatars.schema = avatar_schema()
 
-	var config := DotAvatarConfig.new()
+	var config := GSAvatarConfig.new()
 	config.backend = "local"
 	config.directory = "%s/avatars" % directory
 	avatars.config = config
@@ -131,15 +131,15 @@ func _build_avatars() -> DotResult:
 	return await avatars.setup()
 
 
-func _build_hub() -> DotResult:
-	hub = DotPlatformHub.new()
+func _build_hub() -> GSResult:
+	hub = GSPlatformHub.new()
 	hub.name = "Platform"
 	hub.register_service = true
 	hub.service_scope = service_scope
 	hub.load_layered_config = false
 	hub.config_file = ""
 
-	var config := DotPlatformConfig.new()
+	var config := GSPlatformConfig.new()
 	# [b]Neither is required.[/b] dot-platform's own module documents that admission
 	# completes shortly *after* dot-server has already admitted the player, because there
 	# is no cancellable stage between authentication and content — so `require_profile` is
@@ -166,26 +166,26 @@ func _build_hub() -> DotResult:
 ## **One part is not free.** `hat_hard` requires an entitlement, because entitlements
 ## default to nothing and a server that granted everything would work perfectly in every
 ## test, ship, and quietly be a game where every unlock is free.
-static func avatar_schema() -> DotAvatarSchema:
-	var schema := DotAvatarSchema.new()
+static func avatar_schema() -> GSAvatarSchema:
+	var schema := GSAvatarSchema.new()
 	schema.id = &"pg_builder"
 	schema.version = 1
 
-	var body := DotAvatarSlot.make(&"body", true, &"body_plain")
+	var body := GSAvatarSlot.make(&"body", true, &"body_plain")
 	body.display_name = "Body"
 	body.layer = 20
 
-	var hat := DotAvatarSlot.make(&"hat")
+	var hat := GSAvatarSlot.make(&"hat")
 	hat.display_name = "Hat"
 	hat.layer = 60
 
-	var badge := DotAvatarSlot.make(&"badge")
+	var badge := GSAvatarSlot.make(&"badge")
 	badge.display_name = "Badge"
 	badge.layer = 40
 
 	schema.slots = [body, badge, hat]
 
-	var parts: Array[DotAvatarPart] = []
+	var parts: Array[GSAvatarPart] = []
 
 	for entry in [
 		[&"body_plain", &"body", true, 2],
@@ -198,7 +198,7 @@ static func avatar_schema() -> DotAvatarSchema:
 		[&"badge_star", &"badge", true, 1],
 	]:
 		var row: Array = entry
-		var part := DotAvatarPart.make(row[0], row[1], bool(row[2]))
+		var part := GSAvatarPart.make(row[0], row[1], bool(row[2]))
 		part.colour_channels = int(row[3])
 		# Everything in the body slot falls back to the plain one, so somebody wearing a
 		# part this build has never heard of is drawn as a person rather than as nothing.
@@ -221,9 +221,9 @@ static func avatar_schema() -> DotAvatarSchema:
 ## walk into, and it is what every deployment of this game runs today. A real backbone means
 ## a device-code grant and a person clicking Approve in a browser, which nothing in this
 ## family has ever done against a live site.
-static func guest_auth_config() -> DotAuthConfig:
-	var config := DotAuthConfig.new()
-	config.strategy = DotAuthConfig.Strategy.ANONYMOUS
+static func guest_auth_config() -> GSAuthConfig:
+	var config := GSAuthConfig.new()
+	config.strategy = GSAuthConfig.Strategy.ANONYMOUS
 	config.allow_guests = true
 	return config
 
@@ -234,7 +234,7 @@ static func guest_auth_config() -> DotAuthConfig:
 ## refuses an account id as a player key before it leaves the server, and this is where a
 ## deployment with dot-platform gets the right one — and where a deployment without it gets
 ## an honest fallback rather than an account id by accident.
-static func key_for_session(server: DotServer, session: DotClientSession) -> String:
+static func key_for_session(server: GSServer, session: GSClientSession) -> String:
 	if server == null or session == null:
 		return ""
 

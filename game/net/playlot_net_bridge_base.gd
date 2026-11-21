@@ -1,4 +1,4 @@
-extends DotGameNetIo
+extends GSGameNetIo
 
 
 const Playlot := preload("../playlot.gd")
@@ -22,7 +22,7 @@ const PlaylotWeapons := preload("../playlot_weapons.gd")
 const PlaylotZee := preload("../playlot_zee.gd")
 const PlaylotWaves := preload("../playlot_waves.gd")
 
-## Joins a [Playlot] to a [DotNetManager]; the only file here that names both. dot-net drives
+## Joins a [Playlot] to a [GSNetManager]; the only file here that names both. dot-net drives
 ## simulation per entity but this game's tick is whole-game, so [method ensure_game_ticked] makes
 ## the first behaviour through run it. Movement is predicted; props and NPCs are server-authoritative.
 
@@ -55,7 +55,7 @@ signal seat_changed(player_id: int, seated: bool)
 signal weapon_changed(player_id: int, weapon_id: StringName)
 
 ## Somebody pressed Enter. Server side, and the only thing this bridge does with chat: who may say
-## what, on which channel, how often and who hears it are [DotChatRouter]'s.
+## what, on which channel, how often and who hears it are [GSChatRouter]'s.
 signal say_requested(peer_id: int, channel_id: StringName, text: String)
 
 ## Somebody typed a vote command, or published a loadout. Server side.
@@ -76,7 +76,7 @@ signal selection_received(state: Dictionary)
 signal hit_received(victim: int, amount: float, point: Vector3, killed: bool, headshot: bool)
 
 ## A voice frame arrived. Server side; the payload is unparsed and must not be trusted —
-## [method DotVoiceRouter.relay] is what stamps the speaker.
+## [method GSVoiceRouter.relay] is what stamps the speaker.
 signal voice_requested(peer_id: int, payload: PackedByteArray)
 
 ## A peer said READY for the first time and has been told the world. Server side. The one moment
@@ -91,7 +91,7 @@ signal combat_received(state: Dictionary)
 
 ## A killed NPC's drawn figure and how it falls (the server's pick), just before its mirror
 ## goes. Client side; the client copies a ragdoll from it.
-signal body_fell(figure: Node3D, death: DotPlayerDeath)
+signal body_fell(figure: Node3D, death: GSPlayerDeath)
 signal match_received(state: Dictionary)
 signal progress_received(state: Dictionary)
 ## The map vote's cue and countdown second, from [method PlaylotEvents.read_vote_cue].
@@ -110,14 +110,14 @@ var game: Playlot = null
 ## Which session this process is. Zero on a server.
 var local_player_id: int = 0
 
-## [code]func() -> Dictionary[/code], in [method DotVoteClockView.state_of]'s shape: what a joining
+## [code]func() -> Dictionary[/code], in [method GSVoteClockView.state_of]'s shape: what a joining
 ## peer is told about the map's time left. Server side; empty sends nothing, and the client then
 ## shows its own map session's clock.
 var clock_fn: Callable = Callable()
 
 ## The map's time left as the server last described it. Client side; what the HUD draws.
 ## Never adopted means never told, which the HUD answers with the local clock.
-var clock_view: DotVoteClockView = DotVoteClockView.new()
+var clock_view: GSVoteClockView = GSVoteClockView.new()
 
 ## dot-inventory's half of the wire. See [PlaylotInventoryNet]; null when the game has
 ## no inventory.
@@ -161,7 +161,7 @@ var _armed_of: Dictionary = {}
 var _npc_kinds: Dictionary = {}
 
 ## The catalogue a client builds a wave NPC's body from. Set by the module with the waves.
-var npc_catalogue: DotNpcCatalogue = null
+var npc_catalogue: GSNpcCatalogue = null
 
 ## session id -> [mode, settings] for the tool gun, kept so a tool gun given later — or
 ## given again — starts in the mode the player last chose rather than the default one.
@@ -215,8 +215,8 @@ func _style_id(index: int) -> StringName:
 var skin_fn: Callable = Callable()
 
 
-func _build_entity(player: PlaylotPlayer, peer_id: int) -> DotNetIdentity:
-	# The behaviour is added BEFORE the identity: DotNetIdentity collects behaviours in
+func _build_entity(player: PlaylotPlayer, peer_id: int) -> GSNetIdentity:
+	# The behaviour is added BEFORE the identity: GSNetIdentity collects behaviours in
 	# _ready by walking the subtree, and one added afterwards would never be found.
 	var behaviour := PlaylotPlayerNet.new()
 	behaviour.name = "Net"
@@ -224,12 +224,12 @@ func _build_entity(player: PlaylotPlayer, peer_id: int) -> DotNetIdentity:
 	behaviour.bridge = self
 	player.add_child(behaviour)
 
-	var identity := DotNetIdentity.new()
+	var identity := GSNetIdentity.new()
 	identity.name = "Identity"
 	identity.owner_peer_id = peer_id
 	# SHARED: the server corrects, the owner predicts. SERVER would put a player's own
 	# movement a round trip behind their keys.
-	identity.authority = DotNetIdentity.Authority.SHARED
+	identity.authority = GSNetIdentity.Authority.SHARED
 	identity.always_relevant = true
 	player.add_child(identity)
 
@@ -248,15 +248,15 @@ func _release_entity(session_id: int) -> void:
 
 
 ## The fall [method Playlot.decide_npc_death] left on a killed body, or null.
-static func _death_of(node: Object, reason: StringName) -> DotPlayerDeath:
-	if reason != DotNpcSpawner.REASON_KILLED or node == null or not is_instance_valid(node):
+static func _death_of(node: Object, reason: StringName) -> GSPlayerDeath:
+	if reason != GSNpcSpawner.REASON_KILLED or node == null or not is_instance_valid(node):
 		return null
 	var death: Variant = node.get_meta(&"pg_death") if node.has_meta(&"pg_death") else null
-	return death as DotPlayerDeath
+	return death as GSPlayerDeath
 
 
 ## Which replicated behaviour a definition wants. One table, read by both ends.
-static func _behaviour_for(def: DotPropDef) -> PlaylotPropNet:
+static func _behaviour_for(def: GSPropDef) -> PlaylotPropNet:
 	# A wave NPC has no prop definition at all; it is a body to move, like any prop.
 	if def == null:
 		return PlaylotPropNet.new()
@@ -300,7 +300,7 @@ func net_id_of_node(node: Node) -> int:
 	return 0
 
 
-func client_tick(tick: int, command: DotFpsCommand, aim: bool = false) -> void:
+func client_tick(tick: int, command: GSFpsCommand, aim: bool = false) -> void:
 	if net == null or net.is_server or game == null:
 		return
 
@@ -309,7 +309,7 @@ func client_tick(tick: int, command: DotFpsCommand, aim: bool = false) -> void:
 	var packet := PlaylotNetCommand.new()
 	packet.tick = tick
 	packet.delta = net.clock.tick_duration()
-	packet.move = command if command != null else DotFpsCommand.new()
+	packet.move = command if command != null else GSFpsCommand.new()
 	packet.aim = aim
 
 	# Into the local history BEFORE predicting: reconciliation replays it.
@@ -325,8 +325,8 @@ func client_tick(tick: int, command: DotFpsCommand, aim: bool = false) -> void:
 
 	if link != null:
 		var payload := net.encode_ack()
-		var writer := DotNetWriter.new()
-		DotNetInput.write_batch(writer, _input_copies(packet))
+		var writer := GSNetWriter.new()
+		GSNetInput.write_batch(writer, _input_copies(packet))
 		payload.append_array(writer.to_bytes())
 		link.send_input(payload)
 
@@ -346,35 +346,35 @@ func client_tick(tick: int, command: DotFpsCommand, aim: bool = false) -> void:
 
 ## [param packet] and the commands before it from the local replay history, oldest first,
 ## for one input packet. See [constant INPUT_COPIES].
-func _input_copies(packet: DotNetInput) -> Array:
+func _input_copies(packet: GSNetInput) -> Array:
 	var batch: Array = Array(net.local_inputs().recent(INPUT_COPIES, packet.tick - 1))
 	batch = batch.slice(maxi(0, batch.size() - (INPUT_COPIES - 1)))
 	batch.append(packet)
 	return batch
 
 
-func receive_input(peer_id: int, payload: PackedByteArray) -> DotResult:
+func receive_input(peer_id: int, payload: PackedByteArray) -> GSResult:
 	if net == null or not net.is_server:
-		return DotResult.fail(DotError.CODE_FORBIDDEN, "Only the server takes input.")
+		return GSResult.fail(GSError.CODE_FORBIDDEN, "Only the server takes input.")
 	if not _player_of_peer.has(peer_id):
-		return DotResult.fail(DotError.CODE_FORBIDDEN, "That peer has no player.")
+		return GSResult.fail(GSError.CODE_FORBIDDEN, "That peer has no player.")
 	if payload.size() <= ACK_BYTES:
-		return DotResult.fail(DotError.CODE_PARSE, "Input packet is too short.")
+		return GSResult.fail(GSError.CODE_PARSE, "Input packet is too short.")
 
 	net.receive_ack_payload(peer_id, payload.slice(0, ACK_BYTES))
 
 	# A batch: this tick's command and the ones before it (see [constant INPUT_COPIES]).
 	# Copies of ticks already simulated are skipped rather than pushed, or each would count
 	# as a late input; the packet's own tick is always pushed, so a late one still counts.
-	var batch := DotNetInput.read_batch(
-		DotNetReader.new(payload.slice(ACK_BYTES)),
-		func() -> DotNetInput: return PlaylotNetCommand.new()
+	var batch := GSNetInput.read_batch(
+		GSNetReader.new(payload.slice(ACK_BYTES)),
+		func() -> GSNetInput: return PlaylotNetCommand.new()
 	)
 	if batch.is_empty():
-		return DotResult.fail(DotError.CODE_PARSE, "Input packet carries no command.")
+		return GSResult.fail(GSError.CODE_PARSE, "Input packet carries no command.")
 	var buffer := net.input_buffer_for(peer_id)
 	var newest := batch[batch.size() - 1]
-	var pushed := DotResult.success(false)
+	var pushed := GSResult.success(false)
 	for input in batch:
 		if input != newest and input.tick <= buffer.last_consumed_tick():
 			continue
@@ -384,25 +384,25 @@ func receive_input(peer_id: int, payload: PackedByteArray) -> DotResult:
 
 ## A voice frame off [method PlaylotNetLink.send_voice], either direction. Not a
 ## [PlaylotEvent]: voice is fifty packets a second and events are reliable, so a talk spurt
-## would queue behind prop spawns. Nor through [DotNetManager]: the packet has its own header in [DotVoicePacket].
-func receive_voice(peer_id: int, payload: PackedByteArray) -> DotResult:
+## would queue behind prop spawns. Nor through [GSNetManager]: the packet has its own header in [GSVoicePacket].
+func receive_voice(peer_id: int, payload: PackedByteArray) -> GSResult:
 	if payload.is_empty():
-		return DotResult.fail(DotError.CODE_INVALID, "An empty voice frame.")
+		return GSResult.fail(GSError.CODE_INVALID, "An empty voice frame.")
 
 	if net != null and net.is_server:
 		if peer_id <= 0 or player_for_peer(peer_id) == 0:
 			# A peer with nobody in the world. Refused rather than relayed: the router
 			# stamps the speaker from this id, so relaying one that belongs to nobody
 			# puts a voice in the game with no name on it.
-			return DotResult.fail(
-				DotError.CODE_FORBIDDEN, "That peer has nobody in the world."
+			return GSResult.fail(
+				GSError.CODE_FORBIDDEN, "That peer has nobody in the world."
 			)
 
 		voice_requested.emit(peer_id, payload)
-		return DotResult.success(null)
+		return GSResult.success(null)
 
 	voice_arrived.emit(payload)
-	return DotResult.success(null)
+	return GSResult.success(null)
 
 
 func _join_body(session_id: int) -> PackedByteArray:
@@ -437,7 +437,7 @@ var _toy_holder: Node3D = null
 ## A toy's behaviour and identity under [param parent], registered under [param net_id] (0
 ## allocates: the server); null when the registry refused it. The behaviour before the
 ## identity, which collects behaviours in its `_ready`.
-func _toy_entity(toy: DotPropBody, parent: Node, net_id: int) -> PlaylotToyNet:
+func _toy_entity(toy: GSPropBody, parent: Node, net_id: int) -> PlaylotToyNet:
 	var behaviour := PlaylotToyNet.new()
 	behaviour.name = "Net"
 	behaviour.toy = toy
@@ -449,14 +449,14 @@ func _toy_entity(toy: DotPropBody, parent: Node, net_id: int) -> PlaylotToyNet:
 	at.add_child(behaviour)
 	if net.is_server:
 		behaviour.pull()
-	var identity := DotNetIdentity.new()
+	var identity := GSNetIdentity.new()
 	identity.name = "Identity"
 	identity.owner_peer_id = 0
-	identity.authority = DotNetIdentity.Authority.SERVER
+	identity.authority = GSNetIdentity.Authority.SERVER
 	at.add_child(identity)
 	var registered := net.registry.register(identity, net_id, net.clock.tick, net.config)
 	if not registered.ok:
-		DotLog.warn(CHANNEL, "could not replicate a toy", {"toy": _toy_nets.size(), "error": str(registered.error)})
+		GSLog.warn(CHANNEL, "could not replicate a toy", {"toy": _toy_nets.size(), "error": str(registered.error)})
 		at.remove_child(behaviour)
 		at.remove_child(identity)
 		behaviour.queue_free()
@@ -513,7 +513,7 @@ func _pair_pending_toys() -> void:
 		return
 	var box := game.toys if game.toys != null and game.maps.current != null and game.maps.current.id == _toys_map else null
 	if box != null and box.count() != _toy_nets.size():
-		DotLog.warn(CHANNEL, "the server's map has a different number of toys", {"server": _toy_nets.size(), "here": box.count()})
+		GSLog.warn(CHANNEL, "the server's map has a different number of toys", {"server": _toy_nets.size(), "here": box.count()})
 	for i in range(_toy_nets.size()):
 		var behaviour: PlaylotToyNet = _toy_nets[i]
 		behaviour.toy = box.toy(i) if box != null else null
@@ -597,7 +597,7 @@ func ask_buy(item_id: StringName) -> void:
 
 ## This client's own bag, to predict ops on — `apply` sends them — or null before the
 ## server has said whose it is. Client side.
-func inventory_manager() -> DotInvManager:
+func inventory_manager() -> GSInvManager:
 	return inventory_net.local_manager() if inventory_net != null and not net.is_server else null
 
 
@@ -607,33 +607,33 @@ func _ask(kind: int, body: PackedByteArray) -> void:
 
 
 ## Asked before anything is spawned or given, and charged for if allowed:
-## [code](player_id: StringName, thing_id: StringName) -> DotResult[/code]. A callable rather than
+## [code](player_id: StringName, thing_id: StringName) -> GSResult[/code]. A callable rather than
 ## a shop reference: the bridge knows nothing about prices. Unset means everything is free.
 var charge_fn: Callable = Callable()
 
 ## Asked before something is spawned, and charges nothing (the shop's `may_have`):
-## [code](player_id: StringName, thing_id: StringName) -> DotResult[/code]. Lets a spawn be paid
+## [code](player_id: StringName, thing_id: StringName) -> GSResult[/code]. Lets a spawn be paid
 ## for AFTER it happened (see [method _spawn_for]). Unset answers yes.
 var may_charge_fn: Callable = Callable()
 
 ## Handed every shot a zee weapon fires on this server, once the props it hit are shoved:
-## [code](player_id: StringName, shot: DotShot) -> void[/code]. The arena's dot-combat sets it
+## [code](player_id: StringName, shot: GSShot) -> void[/code]. The arena's dot-combat sets it
 ## while `pg_arena` is on; unset, a shot moves props and hurts nobody.
 var shot_fn: Callable = Callable()
 
 
 ## Charge for something, or say why not. Success when nothing is charging.
-func _charge(id: StringName, thing_id: StringName) -> DotResult:
+func _charge(id: StringName, thing_id: StringName) -> GSResult:
 	if not charge_fn.is_valid():
-		return DotResult.success(null)
-	return charge_fn.call(id, thing_id) as DotResult
+		return GSResult.success(null)
+	return charge_fn.call(id, thing_id) as GSResult
 
 
 ## Whether [method _charge] would succeed, charging nothing. Success when nothing is asking.
-func _may_charge(id: StringName, thing_id: StringName) -> DotResult:
+func _may_charge(id: StringName, thing_id: StringName) -> GSResult:
 	if not may_charge_fn.is_valid():
-		return DotResult.success(null)
-	return may_charge_fn.call(id, thing_id) as DotResult
+		return GSResult.success(null)
+	return may_charge_fn.call(id, thing_id) as GSResult
 
 
 ## The body a client draws for [param net_id], or null. Client side.
@@ -644,7 +644,7 @@ func mirror_of(net_id: int) -> Node3D:
 func _restore_tool_mode(session_id: int, toy: PlaylotWeapon) -> void:
 	var saved: Variant = _tool_settings_of.get(session_id)
 	if saved is Array and toy.has_method("set_mode"):
-		var _set: DotResult = toy.call("set_mode", saved[0], saved[1])
+		var _set: GSResult = toy.call("set_mode", saved[0], saved[1])
 
 
 ## Asks for the tool gun's mode and settings. Client side.

@@ -1,4 +1,4 @@
-extends DotGameCheckSuite
+extends GSGameCheckSuite
 
 ## The playlot's Workbench lists only what is loaded: the arena mode's settings while `pg_arena` is on, a heading per weapon pack that has profiles, addon cvar sets when their cvars exist, and every heading says which side it edits.
 ## [codeblock] godot --headless --path . res://examples/headless_workbench_scope.tscn
@@ -18,7 +18,7 @@ const SECTIONS := 3
 class FakeGame:
 	extends RefCounted
 	var profiles: Object = null
-	var config_binder: DotGameConfigBinder = null
+	var config_binder: GSGameConfigBinder = null
 	var flashlight_binder: Object = null
 
 	func flashlight_conf() -> Variant:
@@ -31,7 +31,7 @@ var _arena := false
 
 
 func _ready() -> void:
-	DotLog.set_level(DotLog.Level.FATAL)
+	GSLog.set_level(GSLog.Level.FATAL)
 	_run.call_deferred()
 
 
@@ -48,7 +48,7 @@ func _run() -> void:
 	var _loaded := game.config_binder.load_layers()
 	var _early := profiles.refine_weapon_entries(EMPTY_PACK, [])
 
-	var wb := DotGameWorkbench.new()
+	var wb := GSGameWorkbench.new()
 	wb.panel_mode = 1
 	wb.listen_host_fn = func() -> bool: return true
 	wb.config = {"enabled": false}
@@ -66,10 +66,10 @@ func _run() -> void:
 	_check(kinds.has("config_world") and kinds.has("config_server") and kinds.has("config_props"), "the playlot's own settings are listed", ", ".join(kinds))
 	_check(kinds.has("npc"), "the NPC profiles are listed", ", ".join(kinds))
 	_check(not kinds.has("weapon"), "the weapon group is not a heading of its own")
-	_check(not DotWorkbenchScope.owners(wb.api, DotWorkbenchScope.sections(wb.api, wb._labels)).has(PlaylotWorkbenchSets.ARENA_OWNER), "the arena mode is not among the loaded owners")
+	_check(not GSWorkbenchScope.owners(wb.api, GSWorkbenchScope.sections(wb.api, wb._labels)).has(PlaylotWorkbenchSets.ARENA_OWNER), "the arena mode is not among the loaded owners")
 	_arena = true
 	kinds = _kinds(wb)
-	var owners := DotWorkbenchScope.owners(wb.api, DotWorkbenchScope.sections(wb.api, wb._labels))
+	var owners := GSWorkbenchScope.owners(wb.api, GSWorkbenchScope.sections(wb.api, wb._labels))
 	_check(kinds.has("config_arena") and kinds.has("config_world"), "both loaded: the arena and the playlot sections show", ", ".join(kinds))
 	_check(owners.has(PlaylotWorkbenchSets.GAME) and owners.has(PlaylotWorkbenchSets.ARENA_OWNER), "both loaded: both owners are named", ", ".join(owners))
 	_check(_headings(wb).has("Arena mode (pg_arena)  ·  server"), "the arena heading says it is server side", " | ".join(_headings(wb)))
@@ -79,18 +79,18 @@ func _run() -> void:
 	_entered += 1
 	var _refined := profiles.refine_weapon_entries(PACK, [{"id": "scope_pistol"}])
 	kinds = _kinds(wb)
-	var view := "weapon%s%s" % [DotWorkbenchSetView.SEP, PACK]
+	var view := "weapon%s%s" % [GSWorkbenchSetView.SEP, PACK]
 	_check(kinds.has(view), "a weapon pack scanned after the start is listed", ", ".join(kinds))
 	_check(_headings(wb).has("Weapons: %s  ·  server, replicated" % PACK), "its heading names the pack and the side", " | ".join(_headings(wb)))
-	_check(not kinds.has("weapon%s%s" % [DotWorkbenchSetView.SEP, EMPTY_PACK]), "a pack with no profiles stays off")
-	var listed: DotResult = wb.api.handle(DotGameWorkbench.LOCAL_ACTOR, {"op": "list", "kind": view})
+	_check(not kinds.has("weapon%s%s" % [GSWorkbenchSetView.SEP, EMPTY_PACK]), "a pack with no profiles stays off")
+	var listed: GSResult = wb.api.handle(GSGameWorkbench.LOCAL_ACTOR, {"op": "list", "kind": view})
 	_check(listed.ok and (listed.value["ids"] as Array).has("scope_pistol"), "the pack's profiles are listed under it", str(listed.value if listed.ok else listed.error.message))
-	var edit: DotResult = wb.api.handle(DotGameWorkbench.LOCAL_ACTOR, {"op": "set", "kind": view, "id": "scope_pistol", "key": "magazine", "value": 9})
+	var edit: GSResult = wb.api.handle(GSGameWorkbench.LOCAL_ACTOR, {"op": "set", "kind": view, "id": "scope_pistol", "key": "magazine", "value": 9})
 	_check(edit.ok and profiles.weapons.runtime_paths("scope_pistol").get("magazine") == 9, "an edit under the pack's heading reaches the weapon group", str(edit.error.message if not edit.ok else ""))
 	_finished += 1
 
 	_entered += 1
-	var console := DotConsole.new()
+	var console := GSConsole.new()
 	add_child(console)
 	var _bounce := console.cvar("sv_grenade_bounce", "0.4", "how far a grenade bounces")
 	var _on := console.cvar("sv_grenade_trails", "1", "trails").with_range(0.0, 1.0)
@@ -108,15 +108,15 @@ func _run() -> void:
 	_report_sections(_entered, _finished, SECTIONS, CHECKS)
 
 
-func _kinds(wb: DotGameWorkbench) -> PackedStringArray:
+func _kinds(wb: GSGameWorkbench) -> PackedStringArray:
 	var out := PackedStringArray()
-	for pair: Array in DotWorkbenchScope.sections(wb.api, wb._labels):
+	for pair: Array in GSWorkbenchScope.sections(wb.api, wb._labels):
 		out.append(String(pair[0]))
 	return out
 
 
-func _headings(wb: DotGameWorkbench) -> Array:
-	return DotWorkbenchScope.sections(wb.api, wb._labels).map(func(p: Array) -> String: return String(p[1]))
+func _headings(wb: GSGameWorkbench) -> Array:
+	return GSWorkbenchScope.sections(wb.api, wb._labels).map(func(p: Array) -> String: return String(p[1]))
 
 
 func _write(rel: String, text: String) -> void:

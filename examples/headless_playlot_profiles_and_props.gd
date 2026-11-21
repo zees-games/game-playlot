@@ -1,4 +1,4 @@
-extends DotGameCheckSuite
+extends GSGameCheckSuite
 
 const PlaylotBindings := preload("../game/playlot_bindings.gd")
 const Playlot := preload("../game/playlot.gd")
@@ -35,7 +35,7 @@ const PlaylotNpcNet := preload("../game/net/playlot_npc_net.gd")
 
 ## Runs the whole playlot: a bot surfs a map from start to finish, its run is timed and filed, props are spawned and moved, and the map is changed underneath.
 ##
-## The only run of the joins between the five addons, where the bugs live: timer ticked from the move, style change, zone effect, record to leaderboard, map change teardown, prop spawn and free. The bot's input is a scripted [DotFpsCommand]. Run: `godot --headless --path . res://examples/headless_playlot.tscn`
+## The only run of the joins between the five addons, where the bugs live: timer ticked from the move, style change, zone effect, record to leaderboard, map change teardown, prop spawn and free. The bot's input is a scripted [GSFpsCommand]. Run: `godot --headless --path . res://examples/headless_playlot.tscn`
 
 const TICK := 1.0 / 128.0
 
@@ -63,7 +63,7 @@ const CUSTOM_MAPS := ["pgc_plots", "pgc_quarry", "pgc_slopes", "pgc_town", "pgc_
 ## admin's edit reaches the next spawn, a live NPC and a late joiner; a player's is refused.
 var _p_fixture: PackedStringArray
 var _p_profiles: PlaylotProfiles
-var _p_rt: DotProfileRuntime
+var _p_rt: GSProfileRuntime
 var _p_old_permit: Callable
 var _p_live_body: PlaylotEntity
 
@@ -79,7 +79,7 @@ func _test_profiles() -> void:
 	# The menu, derived: a scratch catalogue so nothing leaks into the sections after.
 	var scratch := PlaylotProfiles.new()
 	scratch.setup(_p_fixture)
-	var cat: DotPropCatalogue = playlot._prop_catalogue()
+	var cat: GSPropCatalogue = playlot._prop_catalogue()
 	var before := cat.props.size()
 	var touched := scratch.apply_npcs(cat)
 	_check(touched == 3, "three npc profiles touch the catalogue", str(touched))
@@ -102,7 +102,7 @@ func _test_profiles() -> void:
 	var menu := PlaylotSpawnMenu.new()
 	menu.catalogue = cat
 	add_child(menu)
-	var names: Array = menu._catalogue_defs(PlaylotSpawnables.Kind.ENTITY).map(func(d: DotPropDef) -> String: return String(d.id))
+	var names: Array = menu._catalogue_defs(PlaylotSpawnables.Kind.ENTITY).map(func(d: GSPropDef) -> String: return String(d.id))
 	menu.free()
 	_check(names.slice(0, 2) == ["mini_hunter", "npc_chaser"], "menu.sort orders the entities", str(names.slice(0, 3)))
 	_check(not names.has("npc_hopper"), "and the hidden one is not listed")
@@ -122,14 +122,14 @@ func _test_profiles() -> void:
 	_p_rt.permit = func(actor: Variant, _flag: String) -> bool: return actor == "uid-admin"
 
 	playlot.props.limits.spawn_interval = 0.0
-	playlot.props.clear_all(DotPropSpawner.REASON_ADMIN)
+	playlot.props.clear_all(GSPropSpawner.REASON_ADMIN)
 	var live := playlot.props.spawn(&"npc_chaser", &"bot", Vector3(0.0, 1.2, 0.0))
 	_p_live_body = live.node as PlaylotEntity if live != null else null
 	_check(_p_live_body != null and _p_live_body.tune(&"speed", 0.0) == 9.0, "a spawn reads the profile's speed")
 
-	var req := DotConsoleProfileEdit.parse(PackedStringArray(["set", "npc", "npc_chaser", "speed", "12"]))
+	var req := GSConsoleProfileEdit.parse(PackedStringArray(["set", "npc", "npc_chaser", "speed", "12"]))
 	var denied := _p_rt.handle_request("uid-player", req.value)
-	_check(not denied.ok and denied.error.code == DotError.CODE_FORBIDDEN, "a non-admin's edit is refused")
+	_check(not denied.ok and denied.error.code == GSError.CODE_FORBIDDEN, "a non-admin's edit is refused")
 	_check(float(playlot.props.catalogue.get_prop(&"npc_chaser").meta["speed"]) == 9.0, "and changes nothing")
 
 	var done := _p_rt.handle_request("uid-admin", req.value)
@@ -141,19 +141,19 @@ func _test_profiles() -> void:
 
 func _test_profiles_2() -> void:
 
-	var sight := DotConsoleProfileEdit.parse(PackedStringArray(["set", "npc", "npc_chaser", "sight", "77"]))
+	var sight := GSConsoleProfileEdit.parse(PackedStringArray(["set", "npc", "npc_chaser", "sight", "77"]))
 	_check(_p_rt.handle_request("uid-admin", sight.value).ok, "a second edit applies")
 	_check(_p_live_body != null and _p_live_body.npc.def.sight_range == 77.0, "and re_apply gives the live NPC the new perception")
-	var bad := DotConsoleProfileEdit.parse(PackedStringArray(["set", "npc", "npc_chaser", "health", "-5"]))
+	var bad := GSConsoleProfileEdit.parse(PackedStringArray(["set", "npc", "npc_chaser", "health", "-5"]))
 	_check(not _p_rt.handle_request("uid-admin", bad.value).ok, "an out-of-range edit is refused by the schema")
 
 	# A late joiner: the snapshot, through the link's own encoding.
-	var late := DotProfileRuntime.new()
-	var late_set := DotNpcProfiles.make_set(PlaylotProfiles.GAME, _p_fixture)
+	var late := GSProfileRuntime.new()
+	var late_set := GSNpcProfiles.make_set(PlaylotProfiles.GAME, _p_fixture)
 	late.add_set(late_set)
 	var old_send := _p_rt.send_to
 	_p_rt.send_to = func(_peer: Variant, row: Dictionary) -> void:
-		late.apply_row(DotNetProfileLink.decode_body(DotNetProfileLink.encode_body(row)).value)
+		late.apply_row(GSNetProfileLink.decode_body(GSNetProfileLink.encode_body(row)).value)
 	_p_rt.send_snapshot(7)
 	_p_rt.send_to = old_send
 	var seen := late_set.load_profile("npc_chaser")
@@ -162,36 +162,36 @@ func _test_profiles_2() -> void:
 	# Pack weapons are one kind behind one runtime layer.
 	var fx := _p_profiles.weapons.add_pack("zz_fixture")
 	fx.roots = _p_fixture
-	var wreq := DotConsoleProfileEdit.parse(PackedStringArray(["set", "weapon", "fx_a", "slot", "4"]))
+	var wreq := GSConsoleProfileEdit.parse(PackedStringArray(["set", "weapon", "fx_a", "slot", "4"]))
 	var wdenied := _p_rt.handle_request("uid-player", wreq.value)
-	_check(not wdenied.ok and wdenied.error.code == DotError.CODE_FORBIDDEN, "a non-admin's weapon edit is refused")
+	_check(not wdenied.ok and wdenied.error.code == GSError.CODE_FORBIDDEN, "a non-admin's weapon edit is refused")
 	_check(_p_profiles.weapon_layer().is_empty(), "and the weapon layer stays empty")
 	var audit: Array = []
 	var sink := func(rec: Dictionary) -> void: audit.append(rec)
-	var old_level := DotLog.get_level()
-	DotLog.set_level(DotLog.Level.INFO)
-	DotLog.add_sink(sink)
+	var old_level := GSLog.get_level()
+	GSLog.set_level(GSLog.Level.INFO)
+	GSLog.add_sink(sink)
 	_check(_p_rt.handle_request("uid-admin", wreq.value).ok, "an admin's weapon edit is accepted")
-	DotLog.remove_sink(sink)
-	DotLog.set_level(old_level)
+	GSLog.remove_sink(sink)
+	GSLog.set_level(old_level)
 	var line: Dictionary = {}
 	for rec: Dictionary in audit:
 		if rec["message"] == "profile edited":
 			line = rec["fields"]
 	_check(not line.is_empty() and line.get("kind") == "weapon" and line.get("id") == "fx_a" and line.get("key") == "slot" and str(line.get("new")) == "4" and str(line.get("who")) != "", "and writes one audit line: who, kind, id, key, new value")
 	_check(int(_p_profiles.weapon_layer().get("fx_a", {}).get("slot", 0)) == 4, "and lands in the layer the packs rebuild from")
-	var packset := DotWeaponProfiles.make_set("zz_fixture", PlaylotProfiles.GAME, _p_fixture, _p_profiles.weapon_layer())
+	var packset := GSWeaponProfiles.make_set("zz_fixture", PlaylotProfiles.GAME, _p_fixture, _p_profiles.weapon_layer())
 	_check(int(packset.load_profile("fx_a").value.get_value("slot")) == 4, "a pack's own set reads it")
-	_p_rt.handle_request("uid-admin", DotProfileRuntime.make_request("reset", "weapon", "fx_a"))
+	_p_rt.handle_request("uid-admin", GSProfileRuntime.make_request("reset", "weapon", "fx_a"))
 	_check(_p_profiles.weapon_layer().is_empty(), "and a reset empties it")
 	fx.roots = PackedStringArray()
 	fx.clear_cache()
 	packset.clear_cache()
 
 	# Put the shared playlot back for the sections after this one.
-	_p_rt.handle_request("uid-admin", DotProfileRuntime.make_request("reset", "npc", "npc_chaser"))
+	_p_rt.handle_request("uid-admin", GSProfileRuntime.make_request("reset", "npc", "npc_chaser"))
 	_p_rt.permit = _p_old_permit
-	playlot.props.clear_all(DotPropSpawner.REASON_ADMIN)
+	playlot.props.clear_all(GSPropSpawner.REASON_ADMIN)
 	_p_profiles.npcs.roots = PackedStringArray()
 	_p_profiles.npcs.clear_cache()
 	_p_profiles.apply_npcs(playlot.props.catalogue)
@@ -202,9 +202,9 @@ func _test_profiles_2() -> void:
 ## The admin workbench: opens and closes on the screen stack, edits go out as requests and come
 ## back through the runtime, another admin's edit refreshes the open form, and only an admin gets in.
 var _pw_profiles: PlaylotProfiles
-var _pw_rt: DotProfileRuntime
+var _pw_rt: GSProfileRuntime
 var _pw_old_permit: Callable
-var _pw_stack: DotScreenStack
+var _pw_stack: GSScreenStack
 var _pw_screen: PlaylotProfileScreen
 var _pw_st: Dictionary
 
@@ -218,7 +218,7 @@ func _test_profile_workbench() -> void:
 	_pw_profiles.npcs.roots = fixture
 	_pw_profiles.npcs.clear_cache()
 
-	_pw_stack = DotScreenStack.new()
+	_pw_stack = GSScreenStack.new()
 	_pw_stack.register_service = false
 	_pw_stack.manage_mouse = false
 	add_child(_pw_stack)
@@ -226,9 +226,9 @@ func _test_profile_workbench() -> void:
 	_pw_screen = PlaylotProfileScreen.new()
 	_pw_screen.profiles = _pw_profiles
 	var sent: Array[Dictionary] = []
-	_pw_screen.submit = func(req: Dictionary) -> DotResult:
+	_pw_screen.submit = func(req: Dictionary) -> GSResult:
 		sent.append(req)
-		var wire := DotNetProfileLink.decode_body(DotNetProfileLink.encode_body(req))
+		var wire := GSNetProfileLink.decode_body(GSNetProfileLink.encode_body(req))
 		if not wire.ok:
 			return wire
 		return _pw_rt.handle_request("uid-admin", wire.value)
@@ -250,7 +250,7 @@ func _test_profile_workbench() -> void:
 	_check(_pw_rt.revision("npc", "npc_chaser") > spawn_at, "the revision moves")
 	_check(_pw_screen._edited_count("npc", "npc_chaser") == 1, "the profile is marked edited live")
 
-	var other := DotProfileRuntime.make_request("set", "npc", "npc_chaser", "sight", 55.0)
+	var other := GSProfileRuntime.make_request("set", "npc", "npc_chaser", "sight", 55.0)
 	_check(_pw_rt.handle_request("uid-admin", other).ok, "another admin edits the same profile")
 	_pw_screen._process(0.0)
 	_check(float(_pw_screen.form.values().get("sight", 0.0)) == 55.0, "the open form follows it", str(_pw_screen.form.values().get("sight")))
@@ -310,7 +310,7 @@ func _test_profile_workbench_2() -> void:
 	client.free()
 
 	_pw_rt.permit = _pw_old_permit
-	_pw_rt.handle_request("uid-admin", DotProfileRuntime.make_request("reset", "npc", "npc_chaser"))
+	_pw_rt.handle_request("uid-admin", GSProfileRuntime.make_request("reset", "npc", "npc_chaser"))
 	_pw_profiles.npcs.roots = PackedStringArray()
 	_pw_profiles.npcs.clear_cache()
 	_pw_stack.queue_free()
@@ -323,7 +323,7 @@ func _test_profile_workbench_2() -> void:
 func _test_camera_motion() -> void:
 	_section("the camera dips, leans and widens, and only when it should")
 
-	var _lobby: DotResult = await playlot.change_map(&"pg_flatgrass")
+	var _lobby: GSResult = await playlot.change_map(&"pg_flatgrass")
 	var feel := playlot.add_player(&"feel", "Feel")
 	var camera := Camera3D.new()
 	feel.add_child(camera)
@@ -334,7 +334,7 @@ func _test_camera_motion() -> void:
 	var yaw := feel.controller.state.yaw
 	var dt := 1.0 / float(Engine.physics_ticks_per_second)
 
-	var run := func(command: DotFpsCommand, ticks: int, column: StringName) -> Array:
+	var run := func(command: GSFpsCommand, ticks: int, column: StringName) -> Array:
 		feel.controller.apply_command(command)
 		var out: Array = []
 		for i in ticks:
@@ -346,7 +346,7 @@ func _test_camera_motion() -> void:
 				&"fov": out.append(camera.fov)
 		return out
 
-	var still := DotFpsCommand.new()
+	var still := GSFpsCommand.new()
 	still.yaw = yaw
 
 	feel.teleport(home + Vector3(0.0, 7.0, 0.0), yaw)
@@ -356,7 +356,7 @@ func _test_camera_motion() -> void:
 		"deepest %.3f m, last %.4f" % [drop.min(), drop.back()])
 
 	var hop := still.duplicate_command()
-	hop.set_button(DotFpsCommand.BUTTON_JUMP, true)
+	hop.set_button(GSFpsCommand.BUTTON_JUMP, true)
 	var hops: Array = await run.call(hop, int(1.5 / dt), &"dip")
 	_check(hops.min() == 0.0, "a chain of hops (6.8 m/s each) never bobs the view", "deepest %.3f" % hops.min())
 
@@ -372,7 +372,7 @@ func _test_camera_motion() -> void:
 		"right %.2f, left %.2f deg" % [lean_r.back(), lean_l.back()])
 
 	feel.teleport(home + Vector3(0.0, 40.0, 0.0), yaw)
-	feel.controller.state.velocity = DotFpsMotor.forward_for(yaw) * 22.0
+	feel.controller.state.velocity = GSFpsMotor.forward_for(yaw) * 22.0
 	var lens: Array = await run.call(still, int(0.8 / dt), &"fov")
 	_check(float(lens.back()) > 103.0 and float(lens.back()) < 106.0,
 		"at 22 m/s the lens widens a few degrees", "%.2f" % lens.back())
@@ -407,7 +407,7 @@ func _done() -> void:
 ##
 ## Commands are applied and physics stepped per tick, so it reproduces on a loaded machine.
 func _drive(
-	id: StringName, command: DotFpsCommand, ticks: int
+	id: StringName, command: GSFpsCommand, ticks: int
 ) -> void:
 	var player: PlaylotPlayer = playlot.players[id]
 
@@ -420,13 +420,13 @@ func _drive(
 
 ## Points [param id] at [param pitch] degrees (yaw 0, so along -Z) for [param ticks] ticks.
 func _look(id: StringName, pitch: float, ticks: int) -> void:
-	var look := DotFpsCommand.new()
+	var look := GSFpsCommand.new()
 	look.yaw = 0.0
 	look.pitch = pitch
 	await _drive(id, look, ticks)
 
 
-func _beam_grab(holder: PlaylotPlayer) -> DotResult:
+func _beam_grab(holder: PlaylotPlayer) -> GSResult:
 	return playlot.phys_gun_grab(
 		holder, playlot.get_world_3d().direct_space_state,
 		holder.eye_position(), holder.aim_direction(), Basis.IDENTITY, true
@@ -435,13 +435,13 @@ func _beam_grab(holder: PlaylotPlayer) -> DotResult:
 
 var _ppu_pickup
 var _ppu_held: PlaylotPlayer
-var _ppu_took: DotResult
+var _ppu_took: GSResult
 var _ppu_third: PlaylotPlayer
 
 func _test_picking_players_up() -> void:
 	_section("picking players up")
 
-	var changed: DotResult = await playlot.change_map(&"pg_flatgrass")
+	var changed: GSResult = await playlot.change_map(&"pg_flatgrass")
 	_check(changed.ok, "the sandbox loads")
 
 	_ppu_pickup = playlot.pickup
@@ -467,7 +467,7 @@ func _test_picking_players_up() -> void:
 	holder.controller.state.pitch = up
 	if holder.aim_direction().y < 0.0:
 		up = -up
-	var forward := DotFpsCommand.new()
+	var forward := GSFpsCommand.new()
 	forward.move = Vector2(0.0, 1.0)
 	_ppu_held.controller.apply_command(forward)
 	await _look(&"holder", up, 60)
@@ -521,7 +521,7 @@ func _test_picking_players_up_2() -> void:
 	_ppu_held.teleport(Vector3(-60.0, 1.0, -40.0), 0.0)
 	# Yaw 0 looks along -Z, from -36 toward them at -40. (It said 180 once, and this check
 	# passed with the beam pointed at nobody.)
-	var third_look := DotFpsCommand.new()
+	var third_look := GSFpsCommand.new()
 	third_look.yaw = 0.0
 	await _drive(&"third", third_look, 20)
 	_ppu_took = _beam_grab(_ppu_third)
@@ -559,7 +559,7 @@ func _test_picking_players_up_2() -> void:
 ## Moves [param body] at [param velocity] for [param ticks] ticks, written every tick so
 ## nothing but this moves it, while [param rider] stands still on top.
 func _slide(body: RigidBody3D, velocity: Vector3, rider: StringName, ticks: int) -> void:
-	var still := DotFpsCommand.new()
+	var still := GSFpsCommand.new()
 	for i in ticks:
 		body.linear_velocity = velocity
 		body.angular_velocity = Vector3.ZERO
@@ -570,7 +570,7 @@ func _test_riding_a_moving_prop() -> void:
 	_section("riding a moving prop")
 
 	# The lobby, whichever map the section before left loaded: the corner this uses is its.
-	var on_lobby: DotResult = await playlot.change_map(&"pg_flatgrass")
+	var on_lobby: GSResult = await playlot.change_map(&"pg_flatgrass")
 	if not on_lobby.ok:
 		_check(false, "the sandbox loads", on_lobby.error.message)
 		_done()
@@ -623,7 +623,7 @@ func _test_breaking_props() -> void:
 	_section("breaking props")
 
 	# The lobby, whichever map the section before left loaded: the corner this uses is its.
-	var on_lobby: DotResult = await playlot.change_map(&"pg_flatgrass")
+	var on_lobby: GSResult = await playlot.change_map(&"pg_flatgrass")
 	if not on_lobby.ok:
 		_check(false, "the sandbox loads", on_lobby.error.message)
 		_done()
@@ -631,7 +631,7 @@ func _test_breaking_props() -> void:
 
 	var player: PlaylotPlayer = playlot.players[&"bot"]
 	playlot.props.limits.spawn_interval = 0.0
-	playlot.props.clear_all(DotPropSpawner.REASON_ADMIN)
+	playlot.props.clear_all(GSPropSpawner.REASON_ADMIN)
 	player.teleport(Vector3(-60.0, 1.0, -60.0), 90.0)
 	await get_tree().physics_frame
 
@@ -660,13 +660,13 @@ func _test_breaking_props() -> void:
 	playlot.hit_landed.connect(on_hit)
 	var fired := _fire_at_crates(rig, player, 400, crate)
 	playlot.hit_landed.disconnect(on_hit)
-	var crate_key := Playlot.hit_victim_id(DotEntity.KIND_PROP, crate.instance_id)
+	var crate_key := Playlot.hit_victim_id(GSEntity.KIND_PROP, crate.instance_id)
 	_check(not landed.is_empty() and landed.all(func(h: Array) -> bool: return h[0] == &"bot" and int(h[1]) == crate_key)
 		and bool(landed[landed.size() - 1][3]) and landed.filter(func(h: Array) -> bool: return bool(h[3])).size() == 1,
 		"every shot that took health is confirmed to the shooter, the last as the one that broke it",
 		"%d confirmations for %d shots" % [landed.size(), fired])
 	_check(not crate.is_alive(), "with it on, a pistol shoots a crate apart", "%d shots, health %.0f" % [fired, playlot.prop_damage.health_of(crate.instance_id)])
-	var pieces := playlot.props.all_props().filter(func(p: DotPropInstance) -> bool: return p.def.id == &"debris")
+	var pieces := playlot.props.all_props().filter(func(p: GSPropInstance) -> bool: return p.def.id == &"debris")
 	_check(pieces.size() > 0 and playlot.props.world_count() >= before - 1 + pieces.size(),
 		"and leaves debris where it was", "%d pieces" % pieces.size())
 	_check(pieces.size() > 0 and pieces[0].owner_id == &"", "owned by nobody")
@@ -675,7 +675,7 @@ func _test_breaking_props() -> void:
 	# Debris goes on its own.
 	for i in range(int(playlot.config.debris_seconds * playlot.tick_rate) + 8):
 		await get_tree().physics_frame
-	var left := playlot.props.all_props().filter(func(p: DotPropInstance) -> bool: return p.def.id == &"debris")
+	var left := playlot.props.all_props().filter(func(p: GSPropInstance) -> bool: return p.def.id == &"debris")
 	_check(left.is_empty(), "and the debris is cleared up after a few seconds", "%d left" % left.size())
 
 	# A barrel goes up, and a crate beside it goes with it.
@@ -700,17 +700,17 @@ func _test_breaking_props_2() -> void:
 		"and a slab, which somebody builds on, has no health to lose", "spawned %s" % (slab != null))
 
 	playlot.config.destruction = false
-	playlot.props.clear_all(DotPropSpawner.REASON_ADMIN)
+	playlot.props.clear_all(GSPropSpawner.REASON_ADMIN)
 	_done()
 
 
 ## Holds and releases the trigger for up to [param ticks], every outcome through the game's own
 ## `player_shots_fired`; stops early once [param until] has broken. Returns the shots fired.
-func _fire_at_crates(rig: ZeeWeaponRig, player: PlaylotPlayer, ticks: int, until: DotPropInstance = null) -> int:
+func _fire_at_crates(rig: ZeeWeaponRig, player: PlaylotPlayer, ticks: int, until: GSPropInstance = null) -> int:
 	var fired := 0
 	var state := player.controller.state
 	for i in range(ticks):
-		var held := DotFpsCommand.BUTTON_USER_0 if (i / 8) % 2 == 0 else 0
+		var held := GSFpsCommand.BUTTON_USER_0 if (i / 8) % 2 == 0 else 0
 		var outcome := rig.simulate_tick(
 			PlaylotZee.command_for(held, state.yaw, state.pitch, PlaylotZee.slot_of(rig)),
 			playlot.current_tick() + i

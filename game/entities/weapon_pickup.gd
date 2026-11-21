@@ -28,7 +28,7 @@ func _entity_tick(_delta: float) -> void:
 		return
 
 	if lifetime > 0.0 and age >= lifetime:
-		game.props.remove(instance.instance_id, DotPropSpawner.REASON_CLEANUP)
+		game.props.remove(instance.instance_id, GSPropSpawner.REASON_CLEANUP)
 		return
 
 	if age < ARM_SECONDS:
@@ -39,5 +39,5 @@ func _entity_tick(_delta: float) -> void:
 
 		if player.global_position.distance_to(global_position) <= REACH:
 			game.pick_up_weapon(id, weapon_id)
-			game.props.remove(instance.instance_id, DotPropSpawner.REASON_PLAYER)
+			game.props.remove(instance.instance_id, GSPropSpawner.REASON_PLAYER)
 			return

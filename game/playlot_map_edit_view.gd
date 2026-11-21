@@ -1,6 +1,6 @@
 extends RefCounted
 
-## The staff view of the map's spawn points and links, over dot-game's `DotGameMapEditOverlay`.
+## The staff view of the map's spawn points and links, over dot-game's `GSGameMapEditOverlay`.
 ##
 ## Markers show while it is on, and the pick key opens the point you look at in a form whose buttons send the
 ## same commands a typed one does, to the editor in this process. It exists only where the process holds the
@@ -9,7 +9,7 @@ extends RefCounted
 const PlaylotMapEdit := preload("playlot_map_edit.gd")
 const POINT_DEF := "res://addons/dot_spawn/core/dot_spawn_point_def.gd"
 
-var overlay: DotGameMapEditOverlay = null
+var overlay: GSGameMapEditOverlay = null
 var _client: Node = null
 var _game: Object = null
 
@@ -124,7 +124,7 @@ func _ensure() -> void:
 	if overlay != null:
 		return
 
-	overlay = DotGameMapEditOverlay.new()
+	overlay = GSGameMapEditOverlay.new()
 	overlay.name = "MapEditOverlay"
 	overlay.schema = (load(POINT_DEF) as GDScript).call("schema")
 	overlay.send_fn = _send
@@ -152,7 +152,7 @@ func _send(line: String) -> void:
 
 
 func _role_of(edit: Object, name: String) -> String:
-	for role: String in DotGameMapEdit.COMMANDS:
+	for role: String in GSGameMapEdit.COMMANDS:
 		if str(edit.call("command_name", role)) == name:
 			return role
 

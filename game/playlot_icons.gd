@@ -6,7 +6,7 @@ const PlaylotWeaponDef := preload("weapons/playlot_weapon_def.gd")
 
 ## Icons for the spawn menu, drawn from the definition when there is no artwork.
 ##
-## [b]`DotPropDef.icon_path` is honoured first and almost never set here.[/b] A server
+## [b]`GSPropDef.icon_path` is honoured first and almost never set here.[/b] A server
 ## with content points it at a rendered thumbnail and that is what the menu shows. This
 ## project ships no art, and a grid of forty identical grey squares is worse than a
 ## grid of names — so when the field is empty the icon is [i]derived from the same
@@ -47,7 +47,7 @@ static var _cache: Dictionary = {}
 
 
 ## The icon for one definition: its own artwork if it has any, else a drawn one.
-static func for_def(def: DotPropDef) -> Texture2D:
+static func for_def(def: GSPropDef) -> Texture2D:
 	if def == null:
 		return null
 
@@ -73,9 +73,9 @@ static func for_def(def: DotPropDef) -> Texture2D:
 ## Warned about rather than passed over: an operator who set the field and got a drawn
 ## icon would conclude the field does nothing, and the two failures — a path that is
 ## not mounted and a path that is not an image — need different fixes.
-static func _load_artwork(def: DotPropDef) -> Texture2D:
+static func _load_artwork(def: GSPropDef) -> Texture2D:
 	if not ResourceLoader.exists(def.icon_path):
-		DotLog.warn(CHANNEL, "a prop's icon is not there", {
+		GSLog.warn(CHANNEL, "a prop's icon is not there", {
 			"prop": String(def.id), "icon": def.icon_path
 		})
 		return null
@@ -83,7 +83,7 @@ static func _load_artwork(def: DotPropDef) -> Texture2D:
 	var res: Resource = load(def.icon_path)
 
 	if not (res is Texture2D):
-		DotLog.warn(CHANNEL, "a prop's icon is not a texture", {
+		GSLog.warn(CHANNEL, "a prop's icon is not a texture", {
 			"prop": String(def.id), "icon": def.icon_path
 		})
 		return null
@@ -107,7 +107,7 @@ static func for_provider(kind: String, label: String) -> Texture2D:
 	return generated(Glyph.WEAPON if kind == "weapon" else Glyph.ENTITY, 1.0, Color.from_hsv(hue, 0.55, 0.85))
 
 
-static func _glyph_for(def: DotPropDef) -> Glyph:
+static func _glyph_for(def: GSPropDef) -> Glyph:
 	if PlaylotSpawnables.kind_of(def) == PlaylotSpawnables.Kind.ENTITY:
 		return Glyph.ENTITY
 
@@ -124,7 +124,7 @@ static func _glyph_for(def: DotPropDef) -> Glyph:
 ##
 ## Clamped to a factor of four either way. A plank is 3 m by 15 cm, which drawn to
 ## scale is a line: the icon has to say "long and thin" without becoming invisible.
-static func _aspect_for(def: DotPropDef) -> float:
+static func _aspect_for(def: GSPropDef) -> float:
 	var extent := PlaylotProp.extent_of(def)
 
 	if extent.y <= 0.0:

@@ -3,12 +3,12 @@ extends "playlot_world_maps.gd"
 const BreakFx := preload("playlot_break_fx.gd")
 
 func _build_props() -> void:
-	props = DotPropSpawner.new()
+	props = GSPropSpawner.new()
 	props.name = "Props"
 	props.authoritative = authoritative and config.allow_props
 	props.catalogue = _prop_catalogue()
 
-	var limits := DotPropLimits.new()
+	var limits := GSPropLimits.new()
 	limits.per_player_budget = config.prop_budget
 	limits.world_budget = config.prop_world_budget
 	limits.spawn_interval = config.prop_spawn_interval
@@ -19,7 +19,7 @@ func _build_props() -> void:
 	spawn_limits.apply_to(limits)
 	props.limit_resolver = spawn_limits.resolve
 
-	props.world_ref = DotNodeRef.of_path(^"../World")
+	props.world_ref = GSNodeRef.of_path(^"../World")
 
 		# Every prop this build ships is the same scene; what makes a plank a plank is three fields of its definition. dot-props does
 		# not know that: it instantiates a scene and places it, because a server with real content has a scene per prop.
@@ -28,17 +28,17 @@ func _build_props() -> void:
 
 	add_child(props)
 
-	carry = DotPropCarry.new()
+	carry = GSPropCarry.new()
 	carry.name = "PropCarry"
 	props.add_child(carry)
 
-	io = DotPropIO.new()
+	io = GSPropIO.new()
 	io.name = "PropIO"
 	io.authoritative = authoritative
 	props.add_child(io)
 	io.input_received.connect(_on_io_input)
 
-	prop_damage = DotPropDamage.new()
+	prop_damage = GSPropDamage.new()
 	prop_damage.name = "PropDamage"
 	prop_damage.authoritative = authoritative
 	props.add_child(prop_damage)
@@ -57,7 +57,7 @@ func _build_inventory() -> void:
 	var res := inventory.setup(props.catalogue, service_scope)
 
 	if not res.ok:
-		DotLog.warn(CHANNEL, "the inventory is off", {"why": res.error.message})
+		GSLog.warn(CHANNEL, "the inventory is off", {"why": res.error.message})
 		remove_child(inventory)
 		inventory.queue_free()
 		inventory = null
@@ -76,7 +76,7 @@ func water_boxes() -> Array[AABB]:
 func _index_panes(map: Node) -> void:
 	broken_panes.clear()
 	_last_speed.clear()
-	panes = DotPropPanes.index_map(map, &"pg_box",
+	panes = GSPropPanes.index_map(map, &"pg_box",
 		func(n: Node) -> StringName: return PlaylotMaterials.material_of(n),
 		func(material: StringName) -> float:
 			var s := PlaylotMaterials.surface(String(material))
@@ -123,10 +123,10 @@ func spawn_map_props(entries: Array, wires: Array) -> int:
 				clampf(float(physics.get("bounce", 0.0)), 0.0, 1.0))
 
 		if bool(entry.get("frozen", true)):
-			DotPhysGun.set_frozen(prop, true)
+			GSPhysGun.set_frozen(prop, true)
 			reclassify_prop(node, true, false)
 		elif node is RigidBody3D:
-			DotPhysGun.set_frozen(prop, false)
+			GSPhysGun.set_frozen(prop, false)
 			reclassify_prop(node, false, false)
 
 		# A door keeps its shut transform from where the map put it, not from the spawn point.
@@ -137,27 +137,27 @@ func spawn_map_props(entries: Array, wires: Array) -> int:
 		props.limits.spawn_interval = interval
 
 	for wire: Dictionary in wires:
-		var from: DotPropInstance = placed[int(wire["from"])]
-		var to: DotPropInstance = placed[int(wire["to"])]
+		var from: GSPropInstance = placed[int(wire["from"])]
+		var to: GSPropInstance = placed[int(wire["to"])]
 		if from != null and to != null and io != null:
 			var _linked := io.link(from.instance_id, StringName(str(wire["out"])), to.instance_id, StringName(str(wire["in"])))
 
 	if not missing.is_empty():
-		DotLog.warn(CHANNEL, "a map named props this server does not have; left them out",
+		GSLog.warn(CHANNEL, "a map named props this server does not have; left them out",
 			{"missing": ", ".join(missing)})
 
 	return placed.filter(func(p: Variant) -> bool: return p != null).size()
 
 
-## The vehicle spawner, and the handover it drives. It spawns nothing: every vehicle arrives through [DotPropSpawner] and is handed over with
-## [method DotVehicleSpawner.adopt], because a vehicle is a prop first (budgeted, undoable). Its own budget is left generous so the prop
+## The vehicle spawner, and the handover it drives. It spawns nothing: every vehicle arrives through [GSPropSpawner] and is handed over with
+## [method GSVehicleSpawner.adopt], because a vehicle is a prop first (budgeted, undoable). Its own budget is left generous so the prop
 ## budget is what limits vehicles; a second limit biting first is a refusal `pg_prop_budget` could not explain.
 func _build_vehicles() -> void:
-	vehicles = DotVehicleSpawner.new()
+	vehicles = GSVehicleSpawner.new()
 	vehicles.name = "Vehicles"
 	vehicles.authoritative = authoritative and config.allow_props
 	vehicles.catalogue = PlaylotVehicles.catalogue()
-	vehicles.world_ref = DotNodeRef.of_path(^"../World")
+	vehicles.world_ref = GSNodeRef.of_path(^"../World")
 	vehicles.world_budget = 0
 	vehicles.per_player_budget = 0
 	vehicles.spawn_interval = 0.0
@@ -180,7 +180,7 @@ func _build_vehicles() -> void:
 ## parented into a moving vehicle writes its own answer each tick and the two fight, reading as the vehicle shaking itself apart.
 ## [method PlaylotPlayer.set_riding] is the switch; [method _carry_riders] keeps the replicated state honest meanwhile.
 func _on_seated(
-	rider_id: StringName, vehicle: DotVehicleInstance, seat: DotVehicleSeat
+	rider_id: StringName, vehicle: GSVehicleInstance, seat: GSVehicleSeat
 ) -> void:
 	var player: PlaylotPlayer = players.get(rider_id)
 
@@ -206,15 +206,15 @@ func _on_seated(
 	if player.grav_gun != null:
 		player.grav_gun.drop()
 
-	DotLog.debug(CHANNEL, "a player got in", {
+	GSLog.debug(CHANNEL, "a player got in", {
 		"player": String(rider_id), "vehicle": String(vehicle.def.id), "seat": String(seat.id)
 	})
 
 
 func _on_unseated(
 	rider_id: StringName,
-	_vehicle: DotVehicleInstance,
-	_seat: DotVehicleSeat,
+	_vehicle: GSVehicleInstance,
+	_seat: GSVehicleSeat,
 	at: Vector3
 ) -> void:
 	var player: PlaylotPlayer = players.get(rider_id)
@@ -246,7 +246,7 @@ func _build_npc_world() -> void:
 	npc_world.game = self
 	add_child(npc_world)
 
-	# Metadata on the director, where dot-npc-ai's brain looks — see DotNpcAiSkill.attach.
+	# Metadata on the director, where dot-npc-ai's brain looks — see GSNpcAiSkill.attach.
 	npc_skill.attach(npc_world)
 	npc_squads.attach(npc_world)
 	npc_sounds.attach(npc_world)
@@ -262,7 +262,7 @@ func _build_npc_world() -> void:
 
 
 func _build_npc_senses() -> void:
-	npc_senses = DotNpcSenses.new()
+	npc_senses = GSNpcSenses.new()
 
 	# Tuned for a sandbox rather than for a horde. A playlot NPC is something a
 	# player is poking at, so it should be harder to make it change its mind and quicker
@@ -277,9 +277,9 @@ func _build_npc_senses() -> void:
 
 
 func _build_maps() -> void:
-	maps = DotMapSession.new()
+	maps = GSMapSession.new()
 	maps.name = "Maps"
-	maps.world_ref = DotNodeRef.of_path(^"../World")
+	maps.world_ref = GSNodeRef.of_path(^"../World")
 	add_child(maps)
 
 	maps.catalogue = _map_catalogue()
@@ -291,9 +291,9 @@ func _build_maps() -> void:
 
 	if config.catalogue_path != "":
 		var loaded := maps.load_catalogue(config.catalogue_path)
-		DotLog.result(CHANNEL, "loading the map catalogue", loaded)
+		GSLog.result(CHANNEL, "loading the map catalogue", loaded)
 
-	maps.rotation = DotMapRotation.of(maps.catalogue)
+	maps.rotation = GSMapRotation.of(maps.catalogue)
 	maps.rotation.cooldown = 1
 
 	maps.time_limit.duration = config.map_seconds
@@ -324,9 +324,9 @@ func spawn_player(id: StringName) -> void:
 		var chosen := player_stack.choose_start(id, track)
 
 		if chosen.ok:
-			var choice := chosen.value as DotSpawnChoice
-			# Degrees out, for the same reason radians went in: `DotFpsState.yaw` is in
-			# degrees and `DotFpsController` converts at exactly this boundary too.
+			var choice := chosen.value as GSSpawnChoice
+			# Degrees out, for the same reason radians went in: `GSFpsState.yaw` is in
+			# degrees and `GSFpsController` converts at exactly this boundary too.
 			player.teleport(
 				_clear_of_players(choice.transform.origin, id),
 				rad_to_deg(choice.transform.basis.get_euler().y)
@@ -395,7 +395,7 @@ func hurt_prop(node: Node, amount: float, by: StringName) -> bool:
 	var taken := prop_damage.hurt(prop.instance_id, amount, by)
 
 	if taken.ok:
-		confirm_hit(by, hit_victim_id(DotEntity.KIND_PROP, prop.instance_id),
+		confirm_hit(by, hit_victim_id(GSEntity.KIND_PROP, prop.instance_id),
 			minf(amount, maxf(before, 0.0)), at, float(taken.value) <= 0.0)
 
 	return taken.ok
@@ -410,16 +410,16 @@ func confirm_hit(by: StringName, victim: int, amount: float, point: Vector3, kil
 	hit_landed.emit(by, victim, amount, point, killed, headshot)
 
 
-## A key for [param serial] of [param kind] ([code]DotEntity.KIND_*[/code]) in one space, so the
+## A key for [param serial] of [param kind] ([code]GSEntity.KIND_*[/code]) in one space, so the
 ## damage numbers on an NPC, a crate and a pane never add up together. Not an entity id: a
 ## pane and an NPC have none, and an NPC's serial here is its object id.
 static func hit_victim_id(kind: int, serial: int) -> int:
-	return kind * DotEntity.STRIDE + posmod(serial, DotEntity.STRIDE)
+	return kind * GSEntity.STRIDE + posmod(serial, GSEntity.STRIDE)
 
 
 ## Broken: a few pieces in its colour where it stood, owned by nobody and gone in
 ## `debris_seconds`. Spawned through the spawner so every client draws them.
-func _on_prop_broken(prop: DotPropInstance, at: Vector3, _by: StringName) -> void:
+func _on_prop_broken(prop: GSPropInstance, at: Vector3, _by: StringName) -> void:
 	_breaking[prop.instance_id] = true
 
 	if not authoritative or config == null or props == null:
@@ -492,9 +492,9 @@ func _on_prop_exploded(at: Vector3, radius: float, damage: float, _force: float,
 func _build_toys(loaded: Node) -> void:
 	_clear_toys()
 	var placements: Array = loaded.call("map_toys") if loaded != null and loaded.has_method("map_toys") else []
-	var layout: DotPhysicsLayout = player_stack.physics.layout if player_stack != null and player_stack.physics != null else null
+	var layout: GSPhysicsLayout = player_stack.physics.layout if player_stack != null and player_stack.physics != null else null
 
-	toys = DotPropBodyBox.new()
+	toys = GSPropBodyBox.new()
 	toys.name = "Toys"
 	toys.authoritative = authoritative
 	toys.rules = toy_rules
@@ -511,7 +511,7 @@ func _build_toys(loaded: Node) -> void:
 
 	var built := toys.build(placements)
 	if not built.ok:
-		DotLog.warn(CHANNEL, "a map's toys would not build", {"why": built.error.message})
+		GSLog.warn(CHANNEL, "a map's toys would not build", {"why": built.error.message})
 
 	var _sounds := toys.sound.connect(func(id: StringName, at: Vector3, strength: float) -> void: toy_sound.emit(id, at, strength))
 
@@ -573,11 +573,11 @@ func start_for(track: int) -> Dictionary:
 	return {"at": map.spawn_for(track), "yaw": map.spawn_yaw_for(track)}
 
 
-func change_map(id: StringName) -> DotResult:
+func change_map(id: StringName) -> GSResult:
 	return await maps.change_to(id)
 
 
-func _on_map_changing(_from: DotMapDef, _to: DotMapDef) -> void:
+func _on_map_changing(_from: GSMapDef, _to: GSMapDef) -> void:
 	# Announced before anything is torn down, which is the whole point of the signal:
 	# every run in progress is on geometry that is about to stop existing, and every
 	# prop is parented to it.
@@ -595,7 +595,7 @@ func _on_map_changing(_from: DotMapDef, _to: DotMapDef) -> void:
 		if player.grav_gun != null:
 			player.grav_gun.drop()
 
-	props.clear_all(DotPropSpawner.REASON_CLEANUP)
+	props.clear_all(GSPropSpawner.REASON_CLEANUP)
 
 	if projectiles != null:
 		projectiles.clear()
@@ -610,12 +610,12 @@ func _on_map_changing(_from: DotMapDef, _to: DotMapDef) -> void:
 		undo_stack.clear()
 
 
-func _on_map_changed(map: DotMapDef, loaded: Node) -> void:
+func _on_map_changed(map: GSMapDef, loaded: Node) -> void:
 		# A map that has to be told something before it can build itself, duck-typed so a delivered map of the same shape works and this
 		# file names nothing from `maps/`. Before the spawns below: a generated map's spawn comes out of the generator, and spawning
 		# before it ran puts a player at the fallback, a guess that may be inside a wall.
 	if loaded != null and loaded.has_method("configure"):
-		loaded.call("configure", map_seed(), DotRegistry.get_service(&"dot_random_source"))
+		loaded.call("configure", map_seed(), GSRegistry.get_service(&"dot_random_source"))
 
 	# A map that is a document is told which one, for the same reason and in the same place.
 	if loaded != null and loaded.has_method("configure_doc"):
@@ -642,7 +642,7 @@ func _on_map_changed(map: DotMapDef, loaded: Node) -> void:
 	for id in players:
 		spawn_player(id)
 
-	DotLog.info(CHANNEL, "map ready", {
+	GSLog.info(CHANNEL, "map ready", {
 		"map": String(map.id),
 		"players": players.size(),
 	})
@@ -653,27 +653,27 @@ func _on_map_changed(map: DotMapDef, loaded: Node) -> void:
 ## The map ran out of time, or enough players rocked the vote. The session says the map is over; what happens next is here, since
 ## a session that changed the map itself would be fought by every game that wanted a vote, a scoreboard or a finished round first.
 ## A run in progress is not protected: waiting for the last runner would never end a map while one person keeps restarting.
-func _on_map_over(_map: DotMapDef, reason: StringName) -> void:
+func _on_map_over(_map: GSMapDef, reason: StringName) -> void:
 	if not rotation_ends_maps:
-		DotLog.debug(CHANNEL, "the map clock ran out; the vote decides", {"reason": String(reason)})
+		GSLog.debug(CHANNEL, "the map clock ran out; the vote decides", {"reason": String(reason)})
 		return
 
 	var next := maps.rotation.choose(players.size())
 
 	if next == null:
-		DotLog.warn(CHANNEL, "the map is over and the rotation has nothing to offer")
+		GSLog.warn(CHANNEL, "the map is over and the rotation has nothing to offer")
 		return
 
-	DotLog.info(CHANNEL, "changing map", {
+	GSLog.info(CHANNEL, "changing map", {
 		"reason": String(reason), "to": String(next.id)
 	})
 
-	var changed: DotResult = await change_map(next.id)
+	var changed: GSResult = await change_map(next.id)
 
 	if not changed.ok:
 		# Still on the old map, which is what dot-map's ordering guarantees. Restart
 		# its clock rather than leaving a server that will never try again.
-		DotLog.warn(CHANNEL, "the map change failed; extending instead", {
+		GSLog.warn(CHANNEL, "the map change failed; extending instead", {
 			"why": changed.error.message
 		})
 		maps.time_limit.extend(120.0)
@@ -683,7 +683,7 @@ func _on_map_over(_map: DotMapDef, reason: StringName) -> void:
 
 ## An input reached a prop through a wire. A door is the one that hears: `open`, `close`, and
 ## `toggle`, which a button (no value) flips and a lever (its on/off) sets.
-func _on_io_input(target: DotPropInstance, input: StringName, value: Variant, _source: DotPropInstance) -> void:
+func _on_io_input(target: GSPropInstance, input: StringName, value: Variant, _source: GSPropInstance) -> void:
 	if not _doors.has(target.instance_id):
 		return
 
@@ -700,7 +700,7 @@ func _on_io_input(target: DotPropInstance, input: StringName, value: Variant, _s
 	_set_door(target, open)
 
 
-func _set_door(prop: DotPropInstance, open: bool) -> void:
+func _set_door(prop: GSPropInstance, open: bool) -> void:
 	var state: Dictionary = _doors.get(prop.instance_id, {})
 
 	if state.is_empty() or bool(state["open"]) == open:

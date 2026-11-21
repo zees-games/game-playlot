@@ -4,7 +4,7 @@ extends "res://examples/headless_presentation_effects_and_generation.gd"
 func _test_party_does_not_migrate() -> void:
 	_section("A host leaving a sandbox takes the sandbox with them")
 
-	DotP2PSignallerLoopback.reset_all()
+	GSP2PSignallerLoopback.reset_all()
 
 	var party := PlaylotParty.new()
 	party.name = "Party"
@@ -18,7 +18,7 @@ func _test_party_does_not_migrate() -> void:
 		"a sandbox does not migrate its host, because the world does not move with it"
 	)
 	_check(
-		party.session.config.trust == DotP2PConfig.Trust.HOST_AUTHORITATIVE,
+		party.session.config.trust == GSP2PConfig.Trust.HOST_AUTHORITATIVE,
 		"while the host decides, which in a sandbox is what a friend hosting should do"
 	)
 
@@ -46,7 +46,7 @@ func _test_touch_buttons() -> void:
 	var ids: Array = list.map(func(b: Dictionary) -> Variant: return b["id"])
 	for want: StringName in [PlaylotTouch.PREV, PlaylotTouch.NEXT, PlaylotTouch.BOARD, PlaylotTouch.CHAT, PlaylotTouch.MENU]:
 		_check(ids.has(want), "the layout has the %s button" % want)
-	var probe := DotTouchButtons.new()
+	var probe := GSTouchButtons.new()
 	var m := probe.margin
 	probe.free()
 	for size: Vector2 in [Vector2(667, 375), Vector2(844, 390), Vector2(932, 430)]:
@@ -66,17 +66,17 @@ func _test_touch_buttons() -> void:
 	for row: Dictionary in rows:
 		if row.has("hold"):
 			held[row["id"]] = row["hold"]
-	_check(held == {PlaylotTouch.JUMP: DotFpsCommand.BUTTON_JUMP, PlaylotTouch.CROUCH: DotFpsCommand.BUTTON_CROUCH}, "jump and crouch are held on the sampler, nothing else", str(held))
+	_check(held == {PlaylotTouch.JUMP: GSFpsCommand.BUTTON_JUMP, PlaylotTouch.CROUCH: GSFpsCommand.BUTTON_CROUCH}, "jump and crouch are held on the sampler, nothing else", str(held))
 	_test_touch_overlay()
 	for phone: Vector2 in [Vector2(1170, 540), Vector2(2340, 1080)]:
-		var fit := DotGameScreenFit.new()
+		var fit := GSGameScreenFit.new()
 		fit.size_override = phone
 		fit.dpi_override = 160.0
 		fit.attach(get_tree().root)
 		var host := Control.new()
 		add_child(host)
-		var touch := PlaylotTouch.build(host, DotFpsTouchSampler.new(DotFpsTunables.new()), DotMobileRules.new(), {})
-		var built: DotTouchButtons = touch.buttons
+		var touch := PlaylotTouch.build(host, GSFpsTouchSampler.new(GSFpsTunables.new()), GSMobileRules.new(), {})
+		var built: GSTouchButtons = touch.buttons
 		var k := fit.fit_buttons(built, PlaylotTouch.touch_layout().buttons())
 		var stretch := float(fit.plan.get("stretch", 0.0))
 		var smallest := INF
@@ -92,17 +92,17 @@ func _test_touch_buttons() -> void:
 ## dot-mobile's overlay on a phone: it drives the sampler it was given, takes touches and the mouse emulated from them,
 ## pauses under a menu, and a button reaches the game's handler, held ones the sampler.
 func _test_touch_overlay() -> void:
-	DotPlatform.touch_override = 1
+	GSPlatform.touch_override = 1
 	var host := Control.new()
 	host.size = Vector2(844, 390)
 	add_child(host)
-	var sampler := DotFpsTouchSampler.new(DotFpsTunables.new())
+	var sampler := GSFpsTouchSampler.new(GSFpsTunables.new())
 	var got: Array = []
 	var handlers := {}
 	for id: StringName in [PlaylotTouch.FIRE, PlaylotTouch.ALT, PlaylotTouch.MENU, PlaylotTouch.PREV, PlaylotTouch.NEXT, PlaylotTouch.BOARD, PlaylotTouch.CHAT]:
 		handlers[id] = func(down: bool) -> void: got.append([id, down])
-	var touch := PlaylotTouch.build(host, sampler, DotMobileRules.new(), handlers)
-	var controls: DotMobileControls = touch.controls
+	var touch := PlaylotTouch.build(host, sampler, GSMobileRules.new(), handlers)
+	var controls: GSMobileControls = touch.controls
 	_check(controls != null and controls.touch and controls.sampler == sampler, "the overlay drives the client's own sampler", str(touch.describe()))
 	var tap := InputEventScreenTouch.new()
 	tap.pressed = true
@@ -121,18 +121,18 @@ func _test_touch_overlay() -> void:
 	finger.pressed = true
 	finger.position = controls.buttons.centre_of(PlaylotTouch.JUMP)
 	controls.buttons._input(finger)
-	var held_jump := (sampler.sample(1.0 / 60.0).buttons & DotFpsCommand.BUTTON_JUMP) != 0
+	var held_jump := (sampler.sample(1.0 / 60.0).buttons & GSFpsCommand.BUTTON_JUMP) != 0
 	finger.pressed = false
 	controls.buttons._input(finger)
-	_check(held_jump and (sampler.sample(1.0 / 60.0).buttons & DotFpsCommand.BUTTON_JUMP) == 0, "jump is held on the sampler while the finger is down")
+	_check(held_jump and (sampler.sample(1.0 / 60.0).buttons & GSFpsCommand.BUTTON_JUMP) == 0, "jump is held on the sampler while the finger is down")
 	touch.sync(true)
 	_check(not controls.visible and not touch.active(), "a menu pauses the overlay", str(touch.describe()))
 	touch.sync(false)
 	_check(touch.active() and controls.visible, "and closing the menu brings it back")
-	var rules := DotMobileRules.new()
-	_check(not rules.resolve(DotMobilePrefs.new(), true).autofire, "auto-fire is off by default: a sandbox has no enemy to shoot")
+	var rules := GSMobileRules.new()
+	_check(not rules.resolve(GSMobilePrefs.new(), true).autofire, "auto-fire is off by default: a sandbox has no enemy to shoot")
 	host.free()
-	DotPlatform.touch_override = -1
+	GSPlatform.touch_override = -1
 
 
 func _test_chat_box() -> void:
@@ -148,7 +148,7 @@ func _test_chat_box() -> void:
 		return
 
 	_check(
-		DotInputBinding.describe_action(window.open_action) == "Y",
+		GSInputBinding.describe_action(window.open_action) == "Y",
 		"opened by Y, which is where this genre has put it for twenty-five years"
 	)
 
@@ -190,7 +190,7 @@ func _test_chat_box() -> void:
 
 	p.settings.set_value(&"chat_open_key", "T")
 	_check(
-		DotInputBinding.describe_action(window.open_action) == "T",
+		GSInputBinding.describe_action(window.open_action) == "T",
 		"rebinding through the settings document moves the key"
 	)
 	_check(
@@ -217,7 +217,7 @@ func _test_chat_drawn_once(p: PlaylotPresentation) -> void:
 	add_child(hud)
 	var notice: Label = hud.get_node("Notice")
 
-	var chat := DotChatClient.new()
+	var chat := GSChatClient.new()
 	chat.channels = PlaylotServices.chat_channels()
 
 	var client = PlaylotClient.new()
@@ -228,7 +228,7 @@ func _test_chat_drawn_once(p: PlaylotPresentation) -> void:
 	var window := p.chat_window
 	var before := window.line_count()
 	client._on_chat_message(
-		DotChatMessage.system(PlaylotServices.CHANNEL_ALL, "Vote: Surf, Bhop, Lobby (30s)"),
+		GSChatMessage.system(PlaylotServices.CHANNEL_ALL, "Vote: Surf, Bhop, Lobby (30s)"),
 		PlaylotServices.CHANNEL_ALL
 	)
 	_check(
@@ -239,7 +239,7 @@ func _test_chat_drawn_once(p: PlaylotPresentation) -> void:
 
 	before = window.line_count()
 	client._on_chat_message(
-		DotChatMessage.say(PlaylotServices.CHANNEL_ALL, "k1", "ada", "gg"),
+		GSChatMessage.say(PlaylotServices.CHANNEL_ALL, "k1", "ada", "gg"),
 		PlaylotServices.CHANNEL_ALL
 	)
 	_check(
@@ -252,8 +252,8 @@ func _test_chat_drawn_once(p: PlaylotPresentation) -> void:
 	# was an empty row in the box; drawn by name and text, a bare "Guest 435:", which read
 	# as a chat command echoed with its text stripped.
 	client._on_chat_message(
-		DotChatMessage.make(
-			DotChatMessage.Kind.JOIN, PlaylotServices.CHANNEL_ALL, "k2", "Guest 435", ""
+		GSChatMessage.make(
+			GSChatMessage.Kind.JOIN, PlaylotServices.CHANNEL_ALL, "k2", "Guest 435", ""
 		),
 		PlaylotServices.CHANNEL_ALL
 	)
@@ -269,7 +269,7 @@ func _test_chat_drawn_once(p: PlaylotPresentation) -> void:
 
 	client.presentation = null
 	client._on_chat_message(
-		DotChatMessage.say(PlaylotServices.CHANNEL_ALL, "k1", "ada", "still here"),
+		GSChatMessage.say(PlaylotServices.CHANNEL_ALL, "k1", "ada", "still here"),
 		PlaylotServices.CHANNEL_ALL
 	)
 	_check(
@@ -294,7 +294,7 @@ func _test_every_sound_has_a_voice() -> void:
 	var uncovered: Array[String] = []
 	for id in cat.ids():
 		# dot-audio's stock footsteps and beds are files the addon ships: no stand-in needed.
-		if not recipes.has(id) and not DotAudioStock.ids().has(id) and not String(id).begins_with(DotAmbience.ID_PREFIX):
+		if not recipes.has(id) and not GSAudioStock.ids().has(id) and not String(id).begins_with(GSAmbience.ID_PREFIX):
 			uncovered.append(String(id))
 	_check(
 		uncovered.is_empty(),
@@ -313,7 +313,7 @@ func _test_every_sound_has_a_voice() -> void:
 	# the vote's warning, whose voice it shares, so a ping is never heard as a ballot.
 	var ping := cat.find(PlaylotPresentation.BEACON_SOUND)
 	_check(
-		ping != null and ping.kind == DotAudioDef.Kind.POSITIONAL_3D and ping.max_distance >= 100.0,
+		ping != null and ping.kind == GSAudioDef.Kind.POSITIONAL_3D and ping.max_distance >= 100.0,
 		"the beacon's ping is positional and carries across the sandbox"
 	)
 	_check(
@@ -322,7 +322,7 @@ func _test_every_sound_has_a_voice() -> void:
 		"and is the vote warning's voice pitched down, so the two are not confused"
 	)
 
-	var bank := DotAudioSynth.bank(cat, recipes)
+	var bank := GSAudioSynth.bank(cat, recipes)
 	_check(
 		bank.has(&"buy") and bank.has("res://audio/buy.ogg"),
 		"the bank answers under both the id and the path the def names"
@@ -339,7 +339,7 @@ func _test_every_sound_has_a_voice() -> void:
 	_done()
 
 
-## A stand-in rendezvous: the four routes `DotP2PSignallerHttp` speaks, on a real socket, answering each request
+## A stand-in rendezvous: the four routes `GSP2PSignallerHttp` speaks, on a real socket, answering each request
 ## [member delay] frames after it arrives. The delay is the point: the loopback signaller answers inside the call,
 ## so a caller that forgot `await` passes against it.
 class RendezvousStub:

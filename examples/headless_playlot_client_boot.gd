@@ -3,13 +3,13 @@ extends "res://examples/headless_playlot_collision_audit_and_materials.gd"
 const PlaylotViewGrip := preload("res://game/playlot_view_grip.gd")
 
 var _tcb_client: PlaylotClient
-var _tcb_look_settings: DotSettingsManager
-var _tcb_look: DotFpsTunables
-var _tcb_net_sampler: DotFpsSampler
+var _tcb_look_settings: GSSettingsManager
+var _tcb_look: GSFpsTunables
+var _tcb_net_sampler: GSFpsSampler
 var _tcb_released_yaw: float
-var _tcb_kept_menu: DotMenu
-var _tcb_keys: DotMenuBindings
-var _tcb_menu: DotMenu
+var _tcb_kept_menu: GSMenu
+var _tcb_keys: GSMenuBindings
+var _tcb_menu: GSMenu
 var _tcb_pg_hud: Node
 var _tcb_pg_xh
 var _tcb_dead_hidden: bool
@@ -17,9 +17,9 @@ var _tcb_sink
 var _tcb_edited
 
 func _the_client_mounts_the_downed_arms() -> void:
-	if DotAddonApi.build_level("dot_player_char") < 7:
+	if GSAddonApi.build_level("dot_player_char") < 7:
 		return
-	var arms := _tcb_client.view_arms as DotPlayerViewArms
+	var arms := _tcb_client.view_arms as GSPlayerViewArms
 	_check(arms != null and arms.arms() != null and _tcb_client.arms_pivot != null and arms.get_parent() == _tcb_client.arms_pivot,
 		"the client mounts the downed arms under a yaw pivot, not the camera")
 	if arms == null:
@@ -45,7 +45,7 @@ func _the_arms_hold_each_weapon_class() -> void:
 		if art.has_model() and not chosen.has(art.pose):
 			chosen[art.pose] = art.id
 	_check(chosen.size() >= 4, "the catalogue offers several weapon poses to hold", str(chosen.keys()))
-	var arms := _tcb_client.view_arms as DotPlayerViewArms
+	var arms := _tcb_client.view_arms as GSPlayerViewArms
 	for pose: StringName in chosen:
 		_tcb_client._set_tool(StringName("zee_%s" % chosen[pose]))
 		for _i in range(8):
@@ -95,10 +95,10 @@ func _test_the_client_boots_2() -> void:
 	var other := _tcb_client.playlot.add_player(&"u66", "Fallen")
 	other.teleport(_tcb_client.player.controller.state.position + Vector3(0.0, 0.0, -4.0))
 	await get_tree().process_frame
-	var crumple := DotPlayerDeath.new()
-	crumple.reaction = DotPlayerDeathReactions.CRUMPLE
+	var crumple := GSPlayerDeath.new()
+	crumple.reaction = GSPlayerDeathReactions.CRUMPLE
 	var body := _tcb_client.fall(&"u66", crumple)
-	_check(body != null and body.reaction.id == DotPlayerDeathReactions.CRUMPLE and body.part_count() > 1
+	_check(body != null and body.reaction.id == GSPlayerDeathReactions.CRUMPLE and body.part_count() > 1
 			and not other.character.body().visible,
 		"a death falls as the server's reaction, copied from the drawn figure, which is hidden",
 		str(body.describe()) if body != null else "no body")
@@ -122,7 +122,7 @@ func _test_the_client_boots_2() -> void:
 	_tcb_client.ragdolls.clear()
 	var _off := _tcb_client.playlot.ragdoll_rules.set_cvar("sv_ragdoll", "0")
 	var toppled := _tcb_client.fall(&"u66", crumple)
-	_check(toppled != null and toppled.style == DotPlayerRagdollRules.Style.TOPPLE,
+	_check(toppled != null and toppled.style == GSPlayerRagdollRules.Style.TOPPLE,
 		"the server's sv_ragdoll 0 is the topple fallback")
 	var _on := _tcb_client.playlot.ragdoll_rules.set_cvar("sv_ragdoll", "1")
 	_tcb_client.ragdolls.clear()
@@ -132,7 +132,7 @@ func _test_the_client_boots_2() -> void:
 	_tcb_client.playlot.remove_player(&"u66")
 
 	# The sensitivity slider reaches the sampler: nothing called `bind_look`, so the view turned at
-	# DotFpsTunables' default whatever the player chose. Read off the tunables the sampler turns the
+	# GSFpsTunables' default whatever the player chose. Read off the tunables the sampler turns the
 	# view with, offline and connected. Armed: without `_bind_look` all four fail.
 	_tcb_look_settings = (
 		_tcb_client.presentation.settings if _tcb_client.presentation != null else null
@@ -143,18 +143,18 @@ func _test_the_client_boots_2() -> void:
 	)
 	_check(
 		_tcb_look != null and _tcb_look_settings != null and is_equal_approx(_tcb_look.mouse_sensitivity,
-			_tcb_look_settings.get_float(&"sensitivity") * DotMenuApplier.DEGREES_PER_COUNT),
+			_tcb_look_settings.get_float(&"sensitivity") * GSMenuApplier.DEGREES_PER_COUNT),
 		"the saved sensitivity reaches the offline sampler, at dot-menu's degrees per count",
 		"%.4f" % (_tcb_look.mouse_sensitivity if _tcb_look != null else -1.0)
 	)
 	if _tcb_look_settings != null:
 		_tcb_look_settings.set_value(&"sensitivity", 4.0)
 	_check(
-		_tcb_look != null and is_equal_approx(_tcb_look.mouse_sensitivity, 4.0 * DotMenuApplier.DEGREES_PER_COUNT),
+		_tcb_look != null and is_equal_approx(_tcb_look.mouse_sensitivity, 4.0 * GSMenuApplier.DEGREES_PER_COUNT),
 		"and moving the slider changes the turning speed",
 		"%.4f" % (_tcb_look.mouse_sensitivity if _tcb_look != null else -1.0)
 	)
-	_tcb_net_sampler = DotFpsSampler.new(DotFpsTunables.new())
+	_tcb_net_sampler = GSFpsSampler.new(GSFpsTunables.new())
 	_tcb_client._sampler = _tcb_net_sampler
 	_tcb_client._bind_look()
 	if _tcb_look_settings != null:
@@ -163,7 +163,7 @@ func _test_the_client_boots_2() -> void:
 func _test_the_client_boots_3() -> void:
 	_tcb_client._sampler = null
 	_check(
-		is_equal_approx(_tcb_net_sampler.tunables.mouse_sensitivity, 3.0 * DotMenuApplier.DEGREES_PER_COUNT),
+		is_equal_approx(_tcb_net_sampler.tunables.mouse_sensitivity, 3.0 * GSMenuApplier.DEGREES_PER_COUNT),
 		"and the connected client's sampler, rebound when it adopts its player, follows it too",
 		"%.4f" % _tcb_net_sampler.tunables.mouse_sensitivity
 	)
@@ -177,7 +177,7 @@ func _test_the_client_boots_3() -> void:
 		_tcb_look_settings.set_value(&"invert_mouse", false)
 
 	# The mouse, end to end. `_on_mouse_motion` fed `player.sampler` while `_net_physics` sampled `_sampler`,
-	# two objects, and `DotFpsSampler.sample` polls the `InputMap` for movement, so only the view died.
+	# two objects, and `GSFpsSampler.sample` polls the `InputMap` for movement, so only the view died.
 	var before_yaw: float = (
 		_tcb_client.player.controller.state.yaw if _tcb_client.player != null else 0.0
 	)
@@ -230,7 +230,7 @@ func _test_the_client_boots_4() -> void:
 	# Escape releases and never captures; a click captures (game-airdrift's contract, for the browser).
 	# `Input.mouse_mode` is a no-op under the dummy display server, so this checks the configuration,
 	# that no screen is up, and that Escape on an uncaptured pointer opens the menu.
-	var plat: DotGameClient = _tcb_client.platform
+	var plat: GSGameClient = _tcb_client.platform
 	_check(
 		plat != null and plat.escape_releases_pointer and plat.capture_pointer
 		and plat.menu == _tcb_client.game_menu and plat.console != null
@@ -273,7 +273,7 @@ func _test_the_client_boots_5() -> void:
 	# [b]H is help, in every game of the family[/b], every key is a row of the table, and the
 	# Escape menu has Help & commands and Leave (the first play test found Help hidden here).
 	_tcb_keys = _tcb_client.keys
-	_check(_tcb_keys != null and _tcb_keys.key_for(DotMenuBindings.HELP_ACTION) == "H" and _tcb_keys.defaults_on("H").size() == 1,
+	_check(_tcb_keys != null and _tcb_keys.key_for(GSMenuBindings.HELP_ACTION) == "H" and _tcb_keys.defaults_on("H").size() == 1,
 		"help is on H, and nothing else in the key table is")
 	var h := InputEventKey.new()
 	h.physical_keycode = KEY_H
@@ -295,13 +295,13 @@ func _test_the_client_boots_5() -> void:
 
 	# M, the family's rule since the first play test: the map list, and solo a choice
 	# changes it now. The server's half (the owner's flag, the vote) is in `dedicated`.
-	_check(_tcb_keys.key_for(DotMenuBindings.MAPS_ACTION) == "M" and _tcb_keys.defaults_on("M").size() == 1,
+	_check(_tcb_keys.key_for(GSMenuBindings.MAPS_ACTION) == "M" and _tcb_keys.defaults_on("M").size() == 1,
 		"the map menu is on M, and nothing else in the table is",
 		str(_tcb_keys.defaults_on("M").map(func(r: Dictionary) -> String: return str(r["label"]))))
 	# B is the family's loadout key, the arena's loadout: nothing else here may default to it
 	# (Clear checkpoints was B). Solo there is no arena, and B says where the loadouts are.
 	var on_b := _tcb_keys.defaults_on("B")
-	_check(on_b.size() <= 1 and on_b.all(func(r: Dictionary) -> bool: return StringName(str(r["action"])) == DotMenuBindings.LOADOUT_ACTION),
+	_check(on_b.size() <= 1 and on_b.all(func(r: Dictionary) -> bool: return StringName(str(r["action"])) == GSMenuBindings.LOADOUT_ACTION),
 		"only the loadout is on B, the family's loadout key",
 		str(on_b.map(func(r: Dictionary) -> String: return str(r["label"]))))
 	# The right button aims a zee gun (the family's Aim row); its quick melee is the middle one.
@@ -326,9 +326,9 @@ func _test_the_client_boots_5() -> void:
 	_tcb_pg_hud.call("set_aim", 0.0, false)
 	_check(scoped_ok and (_tcb_pg_hud.get("_crosshair") as Control).visible and float((_tcb_pg_hud.get("scope") as Control).get("fraction")) == 0.0,
 		"through a scope the HUD shows zee's scope instead of the crosshair, and puts it back at the hip")
-	_tcb_pg_xh = _tcb_pg_hud.get("_crosshair") as DotCrosshair
+	_tcb_pg_xh = _tcb_pg_hud.get("_crosshair") as GSCrosshair
 	_tcb_pg_hud.call("set_alive", false)
-	_tcb_dead_hidden = DotAddonApi.build_level("dot_ui") < 14 or not _tcb_pg_xh.is_shown()
+	_tcb_dead_hidden = GSAddonApi.build_level("dot_ui") < 14 or not _tcb_pg_xh.is_shown()
 
 func _test_the_client_boots_6() -> void:
 	_tcb_pg_hud.call("set_alive", true)
@@ -345,7 +345,7 @@ func _test_the_client_boots_6() -> void:
 		"M opens the map list, more than one to choose", str(_tcb_menu.picker.items.size()))
 	var wanted_map: StringName = &""
 	var map_key := KEY_NONE
-	for row in range(1, DotMenuPicker.PAGE_SIZE + 1):
+	for row in range(1, GSMenuPicker.PAGE_SIZE + 1):
 		var it: Variant = _tcb_menu.picker.at_row(row)
 		if it is Dictionary and not bool((it as Dictionary)["current"]):
 			wanted_map = StringName(str((it as Dictionary)["id"]))
@@ -365,7 +365,7 @@ func _test_the_client_boots_6() -> void:
 	for _i in 60:
 		await get_tree().physics_frame
 	var spawn_row := _tcb_keys.row_for_action(&"pg_spawn") if _tcb_keys != null else {}
-	var rebound: DotResult = _tcb_keys.rebind(spawn_row, "J", _tcb_client.presentation.settings) if not spawn_row.is_empty() else DotResult.fail(DotError.CODE_STATE, "no row")
+	var rebound: GSResult = _tcb_keys.rebind(spawn_row, "J", _tcb_client.presentation.settings) if not spawn_row.is_empty() else GSResult.fail(GSError.CODE_STATE, "no row")
 	var j := InputEventKey.new()
 	j.physical_keycode = KEY_J
 	var e := InputEventKey.new()
@@ -458,7 +458,7 @@ func _test_the_client_boots_8() -> void:
 
 	var networked := PlaylotClient.new()
 	networked.link = Node.new()
-	networked._sampler = DotFpsSampler.new(DotFpsTunables.new())
+	networked._sampler = GSFpsSampler.new(GSFpsTunables.new())
 
 	_check(
 		networked.active_sampler() == networked._sampler,
@@ -475,12 +475,12 @@ func _test_the_client_boots_8() -> void:
 	connected.name = "ConnectedClient"
 	connected.link = Node.new()
 	# The bare link cannot replicate cvars, so noblock logs its refusal; that is the stub, not the client.
-	var mirrored_link := DotLog.mirror_to_engine
-	DotLog.mirror_to_engine = false
+	var mirrored_link := GSLog.mirror_to_engine
+	GSLog.mirror_to_engine = false
 	add_child(connected)
 	for _i in range(4):
 		await get_tree().process_frame
-	DotLog.mirror_to_engine = mirrored_link
+	GSLog.mirror_to_engine = mirrored_link
 	_check(
 		connected.hud != null and connected.bridge != null
 			and connected.hud.clock_view == connected.bridge.clock_view,
@@ -495,7 +495,7 @@ func _test_the_client_boots_8() -> void:
 	# The client makes a noise when something happens, through the game and not through the hooks:
 	# `headless_presentation` calls `on_prop_spawned` itself, so a hook nothing calls stayed silent.
 	# This goes through the client's own spawn, the spawner's refusal and a real map change.
-	_tcb_sink = _tcb_client.presentation.audio.sink as DotAudioSinkNull \
+	_tcb_sink = _tcb_client.presentation.audio.sink as GSAudioSinkNull \
 		if _tcb_client.presentation != null and _tcb_client.presentation.audio != null else null
 	_check(_tcb_sink != null, "the headless client's presentation has a null sink to count on")
 
@@ -522,7 +522,7 @@ func _test_the_client_boots_9() -> void:
 	# this file's oldest bug. Holding is set by hand, because a grab needs the prop in
 	# the crosshair and that is dot-props' suite's question, not this one's.
 	var mine := _tcb_client.playlot.props.props_of(_tcb_client.player_id)
-	var crate: DotPropInstance = mine.back() if not mine.is_empty() else null
+	var crate: GSPropInstance = mine.back() if not mine.is_empty() else null
 	var crate_body := crate.node as Node3D if crate != null else null
 	if crate_body != null:
 		_tcb_client.player.phys_gun.held = crate
@@ -664,7 +664,7 @@ func _test_the_client_boots_12() -> void:
 	# Counted through the signal into an Array: a lambda captures a scalar by value.
 	var uses: Array[int] = []
 	if hand_rig is ZeeWeaponRig:
-		(hand_rig as ZeeWeaponRig).used.connect(func(_o: DotWeaponOutcome) -> void: uses.append(1))
+		(hand_rig as ZeeWeaponRig).used.connect(func(_o: GSWeaponOutcome) -> void: uses.append(1))
 
 	_tcb_client._primary_down()
 	for _i in range(120):
@@ -690,13 +690,13 @@ func _test_the_client_boots_12() -> void:
 	_tcb_client._set_tool(&"launcher")
 	_check(_tcb_client.toy_view != null and _tcb_client.toy_view != toy_in_hand,
 		"and picking another toy swaps the model")
-	(_tcb_client.toy_view as DotToolView).set_hands_fov_at_4_3(40.0)
-	(_tcb_client.toy_view as DotToolView)._process(0.016)
+	(_tcb_client.toy_view as GSToolView).set_hands_fov_at_4_3(40.0)
+	(_tcb_client.toy_view as GSToolView)._process(0.016)
 	_check(_tcb_client.toy_view.scale.x != 1.0, "and viewmodel_fov scales it like a gun")
 	_tcb_client._set_tool(&"phys")
 
 	# Water splashes: a crate dropped into Nature's pond, heard on the client's own frames.
-	var _wet_map: DotResult = await _tcb_client.playlot.change_map(&"pgc_nature")
+	var _wet_map: GSResult = await _tcb_client.playlot.change_map(&"pgc_nature")
 	_tcb_client.playlot.props.limits.spawn_interval = 0.0
 	var before_splash := _tcb_client.presentation.splashes
 	var _dropped := _tcb_client.playlot.props.spawn(&"crate", _tcb_client.player.player_id, Vector3(60.0, 4.0, 50.0))
@@ -706,7 +706,7 @@ func _test_the_client_boots_12() -> void:
 		await get_tree().physics_frame
 	_check(_tcb_client.presentation.splashes > before_splash, "a crate dropped into the pond splashes",
 		"%d splashes" % (_tcb_client.presentation.splashes - before_splash))
-	var _dry_map: DotResult = await _tcb_client.playlot.change_map(&"pg_flatgrass")
+	var _dry_map: GSResult = await _tcb_client.playlot.change_map(&"pg_flatgrass")
 	await get_tree().physics_frame
 
 	# The tool gun's edit mode, through the client's own buttons and menu.
@@ -714,7 +714,7 @@ func _test_the_client_boots_12() -> void:
 	_tcb_edited = _tcb_client.playlot.props.spawn(&"crate", _tcb_client.player.player_id,
 		eye + _tcb_client.player.aim_direction() * 2.5)
 	if _tcb_edited != null:
-		DotPhysGun.set_frozen(_tcb_edited, true)
+		GSPhysGun.set_frozen(_tcb_edited, true)
 		(_tcb_edited.node as Node3D).call("set_tint", Color.html("e05252"))
 	_tcb_client._on_tool_mode_chosen(&"edit", {})
 	_tcb_client.menu.tool_mode = &"edit"

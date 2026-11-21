@@ -22,24 +22,24 @@ func schema() -> Array[Dictionary]:
 	]
 
 
-func primary(_gun: Object, hit: Dictionary) -> DotResult:
+func primary(_gun: Object, hit: Dictionary) -> GSResult:
 	var body := prop_body(hit)
 
 	if body == null:
 		return nothing_there()
 
 	_apply(body, bool(setting("gravity")), float(setting("weight")), float(setting("friction")), float(setting("bounce")))
-	return DotResult.success(null)
+	return GSResult.success(null)
 
 
-func reload(_gun: Object, hit: Dictionary) -> DotResult:
+func reload(_gun: Object, hit: Dictionary) -> GSResult:
 	var body := prop_body(hit)
 
 	if body == null:
 		return nothing_there()
 
 	_apply(body, true, 1.0, 1.0, 0.0)
-	return DotResult.success(null)
+	return GSResult.success(null)
 
 
 static func _apply(body: RigidBody3D, gravity: bool, weight: float, friction: float, bounce: float) -> void:

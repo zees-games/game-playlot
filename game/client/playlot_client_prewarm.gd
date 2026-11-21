@@ -18,7 +18,7 @@ const CHANNEL := "playlot.prewarm"
 ## The gate's hold while this runs.
 const HOLD := &"prewarm"
 
-## The per-frame budget asked of [method DotLoadGate.slice_msec]. A wider slice under the cover measured slower:
+## The per-frame budget asked of [method GSLoadGate.slice_msec]. A wider slice under the cover measured slower:
 ## the gate's own draw, after its time-out, shared each frame with it.
 const SLICE_MS := 8
 
@@ -34,12 +34,12 @@ enum Phase { PROPS, SHOT_FX, MUZZLE, BLOOD, WEAPONS, FX, ICONS, DONE }
 ## Fired on the frame after a pause: the run waits on this node, so a freed node is never resumed.
 signal _frame
 
-var gate: DotLoadGate = null
+var gate: GSLoadGate = null
 var config: PlaylotConfig = null
-var catalogue: DotPropCatalogue = null
-var fx_catalogue: DotFxCatalogue = null
+var catalogue: GSPropCatalogue = null
+var fx_catalogue: GSFxCatalogue = null
 ## The presentation's blood, whose decal settings the warmed splat copies. Null warms no blood.
-var blood: DotFxBlood = null
+var blood: GSFxBlood = null
 ## The client's shared layered shot (playlot_shot_sound.gd), built in the SHOT_FX phase. Null builds none.
 var shot_sound: Node = null
 
@@ -68,7 +68,7 @@ var profiling: bool = false
 var profile: Dictionary = {}
 var _lap_at := 0
 
-var _slice: DotFrameSlice = null
+var _slice: GSFrameSlice = null
 var _spare_view: ZeeViewModel = null
 var _parts_warmed := false
 ## True while [constant HOLD] is held.
@@ -107,7 +107,7 @@ func start() -> bool:
 
 
 ## Starts, before the first map loads, the NPC bodies' clip sets the PROPS phase would otherwise build on the main
-## thread when it dresses its first NPC ([method DotHumanoidAssets.prepare_libraries]: a worker thread where there are
+## thread when it dresses its first NPC ([method GSHumanoidAssets.prepare_libraries]: a worker thread where there are
 ## threads, so it runs while the map loads). The bodies are the ones [method PlaylotFigure.dress_body] picks for each
 ## NPC id. Nothing is waited for here; whatever is not done by then is built where it always was. Returns the bodies started.
 static func prefetch(p_config: PlaylotConfig) -> Array[StringName]:
@@ -125,7 +125,7 @@ static func prefetch(p_config: PlaylotConfig) -> Array[StringName]:
 		if not bodies.has(body):
 			bodies.append(body)
 	if not bodies.is_empty():
-		DotHumanoidAssets.prepare_libraries(bodies)
+		GSHumanoidAssets.prepare_libraries(bodies)
 	return bodies
 
 
@@ -142,7 +142,7 @@ static func prefetch_scripts(p_config: PlaylotConfig) -> PackedStringArray:
 	var requested := PackedStringArray()
 	if p_config != null and (not p_config.prewarm or not p_config.prewarm_entity_scripts_early):
 		return requested
-	if not DotPlatform.has_threads():
+	if not GSPlatform.has_threads():
 		return requested
 	for path in PlaylotSpawnables.entity_script_paths():
 		if _script_requests.has(path) or ResourceLoader.has_cached(path) or not ResourceLoader.exists(path):
@@ -155,7 +155,7 @@ static func prefetch_scripts(p_config: PlaylotConfig) -> PackedStringArray:
 
 ## Takes in the entity script [method prefetch_scripts] started for [param def], a frame at a time while the loader's
 ## worker is still on it, so the PROPS phase's own load finds it compiled. Returns at once for one never requested.
-func _settle_script(def: DotPropDef) -> void:
+func _settle_script(def: GSPropDef) -> void:
 	var path := PlaylotSpawnables.script_of(def)
 	var at := _script_requests.find(path)
 	if at < 0:
@@ -191,10 +191,10 @@ func _run() -> void:
 		for item in items:
 			if phase == Phase.PROPS and _is_figure(item):
 				await _settle_figure_clips()
-			if phase == Phase.PROPS and not _script_requests.is_empty() and item is DotPropDef:
-				await _settle_script(item as DotPropDef)
+			if phase == Phase.PROPS and not _script_requests.is_empty() and item is GSPropDef:
+				await _settle_script(item as GSPropDef)
 			if _slice == null:
-				_slice = DotFrameSlice.new(gate.slice_msec(SLICE_MS) if gate != null else SLICE_MS)
+				_slice = GSFrameSlice.new(gate.slice_msec(SLICE_MS) if gate != null else SLICE_MS)
 			_warm_one(phase as Phase, item)
 			if _slice.due():
 				_slice = null
@@ -213,7 +213,7 @@ func _run() -> void:
 
 ## True for a prop that is dressed as a person ([method PlaylotFigure.dress_body]).
 static func _is_figure(item: Variant) -> bool:
-	return item is DotPropDef and String((item as DotPropDef).id).begins_with("npc_")
+	return item is GSPropDef and String((item as GSPropDef).id).begins_with("npc_")
 
 
 ## Takes in the clip sets [method prefetch] started, a frame at a time while a worker is still on them: the first NPC
@@ -221,7 +221,7 @@ static func _is_figure(item: Variant) -> bool:
 ## where there are no threads each frame builds one set, the same work the first NPC would have done in one frame.
 func _settle_figure_clips() -> void:
 	var began := Time.get_ticks_usec() if profiling else 0
-	while not DotHumanoidAssets.poll_libraries():
+	while not GSHumanoidAssets.poll_libraries():
 		if _covering:
 			cover_frames += 1
 		_slice = null
@@ -272,7 +272,7 @@ func _release_cover() -> void:
 	_covering = false
 	_show_world()
 	_hold_light_probe()
-	DotLog.info(CHANNEL, "warmed under the cover", {"items": warmed, "skipped": skipped, "frames": cover_frames,
+	GSLog.info(CHANNEL, "warmed under the cover", {"items": warmed, "skipped": skipped, "frames": cover_frames,
 		"ms": phase_ms.duplicate()})
 	if gate != null:
 		gate.release(HOLD)
@@ -283,7 +283,7 @@ func _finish() -> void:
 	_covering = false
 	_free_spare_view()
 	_show_world()
-	DotLog.info(CHANNEL, "warmed the icons in play", {"ms": phase_ms.get("ICONS", 0)})
+	GSLog.info(CHANNEL, "warmed the icons in play", {"ms": phase_ms.get("ICONS", 0)})
 	if profiling:
 		_print_profile()
 	if gate != null:
@@ -359,8 +359,8 @@ func _prop_defs() -> Array:
 	return out
 
 
-func _all_props() -> Array[DotPropDef]:
-	var out: Array[DotPropDef] = []
+func _all_props() -> Array[GSPropDef]:
+	var out: Array[GSPropDef] = []
 	if catalogue == null:
 		return out
 	var seen := {}
@@ -382,8 +382,8 @@ func _warm_one(phase: Phase, item: Variant) -> void:
 
 
 static func _item_name(item: Variant) -> String:
-	if item is DotPropDef:
-		return str((item as DotPropDef).id)
+	if item is GSPropDef:
+		return str((item as GSPropDef).id)
 	if item is Resource:
 		var res := item as Resource
 		return res.resource_path.get_file() if res.resource_path != "" else res.get_class()
@@ -402,7 +402,7 @@ func _lap(step: String) -> void:
 func _warm_one_inner(phase: Phase, item: Variant) -> void:
 	match phase:
 		Phase.PROPS:
-			_warm_prop(item as DotPropDef)
+			_warm_prop(item as GSPropDef)
 		Phase.SHOT_FX:
 			_hand(ZeeShotFx.warm())
 			if shot_sound != null and is_instance_valid(shot_sound):
@@ -421,7 +421,7 @@ func _warm_one_inner(phase: Phase, item: Variant) -> void:
 
 ## Builds the body a spawn would, outside the tree: its scene, its entity script (loaded and
 ## compiled, not attached), its mesh and, for an NPC, its figure.
-func _warm_prop(def: DotPropDef) -> void:
+func _warm_prop(def: GSPropDef) -> void:
 	if def == null:
 		return
 	var scene: Variant = load(def.scene_path) if def.scene_path != "" and ResourceLoader.exists(def.scene_path) else null
@@ -442,9 +442,9 @@ func _warm_prop(def: DotPropDef) -> void:
 	_lap("prop.configure")
 	var figure := node.get_node_or_null(^"Figure")
 	if figure != null:
-		var _surfaces := DotSkinSurfaces.warm(figure)
+		var _surfaces := GSSkinSurfaces.warm(figure)
 	_lap("prop.skin")
-	_hand(DotRenderWarmup.collect(node))
+	_hand(GSRenderWarmup.collect(node))
 	_lap("prop.collect")
 	node.free()
 	_lap("prop.free")
@@ -461,7 +461,7 @@ func _warm_weapon(art: ZeeWeaponArt) -> void:
 	var equipped := _spare_view.equip(art)
 	_lap("weapon.equip")
 	if equipped.ok:
-		_hand(DotRenderWarmup.collect(_spare_view))
+		_hand(GSRenderWarmup.collect(_spare_view))
 	_lap("weapon.collect")
 	_spare_view.clear()
 	_lap("weapon.clear")
@@ -478,23 +478,23 @@ func _warm_fx_scene(path: String) -> void:
 	if not scene is PackedScene:
 		return
 	var node := (scene as PackedScene).instantiate()
-	_hand(DotRenderWarmup.collect(node))
+	_hand(GSRenderWarmup.collect(node))
 	node.free()
 
 
 ## dot-fx's muzzle flashes: every flash scene loaded and pinned, and one of each size drawn on the camera until
 ## the gate opens, so the first shot loads and compiles nothing. Without a camera the scenes are still pinned.
 func _warm_muzzle_flashes() -> void:
-	if not DotMuzzleFlash.available():
+	if not GSMuzzleFlash.available():
 		return
-	var first: int = DotMuzzleFlash.FOLDERS.keys()[0]
-	if not ResourceLoader.exists("%s%s01.tscn" % [DotMuzzleFlash.ROOT, DotMuzzleFlash.FOLDERS[first]]):
+	var first: int = GSMuzzleFlash.FOLDERS.keys()[0]
+	if not ResourceLoader.exists("%s%s01.tscn" % [GSMuzzleFlash.ROOT, GSMuzzleFlash.FOLDERS[first]]):
 		return
 	var cam := _camera()
 	if cam == null:
-		var _pinned := DotMuzzleFlash.pin_scenes(1 << 30)
+		var _pinned := GSMuzzleFlash.pin_scenes(1 << 30)
 		return
-	var rig := DotMuzzleFlash.prewarm(cam)
+	var rig := GSMuzzleFlash.prewarm(cam)
 	if rig != null:
 		rig.position = Vector3(0.0, 0.0, -0.5)
 		_keep_on_camera(rig)
@@ -505,10 +505,10 @@ func _warm_muzzle_flashes() -> void:
 func _warm_blood() -> void:
 	if blood == null or not is_instance_valid(blood):
 		return
-	var pool := DotFxDecals.new()
+	var pool := GSFxDecals.new()
 	pool.apply_config(blood.decals.config)
 	var _splat := pool.splatter(Vector3.ZERO, Vector3.UP)
-	_hand(DotRenderWarmup.collect(pool))
+	_hand(GSRenderWarmup.collect(pool))
 	pool.free()
 
 
@@ -591,8 +591,8 @@ func _camera() -> Camera3D:
 
 
 func _warm_icon(item: Variant) -> void:
-	if item is DotPropDef:
-		var icon := PlaylotIcons.for_def(item as DotPropDef)
+	if item is GSPropDef:
+		var icon := PlaylotIcons.for_def(item as GSPropDef)
 		if icon != null and not _held_icons.has(icon):
 			_held_icons.append(icon)
 	elif item is PlaylotWeaponDef:
@@ -607,7 +607,7 @@ func _warm_icon(item: Variant) -> void:
 func _hand(items: Array) -> void:
 	var fresh: Array = []
 	for item: Variant in items:
-		var key := DotRenderWarmup.item_key(item, _key_cache)
+		var key := GSRenderWarmup.item_key(item, _key_cache)
 		if key != "" and _keys.has(key):
 			skipped += 1
 			continue

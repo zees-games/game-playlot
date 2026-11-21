@@ -13,7 +13,7 @@ func _test_buttons_and_doors() -> void:
 	_section("buttons, levers and doors")
 
 	# The lobby, whichever map the section before left loaded: the corner this uses is its.
-	var on_lobby: DotResult = await playlot.change_map(&"pg_flatgrass")
+	var on_lobby: GSResult = await playlot.change_map(&"pg_flatgrass")
 	if not on_lobby.ok:
 		_check(false, "the sandbox loads", on_lobby.error.message)
 		_done()
@@ -23,16 +23,16 @@ func _test_buttons_and_doors() -> void:
 	# the sections before left it with.
 	var player := playlot.add_player(&"presser", "Presser")
 	playlot.props.limits.spawn_interval = 0.0
-	playlot.props.clear_all(DotPropSpawner.REASON_ADMIN)
+	playlot.props.clear_all(GSPropSpawner.REASON_ADMIN)
 	player.teleport(Vector3(-60.0, 1.0, -36.0), 0.0)
 	# Landed before the button goes at eye height: a metre's fall is forty ticks.
 	await _look(&"presser", 0.0, 90)
 
 	var eye := player.eye_position()
 	var button := playlot.props.spawn(&"button", &"presser", Vector3(-60.0, eye.y, -38.0))
-	DotPhysGun.set_frozen(button, true)
+	GSPhysGun.set_frozen(button, true)
 	var lever := playlot.props.spawn(&"lever", &"presser", Vector3(-57.0, 0.5, -38.0))
-	DotPhysGun.set_frozen(lever, true)
+	GSPhysGun.set_frozen(lever, true)
 	var door := playlot.props.spawn(&"door", &"presser", Vector3(-62.0, 1.3, -44.0))
 	await get_tree().physics_frame
 	_check(door != null and door.frozen, "a door stands frozen where it is put")
@@ -41,11 +41,11 @@ func _test_buttons_and_doors() -> void:
 	var wire := preload("res://game/toolgun/tool_wire.gd").new()
 	var gun := WireGun.new()
 	gun.game = playlot
-	var first: DotResult = wire.primary(gun, {"prop": button})
-	var second: DotResult = wire.primary(gun, {"prop": door})
+	var first: GSResult = wire.primary(gun, {"prop": button})
+	var second: GSResult = wire.primary(gun, {"prop": door})
 	_check(first.ok and second.ok and playlot.io.links_from(button.instance_id).size() == 1,
 		"the Wire mode wires the button to the door", "%s / %s" % [first.error if not first.ok else "ok", second.error if not second.ok else "ok"])
-	var from_door: DotResult = wire.primary(gun, {"prop": door})
+	var from_door: GSResult = wire.primary(gun, {"prop": door})
 	_check(from_door.ok and not wire.pending.is_empty(), "a door can start a wire too: it says opened and closed")
 	wire.cancel()
 
@@ -82,7 +82,7 @@ func _test_buttons_and_doors() -> void:
 	_check(playlot.io.links_to(door.instance_id).size() == 1, "removing the button takes its wire and leaves the lever's")
 	_check(not playlot.use_prop(&"nobody").ok, "and nobody uses anything from nowhere")
 
-	playlot.props.clear_all(DotPropSpawner.REASON_ADMIN)
+	playlot.props.clear_all(GSPropSpawner.REASON_ADMIN)
 	playlot.remove_player(&"presser")
 	_done()
 
@@ -91,11 +91,11 @@ func _test_buttons_and_doors() -> void:
 
 var _sb_at: Vector3
 var _sb_yaw: float
-var _sb_big: DotPropInstance
+var _sb_big: GSPropInstance
 var _sb_store: PlaylotBuilds
-var _sb_doc: DotResult
-var _sb_loaded: DotResult
-var _sb_again: Array[DotPropInstance]
+var _sb_doc: GSResult
+var _sb_loaded: GSResult
+var _sb_again: Array[GSPropInstance]
 var _sb_grown: Array
 var _sb_paint: Color
 var _sb_paint_off: float
@@ -103,7 +103,7 @@ var _sb_paint_off: float
 func _test_saved_builds() -> void:
 	_section("saved builds")
 
-	var on_lobby: DotResult = await playlot.change_map(&"pg_flatgrass")
+	var on_lobby: GSResult = await playlot.change_map(&"pg_flatgrass")
 	if not on_lobby.ok:
 		_check(false, "the sandbox loads", on_lobby.error.message)
 		_done()
@@ -125,9 +125,9 @@ func _test_saved_builds() -> void:
 	var button := playlot.props.spawn(&"button", &"builder", _sb_at + Vector3(2.0, 1.0, -3.0))
 	var door := playlot.props.spawn(&"door", &"builder", _sb_at + Vector3(4.0, 1.3, -4.0))
 	await get_tree().physics_frame
-	for p: DotPropInstance in [a, b, crate, _sb_big, button]:
-		DotPhysGun.set_frozen(p, true)
-	var _w: DotResult = playlot.constraints.weld(&"builder", a.node as RigidBody3D, b.node as RigidBody3D, a.position())
+	for p: GSPropInstance in [a, b, crate, _sb_big, button]:
+		GSPhysGun.set_frozen(p, true)
+	var _w: GSResult = playlot.constraints.weld(&"builder", a.node as RigidBody3D, b.node as RigidBody3D, a.position())
 	(crate.node as PlaylotProp).set_tint(Color(0.2, 0.4, 0.9))
 	var _grown := (_sb_big.node as PlaylotProp).set_size_scale(1.5)
 	# Physics the edit mode changed: no gravity, twice as heavy, slippery and bouncy.
@@ -139,7 +139,7 @@ func _test_saved_builds() -> void:
 
 	_sb_store = PlaylotBuilds.new()
 	_sb_store.directory = "user://test_builds"
-	DotPaths.remove_tree(_sb_store.directory)
+	GSPaths.remove_tree(_sb_store.directory)
 	_sb_doc = _sb_store.capture(playlot, &"builder", _sb_at, _sb_yaw)
 	_check(_sb_doc.ok and (_sb_doc.value["props"] as Array).size() == 6 and (_sb_doc.value["links"] as Array).size() == 1
 		and (_sb_doc.value["wires"] as Array).size() == 1, "a build captures its props, its weld and its wire", str(_sb_doc.error) if not _sb_doc.ok else "")
@@ -162,8 +162,8 @@ func _test_saved_builds() -> void:
 		worst = maxf(worst, nearest)
 	_check(worst < 0.01, "where they stood", "%.4f m off" % worst)
 	_sb_again = playlot.props.props_of(&"builder")
-	var painted := _sb_again.filter(func(p: DotPropInstance) -> bool: return p.def.id == &"crate")
-	_sb_grown = _sb_again.filter(func(p: DotPropInstance) -> bool: return p.def.id == &"crate_large")
+	var painted := _sb_again.filter(func(p: GSPropInstance) -> bool: return p.def.id == &"crate")
+	_sb_grown = _sb_again.filter(func(p: GSPropInstance) -> bool: return p.def.id == &"crate_large")
 	# Paint is kept as an HTML colour, so to the nearest 1/255.
 	_sb_paint = (painted[0].node as PlaylotProp).tint if not painted.is_empty() else Color.BLACK
 	_sb_paint_off = absf(_sb_paint.r - 0.2) + absf(_sb_paint.g - 0.4) + absf(_sb_paint.b - 0.9)
@@ -183,7 +183,7 @@ func _test_saved_builds_2() -> void:
 		"gravity %.1f, %.1f kg" % [big_body.gravity_scale, big_body.mass] if big_body != null else "none")
 	_check(not (_sb_doc.value["props"] as Array).any(func(e: Dictionary) -> bool: return e.has("physics") and str(e["id"]) == "crate"),
 		"and a prop nobody edited writes no physics at all")
-	var new_button: DotPropInstance = _sb_again.filter(func(p: DotPropInstance) -> bool: return p.def.id == &"button")[0]
+	var new_button: GSPropInstance = _sb_again.filter(func(p: GSPropInstance) -> bool: return p.def.id == &"button")[0]
 	_check(playlot.constraints.count_owned(&"builder") >= 1 and playlot.io.links_from(new_button.instance_id).size() == 1,
 		"with the weld and the wire made again")
 
@@ -206,7 +206,7 @@ func _test_saved_builds_2() -> void:
 	# Limits are asked first, so nothing appears when it will not all fit.
 	playlot.props.clear_player(&"builder")
 	var old_limits: Dictionary = playlot.props.limits.group_limits.duplicate()
-	playlot.props.limits.group_limits[DotPropDef.GROUP_PROPS] = 3
+	playlot.props.limits.group_limits[GSPropDef.GROUP_PROPS] = 3
 	var too_big := _sb_store.place(playlot, &"builder", _sb_loaded.value, _sb_at, _sb_yaw)
 	_check(not too_big.ok and playlot.props.props_of(&"builder").is_empty(), "a build past the player's limit puts nothing down",
 		too_big.error.message if not too_big.ok else "")
@@ -223,11 +223,11 @@ func _test_saved_builds_2() -> void:
 		and not PlaylotBuilds.is_custom_prop(roped) and not PlaylotBuilds.is_custom_prop({"props": [{"id": "plank"}]}),
 		"a custom prop is two or more props welded into one piece, and nothing welded to the world")
 	var wire := PlaylotEvents.write_builds([{"name": "bridge", "props": 6, "custom": false}, {"name": "car", "props": 9, "custom": true}])
-	var back := PlaylotEvents.read_builds(DotNetReader.new(wire))
+	var back := PlaylotEvents.read_builds(GSNetReader.new(wire))
 	_check(bool(back["ok"]) and (back["builds"] as Array).size() == 2 and back["builds"][1]["name"] == "car"
 		and bool(back["builds"][1]["custom"]) and int(back["builds"][0]["props"]) == 6, "and the list crosses the wire whole", str(back))
 
-	DotPaths.remove_tree(_sb_store.directory)
+	GSPaths.remove_tree(_sb_store.directory)
 	playlot.props.clear_player(&"builder")
 	playlot.remove_player(&"builder")
 	_done()
@@ -254,7 +254,7 @@ func _test_boots() -> void:
 	# per machine is split out: only the documents under `maps/custom` are counted against the survey list, and the folder itself is compared with that list so a document nobody surveyed fails by name instead of as "26 in all, 24 documents".
 	var data_maps := 0
 	var user_maps := 0
-	for map: DotMapDef in playlot.maps.catalogue.maps:
+	for map: GSMapDef in playlot.maps.catalogue.maps:
 		if map.meta.has("doc"):
 			if str(map.meta["doc"]).begins_with(playlot.USER_MAPS_DIR):
 				user_maps += 1
@@ -289,7 +289,7 @@ func _test_boots() -> void:
 		"and neither does the prop catalogue"
 	)
 
-	var loaded: DotResult = await playlot.change_map(&"pg_flatgrass")
+	var loaded: GSResult = await playlot.change_map(&"pg_flatgrass")
 	_check(loaded.ok, "the flat grass map loads",
 		loaded.error.message if not loaded.ok else "")
 	_check(playlot.current_map_node() != null, "and is a PlaylotMap")
@@ -350,7 +350,7 @@ func _test_styles() -> void:
 
 	# The command filter is the visible half: sideways removes the forward key, and
 	# it has to happen before the motor sees the command.
-	var forward := DotFpsCommand.new()
+	var forward := GSFpsCommand.new()
 	forward.move = Vector2(0.0, 1.0)
 
 	player.controller.apply_command(forward)
@@ -439,14 +439,14 @@ func _test_the_run_timer() -> void:
 	var finish: Object = zone_script.call("make", kinds["END"], 0)
 	finish.call("set_box", end_at - Vector3(4.0, 1.0, 4.0), end_at + Vector3(4.0, 3.0, 4.0))
 	course.call("add", finish)
-	var bound: DotResult = manager.call("set_zones", course)
+	var bound: GSResult = manager.call("set_zones", course)
 	_check(bound.ok, "a zone set binds", bound.error.message if not bound.ok else "")
 
 	var filed := []
 	var on_filed := func(id: StringName, time: float, rank: int, reason: String) -> void:
 		filed.append([id, time, rank, reason])
 	playlot.run_filed.connect(on_filed)
-	var forward := DotFpsCommand.new()
+	var forward := GSFpsCommand.new()
 	forward.move = Vector2(0.0, 1.0)
 	forward.yaw = yaw
 	await _drive(&"bot", forward, playlot.tick_rate * 8)
@@ -455,7 +455,7 @@ func _test_the_run_timer() -> void:
 		"walking from the start to the end files a run, back through Playlot.run_filed",
 		str(filed))
 
-	var _unbound: DotResult = manager.call("set_zones", null)
+	var _unbound: GSResult = manager.call("set_zones", null)
 	_done()
 
 
@@ -468,7 +468,7 @@ func _test_leaderboards() -> void:
 		"style": "normal",
 	}
 
-	var page: DotResult = await playlot.boards.page_async(&"fastest", scope)
+	var page: GSResult = await playlot.boards.page_async(&"fastest", scope)
 	var rows: Array = page.value
 
 	# The run above may or may not have been fast enough to clear the style's
@@ -484,12 +484,12 @@ func _test_leaderboards() -> void:
 	_check(rows.size() >= 1, "there is a time on the board")
 
 	if rows.size() >= 1:
-		_check((rows[0] as DotLeaderboardEntry).rank == 1, "ranked first")
+		_check((rows[0] as GSLeaderboardEntry).rank == 1, "ranked first")
 
 	# Faster than whatever is on top, rather than a fixed number: the bot's own time
 	# depends on how the run above went, and a hard-coded 20 seconds made this test
 	# pass or fail on the bot's driving instead of on the board's ordering.
-	var beat := (rows[0] as DotLeaderboardEntry).value - 1.0
+	var beat := (rows[0] as GSLeaderboardEntry).value - 1.0
 
 	await playlot.boards.submit_async(&"fastest", scope, &"other", "Other", beat)
 
@@ -497,12 +497,12 @@ func _test_leaderboards() -> void:
 	rows = page.value
 
 	_check(
-		(rows[0] as DotLeaderboardEntry).player_id == &"other",
+		(rows[0] as GSLeaderboardEntry).player_id == &"other",
 		"a faster time takes the top",
-		String((rows[0] as DotLeaderboardEntry).player_id)
+		String((rows[0] as GSLeaderboardEntry).player_id)
 	)
 	_check(
-		(rows[1] as DotLeaderboardEntry).rank == 2,
+		(rows[1] as GSLeaderboardEntry).rank == 2,
 		"and the ranks are rewritten"
 	)
 
@@ -511,7 +511,7 @@ func _test_leaderboards() -> void:
 	var other_scope := scope.duplicate()
 	other_scope["style"] = "sideways"
 
-	var other: DotResult = await playlot.boards.page_async(&"fastest", other_scope)
+	var other: GSResult = await playlot.boards.page_async(&"fastest", other_scope)
 	_check(
 		(other.value as Array).is_empty(),
 		"and another style's board is separate"
@@ -521,7 +521,7 @@ func _test_leaderboards() -> void:
 	var reordered := {
 		"style": "normal", "map": "pg_flatgrass", "track": "0",
 	}
-	var same: DotResult = await playlot.boards.page_async(&"fastest", reordered)
+	var same: GSResult = await playlot.boards.page_async(&"fastest", reordered)
 	_check(
 		(same.value as Array).size() == rows.size(),
 		"while the same scope in a different order is the same board",
@@ -609,7 +609,7 @@ func _test_map_change() -> void:
 	# Moving, so the change happens with everything in flight — a player in motion (and a
 	# run in progress, when a timer is on), a prop in the world, and geometry about to be
 	# freed under both.
-	var forward := DotFpsCommand.new()
+	var forward := GSFpsCommand.new()
 	forward.move = Vector2(0.0, 1.0)
 	await _drive(&"bot", forward, 200)
 
@@ -618,7 +618,7 @@ func _test_map_change() -> void:
 
 	_check(props_before == 1, "a prop is in the world")
 
-	var changed: DotResult = await playlot.change_map(&"pg_generated")
+	var changed: GSResult = await playlot.change_map(&"pg_generated")
 
 	_check(changed.ok, "the map changes",
 		changed.error.message if not changed.ok else "")
@@ -652,9 +652,9 @@ func _test_map_change() -> void:
 
 	# And the new map is actually runnable: hold jump and forward, and the player
 	# should hop rather than walk.
-	var hopping := DotFpsCommand.new()
+	var hopping := GSFpsCommand.new()
 	hopping.move = Vector2(0.0, 1.0)
-	hopping.set_button(DotFpsCommand.BUTTON_JUMP, true)
+	hopping.set_button(GSFpsCommand.BUTTON_JUMP, true)
 
 	player.controller.stats.reset()
 	await _drive(&"bot", hopping, 400)

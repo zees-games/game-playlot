@@ -185,7 +185,7 @@ func _catalogue_defs(wanted: PlaylotSpawnables.Kind) -> Array:
 	var at := {}
 	for i in out.size():
 		at[out[i]] = i
-	out.sort_custom(func(a: DotPropDef, b: DotPropDef) -> bool:
+	out.sort_custom(func(a: GSPropDef, b: GSPropDef) -> bool:
 		var sa := int(a.meta.get("menu_sort", 0))
 		var sb := int(b.meta.get("menu_sort", 0))
 		return sa < sb or (sa == sb and at[a] < at[b]))
@@ -219,12 +219,12 @@ func _category_of(entry: Variant) -> StringName:
 		return StringName(str((entry as Dictionary).get("category", "")))
 	if entry is Dictionary:
 		return &"custom props" if bool((entry as Dictionary).get("custom", false)) else &"builds"
-	if entry is Object and not (entry is PlaylotWeaponDef) and not (entry is DotPropDef):
+	if entry is Object and not (entry is PlaylotWeaponDef) and not (entry is GSPropDef):
 		return &"tools"
 	return (
 		(entry as PlaylotWeaponDef).category
 		if entry is PlaylotWeaponDef
-		else (entry as DotPropDef).category
+		else (entry as GSPropDef).category
 	)
 
 
@@ -235,12 +235,12 @@ func _name_of(entry: Variant) -> String:
 		return str((entry as Dictionary).get("label", ""))
 	if entry is Dictionary:
 		return str((entry as Dictionary).get("name", ""))
-	if entry is Object and not (entry is PlaylotWeaponDef) and not (entry is DotPropDef):
+	if entry is Object and not (entry is PlaylotWeaponDef) and not (entry is GSPropDef):
 		return str((entry as Object).get("display_name"))
 	return (
 		(entry as PlaylotWeaponDef).name_or_id()
 		if entry is PlaylotWeaponDef
-		else (entry as DotPropDef).name_or_id()
+		else (entry as GSPropDef).name_or_id()
 	)
 
 
@@ -251,12 +251,12 @@ func _id_of(entry: Variant) -> StringName:
 		return StringName(str((entry as Dictionary).get("key", "")))
 	if entry is Dictionary:
 		return StringName(str((entry as Dictionary).get("name", "")))
-	if entry is Object and not (entry is PlaylotWeaponDef) and not (entry is DotPropDef):
+	if entry is Object and not (entry is PlaylotWeaponDef) and not (entry is GSPropDef):
 		return (entry as Object).get("id")
 	return (
 		(entry as PlaylotWeaponDef).id
 		if entry is PlaylotWeaponDef
-		else (entry as DotPropDef).id
+		else (entry as GSPropDef).id
 	)
 
 

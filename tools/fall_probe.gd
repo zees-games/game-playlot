@@ -36,7 +36,7 @@ var json_path := ""
 
 
 func _ready() -> void:
-	DotLog.set_level(DotLog.Level.ERROR)
+	GSLog.set_level(GSLog.Level.ERROR)
 	_run.call_deferred()
 
 
@@ -87,7 +87,7 @@ func _probe(data_script: GDScript, id: String) -> Dictionary:
 	var map: Node3D = data_script.new()
 	map.draw_world = true
 	add_child(map)
-	var configured: DotResult = map.configure_doc("res://maps/custom/%s.json" % id)
+	var configured: GSResult = map.configure_doc("res://maps/custom/%s.json" % id)
 	if not configured.ok:
 		map.queue_free()
 		return {"load_failed": true, "error": str(configured.error)}

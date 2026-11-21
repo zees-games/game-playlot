@@ -1,4 +1,4 @@
-extends DotNetBehaviour
+extends GSNetBehaviour
 
 ## What a prop, an NPC or anything else with rigid-body physics replicates: where it is
 ## and how it is turned.
@@ -70,18 +70,18 @@ var _applied_tint: int = 0
 
 
 func _register_net_vars() -> void:
-	replicate(&"net_position", DotNetVar.Type.VECTOR3_POSITION).interpolated()
+	replicate(&"net_position", GSNetVar.Type.VECTOR3_POSITION).interpolated()
 	# Smallest-three, nine bits an element. A prop's orientation does not need more:
 	# the error is under a degree and nobody aligns a barrel to a degree.
-	replicate(&"net_rotation", DotNetVar.Type.QUATERNION).bits(9).interpolated()
-	replicate(&"net_frozen", DotNetVar.Type.BOOL)
-	replicate(&"net_scale", DotNetVar.Type.FLOAT_RANGE).range_of(0.25, 4.0).bits(10)
-	replicate(&"net_tint", DotNetVar.Type.UINT).bits(32)
+	replicate(&"net_rotation", GSNetVar.Type.QUATERNION).bits(9).interpolated()
+	replicate(&"net_frozen", GSNetVar.Type.BOOL)
+	replicate(&"net_scale", GSNetVar.Type.FLOAT_RANGE).range_of(0.25, 4.0).bits(10)
+	replicate(&"net_tint", GSNetVar.Type.UINT).bits(32)
 	for slot: String in ROPE_FIELDS:
-		replicate(StringName(slot + "_peer"), DotNetVar.Type.INT).bits(32)
-		replicate(StringName(slot + "_a"), DotNetVar.Type.VECTOR3_RANGE).range_of(-16.0, 16.0).bits(12)
-		replicate(StringName(slot + "_b"), DotNetVar.Type.VECTOR3_POSITION)
-		replicate(StringName(slot + "_length"), DotNetVar.Type.FLOAT_RANGE).range_of(0.0, 64.0).bits(10)
+		replicate(StringName(slot + "_peer"), GSNetVar.Type.INT).bits(32)
+		replicate(StringName(slot + "_a"), GSNetVar.Type.VECTOR3_RANGE).range_of(-16.0, 16.0).bits(12)
+		replicate(StringName(slot + "_b"), GSNetVar.Type.VECTOR3_POSITION)
+		replicate(StringName(slot + "_length"), GSNetVar.Type.FLOAT_RANGE).range_of(0.0, 64.0).bits(10)
 
 
 ## Authority only. The prop is moved by the physics server, and this copies where it

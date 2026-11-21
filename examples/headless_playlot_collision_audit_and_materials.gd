@@ -1,6 +1,6 @@
 extends "res://examples/headless_playlot_drawn_worlds.gd"
 
-## dot-core's [DotCollisionAudit] over every map as built: visible geometry with no shape under it, which a player walks through.
+## dot-core's [GSCollisionAudit] over every map as built: visible geometry with no shape under it, which a player walks through.
 ## The strict pass: each mesh sits on its own body. What is passable on purpose carries `dot_no_collision` with the reason where the map builds it.
 ## Props and map toys are not in a map node. The audit is structural and needs no tree.
 func _test_nothing_drawn_is_walked_through() -> void:
@@ -23,15 +23,15 @@ func _test_nothing_drawn_is_walked_through() -> void:
 		else:
 			map._build()
 
-		var res := DotCollisionAudit.audit(map)
+		var res := GSCollisionAudit.audit(map)
 		var found := 0
 		if res.ok:
-			var report: DotCollisionAudit = res.value
+			var report: GSCollisionAudit = res.value
 			found = report.count()
 			print("    %s: %d findings of %d examined, %d opted out" % [case[0], found, report.examined, report.opted_out])
 			for line in report.describe_lines().slice(1, 12):
 				print("      %s" % line)
-		_check(res.ok and found == 0 and (res.value as DotCollisionAudit).examined > 0,
+		_check(res.ok and found == 0 and (res.value as GSCollisionAudit).examined > 0,
 			"%s: nothing drawn is walked through" % case[0],
 			"" if res.ok else res.error.message)
 		map.free()
@@ -44,7 +44,7 @@ func _test_nothing_drawn_is_walked_through() -> void:
 func _test_a_maps_own_props() -> void:
 	_section("a map's own props")
 
-	var changed: DotResult = await playlot.change_map(&"pgc_town")
+	var changed: GSResult = await playlot.change_map(&"pgc_town")
 	if not changed.ok:
 		_check(false, "pgc_town loads", changed.error.message)
 		_done()
@@ -53,19 +53,19 @@ func _test_a_maps_own_props() -> void:
 
 	var mine := playlot.props.props_of(playlot.MAP_OWNER)
 	var count := {}
-	for p: DotPropInstance in mine:
+	for p: GSPropInstance in mine:
 		count[p.def.id] = int(count.get(p.def.id, 0)) + 1
 	_check(int(count.get(&"door", 0)) == 5 and int(count.get(&"button", 0)) == 10 and int(count.get(&"buggy", 0)) == 2,
 		"the map puts down its doors, buttons and cars", str(count))
-	var doors := mine.filter(func(p: DotPropInstance) -> bool: return p.def.id == &"door")
-	var crates := mine.filter(func(p: DotPropInstance) -> bool: return p.def.id == &"crate")
-	_check(doors.all(func(p: DotPropInstance) -> bool: return p.frozen) and crates.all(func(p: DotPropInstance) -> bool: return not p.frozen),
+	var doors := mine.filter(func(p: GSPropInstance) -> bool: return p.def.id == &"door")
+	var crates := mine.filter(func(p: GSPropInstance) -> bool: return p.def.id == &"crate")
+	_check(doors.all(func(p: GSPropInstance) -> bool: return p.frozen) and crates.all(func(p: GSPropInstance) -> bool: return not p.frozen),
 		"furniture frozen, and the crates loose")
 
 	# The first house's outside button opens its door, through the wire the document names.
-	var buttons := mine.filter(func(p: DotPropInstance) -> bool: return p.def.id == &"button")
-	var door: DotPropInstance = doors[0] if not doors.is_empty() else null
-	var button: DotPropInstance = buttons[0] if not buttons.is_empty() else null
+	var buttons := mine.filter(func(p: GSPropInstance) -> bool: return p.def.id == &"button")
+	var door: GSPropInstance = doors[0] if not doors.is_empty() else null
+	var button: GSPropInstance = buttons[0] if not buttons.is_empty() else null
 	if button != null:
 		var _pressed: Variant = playlot.io.fire(button.instance_id, &"pressed")
 	for i in int(playlot.DOOR_SECONDS * playlot.tick_rate) + 16:
@@ -79,7 +79,7 @@ func _test_a_maps_own_props() -> void:
 	var placed := playlot.spawn_map_props(entries, [])
 	_check(placed == 1, "and a prop the catalogue lacks is left out, not the map", "%d placed" % placed)
 
-	var back: DotResult = await playlot.change_map(&"pg_flatgrass")
+	var back: GSResult = await playlot.change_map(&"pg_flatgrass")
 	_check(back.ok and playlot.props.props_of(playlot.MAP_OWNER).is_empty(), "a map change takes its props with it")
 	_done()
 
@@ -98,15 +98,15 @@ func _toy_index(id: String) -> int:
 ## dot-props' toys on the sandbox, through the game's own paths: a walk pushes a ball, a shot sends
 ## one off, the use key kicks, a trampoline throws a player, a roundabout carries one, a blast throws a
 ## barrel, sv_toys 0 takes them away and a map change takes them with it.
-var _t_box: DotPropBodyBox
+var _t_box: GSPropBodyBox
 var _t_player: PlaylotPlayer
-var _t_ball: DotPropBody
-var _t_tramp: DotPropBody
+var _t_ball: GSPropBody
+var _t_tramp: GSPropBody
 
 func _test_toys() -> void:
 	_section("the sandbox's toys")
 
-	var on_lobby: DotResult = await playlot.change_map(&"pg_flatgrass")
+	var on_lobby: GSResult = await playlot.change_map(&"pg_flatgrass")
 	if not on_lobby.ok or playlot.toys == null:
 		_check(false, "the sandbox loads with its toys", on_lobby.error.message if not on_lobby.ok else "no box")
 		_done()
@@ -138,9 +138,9 @@ func _test_toys() -> void:
 	var o0 := other.body.global_position
 	_t_player.teleport(o0 + Vector3(0, 0, 5.0), 0.0)
 	await get_tree().physics_frame
-	var outcome := DotWeaponOutcome.new()
+	var outcome := GSWeaponOutcome.new()
 	outcome.used = true
-	var shot := DotShot.new()
+	var shot := GSShot.new()
 	shot.origin = o0 + Vector3(0, 0.1, 4.0)
 	shot.direction = Vector3(0, 0, -1)
 	shot.damage = 25.0
@@ -211,19 +211,19 @@ func _test_toys_2() -> void:
 		"%d thrown, %.2f m" % [thrown, barrel.body.global_position.distance_to(r0)])
 
 	# sv_toys 0: nothing to hit, kick or stand on; 1 brings them back.
-	var _off := playlot.toy_rules.set_cvar(DotPropBodyRules.CVAR_ENABLED, "0")
+	var _off := playlot.toy_rules.set_cvar(GSPropBodyRules.CVAR_ENABLED, "0")
 	await get_tree().physics_frame
 	var hidden := not _t_ball.visible and playlot.toy_aimed(_t_player) == -1
-	var _on := playlot.toy_rules.set_cvar(DotPropBodyRules.CVAR_ENABLED, "1")
+	var _on := playlot.toy_rules.set_cvar(GSPropBodyRules.CVAR_ENABLED, "1")
 	_check(hidden and _t_ball.visible, "sv_toys 0 takes the toys away and 1 puts them back")
 
 	playlot.remove_player(&"toyer")
-	var away: DotResult = await playlot.change_map(&"pg_generated")
+	var away: GSResult = await playlot.change_map(&"pg_generated")
 	await get_tree().process_frame
 	_check(away.ok and playlot.toys != null and playlot.toys.count() == 0 and not is_instance_valid(_t_ball),
 		"a map with no toys has none, and the lobby's went with it",
 		"%s, %s, ball %s" % [str(away.ok), str(playlot.toys.describe()) if playlot.toys != null else "no box", str(is_instance_valid(_t_ball))])
-	var _back: DotResult = await playlot.change_map(&"pg_flatgrass")
+	var _back: GSResult = await playlot.change_map(&"pg_flatgrass")
 	_done()
 
 
@@ -233,14 +233,14 @@ func _test_toys_2() -> void:
 func _test_every_maps_toys_stand_clear() -> void:
 	_section("every map's toys stand clear")
 	var ids: Array[StringName] = []
-	for def: DotMapDef in playlot.maps.catalogue.maps:
+	for def: GSMapDef in playlot.maps.catalogue.maps:
 		ids.append(def.id)
 	var with_toys := 0
 	var bad: Array = []
 	for id: StringName in ids:
 		if String(id).begins_with("pg_generated"):
 			continue
-		var changed: DotResult = await playlot.change_map(id)
+		var changed: GSResult = await playlot.change_map(id)
 		if not changed.ok or playlot.toys == null:
 			continue
 		var box := playlot.toys
@@ -277,12 +277,12 @@ func _test_every_maps_toys_stand_clear() -> void:
 				bad.append("%s: %s %d strayed %s to %s" % [id, toy.def["id"], toy.index, toy.rest.origin.snapped(Vector3.ONE * 0.1), toy.body.global_position.snapped(Vector3.ONE * 0.1)])
 	_check(with_toys >= 1 and bad.is_empty(), "every map's toys are dot-props', stand clear and stay put",
 		"%d maps with toys; %s" % [with_toys, "; ".join(bad.slice(0, 8))])
-	var _back: DotResult = await playlot.change_map(&"pg_flatgrass")
+	var _back: GSResult = await playlot.change_map(&"pg_flatgrass")
 	_done()
 
 
 ## [param toy]'s footprint in world space, flattened to the floor, or empty for a loose one.
-static func _flat(toy: DotPropBody) -> AABB:
+static func _flat(toy: GSPropBody) -> AABB:
 	var f := toy.footprint()
 	if f.size == Vector3.ZERO:
 		return AABB()
@@ -293,7 +293,7 @@ static func _flat(toy: DotPropBody) -> AABB:
 
 
 ## What [param toy]'s own shapes, lifted five centimetres off their floor, are inside of, or "".
-func _toy_inside(space: PhysicsDirectSpaceState3D, toy: DotPropBody, own: Array[RID], mask: int) -> String:
+func _toy_inside(space: PhysicsDirectSpaceState3D, toy: GSPropBody, own: Array[RID], mask: int) -> String:
 	for part: CollisionObject3D in [toy.fixed, toy.body]:
 		if part == null:
 			continue
@@ -319,7 +319,7 @@ func _toy_inside(space: PhysicsDirectSpaceState3D, toy: DotPropBody, own: Array[
 func _test_map_materials() -> void:
 	_section("map materials: ice, mud, rubber, lava, water")
 
-	var changed: DotResult = await playlot.change_map(&"pgc_nature")
+	var changed: GSResult = await playlot.change_map(&"pgc_nature")
 	if not changed.ok:
 		_check(false, "pgc_nature loads", changed.error.message)
 		_done()
@@ -366,17 +366,17 @@ func _test_map_materials() -> void:
 	# Lava
 	var spawn: Vector3 = playlot.current_map_node().fallback_spawn
 	bot.teleport(Vector3(-50.0, 0.3, 46.0), 0.0)
-	await _drive(&"bot", DotFpsCommand.new(), 4)
+	await _drive(&"bot", GSFpsCommand.new(), 4)
 	_check(bot.controller.state.position.distance_to(spawn) < 5.0, "walking into lava puts a player back at the spawn, with the arena off",
 		str(bot.controller.state.position))
 	# South of the rock bridge, which crosses the pit at z 50.
 	var crate := playlot.props.spawn(&"crate", &"bot", Vector3(-46.0, 1.5, 45.0))
-	await _drive(&"bot", DotFpsCommand.new(), int(playlot.tick_rate * 2.0))
+	await _drive(&"bot", GSFpsCommand.new(), int(playlot.tick_rate * 2.0))
 	_check(crate != null and not crate.is_alive(), "and a crate that falls in melts")
 
 	# Water is a volume, not a floor: a crate floats on it
 	var floater := playlot.props.spawn(&"crate", &"bot", Vector3(60.0, 3.0, 50.0))
-	await _drive(&"bot", DotFpsCommand.new(), int(playlot.tick_rate * 3.0))
+	await _drive(&"bot", GSFpsCommand.new(), int(playlot.tick_rate * 3.0))
 	var settled: float = (floater.node as Node3D).global_position.y if floater != null and floater.is_alive() else INF
 	var pond_top := 0.0
 	for liquid: Dictionary in playlot.liquids:
@@ -386,8 +386,8 @@ func _test_map_materials() -> void:
 	_check(absf(settled - (pond_top + 0.5)) < 0.3, "a crate dropped on the pond floats on it",
 		"y %.2f, surface %.2f" % [settled, pond_top])
 
-	playlot.props.clear_all(DotPropSpawner.REASON_ADMIN)
-	var _back: DotResult = await playlot.change_map(&"pg_flatgrass")
+	playlot.props.clear_all(GSPropSpawner.REASON_ADMIN)
+	var _back: GSResult = await playlot.change_map(&"pg_flatgrass")
 	_done()
 
 
@@ -395,20 +395,20 @@ func _test_map_materials() -> void:
 ## share of its speed it still has 24 ticks later.
 func _coast(player: PlaylotPlayer, at: Vector3) -> float:
 	player.teleport(at, 0.0)
-	await _drive(player.player_id, DotFpsCommand.new(), 16)
-	var run := DotFpsCommand.new()
+	await _drive(player.player_id, GSFpsCommand.new(), 16)
+	var run := GSFpsCommand.new()
 	run.move = Vector2(0.0, 1.0)
 	await _drive(player.player_id, run, 128)
 	var before := Vector2(player.controller.state.velocity.x, player.controller.state.velocity.z).length()
-	await _drive(player.player_id, DotFpsCommand.new(), 24)
+	await _drive(player.player_id, GSFpsCommand.new(), 24)
 	var after := Vector2(player.controller.state.velocity.x, player.controller.state.velocity.z).length()
 	return after / maxf(before, 0.001)
 
 
 func _top_speed(player: PlaylotPlayer, at: Vector3) -> float:
 	player.teleport(at, 0.0)
-	await _drive(player.player_id, DotFpsCommand.new(), 16)
-	var run := DotFpsCommand.new()
+	await _drive(player.player_id, GSFpsCommand.new(), 16)
+	var run := GSFpsCommand.new()
 	run.move = Vector2(0.0, 1.0)
 	await _drive(player.player_id, run, 96)
 	return Vector2(player.controller.state.velocity.x, player.controller.state.velocity.z).length()
@@ -418,14 +418,14 @@ func _jump_height(player: PlaylotPlayer, at: Vector3) -> float:
 	player.teleport(at, 0.0)
 	# Long enough to land: a teleport puts a player in the air, and 24 ticks from a metre up
 	# is still falling, which the first version measured as a jump of nothing.
-	await _drive(player.player_id, DotFpsCommand.new(), 96)
+	await _drive(player.player_id, GSFpsCommand.new(), 96)
 	var floor_y := player.controller.state.position.y
 	var top := floor_y
 	var airborne := 0
 	for i in 200:
 		# Held until it leaves the ground: one press is read on the tick the controller reads it.
-		var command := DotFpsCommand.new()
-		command.set_button(DotFpsCommand.BUTTON_JUMP, airborne == 0)
+		var command := GSFpsCommand.new()
+		command.set_button(GSFpsCommand.BUTTON_JUMP, airborne == 0)
 		await _drive(player.player_id, command, 1)
 		top = maxf(top, player.controller.state.position.y)
 		if not player.controller.state.is_grounded():
@@ -445,19 +445,19 @@ var _g_on_broken
 func _test_glass() -> void:
 	_section("glass breaks")
 
-	var changed: DotResult = await playlot.change_map(&"pgc_nature")
+	var changed: GSResult = await playlot.change_map(&"pgc_nature")
 	if not changed.ok:
 		_check(false, "pgc_nature loads", changed.error.message)
 		_done()
 		return
 	playlot.props.limits.spawn_interval = 0.0
-	playlot.props.clear_all(DotPropSpawner.REASON_ADMIN)
+	playlot.props.clear_all(GSPropSpawner.REASON_ADMIN)
 	var player: PlaylotPlayer = playlot.players[&"bot"]
 
 	var pane_at := func(centre: Vector3) -> int:
 		for index: int in playlot.panes.keys():
 			var node := (playlot.panes[index] as Dictionary)["node"] as Node3D
-			if DotPropPanes.bounds_of(node).get_center().distance_to(centre) < 1.0:
+			if GSPropPanes.bounds_of(node).get_center().distance_to(centre) < 1.0:
 				return index
 		return -1
 	var glass_panes := playlot.panes.values().filter(func(p: Dictionary) -> bool: return p["material"] == &"glass")
@@ -474,10 +474,10 @@ func _test_glass() -> void:
 	# Starting past the north wall's end: the first version started south of it, ran into
 	# that wall's edge at full speed, and broke it, which is right and was not the question.
 	player.teleport(Vector3(8.6, 1.0, 45.8), 180.0)
-	var facing_south := DotFpsCommand.new()
+	var facing_south := GSFpsCommand.new()
 	facing_south.yaw = 180.0
 	await _drive(&"bot", facing_south, 64)
-	var run := DotFpsCommand.new()
+	var run := GSFpsCommand.new()
 	run.move = Vector2(0.0, 1.0)
 	run.yaw = 180.0
 	await _drive(&"bot", run, 100)
@@ -488,7 +488,7 @@ func _test_glass() -> void:
 	player.teleport(Vector3(-14.0, 1.0, 50.0), -90.0)
 	# Facing the pane while it settles: a command carries absolute angles, so an empty one
 	# turns the bot to yaw 0, which put the first version's shots into the north wall.
-	var facing_west_pane := DotFpsCommand.new()
+	var facing_west_pane := GSFpsCommand.new()
 	facing_west_pane.yaw = -90.0
 	await _drive(&"bot", facing_west_pane, 64)
 	var rig := PlaylotZee.arm(player, playlot.weapon_def(&"zee_pistol"), ZeeWeaponRig.Role.SERVER, true,
@@ -505,7 +505,7 @@ func _test_glass() -> void:
 	var _shots := _fire_at_crates(rig, player, 240)
 	PlaylotZee.disarm(player)
 	await get_tree().physics_frame
-	var shards := playlot.props.all_props().filter(func(p: DotPropInstance) -> bool: return p.def.id == &"debris")
+	var shards := playlot.props.all_props().filter(func(p: GSPropInstance) -> bool: return p.def.id == &"debris")
 	_check(not playlot.panes.has(_g_west) and playlot.broken_panes.has(_g_west), "a pistol shoots a pane out")
 	_check(shards.size() >= 3 and playlot.props.all_props().size() > before, "and it leaves shards", "%d shards" % shards.size())
 	_check(heard.size() == 1 and heard[0][0] == _g_west and heard[0][1] == &"glass", "and says so, once, for the sound", str(heard))
@@ -527,19 +527,19 @@ func _test_glass_2() -> void:
 	var nudged := playlot.props.spawn(&"crate", &"bot", Vector3(10.5, 0.6, 52.0))
 	await get_tree().physics_frame
 	(nudged.node as RigidBody3D).linear_velocity = Vector3(-2.0, 0.0, 0.0)
-	await _drive(&"bot", DotFpsCommand.new(), 128)
+	await _drive(&"bot", GSFpsCommand.new(), 128)
 	_check(playlot.panes.has(_g_east), "a crate nudged into a pane leaves it standing")
 	var thrown := playlot.props.spawn(&"crate", &"bot", Vector3(11.0, 1.2, 48.0))
 	await get_tree().physics_frame
 	(thrown.node as RigidBody3D).linear_velocity = Vector3(-12.0, 0.0, 0.0)
-	await _drive(&"bot", DotFpsCommand.new(), 64)
+	await _drive(&"bot", GSFpsCommand.new(), 64)
 	_check(not playlot.panes.has(_g_east), "and one thrown into it breaks it")
 
 	playlot.pane_broken.disconnect(_g_on_broken)
-	playlot.props.clear_all(DotPropSpawner.REASON_ADMIN)
-	var back: DotResult = await playlot.change_map(&"pgc_nature")
+	playlot.props.clear_all(GSPropSpawner.REASON_ADMIN)
+	var back: GSResult = await playlot.change_map(&"pgc_nature")
 	_check(back.ok and playlot.panes.size() == 7 and playlot.broken_panes.is_empty(), "a map change puts every pane back (the glass and the lake's ice)")
-	var _lobby: DotResult = await playlot.change_map(&"pg_flatgrass")
+	var _lobby: GSResult = await playlot.change_map(&"pg_flatgrass")
 	_done()
 
 
@@ -548,13 +548,13 @@ func _test_glass_2() -> void:
 func _test_water() -> void:
 	_section("water: swimming and floating")
 
-	var changed: DotResult = await playlot.change_map(&"pgc_harbour")
+	var changed: GSResult = await playlot.change_map(&"pgc_harbour")
 	if not changed.ok:
 		_check(false, "pgc_harbour loads", changed.error.message)
 		_done()
 		return
 	playlot.props.limits.spawn_interval = 0.0
-	playlot.props.clear_all(DotPropSpawner.REASON_ADMIN)
+	playlot.props.clear_all(GSPropSpawner.REASON_ADMIN)
 	var player: PlaylotPlayer = playlot.players[&"bot"]
 	var boxes := playlot.water_boxes()
 	_check(boxes.size() == 1 and player.swim.volumes.size() == 1, "the basin is water, and the player is told", str(boxes))
@@ -562,14 +562,14 @@ func _test_water() -> void:
 
 	# Into the basin, clear of the piers.
 	player.teleport(Vector3(-70.0, -1.0, -60.0), 0.0)
-	var idle := DotFpsCommand.new()
+	var idle := GSFpsCommand.new()
 	await _drive(&"bot", idle, 384)
 	var head := player.controller.state.position.y + player.swim.float_depth
 	print("    floating: feet %.2f, head %.2f, surface %.2f" % [player.controller.state.position.y, head, surface])
 	_check(player.controller.state.mode == player.swim.mode_id, "a player who falls in swims")
 	_check(absf(head - surface) < 0.3, "and floats with the head at the surface", "head %.2f, surface %.2f" % [head, surface])
 
-	var forward := DotFpsCommand.new()
+	var forward := GSFpsCommand.new()
 	forward.move = Vector2(0.0, 1.0)
 	await _drive(&"bot", forward, 256)
 	var flat := Vector2(player.controller.state.velocity.x, player.controller.state.velocity.z).length()
@@ -585,15 +585,15 @@ func _test_water() -> void:
 	var bed_y: float = boxes[0].position.y if not boxes.is_empty() else -4.0
 	var ball := playlot.props.spawn(&"beach_ball", &"bot", Vector3(-30.0, bed_y + 0.6, -60.0))
 	# The water step's volume per shape comes from a constant name table (no per-prop array): each
-	# shape still names DotPropBuoyancy's own volume for that prop (box crate, cylinder barrel, sphere ball).
+	# shape still names GSPropBuoyancy's own volume for that prop (box crate, cylinder barrel, sphere ball).
 	var names := {PlaylotProp.Shape.BOX: "box", PlaylotProp.Shape.SPHERE: "sphere", PlaylotProp.Shape.CYLINDER: "cylinder"}
 	var volume_bad := PackedStringArray()
-	for prop: DotPropInstance in [crate, barrel, boulder, ball]:
-		var want := DotPropBuoyancy.volume_of(PlaylotProp.extent_of(prop.def), 1.0, names[PlaylotProp.shape_of(prop.def)])
+	for prop: GSPropInstance in [crate, barrel, boulder, ball]:
+		var want := GSPropBuoyancy.volume_of(PlaylotProp.extent_of(prop.def), 1.0, names[PlaylotProp.shape_of(prop.def)])
 		var got: float = playlot._volume_of(prop)
 		if not is_equal_approx(got, want):
 			volume_bad.append("%s %s: %.4f vs %.4f" % [prop.def.id, names[PlaylotProp.shape_of(prop.def)], got, want])
-	_check(volume_bad.is_empty(), "the water step's volume matches DotPropBuoyancy for each prop's shape", ", ".join(volume_bad))
+	_check(volume_bad.is_empty(), "the water step's volume matches GSPropBuoyancy for each prop's shape", ", ".join(volume_bad))
 	var ball_top := -INF
 	for _i in range(40):
 		await _drive(&"bot", idle, 16)
@@ -616,8 +616,8 @@ func _test_water() -> void:
 	_check(absf((crate.node as RigidBody3D).linear_velocity.y) < 0.5, "and what floats has settled, not bobbing for ever",
 		"%.2f m/s" % (crate.node as RigidBody3D).linear_velocity.y)
 
-	playlot.props.clear_all(DotPropSpawner.REASON_ADMIN)
-	var _lobby: DotResult = await playlot.change_map(&"pg_flatgrass")
+	playlot.props.clear_all(GSPropSpawner.REASON_ADMIN)
+	var _lobby: GSResult = await playlot.change_map(&"pg_flatgrass")
 	_check(player.swim.volumes.is_empty() and player.controller.state.mode != player.swim.mode_id,
 		"a map with no water leaves nobody swimming")
 	_done()
@@ -629,7 +629,7 @@ func _test_water() -> void:
 func _test_ice_slime_foliage() -> void:
 	_section("thin ice, slime and foliage")
 
-	var changed: DotResult = await playlot.change_map(&"pgc_nature")
+	var changed: GSResult = await playlot.change_map(&"pgc_nature")
 	if not changed.ok:
 		_check(false, "pgc_nature loads", changed.error.message)
 		_done()
@@ -641,7 +641,7 @@ func _test_ice_slime_foliage() -> void:
 			ice = index
 	_check(ice >= 0, "the lake's ice is breakable")
 
-	var still := DotFpsCommand.new()
+	var still := GSFpsCommand.new()
 	player.teleport(Vector3(4.0, 2.6, -80.0), 0.0)
 	await _drive(&"bot", still, 256)
 	_check(playlot.panes.has(ice) and player.controller.state.position.y > 1.8, "a walker stands on it, and it holds",
@@ -661,14 +661,14 @@ func _test_ice_slime_foliage() -> void:
 	_check(player.controller.state.position.distance_to(spawn) < 5.0, "slime puts a player back at the spawn, with the arena off")
 
 	player.teleport(Vector3(-38.0, 1.0, 30.0), -90.0)
-	var east := DotFpsCommand.new()
+	var east := GSFpsCommand.new()
 	east.yaw = -90.0
 	await _drive(&"bot", east, 32)
 	east.move = Vector2(0.0, 1.0)
 	await _drive(&"bot", east, 256)
 	_check(player.controller.state.position.x > -28.0, "a bush is walked straight through", "x %.2f" % player.controller.state.position.x)
 
-	var _lobby: DotResult = await playlot.change_map(&"pg_flatgrass")
+	var _lobby: GSResult = await playlot.change_map(&"pg_flatgrass")
 	_done()
 
 

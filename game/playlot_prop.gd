@@ -1,15 +1,15 @@
 extends RigidBody3D
 
-## One spawnable thing, built from its [DotPropDef] rather than from a saved scene.
+## One spawnable thing, built from its [GSPropDef] rather than from a saved scene.
 ##
 ## [b]One scene for the whole catalogue, because this project ships no art.[/b] A
 ## sandbox needs a menu with enough in it to build something — planks, panels,
 ## barrels, balls of four sizes — and the honest way to get that is a modelled prop
 ## per entry. There are none here, so the shape, the extent and the colour are three
-## fields of [member DotPropDef.meta] and this builds the body from them. A server
-## with real content points [member DotPropDef.scene_path] at its own scenes and
+## fields of [member GSPropDef.meta] and this builds the body from them. A server
+## with real content points [member GSPropDef.scene_path] at its own scenes and
 ## never loads this at all, which is the seam the catalogue was designed around:
-## [DotPropDef] is checkable without loading anything, and the scene is fetched only
+## [GSPropDef] is checkable without loading anything, and the scene is fetched only
 ## when something is actually created.
 ##
 ## [codeblock]
@@ -17,7 +17,7 @@ extends RigidBody3D
 ## [/codeblock]
 ##
 ## [b]The body is built by [method configure], not by [method Node._ready].[/b]
-## [DotPropSpawner] instantiates the scene, places it, adds it to the world and
+## [GSPropSpawner] instantiates the scene, places it, adds it to the world and
 ## [i]then[/i] emits `spawned` — so the definition is not available until after the
 ## node is in the tree, and a `_ready` that built a default box would build one that
 ## is immediately thrown away. Configuring instead of rebuilding also means the
@@ -37,14 +37,14 @@ enum Shape {
 }
 
 ## The model a definition wears, or empty for a drawn shape. A file under a folder the game
-## scanned (see [DotPropFolder]); never a path a client sent, because a definition only ever
+## scanned (see [GSPropFolder]); never a path a client sent, because a definition only ever
 ## comes from the catalogue.
-static func model_of(p_def: DotPropDef) -> String:
+static func model_of(p_def: GSPropDef) -> String:
 	return str(p_def.meta.get("model", "")) if p_def != null else ""
 
 ## The definition this was built from. Kept so a tool or a HUD can name the prop
 ## without going back to the catalogue.
-var def: DotPropDef = null
+var def: GSPropDef = null
 
 ## How much bigger or smaller than its definition this prop is. 1 is as catalogued.
 ##
@@ -94,13 +94,13 @@ func _warn_if_unconfigured() -> void:
 	if _configured:
 		return
 
-	DotLog.error(CHANNEL, "a prop was spawned and never configured", {
-		"hint": "Playlot connects DotPropSpawner.spawned to configure it.",
+	GSLog.error(CHANNEL, "a prop was spawned and never configured", {
+		"hint": "Playlot connects GSPropSpawner.spawned to configure it.",
 	})
 
 
 ## Builds the body from a definition. Called once, immediately after spawning.
-func configure(p_def: DotPropDef) -> void:
+func configure(p_def: GSPropDef) -> void:
 	def = p_def
 	_configured = true
 	_build_body()
@@ -124,7 +124,7 @@ func _build_body() -> void:
 	var shape := shape_of(def)
 	var colour := tint if tint.a > 0.0 else colour_of(def)
 
-	# Mass is NOT set here. `DotPropSpawner` puts `def.mass` on the body before it
+	# Mass is NOT set here. `GSPropSpawner` puts `def.mass` on the body before it
 	# enters the tree, which is earlier than this runs and earlier than the first
 	# physics step — and setting it twice would make it ambiguous which of the two
 	# an operator is editing.
@@ -174,21 +174,21 @@ func _build_body() -> void:
 ## caller then builds the drawn box so the prop still exists, is still solid, and is the
 ## wrong shape where somebody can see it.
 ##
-## The collision shape is [DotPropModel]'s cached one at this scale, so forty chairs are one
+## The collision shape is [GSPropModel]'s cached one at this scale, so forty chairs are one
 ## hull. A painted prop paints the model's own materials through a material override, which
 ## flattens its colours: that is what the tool gun's paint is asked to do.
 func _build_model() -> bool:
 	var scale := float(def.meta.get("model_scale", 1.0)) * size_scale
-	var info := DotPropModel.measure(model_of(def), scale, str(def.meta.get("shape", "convex")))
+	var info := GSPropModel.measure(model_of(def), scale, str(def.meta.get("shape", "convex")))
 
 	if not info.ok:
-		DotLog.warn(CHANNEL, "a prop's model would not load", {
+		GSLog.warn(CHANNEL, "a prop's model would not load", {
 			"prop": String(def.id), "why": info.error.message,
 		})
 		return false
 
 	var data := info.value as Dictionary
-	var visual := DotPropModel.visual(model_of(def), scale, data["offset"])
+	var visual := GSPropModel.visual(model_of(def), scale, data["offset"])
 
 	if visual == null:
 		return false
@@ -265,7 +265,7 @@ func set_tint(colour: Color) -> void:
 # cylinder in the menu because both read `meta` through here — and a second copy of
 # "what does meta mean" is a second thing that can disagree with the first.
 
-static func shape_of(p_def: DotPropDef) -> Shape:
+static func shape_of(p_def: GSPropDef) -> Shape:
 	match str(p_def.meta.get("shape", "box")).to_lower():
 		"sphere":
 			return Shape.SPHERE
@@ -275,7 +275,7 @@ static func shape_of(p_def: DotPropDef) -> Shape:
 			return Shape.BOX
 
 
-static func extent_of(p_def: DotPropDef) -> Vector3:
+static func extent_of(p_def: GSPropDef) -> Vector3:
 	var raw: Variant = p_def.meta.get("extent", null)
 
 	if not (raw is Array) or (raw as Array).size() != 3:
@@ -293,7 +293,7 @@ static func extent_of(p_def: DotPropDef) -> Vector3:
 	)
 
 
-static func colour_of(p_def: DotPropDef) -> Color:
+static func colour_of(p_def: GSPropDef) -> Color:
 	var raw := str(p_def.meta.get("colour", ""))
 
 	if raw == "" or not Color.html_is_valid(raw):

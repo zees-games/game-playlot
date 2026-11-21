@@ -5,8 +5,8 @@ const PlaylotPaths := preload("playlot_paths.gd")
 ## Everything this build can be driven in, and how each one handles.
 ##
 ## [b]A second catalogue beside the prop one, and it is deliberately not merged with
-## it.[/b] The two answer different questions: [DotPropCatalogue] says what may be put in
-## the world and what it costs, and [DotVehicleCatalogue] says how a thing drives. A
+## it.[/b] The two answer different questions: [GSPropCatalogue] says what may be put in
+## the world and what it costs, and [GSVehicleCatalogue] says how a thing drives. A
 ## vehicle here is in BOTH — it is spawned, budgeted and undone as a prop, and driven as
 ## a vehicle — and the join is one field of the prop's `meta`:
 ##
@@ -19,7 +19,7 @@ const PlaylotPaths := preload("playlot_paths.gd")
 ## because nothing in it names a [code]class_name[/code].
 ##
 ## [b]Two vehicles, one of each chassis kind, and that is the minimum that proves
-## anything.[/b] A build shipping only a car would leave [DotVehicleHover] as an
+## anything.[/b] A build shipping only a car would leave [GSVehicleHover] as an
 ## untested promise, which in this family is the same thing as a bug — and the whole
 ## reason the chassis is a subclass point is that a boat and a car are the same problem
 ## with different suspension.
@@ -40,15 +40,15 @@ static var SCENE := PlaylotPaths.rebase("res://game/vehicle.tscn")
 ## because the spawn path, the net bridge, the HUD and the module all ask the same
 ## question and a second copy of "what does meta mean" is a second thing that can
 ## disagree with the first.
-static func vehicle_id_of(def: DotPropDef) -> StringName:
+static func vehicle_id_of(def: GSPropDef) -> StringName:
 	if def == null:
 		return &""
 	return StringName(str(def.meta.get("vehicle", "")))
 
 
 ## The vehicles this build ships.
-static func catalogue() -> DotVehicleCatalogue:
-	var out := DotVehicleCatalogue.new()
+static func catalogue() -> GSVehicleCatalogue:
+	var out := GSVehicleCatalogue.new()
 
 	out.add(_buggy())
 	out.add(_skiff())
@@ -57,15 +57,15 @@ static func catalogue() -> DotVehicleCatalogue:
 
 
 ## A two-seat open car. Light, quick and deliberately a little loose at the back.
-static func _buggy() -> DotVehicleDef:
-	var def := DotVehicleDef.make(&"buggy", SCENE)
+static func _buggy() -> GSVehicleDef:
+	var def := GSVehicleDef.make(&"buggy", SCENE)
 	def.display_name = "Buggy"
 	def.category = &"car"
-	def.kind = DotVehicleDef.Kind.WHEELED
+	def.kind = GSVehicleDef.Kind.WHEELED
 	def.cost = 6
 	def.max_health = 0.0
 
-	var t := DotVehicleTunables.new()
+	var t := GSVehicleTunables.new()
 	t.mass = 620.0
 	t.engine_force = 3600.0
 	t.top_speed = 24.0
@@ -123,15 +123,15 @@ static func _buggy() -> DotVehicleDef:
 
 ## A hovercraft. No wheels, no ground contact, and the reason the chassis is a
 ## subclass point rather than a promise.
-static func _skiff() -> DotVehicleDef:
-	var def := DotVehicleDef.make(&"skiff", SCENE)
+static func _skiff() -> GSVehicleDef:
+	var def := GSVehicleDef.make(&"skiff", SCENE)
 	def.display_name = "Skiff"
 	def.category = &"hover"
-	def.kind = DotVehicleDef.Kind.HOVER
+	def.kind = GSVehicleDef.Kind.HOVER
 	def.cost = 6
 	def.max_health = 0.0
 
-	var t := DotVehicleTunables.new()
+	var t := GSVehicleTunables.new()
 	t.mass = 480.0
 	t.engine_force = 2600.0
 	t.top_speed = 20.0
@@ -172,8 +172,8 @@ static func _skiff() -> DotVehicleDef:
 ## standing on the car is silly but it is not inside a wall.
 static func _seat(
 	id: StringName, display: String, drives: bool, offset: Vector3
-) -> DotVehicleSeat:
-	var seat := DotVehicleSeat.make(id, drives)
+) -> GSVehicleSeat:
+	var seat := GSVehicleSeat.make(id, drives)
 	seat.display_name = display
 	seat.seat_offset = offset
 

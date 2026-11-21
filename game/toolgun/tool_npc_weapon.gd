@@ -36,19 +36,19 @@ static func npc_weapon_ids() -> Array:
 	return out
 
 
-func primary(_gun: Object, hit: Dictionary) -> DotResult:
+func primary(_gun: Object, hit: Dictionary) -> GSResult:
 	var body: Variant = hit.get("body")
 
 	if not (body is Node) or not (body as Node).has_method("arm_with"):
-		return DotResult.fail(DotError.CODE_STATE, "Point at an NPC that can hold a weapon.")
+		return GSResult.fail(GSError.CODE_STATE, "Point at an NPC that can hold a weapon.")
 
 	return (body as Node).call("arm_with", StringName(str(setting("weapon"))))
 
 
-func secondary(_gun: Object, hit: Dictionary) -> DotResult:
+func secondary(_gun: Object, hit: Dictionary) -> GSResult:
 	var body: Variant = hit.get("body")
 
 	if not (body is Node) or not (body as Node).has_method("arm_with"):
-		return DotResult.fail(DotError.CODE_STATE, "Point at an NPC that can hold a weapon.")
+		return GSResult.fail(GSError.CODE_STATE, "Point at an NPC that can hold a weapon.")
 
 	return (body as Node).call("arm_with", &"")

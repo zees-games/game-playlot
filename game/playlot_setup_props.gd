@@ -2,9 +2,9 @@ extends "playlot_setup.gd"
 ## The spawned prop's body: classify, entity and vehicle set-up, removal, and the catalogue the spawner draws from.
 
 
-## Builds a spawned prop's body from the definition it came from. Connected rather than done in a subclass of [DotPropSpawner],
+## Builds a spawned prop's body from the definition it came from. Connected rather than done in a subclass of [GSPropSpawner],
 ## because overriding the spawner would mean re-implementing the budget, the cooldown and the undo stack to reach one line.
-func _on_prop_spawned(prop: DotPropInstance) -> void:
+func _on_prop_spawned(prop: GSPropInstance) -> void:
 	_classify_spawned(prop)
 
 	match PlaylotSpawnables.kind_of(prop.def):
@@ -28,7 +28,7 @@ func _on_prop_spawned(prop: DotPropInstance) -> void:
 
 	# A door stands frozen where it was put, and the server swings it (see `_swing_doors`).
 	if bool(prop.def.meta.get("door", false)) and authoritative:
-		DotPhysGun.set_frozen(prop, true)
+		GSPhysGun.set_frozen(prop, true)
 		reclassify_prop(prop.node, true, false)
 		_doors[prop.instance_id] = {"open": false, "t": 0.0, "base": (prop.node as Node3D).global_transform}
 
@@ -36,7 +36,7 @@ func _on_prop_spawned(prop: DotPropInstance) -> void:
 ## Puts a spawned body on the layer that matches what it is. `sandbox_3d` is the one preset with `held_prop` and `frozen_prop`: a
 ## carried prop must not collide with its carrier (it shoves them down a corridor) and a frozen one is scenery everything is solid against.
 ## Spawn time only: dot-props has no signal for freezing or grabbing, so `PlaylotProp` calls `reclassify` when it changes state.
-func _classify_spawned(prop: DotPropInstance) -> void:
+func _classify_spawned(prop: GSPropInstance) -> void:
 	if player_stack == null or prop.node == null:
 		return
 
@@ -45,7 +45,7 @@ func _classify_spawned(prop: DotPropInstance) -> void:
 
 ## The collision layer a spawned body of [param def] belongs on. One answer for both ends: the server's spawn and a client's mirror
 ## (`PlaylotNetBridge._apply_prop`) read it, because a mirror on a different layer collides with a different world from the server's.
-static func layer_for(def: DotPropDef, frozen: bool) -> StringName:
+static func layer_for(def: GSPropDef, frozen: bool) -> StringName:
 	match PlaylotSpawnables.kind_of(def):
 		PlaylotSpawnables.Kind.ENTITY:
 			return &"npc"
@@ -74,30 +74,30 @@ func reclassify_prop(node: Node, frozen: bool, held: bool) -> void:
 ## Turns a spawned body into a scripted entity by attaching the script its definition names: the whole "an entity has a script" mechanism.
 ## The script comes from `meta`, loaded by PATH because a mounted dot-cloud pack's `class_name` globals are not registered in the host.
 ## [method Node._ready] has already run by now, hence `_entity_ready`. A failure removes the prop: a script-less body is a crate, which looks like an NPC with nothing to do.
-func _configure_entity(prop: DotPropInstance) -> void:
+func _configure_entity(prop: GSPropInstance) -> void:
 	var script := PlaylotSpawnables.load_script(prop.def)
 
 	if script == null:
-		props.remove(prop.instance_id, DotPropSpawner.REASON_CLEANUP)
+		props.remove(prop.instance_id, GSPropSpawner.REASON_CLEANUP)
 		return
 
 	var body := prop.node as RigidBody3D
 
 	if body == null:
-		DotLog.error(CHANNEL, "an entity's scene is not a RigidBody3D", {
+		GSLog.error(CHANNEL, "an entity's scene is not a RigidBody3D", {
 			"entity": String(prop.def.id), "scene": prop.def.scene_path
 		})
-		props.remove(prop.instance_id, DotPropSpawner.REASON_CLEANUP)
+		props.remove(prop.instance_id, GSPropSpawner.REASON_CLEANUP)
 		return
 
 	# set_script itself errors on a script whose native base is not this body's.
 	if not ClassDB.is_parent_class(body.get_class(), String(script.get_instance_base_type())):
-		DotLog.error(CHANNEL, "an entity's script is not an entity", {
+		GSLog.error(CHANNEL, "an entity's script is not an entity", {
 			"entity": String(prop.def.id),
 			"script": PlaylotSpawnables.script_of(prop.def),
 			"hint": "extend res://game/entities/playlot_entity.gd",
 		})
-		props.remove(prop.instance_id, DotPropSpawner.REASON_CLEANUP)
+		props.remove(prop.instance_id, GSPropSpawner.REASON_CLEANUP)
 		return
 
 	body.set_script(script)
@@ -107,12 +107,12 @@ func _configure_entity(prop: DotPropInstance) -> void:
 	var entity := body as PlaylotEntity
 
 	if entity == null:
-		DotLog.error(CHANNEL, "an entity's script is not an entity", {
+		GSLog.error(CHANNEL, "an entity's script is not an entity", {
 			"entity": String(prop.def.id),
 			"script": PlaylotSpawnables.script_of(prop.def),
 			"hint": "extend res://game/entities/playlot_entity.gd",
 		})
-		props.remove(prop.instance_id, DotPropSpawner.REASON_CLEANUP)
+		props.remove(prop.instance_id, GSPropSpawner.REASON_CLEANUP)
 		return
 
 	entity.configure(prop.def)
@@ -121,10 +121,10 @@ func _configure_entity(prop: DotPropInstance) -> void:
 	entities.append(entity)
 
 
-## Makes a spawned prop a vehicle as well. Configured before adopted, and the order is load-bearing: [DotVehicleWheeled] walks the
+## Makes a spawned prop a vehicle as well. Configured before adopted, and the order is load-bearing: [GSVehicleWheeled] walks the
 ## body's direct children for wheels once, when the chassis binds, so wheels built after adoption are four that nothing drives,
 ## steers or brakes.
-func _configure_vehicle(prop: DotPropInstance) -> void:
+func _configure_vehicle(prop: GSPropInstance) -> void:
 	var body := prop.node as PlaylotVehicle
 
 	if body == null:
@@ -133,10 +133,10 @@ func _configure_vehicle(prop: DotPropInstance) -> void:
 		var plain := prop.node as Node3D
 
 		if plain == null:
-			DotLog.error(CHANNEL, "a vehicle's scene is not a Node3D", {
+			GSLog.error(CHANNEL, "a vehicle's scene is not a Node3D", {
 				"vehicle": String(prop.def.id), "scene": prop.def.scene_path
 			})
-			props.remove(prop.instance_id, DotPropSpawner.REASON_CLEANUP)
+			props.remove(prop.instance_id, GSPropSpawner.REASON_CLEANUP)
 			return
 	else:
 		body.configure(prop.def)
@@ -148,10 +148,10 @@ func _configure_vehicle(prop: DotPropInstance) -> void:
 		# Loud, and the prop goes with it. A body that is a vehicle in the catalogue and
 		# not one in the world is a car that will not drive, sitting there being a crate
 		# — which sends the next person to the handling code.
-		DotLog.error(CHANNEL, "a vehicle would not be adopted", {
+		GSLog.error(CHANNEL, "a vehicle would not be adopted", {
 			"prop": String(prop.def.id), "vehicle": String(vehicle_id)
 		})
-		props.remove(prop.instance_id, DotPropSpawner.REASON_CLEANUP)
+		props.remove(prop.instance_id, GSPropSpawner.REASON_CLEANUP)
 		return
 
 	if body != null:
@@ -160,7 +160,7 @@ func _configure_vehicle(prop: DotPropInstance) -> void:
 
 ## Drops an entity from the tick list when its prop goes. Connected to the spawner's own signal rather than checked per tick;
 ## `removed` is emitted BEFORE the node is freed so a listener can let go while the reference still exists.
-func _on_prop_removed(prop: DotPropInstance, _reason: StringName) -> void:
+func _on_prop_removed(prop: GSPropInstance, _reason: StringName) -> void:
 	# Not while a blast is still walking the props: the barrel it started from must stay
 	# skipped until the outermost blast is done (see [member _breaking]).
 	if _blast_depth == 0:
@@ -179,7 +179,7 @@ func _on_prop_removed(prop: DotPropInstance, _reason: StringName) -> void:
 		var riding_vehicle := vehicles.vehicle_for_node(prop.node) if vehicles != null else null
 
 		if riding_vehicle != null:
-			vehicles.remove(riding_vehicle.instance_id, DotVehicleSpawner.REASON_CLEANUP)
+			vehicles.remove(riding_vehicle.instance_id, GSVehicleSpawner.REASON_CLEANUP)
 
 	# Every weld, rope and no-collide on it goes first, while the node is still valid.
 	if constraints != null and prop.node != null:
@@ -199,21 +199,21 @@ func unregister_armed_npc(entity: Node) -> void:
 	armed_npcs.erase(entity)
 
 
-func _prop_catalogue() -> DotPropCatalogue:
+func _prop_catalogue() -> GSPropCatalogue:
 	if config.props_path != "":
 				# An operator's own catalogue, the seam between a game with a handful of props and a server with a content pack. Loaded here
 				# rather than layered over the built-in list: a merged catalogue would give every server these fourteen with no way to remove one.
-		var loaded := DotPropCatalogue.load_json(config.props_path)
+		var loaded := GSPropCatalogue.load_json(config.props_path)
 
 		if loaded.ok:
-			var theirs := loaded.value as DotPropCatalogue
+			var theirs := loaded.value as GSPropCatalogue
 
-			DotLog.info(CHANNEL, "loaded a prop catalogue", {
+			GSLog.info(CHANNEL, "loaded a prop catalogue", {
 				"path": config.props_path, "props": theirs.size()
 			})
 
 			for problem in theirs.problems():
-				DotLog.warn(CHANNEL, "the prop catalogue has a problem", {
+				GSLog.warn(CHANNEL, "the prop catalogue has a problem", {
 					"problem": problem
 				})
 
@@ -222,7 +222,7 @@ func _prop_catalogue() -> DotPropCatalogue:
 		# Refused rather than fallen back on silently. An operator who pointed this
 		# at a file and got the built-in props would conclude their file was being
 		# read and their edits ignored.
-		DotLog.error(CHANNEL, "the prop catalogue could not be read", {
+		GSLog.error(CHANNEL, "the prop catalogue could not be read", {
 			"path": config.props_path, "why": loaded.error.message
 		})
 

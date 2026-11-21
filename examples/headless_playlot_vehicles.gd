@@ -2,18 +2,18 @@ extends "res://examples/headless_playlot_spawn_menu.gd"
 
 ## A car spawned from the prop catalogue, driven, ridden in and got out of.
 ##
-## A vehicle here is BOTH a vehicle and a [DotPropInstance]: on a prop budget, an undo stack, adopted rather than spawned, with wheels built by the game after the body, which no other suite runs.
+## A vehicle here is BOTH a vehicle and a [GSPropInstance]: on a prop budget, an undo stack, adopted rather than spawned, with wheels built by the game after the body, which no other suite runs.
 var _v_driver: PlaylotPlayer
 var _v_at: Vector3
-var _v_spawned: DotPropInstance
-var _v_vehicle: DotVehicleInstance
-var _v_forward: DotFpsCommand
+var _v_spawned: GSPropInstance
+var _v_vehicle: GSVehicleInstance
+var _v_forward: GSFpsCommand
 var _v_passenger: PlaylotPlayer
 
 func _test_vehicles() -> void:
 	_section("vehicles")
 
-	var changed: DotResult = await playlot.change_map(&"pg_flatgrass")
+	var changed: GSResult = await playlot.change_map(&"pg_flatgrass")
 	_check(changed.ok, "the sandbox loads")
 
 	# The sandbox test above lets its player leave, so this one brings the bot back.
@@ -44,7 +44,7 @@ func _test_vehicles() -> void:
 	if _v_vehicle == null:
 		return
 
-	_check(_v_vehicle.chassis is DotVehicleWheeled, "with Godot's raycast wheels under it")
+	_check(_v_vehicle.chassis is GSVehicleWheeled, "with Godot's raycast wheels under it")
 
 	var body := _v_spawned.node as PlaylotVehicle
 	_check(body != null and body.wheel_count() == 4, "and four wheels actually built")
@@ -75,7 +75,7 @@ func _test_vehicles() -> void:
 	)
 
 	# Forward. `move.y` is forward for a walking player and it is forward here.
-	_v_forward = DotFpsCommand.new()
+	_v_forward = GSFpsCommand.new()
 	_v_forward.move = Vector2(0.0, 1.0)
 	await _test_vehicles_2()
 	await _test_vehicles_3()
@@ -103,7 +103,7 @@ func _test_vehicles_2() -> void:
 	# Steering. Both directions, because a check that only measured "it turned" would
 	# pass for a car that turns the wrong way — which is exactly the bug dot-vehicle
 	# found in itself.
-	var right := DotFpsCommand.new()
+	var right := GSFpsCommand.new()
 	right.move = Vector2(1.0, 1.0)
 
 	var heading_before := -(_v_vehicle.node as Node3D).global_basis.z
@@ -163,8 +163,8 @@ func _test_vehicles_3() -> void:
 		"speed %.1f, limit %.1f" % [_v_vehicle.speed(), _v_vehicle.def.tuning().max_exit_speed]
 	)
 
-	var stop := DotFpsCommand.new()
-	stop.set_button(DotFpsCommand.BUTTON_CROUCH, true)
+	var stop := GSFpsCommand.new()
+	stop.set_button(GSFpsCommand.BUTTON_CROUCH, true)
 	await _drive(&"bot", stop, 200)
 
 	_check(_v_vehicle.speed() < 2.0, "the brake stops it", "%.2f m/s" % _v_vehicle.speed())
@@ -185,8 +185,8 @@ func _test_vehicles_3() -> void:
 	# How far it takes to stop, which "the brake stops it" never said: the brake once went to
 	# Godot's wheels in newtons where it reads an impulse per step, stopping the buggy within a
 	# couple of metres. Forces since dot-vehicle 4f4afaf.
-	var foot := await _stopping(_v_vehicle, _v_at, &"bot", DotFpsCommand.BUTTON_CROUCH)
-	var hand := await _stopping(_v_vehicle, _v_at, &"bot", DotFpsCommand.BUTTON_JUMP)
+	var foot := await _stopping(_v_vehicle, _v_at, &"bot", GSFpsCommand.BUTTON_CROUCH)
+	var hand := await _stopping(_v_vehicle, _v_at, &"bot", GSFpsCommand.BUTTON_JUMP)
 	print("  ..    the buggy from 50 km/h: brake (crouch) %.2f m, handbrake (jump) %.2f m" % [foot, hand])
 	_check(foot > 7.0 and foot < 14.0, "the brake stops the buggy from 50 km/h in metres, not on the spot",
 		"%.2f m" % foot)
@@ -195,7 +195,7 @@ func _test_vehicles_3() -> void:
 	# (dot-vehicle's `brake_then_reverse`). On reverse thrust alone it was the engine's 35 %
 	# against a brake several times that.
 	var back := await _stopping(_v_vehicle, _v_at, &"bot", BACK_KEY)
-	var reverse := DotFpsCommand.new()
+	var reverse := GSFpsCommand.new()
 	reverse.move = Vector2(0.0, -1.0)
 	var stopped_at := _v_vehicle.position()
 	await _drive(&"bot", reverse, 192)
@@ -220,7 +220,7 @@ func _test_vehicles_4() -> void:
 
 	if skiff_prop != null:
 		var skiff := playlot.vehicles.vehicle_for_node(skiff_prop.node)
-		_check(skiff != null and skiff.chassis is DotVehicleHover, "on the hover chassis")
+		_check(skiff != null and skiff.chassis is GSVehicleHover, "on the hover chassis")
 		_check(
 			(skiff_prop.node as PlaylotVehicle).wheel_count() == 0,
 			"with no wheels built for it"
@@ -242,7 +242,7 @@ func _test_vehicles_4() -> void:
 	# else for the rest of the round, with no error anywhere.
 	_check(playlot.use_vehicle(&"rider").ok, "the passenger gets back in")
 
-	playlot.props.remove(_v_spawned.instance_id, DotPropSpawner.REASON_ADMIN)
+	playlot.props.remove(_v_spawned.instance_id, GSPropSpawner.REASON_ADMIN)
 	await get_tree().physics_frame
 
 	_check(
@@ -264,7 +264,7 @@ func _test_vehicles_4() -> void:
 ## Metres [param vehicle] takes from 50 km/h to a standstill, put back at [param at] facing
 ## +Z first, with [param button] held by [param id] (crouch the brake, jump the handbrake,
 ## [constant BACK_KEY] for S, which stops at the moment it stops rolling forward).
-func _stopping(vehicle: DotVehicleInstance, at: Vector3, id: StringName, button: int) -> float:
+func _stopping(vehicle: GSVehicleInstance, at: Vector3, id: StringName, button: int) -> float:
 	# Facing +Z, into the plate: -Z from here meets the plate's edge at about z = -72, which
 	# a buggy reaching 50 km/h gets to first.
 	(vehicle.node as Node3D).global_transform = Transform3D(Basis(Vector3.UP, PI), at)
@@ -274,7 +274,7 @@ func _stopping(vehicle: DotVehicleInstance, at: Vector3, id: StringName, button:
 		await get_tree().physics_frame
 
 	var player: PlaylotPlayer = playlot.players[id]
-	var go := DotFpsCommand.new()
+	var go := GSFpsCommand.new()
 	go.move = Vector2(0.0, 1.0)
 	var guard := 1200
 	while vehicle.forward_speed() < 13.89 and guard > 0:
@@ -282,9 +282,9 @@ func _stopping(vehicle: DotVehicleInstance, at: Vector3, id: StringName, button:
 		await get_tree().physics_frame
 		guard -= 1
 
-	print("  ..    %s: %.1f m/s after %d ticks of throttle" % [{DotFpsCommand.BUTTON_CROUCH: "brake", BACK_KEY: "S"}.get(button, "handbrake"), vehicle.forward_speed(), 1200 - guard])
+	print("  ..    %s: %.1f m/s after %d ticks of throttle" % [{GSFpsCommand.BUTTON_CROUCH: "brake", BACK_KEY: "S"}.get(button, "handbrake"), vehicle.forward_speed(), 1200 - guard])
 	var start := vehicle.position()
-	var stop := DotFpsCommand.new()
+	var stop := GSFpsCommand.new()
 	if button == BACK_KEY:
 		stop.move = Vector2(0.0, -1.0)
 	else:

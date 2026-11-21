@@ -35,7 +35,7 @@ const PlaylotZee := preload("../game/playlot_zee.gd")
 
 const OUT_DIR := "res://screenshots"
 
-## Frames to let the rig settle. `DotTpsCameraRig` is on a spring arm and springs take
+## Frames to let the rig settle. `GSTpsCameraRig` is on a spring arm and springs take
 ## time, so a capture on the tick of the switch is a picture of the camera mid-flight.
 const SETTLE := 12
 
@@ -54,7 +54,7 @@ var _hud: PlaylotHud = null
 ## the tree whose chat handler draws the ballot's line, and the shell's ballot panel.
 var _presentation: PlaylotPresentation = null
 var _chat_client = null
-var _ballot: DotBallotPanel = null
+var _ballot: GSBallotPanel = null
 var _shots: Array[Dictionary] = []
 var _at := 0
 var _wait := SETTLE
@@ -63,9 +63,9 @@ var _done := false
 
 
 func _initialize() -> void:
-	DotLog.set_level(DotLog.Level.ERROR)
+	GSLog.set_level(GSLog.Level.ERROR)
 	DirAccess.make_dir_recursive_absolute(OUT_DIR)
-	DotFpsSampler.register_default_actions()
+	GSFpsSampler.register_default_actions()
 
 	var config := PlaylotConfig.new()
 	config.records_directory = ""
@@ -78,8 +78,8 @@ func _initialize() -> void:
 	root.add_child(_game)
 
 
-## Frame sequence after each still (GS_SHOT_FRAMES, set by the .sh); see DotShotSeq. The state machine holds still while it records, and `_seq_end` defers the quit until it is done.
-var _seq := DotShotSeq.new()
+## Frame sequence after each still (GS_SHOT_FRAMES, set by the .sh); see GSShotSeq. The state machine holds still while it records, and `_seq_end` defers the quit until it is done.
+var _seq := GSShotSeq.new()
 var _seq_active := false
 var _seq_end := false
 
@@ -177,7 +177,7 @@ func _process(_delta: float) -> bool:
 			_hud.damage_numbers.clear()
 		_hud.visible = shot.has("clock") or shot.has("beacon") or shot.has("blind") or shot.has("creative") or shot.has("ballot") or shot.has("hits")
 		if shot.has("clock"):
-			var view := DotVoteClockView.new()
+			var view := GSVoteClockView.new()
 			view.adopt(shot["clock"], Time.get_ticks_msec() / 1000.0)
 			_hud.clock_view = view
 		_arranged = true
@@ -188,7 +188,7 @@ func _process(_delta: float) -> bool:
 		# The hits a few frames before the capture: the marker fades in a quarter of a second.
 		if _wait == 3 and bool(shot.get("hits", false)) and _other != null:
 			var on_her := _other.controller.state.position + Vector3.UP * 1.3
-			var her := Playlot.hit_victim_id(DotEntity.KIND_PLAYER, 2)
+			var her := Playlot.hit_victim_id(GSEntity.KIND_PLAYER, 2)
 			_hud.confirm_hit(her, 18.0, on_her, false, false)
 			_hud.confirm_hit(her, 24.0, on_her, true, true)
 		_wait -= 1
@@ -292,7 +292,7 @@ func _arrange_edit() -> void:
 		if crate == null:
 			print("[views] crate %d refused: %s" % [i, str(reasons)])
 			continue
-		DotPhysGun.set_frozen(crate, true)
+		GSPhysGun.set_frozen(crate, true)
 		if i == 1:
 			picked = crate.node as Node3D
 			picked.call("set_size_scale", 1.5)
@@ -329,11 +329,11 @@ func _arrange_ballot() -> void:
 	_presentation.name = "Presentation"
 	root.add_child(_presentation)
 	var _built := _presentation.setup()
-	_presentation.settings.local_store = DotSettingsStoreMemory.new()
+	_presentation.settings.local_store = GSSettingsStoreMemory.new()
 	_presentation.settings.load_now()
 	_presentation.apply_all()
 
-	var chat := DotChatClient.new()
+	var chat := GSChatClient.new()
 	chat.channels = PlaylotServices.chat_channels()
 	_chat_client = PlaylotClient.new()
 	_chat_client.hud = _hud
@@ -342,16 +342,16 @@ func _arrange_ballot() -> void:
 
 	var maps := ["Surf: Introduction", "Bhop: Introduction", "Lobby", "Canyon"]
 	_chat_client._on_chat_message(
-		DotChatMessage.system(PlaylotServices.CHANNEL_ALL, "Vote: %s (30s)" % ", ".join(maps)),
+		GSChatMessage.system(PlaylotServices.CHANNEL_ALL, "Vote: %s (30s)" % ", ".join(maps)),
 		PlaylotServices.CHANNEL_ALL
 	)
 
 	var options := []
 	for i in maps.size():
 		options.append({"id": "m%d" % i, "label": maps[i], "votes": [1, 0, 2, 0][i]})
-	_ballot = DotBallotPanel.new()
+	_ballot = GSBallotPanel.new()
 	_ballot.name = "Ballot"
-	_ballot.ui_theme = DotUiTheme.space()
+	_ballot.ui_theme = GSUiTheme.space()
 	_ballot.panel_width = 360.0
 	_ballot.position = Vector2(root.size.x - 360.0 - 24.0, 120.0)
 	root.add_child(_ballot)
@@ -371,8 +371,8 @@ func _capture(shot_name: String) -> void:
 
 	_seq_begin(path)
 
-	# Reported at CAPTURE time, not at arrange time. `DotTpsCameraRig.follow` runs once a
-	# frame from `DotTpsController._process`, so everything about the rig is still at its
+	# Reported at CAPTURE time, not at arrange time. `GSTpsCameraRig.follow` runs once a
+	# frame from `GSTpsController._process`, so everything about the rig is still at its
 	# starting value on the frame the switch happens — printing it there says the camera
 	# never moved when what it means is that it has not moved YET.
 	var where := "first person"

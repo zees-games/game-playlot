@@ -5,8 +5,8 @@ const PlaylotConfig := preload("../game/playlot_config.gd")
 const PlaylotPlayer := preload("../game/playlot_player.gd")
 const PlaylotPresentation := preload("../game/playlot_presentation.gd")
 
-## Soak on the real sandbox: N players wander one map for M simulated minutes through dot-bot's DotBotSoak, fed by dot-spawn's DotSpawnWatch. The playlot has no bot brain (a sandbox has nothing to chase), so each stand-in holds a random heading for a second or three and jumps now and then,
-## which is what walks them into walls, water, ramps and every prop and pane a map has. Run `./game.sh soak [map] [minutes]`; DotBotSoakConfig flags are accepted too. Writes .godot/test-logs/soak-<map>.json, prints the SOAK line, exits 1 on failure. No navigation, goals or combat here: stuck is lenient (they bump walls on purpose).
+## Soak on the real sandbox: N players wander one map for M simulated minutes through dot-bot's GSBotSoak, fed by dot-spawn's GSSpawnWatch. The playlot has no bot brain (a sandbox has nothing to chase), so each stand-in holds a random heading for a second or three and jumps now and then,
+## which is what walks them into walls, water, ramps and every prop and pane a map has. Run `./game.sh soak [map] [minutes]`; GSBotSoakConfig flags are accepted too. Writes .godot/test-logs/soak-<map>.json, prints the SOAK line, exits 1 on failure. No navigation, goals or combat here: stuck is lenient (they bump walls on purpose).
 
 const DEFAULT_MAP := &"pg_flatgrass"
 const DEFAULT_MINUTES := 1.0
@@ -21,7 +21,7 @@ var _lost := 0
 
 
 func _ready() -> void:
-	DotLog.set_level(DotLog.Level.ERROR)
+	GSLog.set_level(GSLog.Level.ERROR)
 	var _scratch := PlaylotPresentation.use_scratch_settings("soak")
 	_run.call_deferred()
 
@@ -36,7 +36,7 @@ func _arg(name: String, fallback: String) -> String:
 
 func _run() -> void:
 	var map_id := StringName(_arg("map", String(DEFAULT_MAP)))
-	var cfg := DotBotSoakConfig.new()
+	var cfg := GSBotSoakConfig.new()
 	cfg.minutes = DEFAULT_MINUTES
 	cfg.bots = DEFAULT_BOTS
 	cfg.apply_cli()
@@ -73,11 +73,11 @@ func _run() -> void:
 	await get_tree().physics_frame
 	await get_tree().physics_frame
 
-	var watch := DotSpawnWatch.new()
+	var watch := GSSpawnWatch.new()
 	watch.rules.enabled = true
 	watch.rules.kill_y = -5000.0
 
-	var soak := DotBotSoak.new(cfg)
+	var soak := GSBotSoak.new(cfg)
 	soak.watch = watch
 	soak.movers_fn = _movers
 	soak.object_count_fn = func() -> int: return int(Performance.get_monitor(Performance.OBJECT_COUNT))
@@ -96,8 +96,8 @@ func _run() -> void:
 	if _lost > 0:
 		report["ok"] = false
 		(report["reasons"] as Array).append("%d wanderer-ticks outside the world" % _lost)
-	print(DotBotSoak.summary(report))
-	print(DotBotSoak.report_line(report))
+	print(GSBotSoak.summary(report))
+	print(GSBotSoak.report_line(report))
 	var path := ProjectSettings.globalize_path("res://.godot/test-logs/soak-%s.json" % map_id)
 	DirAccess.make_dir_recursive_absolute(path.get_base_dir())
 	if soak.write_report(report, path) != OK:
@@ -120,11 +120,11 @@ func _step(_delta: float) -> void:
 		if _tick >= int(held["until"]):
 			held = {"until": _tick + _rng.randi_range(64, 192), "yaw": _rng.randf_range(-180.0, 180.0)}
 			_heading[id] = held
-		var command := DotFpsCommand.new()
+		var command := GSFpsCommand.new()
 		command.yaw = float(held["yaw"])
 		command.pitch = 0.0
 		command.move = Vector2(0.0, 1.0)
-		command.set_button(DotFpsCommand.BUTTON_JUMP, _tick % 96 < 3)
+		command.set_button(GSFpsCommand.BUTTON_JUMP, _tick % 96 < 3)
 		body.controller.apply_command(command)
 	_game.tick_once(_tick)
 

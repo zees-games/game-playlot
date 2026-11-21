@@ -9,14 +9,14 @@ const PlaylotPlayer := preload("playlot_player.gd")
 ## NPCs the **server** releases, paced by dot-npc-ai-director.
 ##
 ## [b]This is a second population beside the entities, and the split is deliberate.[/b]
-## This game's own note says an entity is a `DotPropInstance` first — it counts against a
+## This game's own note says an entity is a `GSPropInstance` first — it counts against a
 ## prop budget, it is on the undo stack, it goes when its owner leaves, and a physics gun
 ## can pick it up — because *an NPC you cannot pick up is the first thing a sandbox player
 ## will try*. That argument is about NPCs a **player** put there.
 ##
 ## A wave is not one. It is the server's, nobody spawned it, nobody owns it, and it is
 ## reclaimed when the players walk away from it — which is exactly the population
-## [DotNpcSpawner] and [DotNpcDirector] are for, and none of which a prop budget can
+## [GSNpcSpawner] and [GSNpcDirector] are for, and none of which a prop budget can
 ## express. So there are two, with two different owners and two different reasons, and
 ## `pg_waves 1` is the only thing that makes the second exist at all.
 ##
@@ -49,17 +49,17 @@ const GUNFIRE_RADIUS := 30.0
 
 ## The wave's squad — three on a player, the rest surrounding — and what it can hear.
 ## On the spawner as metadata, where dot-npc-ai's brain finds both.
-var squads: DotNpcAiSquads = DotNpcAiSquads.new()
-var sounds: DotNpcAiSounds = DotNpcAiSounds.new()
+var squads: GSNpcAiSquads = GSNpcAiSquads.new()
+var sounds: GSNpcAiSounds = GSNpcAiSounds.new()
 
 ## Where players go on each map, learned while the waves run and patrolled by the wave NPCs
 ## with the tactics for it. Saving is off until the module turns it on — every suite builds
 ## waves, and a suite's players must not train the next run's NPCs.
-var heat: DotNpcAiHeatKeeper = _make_heat()
+var heat: GSNpcAiHeatKeeper = _make_heat()
 
 
-static func _make_heat() -> DotNpcAiHeatKeeper:
-	var keeper := DotNpcAiHeatKeeper.new("user://npc_heat", "playlot")
+static func _make_heat() -> GSNpcAiHeatKeeper:
+	var keeper := GSNpcAiHeatKeeper.new("user://npc_heat", "playlot")
 	keeper.persist = false
 	return keeper
 
@@ -68,8 +68,8 @@ static func _make_heat() -> DotNpcAiHeatKeeper:
 signal wave_changed(count: int)
 
 
-var spawner: DotNpcSpawner = null
-var director: DotNpcDirector = null
+var spawner: GSNpcSpawner = null
+var director: GSNpcDirector = null
 var game: Playlot = null
 
 var _tick: int = 0
@@ -78,8 +78,8 @@ var _tick: int = 0
 ## Three kinds, and each is a different problem.
 ##
 ## [param speed_scale] is [member PlaylotConfig.wave_speed_scale]: it multiplies each kind's speed.
-static func catalogue(speed_scale := 1.0) -> DotNpcCatalogue:
-	var out := DotNpcCatalogue.new()
+static func catalogue(speed_scale := 1.0) -> GSNpcCatalogue:
+	var out := GSNpcCatalogue.new()
 
 	_add(out, &"runner", "Runner", 60.0, 6.4 * speed_scale, 30.0, 1)
 	_add(out, &"walker", "Walker", 140.0, 3.6 * speed_scale, 40.0, 2)
@@ -89,7 +89,7 @@ static func catalogue(speed_scale := 1.0) -> DotNpcCatalogue:
 
 
 static func _add(
-	into: DotNpcCatalogue,
+	into: GSNpcCatalogue,
 	id: StringName,
 	display: String,
 	health: float,
@@ -97,7 +97,7 @@ static func _add(
 	sight: float,
 	cost: int
 ) -> void:
-	var def := DotNpcDef.make(id, WAVE_SCENE)
+	var def := GSNpcDef.make(id, WAVE_SCENE)
 	def.display_name = display
 	def.brain_script_path = WAVE_BRAIN
 	def.category = &"wave"
@@ -118,7 +118,7 @@ static func _add(
 	into.add(def)
 
 
-static var _shared: DotNpcCatalogue = null
+static var _shared: GSNpcCatalogue = null
 
 ## Draws a wave NPC as a person rather than its capsule, as tall as the capsule. Static, so
 ## a client's mirror is dressed by the same rule (`PlaylotNetBridge`).
@@ -130,7 +130,7 @@ static func dress(body: Node3D, kind: String) -> void:
 	var _dressed := PlaylotFigure.dress_body(body, capsule.height if capsule != null else 1.8, kind)
 
 
-static func shared_catalogue() -> DotNpcCatalogue:
+static func shared_catalogue() -> GSNpcCatalogue:
 	if _shared == null:
 		_shared = catalogue()
 
@@ -139,10 +139,10 @@ static func shared_catalogue() -> DotNpcCatalogue:
 
 # --- Lifecycle -------------------------------------------------------------
 
-func setup(p_game: Playlot) -> DotResult:
+func setup(p_game: Playlot) -> GSResult:
 	game = p_game
 
-	var limits := DotNpcLimits.new()
+	var limits := GSNpcLimits.new()
 	limits.world_budget = 60
 	limits.per_kind_cap = 20
 	limits.spawn_interval = 0.0
@@ -160,7 +160,7 @@ func setup(p_game: Playlot) -> DotResult:
 	if not problem.ok:
 		return problem.wrap("The wave limits are not usable")
 
-	spawner = DotNpcSpawner.new()
+	spawner = GSNpcSpawner.new()
 	spawner.name = "Spawner"
 	var wave_scale: float = game.config.wave_speed_scale if game != null and game.config != null else 1.0
 	spawner.catalogue = shared_catalogue() if is_equal_approx(wave_scale, 1.0) else catalogue(wave_scale)
@@ -171,7 +171,7 @@ func setup(p_game: Playlot) -> DotResult:
 	spawner.seed_base = game.map_seed() if game != null else 0
 	# The world's own node, so a wave NPC is in the same physics space as everything else
 	# — which is what makes its line-of-sight cast see the sandbox's walls.
-	spawner.world_ref = DotNodeRef.of_service(Playlot.SERVICE)
+	spawner.world_ref = GSNodeRef.of_service(Playlot.SERVICE)
 	# Before the first spawn, so no wave NPC thinks a tick at the wrong skill.
 	if game != null and game.npc_skill != null:
 		game.npc_skill.attach(spawner)
@@ -179,19 +179,19 @@ func setup(p_game: Playlot) -> DotResult:
 	sounds.attach(spawner)
 	add_child(spawner)
 
-	spawner.spawned.connect(func(npc: DotNpcInstance) -> void:
+	spawner.spawned.connect(func(npc: GSNpcInstance) -> void:
 		dress(npc.node as Node3D, String(npc.def.id))
 		wave_changed.emit(spawner.world_count())
 	)
-	spawner.removed.connect(func(_npc: DotNpcInstance, _why: StringName) -> void:
+	spawner.removed.connect(func(_npc: GSNpcInstance, _why: StringName) -> void:
 		wave_changed.emit(spawner.world_count())
 	)
 
 	return _build_director()
 
 
-func _build_director() -> DotResult:
-	var rules := DotNpcDirectorRules.new()
+func _build_director() -> GSResult:
+	var rules := GSNpcDirectorRules.new()
 	# A sandbox is tens of metres across, not hundreds. Every distance here is that scale,
 	# and `spawn_ahead` is zero because there is no critical path to spawn ahead along —
 	# an arena is reachable in every direction and "ahead of the party" means nothing when
@@ -226,10 +226,10 @@ func _build_director() -> DotResult:
 	if not problem.ok:
 		return problem.wrap("The director rules are not usable")
 
-	director = DotNpcDirector.new()
+	director = GSNpcDirector.new()
 	director.name = "Director"
 	director.rules = rules
-	director.spawner_ref = DotNodeRef.of_path(^"../Spawner")
+	director.spawner_ref = GSNodeRef.of_path(^"../Spawner")
 	# Round-robin, so the mix is exact rather than approached: a random pick from three
 	# gives three brutes in a row often enough for a player to notice and conclude the
 	# director is broken.
@@ -237,7 +237,7 @@ func _build_director() -> DotResult:
 	director.enabled = false
 	add_child(director)
 
-	return DotResult.success(null)
+	return GSResult.success(null)
 
 
 func set_enabled(on: bool) -> void:
@@ -312,7 +312,7 @@ func note_fire(player_id: StringName, origin: Vector3) -> void:
 		return
 
 	sounds.emit(
-		DotNpcAiSounds.Kind.COMBAT, origin, GUNFIRE_RADIUS, spawner.now(), 0.5,
+		GSNpcAiSounds.Kind.COMBAT, origin, GUNFIRE_RADIUS, spawner.now(), 0.5,
 		StringName("%s%s" % [PLAYER_PREFIX, player_id])
 	)
 
@@ -328,7 +328,7 @@ func _candidates() -> Array:
 				or player.controller.state == null:
 			continue
 
-		out.append(DotNpcSenses.Candidate.new(
+		out.append(GSNpcSenses.Candidate.new(
 			StringName("%s%s" % [PLAYER_PREFIX, id]),
 			player.controller.state.position,
 			&"player",
@@ -375,7 +375,7 @@ var health_fn: Callable = Callable()
 
 ## Somewhere to put them, from the spawn points the map already declares.
 ##
-## [b]Read from the map rather than invented.[/b] `DotSpawnPoint`s are where a mapper said
+## [b]Read from the map rather than invented.[/b] `GSSpawnPoint`s are where a mapper said
 ## a person may appear, which is by construction somewhere reachable and not inside
 ## anything — and a director inventing its own would be a director putting a brute in a
 ## wall. When a map has none, a ring around the origin is the fallback, and it says so.
@@ -391,7 +391,7 @@ func _seed_spawn_points() -> void:
 			var angle := TAU * float(step) / 16.0
 			points.append(Vector3(cos(angle), 0.0, sin(angle)) * 40.0)
 
-		DotLog.info(CHANNEL, "this map declares no spawn points; using a ring", {
+		GSLog.info(CHANNEL, "this map declares no spawn points; using a ring", {
 			"points": points.size(),
 		})
 

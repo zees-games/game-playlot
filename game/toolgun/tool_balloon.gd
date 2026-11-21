@@ -24,14 +24,14 @@ func schema() -> Array[Dictionary]:
 	]
 
 
-func primary(gun: Object, hit: Dictionary) -> DotResult:
+func primary(gun: Object, hit: Dictionary) -> GSResult:
 	if not hit.has("point"):
 		return nothing_there()
 
 	var point: Vector3 = hit["point"]
 	var normal: Vector3 = hit.get("normal", Vector3.UP)
 	var at := point + normal * 0.4 + Vector3.UP * float(setting("length"))
-	var made: DotResult = gun.call("spawn_balloon", at, float(setting("lift")), str(setting("colour")))
+	var made: GSResult = gun.call("spawn_balloon", at, float(setting("lift")), str(setting("colour")))
 
 	if not made.ok:
 		return made
@@ -47,7 +47,7 @@ func primary(gun: Object, hit: Dictionary) -> DotResult:
 	)
 
 
-func secondary(gun: Object, hit: Dictionary) -> DotResult:
+func secondary(gun: Object, hit: Dictionary) -> GSResult:
 	if not hit.has("point"):
 		return nothing_there()
 

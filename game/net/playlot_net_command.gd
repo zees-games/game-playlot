@@ -1,8 +1,8 @@
-extends DotNetInput
+extends GSNetInput
 
 const PlaylotNetCommand := preload("playlot_net_command.gd")
 
-## One tick of a player's intent, on the wire: a [DotFpsCommand] and the aim bit.
+## One tick of a player's intent, on the wire: a [GSFpsCommand] and the aim bit.
 ##
 ## [b]The only thing a client may send about itself.[/b] Clients send inputs, never
 ## state — a client that could send a position could send any position, and dot-net's
@@ -11,24 +11,24 @@ const PlaylotNetCommand := preload("playlot_net_command.gd")
 ## simulation IS rather than what it does this tick, so they go reliably and rarely
 ## through [PlaylotRequest].
 ##
-## The tool triggers ride in [member DotFpsCommand.buttons], because they are per-tick
+## The tool triggers ride in [member GSFpsCommand.buttons], because they are per-tick
 ## and predicted like a jump: holding the physics gun's trigger is a held button, not an
 ## event, and sending it as a request would put a grab a round trip behind the mouse.
 
-var move: DotFpsCommand = DotFpsCommand.new()
+var move: GSFpsCommand = GSFpsCommand.new()
 
 ## The aim button, held: a zee gun's sights are up. One bit after the move, so a batch is bit-packed and a server of a build before this one reads the next
 ## input from the wrong bit; client and server are one pack version (the join handshake pins it, see docs/netcode.md "Aim on the wire").
 var aim: bool = false
 
 
-func _write(writer: DotNetWriter) -> void:
+func _write(writer: GSNetWriter) -> void:
 	move.write(writer)
 	writer.write_bool(aim)
 
 
-func _read(reader: DotNetReader) -> void:
-	move = DotFpsCommand.new()
+func _read(reader: GSNetReader) -> void:
+	move = GSFpsCommand.new()
 	move.read(reader)
 	aim = reader.read_bool()
 
@@ -39,6 +39,6 @@ func _sanitise() -> void:
 	move.sanitise()
 
 
-func _equals(other: DotNetInput) -> bool:
+func _equals(other: GSNetInput) -> bool:
 	var them := other as PlaylotNetCommand
 	return them != null and aim == them.aim and move.equals(them.move)

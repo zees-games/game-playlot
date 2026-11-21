@@ -16,7 +16,7 @@ const PlaylotPlayer := preload("../game/playlot_player.gd")
 ##   godot --headless --path . res://tools/map_crouch.tscn          # every maps/custom/*.json
 
 func _ready() -> void:
-	DotLog.set_level(DotLog.Level.ERROR)
+	GSLog.set_level(GSLog.Level.ERROR)
 	_run.call_deferred()
 
 
@@ -31,7 +31,7 @@ func _run() -> void:
 	var failed := false
 	for id in ids:
 		var map: Node3D = data_script.new()
-		var configured: DotResult = map.configure_doc("res://maps/custom/%s.json" % id)
+		var configured: GSResult = map.configure_doc("res://maps/custom/%s.json" % id)
 		if not configured.ok:
 			print("%s: LOAD FAILED %s" % [id, str(configured.error)])
 			failed = true

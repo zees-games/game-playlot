@@ -6,11 +6,11 @@ const PlaylotUserFiles := preload("playlot_user_files.gd")
 ## Per-player statistics, and what they are worth: dot-stats and dot-achievements.
 ##
 ## [b]This game already had boards and had nothing to put on them but times.[/b]
-## `DotLeaderboardManager` is in `Playlot` and holds three orderings; what was missing
+## `GSLeaderboardManager` is in `Playlot` and holds three orderings; what was missing
 ## is the layer under it — the *counts*. How many props somebody has spawned, how many runs
 ## they have finished, how far they have fallen. dot-stats declares those once and reports
 ## them to the backbone as coalesced deltas; dot-achievements is rules over the same
-## readings, which is the whole point of `DotAchievementStatsLink`.
+## readings, which is the whole point of `GSAchievementStatsLink`.
 ##
 ## [b]Neither addon is given a new source of truth.[/b] A second count of anything is a
 ## second number that can disagree with the first, and the one that is wrong is always the
@@ -25,7 +25,7 @@ const CHANNEL := "playlot.progress"
 
 const PROGRESS_DIR := "user://playlot_achievements"
 
-## The published skill figure the site orders by (dot-stats' DotStatsRank).
+## The published skill figure the site orders by (dot-stats' GSStatsRank).
 const RANK_SCORE := &"rank_score"
 
 
@@ -33,17 +33,17 @@ const RANK_SCORE := &"rank_score"
 signal earned(player_key: String, id: StringName, title: String, points: int)
 
 
-var stats: DotStatsTracker = null
-var achievements: DotAchievementTracker = null
-var link: DotAchievementStatsLink = null
+var stats: GSStatsTracker = null
+var achievements: GSAchievementTracker = null
+var link: GSAchievementStatsLink = null
 
 ## The skill rank, built on lifetime totals. Players are the tracker key, the same one the store knows them by.
-var rank: DotStatsRank = null
+var rank: GSStatsRank = null
 
 var game: Playlot = null
 
 ## Kills and hits by body zone, through dot-stats' event feed.
-var feed: DotStatsEventFeed = null
+var feed: GSStatsEventFeed = null
 
 ## The backbone, when an operator has configured one. Null on a LAN server.
 var backbone: Object = null
@@ -58,23 +58,23 @@ var progress_dir: String = PROGRESS_DIR
 ## [b]Declared, not discovered.[/b] dot-stats' whole shape is that a game says what it
 ## counts at boot and then reports deltas against it — so a typo'd stat id is refused when
 ## the schema is built rather than silently accumulating under a name nothing reads.
-static func stats_schema() -> DotStatsSchema:
-	var schema := DotStatsSchema.new()
+static func stats_schema() -> GSStatsSchema:
+	var schema := GSStatsSchema.new()
 
 	for id in [&"props", &"undos", &"runs", &"finishes", &"falls", &"kills", &"deaths"]:
 		schema.define(id).publish = true
 
-	var best := schema.define(&"best_speed", DotStatsDef.Kind.BEST, "Fastest")
+	var best := schema.define(&"best_speed", GSStatsDef.Kind.BEST, "Fastest")
 	best.publish = true
 	best.decimals = 1
 
-	var fastest := schema.define(&"fastest_run", DotStatsDef.Kind.LOWEST, "Best time")
+	var fastest := schema.define(&"fastest_run", GSStatsDef.Kind.LOWEST, "Best time")
 	fastest.publish = true
 	fastest.decimals = 3
 
-	var _rank := DotStatsRank.declare(schema, RANK_SCORE, "Rank score")
-	DotStatsHitzones.declare(schema)
-	var _shots := DotStatsShots.declare(schema)
+	var _rank := GSStatsRank.declare(schema, RANK_SCORE, "Rank score")
+	GSStatsHitzones.declare(schema)
+	var _shots := GSStatsShots.declare(schema)
 	return schema
 
 
@@ -84,9 +84,9 @@ static func stats_schema() -> DotStatsSchema:
 ## watching a stat nothing reports never unlocks, nothing errors, and the only symptom is a
 ## player who did the thing and was not told — this family's most repeated bug wearing a
 ## rosette. `examples/dedicated.tscn` checks the two lists against each other.
-static func catalogue() -> DotAchievementCatalogue:
-	var out := DotAchievementCatalogue.new()
-	var made: Array[DotAchievement] = []
+static func catalogue() -> GSAchievementCatalogue:
+	var out := GSAchievementCatalogue.new()
+	var made: Array[GSAchievement] = []
 
 	# A tier series: the same stat at three thresholds, which is what `series` and `tier`
 	# are for. Three separate achievements would each have to be kept in step by hand.
@@ -113,32 +113,32 @@ static func catalogue() -> DotAchievementCatalogue:
 	# A BEST rather than a COUNTER. `best_speed` is the biggest reading ever seen rather
 	# than a running total, and an achievement that summed it would unlock for somebody
 	# who was moderately quick often.
-	var quick := DotAchievement.make(
+	var quick := GSAchievement.make(
 		&"speed_30", "Quick",
-		[_rule(&"best_speed", 30.0, DotAchievementRule.Merge.HIGHEST)]
+		[_rule(&"best_speed", 30.0, GSAchievementRule.Merge.HIGHEST)]
 	)
 	quick.description = "Reach thirty metres a second."
 	quick.points = 30
 	made.append(quick)
 
 	# A LOWEST, so the other end of the merge table is exercised rather than only
-	# described — `DotAchievementRule.Merge` is dot-stats' four kinds again, and the two
+	# described — `GSAchievementRule.Merge` is dot-stats' four kinds again, and the two
 	# would otherwise disagree about what a new reading does to an old one.
-	var swift := DotAchievement.make(
+	var swift := GSAchievement.make(
 		&"under_20", "Swift",
-		[_rule(&"fastest_run", 20.0, DotAchievementRule.Merge.LOWEST)]
+		[_rule(&"fastest_run", 20.0, GSAchievementRule.Merge.LOWEST)]
 	)
 	swift.description = "Finish a course in under twenty seconds."
 	swift.points = 40
-	swift.requirements[0].op = DotAchievementRule.Op.AT_MOST
+	swift.requirements[0].op = GSAchievementRule.Op.AT_MOST
 	made.append(swift)
 
 	# Secret: falling off the course is a thing a player will do before they know there is
 	# anything to earn for it. Secret rather than hidden, because the difference is whether
 	# the name is shown beforehand and this one is a joke that only works afterwards.
-	var gravity := DotAchievement.make(
+	var gravity := GSAchievement.make(
 		&"fell_10", "Gravity works",
-		[_rule(&"falls", 10.0, DotAchievementRule.Merge.SUM)]
+		[_rule(&"falls", 10.0, GSAchievementRule.Merge.SUM)]
 	)
 	gravity.description = "Fall off the course ten times."
 	gravity.points = 15
@@ -158,9 +158,9 @@ static func _counter(
 	points: int,
 	series: StringName,
 	tier: int
-) -> DotAchievement:
-	var out := DotAchievement.make(
-		id, name, [_rule(stat, target, DotAchievementRule.Merge.SUM)]
+) -> GSAchievement:
+	var out := GSAchievement.make(
+		id, name, [_rule(stat, target, GSAchievementRule.Merge.SUM)]
 	)
 	out.description = description
 	out.points = points
@@ -170,24 +170,24 @@ static func _counter(
 
 
 static func _rule(
-	stat: StringName, target: float, merge: DotAchievementRule.Merge
-) -> DotAchievementRule:
-	return DotAchievementRule.make(
-		stat, target, DotAchievementRule.Op.AT_LEAST, merge
+	stat: StringName, target: float, merge: GSAchievementRule.Merge
+) -> GSAchievementRule:
+	return GSAchievementRule.make(
+		stat, target, GSAchievementRule.Op.AT_LEAST, merge
 	)
 
 
 # --- Lifecycle -------------------------------------------------------------
 
-func setup(p_game: Playlot) -> DotResult:
+func setup(p_game: Playlot) -> GSResult:
 	game = p_game
 
-	stats = DotStatsTracker.new()
+	stats = GSStatsTracker.new()
 	stats.name = "Stats"
 	stats.schema = stats_schema()
 	stats.report_to_backbone = backbone != null
 	add_child(stats)
-	feed = DotStatsEventFeed.new(stats)
+	feed = GSStatsEventFeed.new(stats)
 	feed.key_of = func(id: Variant) -> StringName: return StringName(_key_of(StringName(str(id))))
 	feed.extra = func() -> Dictionary: return {
 		"map": String(game.map.id) if game != null and game.get("map") != null else "",
@@ -196,7 +196,7 @@ func setup(p_game: Playlot) -> DotResult:
 	if backbone != null:
 		stats.reporter.client = backbone
 
-	rank = DotStatsRank.new()
+	rank = GSStatsRank.new()
 	rank.stat_id = RANK_SCORE
 	rank.terms = [
 		{"stat": "kills", "weight": 1.0},
@@ -209,11 +209,11 @@ func setup(p_game: Playlot) -> DotResult:
 		if stats != null and stats.has_player(StringName(str(who))):
 			var _filed := stats.record(StringName(str(who)), stat, value)
 
-	achievements = DotAchievementTracker.new()
+	achievements = GSAchievementTracker.new()
 	achievements.name = "Achievements"
 	achievements.catalogue = catalogue()
 	achievements.catalogue_file = ""
-	achievements.store = DotAchievementStoreFile.new(PlaylotUserFiles.resolve(progress_dir))
+	achievements.store = GSAchievementStoreFile.new(PlaylotUserFiles.resolve(progress_dir))
 	achievements.report_to_backbone = backbone != null
 	add_child(achievements)
 
@@ -222,13 +222,13 @@ func setup(p_game: Playlot) -> DotResult:
 	if not started.ok:
 		return started.wrap("The achievement tracker could not start")
 
-	achievements.unlocked.connect(func(player: String, got: DotAchievement) -> void:
+	achievements.unlocked.connect(func(player: String, got: GSAchievement) -> void:
 		earned.emit(player, got.id, got.display_name, got.points)
 	)
 
 	# [b]The link is the whole integration and it is a signal connection.[/b] A tracker fed
 	# by hand from twenty call sites is twenty places to forget one.
-	link = DotAchievementStatsLink.new()
+	link = GSAchievementStatsLink.new()
 	link.name = "StatsLink"
 	link.tracker = achievements
 	link.stats = stats
@@ -243,12 +243,12 @@ func setup(p_game: Playlot) -> DotResult:
 
 	# Once, at boot: where progress is kept and whether it leaves the box, which is the
 	# first thing an operator asks when somebody says their achievements vanished.
-	DotLog.info(CHANNEL, "statistics and achievements are counting", {
+	GSLog.info(CHANNEL, "statistics and achievements are counting", {
 		"directory": progress_dir,
 		"backbone": backbone != null,
 		"achievements": achievements.catalogue.size() if achievements.catalogue != null else 0,
 	})
-	return DotResult.success(null)
+	return GSResult.success(null)
 
 
 ## Every signal this game already fires, turned into a reading.
@@ -258,13 +258,13 @@ func setup(p_game: Playlot) -> DotResult:
 ## count would be a second number that can disagree with the first.
 func _watch_game() -> void:
 	if game.props != null:
-		game.props.spawned.connect(func(prop: DotPropInstance) -> void:
+		game.props.spawned.connect(func(prop: GSPropInstance) -> void:
 			_record(prop.owner_id, &"props", 1.0)
 		)
 		game.props.removed.connect(func(
-			prop: DotPropInstance, reason: StringName
+			prop: GSPropInstance, reason: StringName
 		) -> void:
-			if reason == DotPropSpawner.REASON_UNDO:
+			if reason == GSPropSpawner.REASON_UNDO:
 				_record(prop.owner_id, &"undos", 1.0)
 		)
 
@@ -297,7 +297,7 @@ func _record(player_id: StringName, stat: StringName, value: float) -> void:
 	if key == "":
 		# A decision, not a fault: a player with no key yet (mid sign-on, or a bot) has no
 		# record to file under, and a reading guessed onto somebody else's would be worse.
-		DotLog.debug(CHANNEL, "a reading with no key to file it under is dropped", {
+		GSLog.debug(CHANNEL, "a reading with no key to file it under is dropped", {
 			"player": String(player_id), "stat": String(stat),
 		})
 		return
@@ -320,10 +320,10 @@ func _key_of(player_id: StringName) -> String:
 
 
 ## A landed hit by body zone; a trace that met no hitbox has no zone.
-func report_hit(attacker: StringName, victim: StringName, damage: DotDamage) -> void:
-	if feed == null or damage.hit_group == DotHitGroup.GENERIC:
+func report_hit(attacker: StringName, victim: StringName, damage: GSDamage) -> void:
+	if feed == null or damage.hit_group == GSHitGroup.GENERIC:
 		return
-	var side := StringName(str(damage.context.get(DotHitzone.CONTEXT_SIDE, "")))
+	var side := StringName(str(damage.context.get(GSHitzone.CONTEXT_SIDE, "")))
 	var _ok := feed.report_hit(attacker, victim, String(damage.weapon_id), damage.hit_group, damage.health_lost, damage.lethal, side)
 
 

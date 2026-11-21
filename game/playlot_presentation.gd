@@ -1,7 +1,7 @@
 extends "playlot_presentation_base.gd"
 
-func setup() -> DotResult:
-	# Randomness first: the map generator asks DotRegistry for a seed source, and one registered
+func setup() -> GSResult:
+	# Randomness first: the map generator asks GSRegistry for a seed source, and one registered
 	# after the map is built is silently ignored (a fixed seed is a legitimate fallback).
 	var seeded := _build_randomness()
 	if not seeded.ok:
@@ -23,7 +23,7 @@ func setup() -> DotResult:
 	_build_chat()
 
 	apply_all()
-	return DotResult.success(null)
+	return GSResult.success(null)
 
 
 func apply_all() -> void:
@@ -33,10 +33,10 @@ func apply_all() -> void:
 
 # --- Randomness -------------------------------------------------------------
 
-func _build_randomness() -> DotResult:
-	rng = DotRandomManager.new()
+func _build_randomness() -> GSResult:
+	rng = GSRandomManager.new()
 	rng.name = "Random"
-	rng.config = DotRandomConfig.new()
+	rng.config = GSRandomConfig.new()
 	# Zero picks one and logs it, which is what "what seed are you on" needs an answer to.
 	rng.config.master_seed = 0
 	rng.config.announce_seed = true
@@ -48,14 +48,14 @@ func _build_randomness() -> DotResult:
 	var res := rng.setup()
 	if not res.ok:
 		return res.wrap("the playlot's randomness")
-	return DotResult.success(null)
+	return GSResult.success(null)
 
 
-func _build_settings() -> DotResult:
-	settings = DotSettingsManager.new()
+func _build_settings() -> GSResult:
+	settings = GSSettingsManager.new()
 	settings.name = "Settings"
 	settings.schema = schema()
-	settings.local_store = DotSettingsStoreFile.new(PlaylotUserFiles.resolve(settings_directory))
+	settings.local_store = GSSettingsStoreFile.new(PlaylotUserFiles.resolve(settings_directory))
 	settings.app_namespace = &"game_playlot"
 	settings.shared_namespace = &"tmc_account"
 	add_child(settings)
@@ -64,7 +64,7 @@ func _build_settings() -> DotResult:
 	if not res.ok:
 		return res.wrap("the playlot's settings")
 	settings.changed.connect(_on_setting_changed)
-	return DotResult.success(null)
+	return GSResult.success(null)
 
 
 func _on_setting_changed(key: StringName, value: Variant, _why: StringName) -> void:
@@ -118,11 +118,11 @@ func _apply_camera_motion() -> void:
 
 
 
-func _build_audio() -> DotResult:
-	audio = DotAudioManager.new()
+func _build_audio() -> GSResult:
+	audio = GSAudioManager.new()
 	audio.name = "Audio"
 	audio.catalogue = sound_catalogue()
-	audio.mixer = DotAudioMixer.new()
+	audio.mixer = GSAudioMixer.new()
 	audio.mixer.master = settings.get_float(&"master_volume", 0.8)
 	audio.voices = 24
 	# Measured toward the family's -17 LUFS (dot-audio docs/loudness.md) with tools/loudness_pilot.gd:
@@ -138,15 +138,15 @@ func _build_audio() -> DotResult:
 	if not res.ok:
 		return res.wrap("the playlot's audio")
 
-	steps = DotAudioFootsteps.new()
+	steps = GSAudioFootsteps.new()
 	steps.name = "Footsteps"
 	steps.manager = audio
 	add_child(steps)
-	ambience = DotAudioAmbience.new()
+	ambience = GSAudioAmbience.new()
 	ambience.name = "Ambience"
 	ambience.manager = audio
 	add_child(ambience)
-	ambient = DotAmbienceDirector.new()
+	ambient = GSAmbienceDirector.new()
 	ambient.name = "Ambient"
 	ambient.manager = audio
 	ambient.default_mood = PlaylotAmbience.DEFAULT_MOOD
@@ -162,16 +162,16 @@ func _build_audio() -> DotResult:
 		ambience.set_map_bed(bed_for(&""))
 
 	# Only on a real sink, after setup: a headless server has nothing to bake for.
-	var godot_sink := audio.sink as DotAudioSinkGodot
+	var godot_sink := audio.sink as GSAudioSinkGodot
 	if godot_sink != null:
-		godot_sink.bank = DotAudioSynth.bank(audio.catalogue, sound_recipes())
-		DotLog.info(
+		godot_sink.bank = GSAudioSynth.bank(audio.catalogue, sound_recipes())
+		GSLog.info(
 			CHANNEL,
 			"no audio files; synthesised stand-ins are in use",
 			{"ids": sound_recipes().size(), "dir": SOUND_DIR}
 		)
 
-	return DotResult.success(null)
+	return GSResult.success(null)
 
 
 func _apply_decal_config() -> void:
@@ -179,11 +179,11 @@ func _apply_decal_config() -> void:
 		blood.apply_settings(settings)
 
 
-func _build_fx() -> DotResult:
-	fx = DotFxManager.new()
+func _build_fx() -> GSResult:
+	fx = GSFxManager.new()
 	fx.name = "Fx"
 	fx.catalogue = fx_catalogue()
-	fx.config = DotFxConfig.new()
+	fx.config = GSFxConfig.new()
 	fx.config.quality = settings.get_int(&"fx_quality", 3)
 	fx.config.shake_scale = settings.get_float(&"shake_scale", 1.0)
 	fx.config.allow_flashes = settings.get_bool(&"allow_flashes", true)
@@ -192,7 +192,7 @@ func _build_fx() -> DotResult:
 	fx.config.max_decals = 0
 	add_child(fx)
 
-	blood = DotFxBlood.new()
+	blood = GSFxBlood.new()
 	add_child(blood)
 	decals = blood.decals
 	_apply_decal_config()
@@ -204,10 +204,10 @@ func _build_fx() -> DotResult:
 	# Said out loud, because a missing scene is otherwise a DEBUG line; headless_presentation asserts none is missing.
 	var missing := fx.catalogue.missing_scenes()
 	if not missing.is_empty():
-		DotLog.warn(CHANNEL, "effect scenes missing; those effects will not draw", {
+		GSLog.warn(CHANNEL, "effect scenes missing; those effects will not draw", {
 			"paths": ", ".join(missing),
 		})
-	return DotResult.success(null)
+	return GSResult.success(null)
 
 
 # --- Console ----------------------------------------------------------------
@@ -226,7 +226,7 @@ func _build_chat() -> void:
 	var offered: Array[Dictionary] = []
 
 	# Typed, not inferred: see [method PlaylotServices.chat_channels].
-	for channel: DotChatChannel in PlaylotServices.chat_channels():
+	for channel: GSChatChannel in PlaylotServices.chat_channels():
 		if channel.admin_only or channel.server_only:
 			continue
 
@@ -237,10 +237,10 @@ func _build_chat() -> void:
 			# The proximity channel is what the second key opens here. A sandbox has no
 			# teams; what it has is the difference between telling the server and telling
 			# whoever is standing beside your build.
-			"team": channel.scope == DotChatChannel.Scope.RADIUS,
+			"team": channel.scope == GSChatChannel.Scope.RADIUS,
 		})
 
-	chat_window = DotChatWindow.new()
+	chat_window = GSChatWindow.new()
 	chat_window.name = "ChatWindow"
 	chat_window.open_action = PlaylotBindings.CHAT
 	chat_window.team_action = PlaylotBindings.CHAT_NEAR
@@ -255,10 +255,10 @@ func _bind_chat(action: StringName, text: String) -> void:
 	if action == &"" or text.strip_edges() == "":
 		return
 
-	var bound := DotInputBinding.apply(action, text)
+	var bound := GSInputBinding.apply(action, text)
 
 	if bound == "":
-		DotLog.warn(CHANNEL, "a chat key was not understood", {
+		GSLog.warn(CHANNEL, "a chat key was not understood", {
 			"action": String(action), "binding": text
 		})
 
@@ -290,15 +290,15 @@ func _apply_chat_visibility() -> void:
 
 
 ## dot-console's kit, registered with [param menu]; this game adds `quit` and `seed`, ahead of the server's console.
-## Called by [PlaylotClient] after its [DotMenu] exists, not from [method setup]: the kit makes the console a
+## Called by [PlaylotClient] after its [GSMenu] exists, not from [method setup]: the kit makes the console a
 ## menu overlay, which is what stops the player walking while they type.
 func build_console(menu: Object = null) -> void:
-	adopt_console(DotConsoleKit.build(self, settings, menu))
+	adopt_console(GSConsoleKit.build(self, settings, menu))
 
 
 ## Takes a console built elsewhere (the client's platform builds it, after the menu) and gives
 ## it this game's commands. Its panel is found beside it, wherever the kit put the layer.
-func adopt_console(built: DotConsoleController) -> void:
+func adopt_console(built: GSConsoleController) -> void:
 	console = built
 	if console == null:
 		return
@@ -313,7 +313,7 @@ func adopt_console(built: DotConsoleController) -> void:
 		console.add_source(s)
 	bind_profile_replies()
 
-	console_panel = console.get_parent().get_node_or_null(^"ConsoleLayer/ConsolePanel") as DotConsolePanel
+	console_panel = console.get_parent().get_node_or_null(^"ConsoleLayer/ConsolePanel") as GSConsolePanel
 
 
 ## Shows the server's answers to `profile_edit` in the console, once both the link and the console exist.
@@ -327,19 +327,19 @@ func _on_profile_reply(ok: bool, text: String) -> void:
 		console.print_line(text if ok else "profile_edit refused: " + text)
 
 
-func profile_submit(req: Dictionary) -> DotResult:
+func profile_submit(req: Dictionary) -> GSResult:
 	if profile_link != null:
 		return profile_link.submit(req)
 	var game: Object = client.get("playlot") if client != null else null
 	var profiles: Object = game.get("profiles") if game != null else null
 	if profiles == null:
-		return DotResult.fail(DotError.CODE_STATE, "no profiles here")
+		return GSResult.fail(GSError.CODE_STATE, "no profiles here")
 	return profiles.runtime.handle_request(PlaylotProfiles.LOCAL_ACTOR, req)
 
 
 ## This game's own commands; the kit has `help`, `clear`, `settings` and every setting.
-func _local_commands() -> DotConsoleLocal:
-	var local := DotConsoleLocal.new()
+func _local_commands() -> GSConsoleLocal:
+	var local := GSConsoleLocal.new()
 	local.add_command(&"quit", "Leave", func(_a: PackedStringArray) -> Variant:
 		get_tree().quit()
 		return null
@@ -355,7 +355,7 @@ func _local_commands() -> DotConsoleLocal:
 		return client.call(&"trail_command", a) if client != null and client.has_method(&"trail_command") \
 			else "pack trails are offered in solo play only"
 	)
-	DotConsoleProfileEdit.register(local, profile_submit)
+	GSConsoleProfileEdit.register(local, profile_submit)
 	return local
 
 
@@ -453,8 +453,8 @@ func on_splash(at: Vector3) -> void:
 ## surface behind it along that line, within [param reach] metres. Returns the splatter, or
 ## null when there is no victim of that kind, no surface, or gore is off.
 func on_body_hit(victim: int, point: Vector3, from: Vector3, reach: float = 4.0) -> Node3D:
-	var kind := DotEntity.kind_of(victim)
-	if kind != DotEntity.KIND_PLAYER and kind != DotEntity.KIND_NPC:
+	var kind := GSEntity.kind_of(victim)
+	if kind != GSEntity.KIND_PLAYER and kind != GSEntity.KIND_NPC:
 		return null
 	return blood.splat_behind(from, point, reach)
 
@@ -566,7 +566,7 @@ static func bed_for(map_id: StringName) -> StringName:
 
 
 ## The roof probe the weapon's shot sounds read (`ZeeShotFx.roof`): roofed means a room tail follows a shot.
-var shot_roof := DotAmbienceRoof.new()
+var shot_roof := GSAmbienceRoof.new()
 
 
 ## The listener's roof, once a frame: under one the ambience crosses to its indoor mood.

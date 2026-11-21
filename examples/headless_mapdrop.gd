@@ -1,4 +1,4 @@
-extends DotGameCheckSuite
+extends GSGameCheckSuite
 
 const PlaylotMapDrop := preload("../game/client/playlot_map_drop.gd")
 const PlaylotMapSources := preload("../game/client/playlot_map_sources.gd")
@@ -25,7 +25,7 @@ var _finished := 0
 
 
 func _ready() -> void:
-	DotLog.set_level(DotLog.Level.OFF)
+	GSLog.set_level(GSLog.Level.OFF)
 	_run.call_deferred()
 
 
@@ -84,7 +84,7 @@ func _test_source_maps() -> void:
 	_check(PlaylotMapSources.source_of({"attribution": "Geometry converted from gm_construct_small, https://x by Y."})
 			== "gm_construct_small", "or by its attribution")
 	_check(PlaylotMapSources.source_of({"attribution": "Built in PLAYLOT."}) == "", "a map made in PLAYLOT has none")
-	var catalogue := DotMapCatalogue.new()
+	var catalogue := GSMapCatalogue.new()
 	var shelf := ProjectSettings.globalize_path(ROOT + "/shelf")
 	var added := PlaylotWorldMaps.add_map_docs(catalogue, shelf)
 	var fork := catalogue.get_map(&"pgt_fork")

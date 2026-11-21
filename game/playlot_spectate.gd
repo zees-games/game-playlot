@@ -1,4 +1,4 @@
-extends DotSpectatorHost
+extends GSSpectatorHost
 
 const Playlot := preload("playlot.gd")
 const PlaylotArena := preload("playlot_arena.gd")
@@ -31,7 +31,7 @@ var _fighting: bool = false
 
 
 ## Binds the game and builds the manager. [method setup] itself takes no game.
-func bind(p_game: Playlot) -> DotResult:
+func bind(p_game: Playlot) -> GSResult:
 	game = p_game
 	authoritative = game.authoritative
 	tick_rate = game.tick_rate
@@ -48,7 +48,7 @@ func bind(p_game: Playlot) -> DotResult:
 	if not game.player_removed.is_connected(_on_player_removed):
 		game.player_removed.connect(_on_player_removed)
 
-	return DotResult.success(null)
+	return GSResult.success(null)
 
 
 func _channel() -> String:
@@ -62,7 +62,7 @@ func _apply_fighting(fighting: bool) -> void:
 	freeze_cam_seconds = seconds
 
 
-func _tune_rules(r: DotSpectatorRules) -> DotSpectatorRules:
+func _tune_rules(r: GSSpectatorRules) -> GSSpectatorRules:
 	r.force_camera = 1 if _fighting else 0
 	r.allow_while_alive = not _fighting
 	r.allow_roaming = not _fighting
@@ -75,10 +75,10 @@ func set_fighting(fighting: bool) -> void:
 	if manager == null:
 		return
 	_apply_fighting(fighting)
-	manager.rules = tune_rules(DotSpectatorRules.new())
+	manager.rules = tune_rules(GSSpectatorRules.new())
 	var res := manager.setup()
 	if not res.ok:
-		DotLog.warn(CHANNEL, "the camera policy was refused", {
+		GSLog.warn(CHANNEL, "the camera policy was refused", {
 			"why": res.error.message
 		})
 

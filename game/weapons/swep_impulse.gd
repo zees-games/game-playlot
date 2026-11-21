@@ -7,7 +7,7 @@ extends "playlot_weapon.gd"
 ## [b]An impulse, not a velocity, and that is what makes it feel like it has weight.[/b]
 ## The solver divides an impulse by the mass, so a beach ball leaves at forty times a
 ## boulder's speed for the same push — free, and exactly what a shockwave should do.
-## `DotGravGun.punt` makes the same choice for the same reason; `PlaylotWeapon.launch`
+## `GSGravGun.punt` makes the same choice for the same reason; `PlaylotWeapon.launch`
 ## deliberately makes the opposite one, because a launcher is aimed and a blast is not.
 ##
 ## [b]It walks the spawner's own list rather than casting a shape.[/b] The spawner
@@ -17,19 +17,19 @@ extends "playlot_weapon.gd"
 ## tower did not move.
 
 
-func _primary(_space: Variant, origin: Vector3, _aim: Vector3) -> DotResult:
+func _primary(_space: Variant, origin: Vector3, _aim: Vector3) -> GSResult:
 	return _blast(origin, 1.0)
 
 
-func _secondary(_space: Variant, origin: Vector3, _aim: Vector3) -> DotResult:
+func _secondary(_space: Variant, origin: Vector3, _aim: Vector3) -> GSResult:
 	# Inward, and weaker. A pull as strong as the push gathers the whole map into the
 	# player's face and there is no way back out of it.
 	return _blast(origin, -tune(&"pull_scale", 0.55))
 
 
-func _blast(origin: Vector3, sign_of: float) -> DotResult:
+func _blast(origin: Vector3, sign_of: float) -> GSResult:
 	if spawner == null:
-		return DotResult.fail(DotError.CODE_STATE, "This weapon has no world.")
+		return GSResult.fail(GSError.CODE_STATE, "This weapon has no world.")
 
 	var radius := tune(&"radius", 9.0)
 	var force := tune(&"force", 900.0)
@@ -62,4 +62,4 @@ func _blast(origin: Vector3, sign_of: float) -> DotResult:
 		)
 		moved += 1
 
-	return DotResult.success(moved)
+	return GSResult.success(moved)

@@ -14,8 +14,8 @@ signal picked(player_id: StringName, state: Dictionary)
 const REACH := 0.6
 
 ## The server owner's cvars; they outlive a map change, so the game owns them, not the layer.
-var rules: DotWeaponDropRules = _walk_over_rules()
-var drops: DotWeaponDrops = null
+var rules: GSWeaponDropRules = _walk_over_rules()
+var drops: GSWeaponDrops = null
 var game: Node = null
 ## `(player_id) -> bool`; the arena points it at its health, so the dead throw and take nothing.
 var alive_fn: Callable = Callable()
@@ -26,7 +26,7 @@ func setup(owner_game: Node) -> void:
 	game = owner_game
 	name = "WeaponLayer"
 	game.add_child(self)
-	drops = DotWeaponDrops.new()
+	drops = GSWeaponDrops.new()
 	drops.name = "WeaponDrops"
 	drops.rules = rules
 	drops.is_authority = game.authoritative
@@ -83,7 +83,7 @@ func drop_dead(player_id: StringName) -> void:
 
 ## Registers the sv_weapon_drop* cvars, archived and replicated.
 func bind_cvars(add: Callable) -> Variant:
-	return rules.bind_cvars(add, DotConVar.FLAG_ARCHIVE | DotConVar.FLAG_NOTIFY | DotConVar.FLAG_REPLICATED)
+	return rules.bind_cvars(add, GSConVar.FLAG_ARCHIVE | GSConVar.FLAG_NOTIFY | GSConVar.FLAG_REPLICATED)
 
 
 func clear() -> void:
@@ -119,7 +119,7 @@ func _look(_weapon_id: StringName) -> Node3D:
 	return body
 
 
-## What [method DotWeaponDrops.take_for] asks of an arsenal, for a player who has none: no slot is
+## What [method GSWeaponDrops.take_for] asks of an arsenal, for a player who has none: no slot is
 ## held, any zee gun is wanted, and the state is kept for the net layer to arm them with.
 class _Hands extends RefCounted:
 	var catalogue: _Defs = _Defs.new()
@@ -128,8 +128,8 @@ class _Hands extends RefCounted:
 	func has_slot(_slot: Variant) -> bool:
 		return false
 
-	func give(_id: StringName, _select: bool = false) -> DotResult:
-		return DotResult.success()
+	func give(_id: StringName, _select: bool = false) -> GSResult:
+		return GSResult.success()
 
 	func apply_dropped(taken: Dictionary) -> void:
 		state = taken
@@ -142,7 +142,7 @@ class _Defs extends RefCounted:
 
 
 ## Walk-over pickup is the sandbox's behaviour; dot-weapon's default is the use key only.
-static func _walk_over_rules() -> DotWeaponDropRules:
-	var r := DotWeaponDropRules.new()
+static func _walk_over_rules() -> GSWeaponDropRules:
+	var r := GSWeaponDropRules.new()
 	r.auto_pickup = true
 	return r

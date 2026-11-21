@@ -7,7 +7,7 @@ extends "playlot_client_base.gd"
 ## without `suspended` typing "sw" walks the player back. dot-server's `chat_received` feeds only
 ## the server's own lines; a PLAYER's line goes through this game's wire, so both would draw twice.
 func _wire_chat_window() -> void:
-	var window: DotChatWindow = presentation.chat_window if presentation != null else null
+	var window: GSChatWindow = presentation.chat_window if presentation != null else null
 
 	if window == null:
 		return
@@ -16,7 +16,7 @@ func _wire_chat_window() -> void:
 	window.opened.connect(func(_channel: StringName) -> void: platform.refresh_blocked())
 	window.closed.connect(func() -> void: platform.refresh_blocked())
 
-	var client_link := DotRegistry.get_service(&"dot_client_link")
+	var client_link := GSRegistry.get_service(&"dot_client_link")
 
 	if client_link != null and client_link.has_signal("chat_received"):
 		client_link.connect("chat_received", _on_server_chat_state)
@@ -27,8 +27,8 @@ func _wire_chat_window() -> void:
 ## routes those over its own wire.
 func _on_server_chat_state(payload: Dictionary) -> void:
 	if str(payload.get("kind", "")) != "state":
-		var window: DotChatWindow = presentation.chat_window if presentation != null else null
-		var _drawn := DotGameChatClient.draw_server_line(window, payload)
+		var window: GSChatWindow = presentation.chat_window if presentation != null else null
+		var _drawn := GSGameChatClient.draw_server_line(window, payload)
 		return
 
 	if presentation != null:
@@ -48,31 +48,31 @@ func _on_chat_submitted(text: String, channel: StringName) -> void:
 		presentation.chat_window.add_said("You", text, Color(0.62, 0.78, 1.0))
 
 
-## A routed line off this game's own wire, filed by [DotChatClient] — which drops a
+## A routed line off this game's own wire, filed by [GSChatClient] — which drops a
 ## duplicate and reports a gap.
 func _on_chat_wire(wire: Dictionary) -> void:
 	if chat != null:
 		chat.receive(wire)
 
 
-## A line [DotChatClient] accepted: in sequence, not a duplicate, on a known channel.
+## A line [GSChatClient] accepted: in sequence, not a duplicate, on a known channel.
 ##
-## The channel, a [DotChatChannel] both ends share, decides the prefix and colour.
-func _on_chat_message(message: DotChatMessage, channel_id: StringName) -> void:
+## The channel, a [GSChatChannel] both ends share, decides the prefix and colour.
+func _on_chat_message(message: GSChatMessage, channel_id: StringName) -> void:
 	if hud == null:
 		return
 
 	var chan := chat.channel(channel_id)
 	var prefix := "%s " % chan.prefix if chan != null and chan.prefix != "" else ""
 
-	var window: DotChatWindow = presentation.chat_window if presentation != null else null
+	var window: GSChatWindow = presentation.chat_window if presentation != null else null
 	var colour := chan.colour if chan != null else Color(0.88, 0.90, 0.94)
 
 	# In the chat box, and on the notice line only when there is no box: the notice line keeps what
 	# is the game's (budget reached, a tool's refusal), never chat. A join or leave notice is a name
 	# and no text, so `describe()` words it ("Guest 435 joined"); other kinds are drawn by their text.
 	var text := message.describe() \
-		if message.kind in [DotChatMessage.Kind.JOIN, DotChatMessage.Kind.LEAVE] \
+		if message.kind in [GSChatMessage.Kind.JOIN, GSChatMessage.Kind.LEAVE] \
 		else message.text
 
 	if message.is_from_server() or message.sender_name == "":

@@ -7,7 +7,7 @@ const PlaylotZee := preload("playlot_zee.gd")
 ## Grenades and rockets in flight in the sandbox, and what happens where they go off.
 ##
 ## [b]This exists because the game used to drop them.[/b] A zee weapon's outcome carries
-## its shots and its [DotWeaponSpawn]s. The game resolved the shots and ignored the spawns,
+## its shots and its [GSWeaponSpawn]s. The game resolved the shots and ignored the spawns,
 ## so a thrown frag left the hand, cost a grenade and never existed. dot-weapon returns a
 ## spawn because a projectile is an entity with a lifetime, and something has to fly it.
 ## game-fatal-contact's `fc_projectiles.gd` is the same job against that game's analytic map.
@@ -39,7 +39,7 @@ const PlaylotZee := preload("playlot_zee.gd")
 ## One projectile, mid-air, rolling, or stuck to something.
 class Flying extends RefCounted:
 	var serial: int = 0
-	var spawn: DotWeaponSpawn = null
+	var spawn: GSWeaponSpawn = null
 	var position: Vector3 = Vector3.ZERO
 	var velocity: Vector3 = Vector3.ZERO
 	var age_ticks: int = 0
@@ -105,7 +105,7 @@ var _boards: Array = []
 
 ## Where the `sticks` rule is read from, by the spawn's id. Null leaves every fused spawn a
 ## bouncer.
-var catalogue: DotWeaponCatalogue = null
+var catalogue: GSWeaponCatalogue = null
 
 ## `sv_grenade_*`: bounce, friction and how long smoke, fire and a flash last.
 var rules := AwGrenadeRules.new()
@@ -145,14 +145,14 @@ func _init() -> void:
 
 ## Makes every live projectile a danger on [param board], and every blast heard on it.
 ## [param now_fn] is `func() -> float`, the clock that board keeps.
-func add_board(board: DotNpcAiSounds, now_fn: Callable) -> void:
+func add_board(board: GSNpcAiSounds, now_fn: Callable) -> void:
 	if board != null:
 		_boards.append([board, now_fn])
 
 
 ## Takes every spawn in [param outcome], thrown by [param owner_id] from [param owner_body].
 ## Returns how many it launched. Does nothing on a client: a client is told.
-func accept(outcome: DotWeaponOutcome, owner_id: StringName, owner_body: Node = null) -> int:
+func accept(outcome: GSWeaponOutcome, owner_id: StringName, owner_body: Node = null) -> int:
 	if not authority or outcome == null:
 		return 0
 
@@ -164,7 +164,7 @@ func accept(outcome: DotWeaponOutcome, owner_id: StringName, owner_body: Node = 
 	# Flown as given: a spawn's fuse and life arrive in this server's ticks, because
 	# dot-weapon scales a row written at 64 Hz (the pack's) to the arsenal's rate before
 	# the behaviour hands it over. Rescaling here as well would halve every fuse again.
-	for spawn: DotWeaponSpawn in outcome.spawns:
+	for spawn: GSWeaponSpawn in outcome.spawns:
 		var _flying := launch(spawn, owner_id, rid)
 
 	return outcome.spawns.size()
@@ -172,7 +172,7 @@ func accept(outcome: DotWeaponOutcome, owner_id: StringName, owner_body: Node = 
 
 ## Puts one projectile in the air. [param serial] 0 allocates one, which is what the
 ## authority does; a client passes the server's.
-func launch(spawn: DotWeaponSpawn, owner_id: StringName, owner_rid: RID = RID(), serial: int = 0) -> Flying:
+func launch(spawn: GSWeaponSpawn, owner_id: StringName, owner_rid: RID = RID(), serial: int = 0) -> Flying:
 	var f := Flying.new()
 	f.serial = serial if serial > 0 else _next_serial
 	_next_serial = maxi(_next_serial, f.serial) + 1
@@ -194,7 +194,7 @@ func launch(spawn: DotWeaponSpawn, owner_id: StringName, owner_rid: RID = RID(),
 
 
 ## A client flies its own throw now rather than after the round trip. [method launch_told] adopts it.
-func predict(spawn: DotWeaponSpawn, owner_id: StringName, owner_rid: RID = RID()) -> Flying:
+func predict(spawn: GSWeaponSpawn, owner_id: StringName, owner_rid: RID = RID()) -> Flying:
 	var f := launch(spawn, owner_id, owner_rid)
 	f.serial = _next_predicted
 	_next_predicted -= 1
@@ -204,7 +204,7 @@ func predict(spawn: DotWeaponSpawn, owner_id: StringName, owner_rid: RID = RID()
 
 ## The server's launch on a client. [param mine] adopts the thrower's predicted copy of the same
 ## spawn (taking the server's serial) instead of flying a second one.
-func launch_told(spawn: DotWeaponSpawn, owner_id: StringName, serial: int, mine: bool) -> Flying:
+func launch_told(spawn: GSWeaponSpawn, owner_id: StringName, serial: int, mine: bool) -> Flying:
 	if mine:
 		for i in _predicted.size():
 			var p := _predicted[i]
@@ -227,7 +227,7 @@ func _expire_predicted(rate: int) -> void:
 			_predicted.remove_at(i)
 
 
-func _sticks(spawn: DotWeaponSpawn) -> bool:
+func _sticks(spawn: GSWeaponSpawn) -> bool:
 	if spawn.meta.has(&"sticks"):
 		return bool(spawn.meta[&"sticks"])
 
@@ -260,7 +260,7 @@ func join_launches() -> Array[Dictionary]:
 	var out: Array[Dictionary] = []
 
 	for f in _live:
-		var s := DotWeaponSpawn.new()
+		var s := GSWeaponSpawn.new()
 		s.id = f.spawn.id
 		s.origin = f.position
 		s.velocity = f.velocity
@@ -471,7 +471,7 @@ func _detonate(f: Flying, at: Vector3) -> void:
 		if game != null and game.has_method("blast_toys"):
 			var _thrown: int = game.call("blast_toys", at, radius)
 
-	_hear(DotNpcAiSounds.Kind.COMBAT, at, BLAST_HEARD, 0.5, f.owner_id)
+	_hear(GSNpcAiSounds.Kind.COMBAT, at, BLAST_HEARD, 0.5, f.owner_id)
 	_undraw(f)
 	_flash(at, radius)
 	detonated.emit(f.serial, at, radius)
@@ -479,15 +479,15 @@ func _detonate(f: Flying, at: Vector3) -> void:
 
 ## The definition [AwGrenadeBlast] reads: the weapon's own params (`kind`, `effect_radius`) over
 ## the splash this spawn carries, which is what the weapon's modifiers left of it.
-func _blast_def(f: Flying) -> DotWeaponDef:
-	var def := DotWeaponDef.new()
+func _blast_def(f: Flying) -> GSWeaponDef:
+	var def := GSWeaponDef.new()
 	def.id = f.spawn.id
 	var source := _def_of(f.spawn)
 
 	if source != null:
 		def.params = source.params
 
-	var b := DotWeaponBallistics.new()
+	var b := GSWeaponBallistics.new()
 	b.splash_radius = f.spawn.splash_radius
 	b.splash_damage = f.spawn.splash_damage
 	def.tuning = b
@@ -495,8 +495,8 @@ func _blast_def(f: Flying) -> DotWeaponDef:
 
 
 ## The weapon definition behind [param spawn], from this game's catalogue or a pack's.
-func _def_of(spawn: DotWeaponSpawn) -> DotWeaponDef:
-	var def: DotWeaponDef = catalogue.get_def(spawn.id) if catalogue != null else null
+func _def_of(spawn: GSWeaponSpawn) -> GSWeaponDef:
+	var def: GSWeaponDef = catalogue.get_def(spawn.id) if catalogue != null else null
 	return def if def != null else PlaylotZee.pack_def(spawn.id)
 
 
@@ -519,7 +519,7 @@ func colliders_in(at: Vector3, radius: float) -> Array:
 		var collider: Variant = result.get("collider")
 
 		if collider is Node3D and not (collider is StaticBody3D) and not out.has(collider) \
-				and DotPropBodyBox.toy_of(collider) == null:
+				and GSPropBodyBox.toy_of(collider) == null:
 			out.append(collider)
 
 	return out
@@ -594,15 +594,15 @@ func _shove(body: Node3D, damage: float, at: Vector3) -> void:
 
 func _announce_danger(f: Flying) -> void:
 	var reach := maxf(f.spawn.splash_radius, 1.0) + DANGER_MARGIN
-	_hear(DotNpcAiSounds.Kind.DANGER, f.position, DANGER_HEARD, DANGER_SECONDS, f.owner_id, reach)
+	_hear(GSNpcAiSounds.Kind.DANGER, f.position, DANGER_HEARD, DANGER_SECONDS, f.owner_id, reach)
 
 
 func _hear(kind: int, at: Vector3, radius: float, duration: float, owner_id: StringName, extent: float = -1.0) -> void:
 	for entry in _boards:
-		var board: DotNpcAiSounds = entry[0]
+		var board: GSNpcAiSounds = entry[0]
 		var now_fn: Callable = entry[1]
 		var now := float(now_fn.call()) if now_fn.is_valid() else 0.0
-		var _id := board.emit(kind as DotNpcAiSounds.Kind, at, radius, now, duration, owner_id, extent)
+		var _id := board.emit(kind as GSNpcAiSounds.Kind, at, radius, now, duration, owner_id, extent)
 
 
 # --- Drawing ------------------------------------------------------------------

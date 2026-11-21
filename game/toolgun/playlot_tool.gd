@@ -14,7 +14,7 @@ extends RefCounted
 ## The server takes only keys the schema names and clamps every number to it, because
 ## settings arrive from a client and a resize step of a million is a crashed server.
 
-# No CHANNEL: a mode reports through the DotResult it returns, which the gun shows the
+# No CHANNEL: a mode reports through the GSResult it returns, which the gun shows the
 # player. What a mode changes in the world is logged where the world changes.
 
 ## Stable id: what the client sends and the menu files it under.
@@ -79,16 +79,16 @@ func setting(key: String) -> Variant:
 
 
 ## Left click. [param hit] is the gun's trace — see `swep_toolgun.gd`.
-func primary(_gun: Object, _hit: Dictionary) -> DotResult:
-	return DotResult.fail(DotError.CODE_UNSUPPORTED, "This tool does nothing on left click.")
+func primary(_gun: Object, _hit: Dictionary) -> GSResult:
+	return GSResult.fail(GSError.CODE_UNSUPPORTED, "This tool does nothing on left click.")
 
 
-func secondary(_gun: Object, _hit: Dictionary) -> DotResult:
-	return DotResult.fail(DotError.CODE_UNSUPPORTED, "This tool does nothing on right click.")
+func secondary(_gun: Object, _hit: Dictionary) -> GSResult:
+	return GSResult.fail(GSError.CODE_UNSUPPORTED, "This tool does nothing on right click.")
 
 
-func reload(_gun: Object, _hit: Dictionary) -> DotResult:
-	return DotResult.fail(DotError.CODE_UNSUPPORTED, "This tool does nothing on reload.")
+func reload(_gun: Object, _hit: Dictionary) -> GSResult:
+	return GSResult.fail(GSError.CODE_UNSUPPORTED, "This tool does nothing on reload.")
 
 
 ## Forgets a half-made two-click action. Called when the mode is swapped away from.
@@ -132,5 +132,5 @@ static func rigid_body(hit: Dictionary) -> RigidBody3D:
 	return body if body is RigidBody3D and is_instance_valid(body) else null
 
 
-static func nothing_there() -> DotResult:
-	return DotResult.fail(DotError.CODE_STATE, "Point at a prop.")
+static func nothing_there() -> GSResult:
+	return GSResult.fail(GSError.CODE_STATE, "Point at a prop.")

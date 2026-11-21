@@ -16,7 +16,7 @@ const PlaylotZeeSelf := preload("playlot_zee.gd")
 ##
 ## [b]Named by class, not by path, and that is not the rule broken.[/b] The path rule is for
 ## this game's OWN scripts, whose `class_name`s a mounted pack never registers. `Zee*` and
-## `DotWeapon*` are addons compiled into the host — the client shell carries both — so they
+## `GSWeapon*` are addons compiled into the host — the client shell carries both — so they
 ## are registered wherever this runs. mg-smash-copter names them the same way.
 ##
 ## [b]A shot hurts only when the arena is on.[/b] A sandbox is not a deathmatch, and a
@@ -52,10 +52,10 @@ const SLOT_COLOURS := {
 }
 
 ## The catalogue, built once. Every rig is handed this one rather than building its own.
-static var _catalogue: DotWeaponCatalogue = null
+static var _catalogue: GSWeaponCatalogue = null
 
 
-static func catalogue() -> DotWeaponCatalogue:
+static func catalogue() -> GSWeaponCatalogue:
 	if _catalogue == null:
 		_catalogue = ZeeWeaponPack.catalogue()
 		# Built once at setup, under the loading cover; the first spawn then loads no script.
@@ -65,7 +65,7 @@ static func catalogue() -> DotWeaponCatalogue:
 
 ## Pack weapons ([PlaylotWorkshop]) by zee id, and the catalogue that holds them besides the pack's own.
 static var _pack_defs: Dictionary = {}
-static var _with_packs: DotWeaponCatalogue = null
+static var _with_packs: GSWeaponCatalogue = null
 ## Weapons a spawn provider's `weapon_defs()` gave ([PlaylotAddons]), by zee id. Kept apart from
 ## [member _pack_defs] because [method set_pack_defs] replaces that one on every Workshop sync, and
 ## a provider's weapons are not the Workshop's to drop.
@@ -73,10 +73,10 @@ static var _provider_defs: Dictionary = {}
 
 
 ## Teaches the rigs a weapon a spawn provider ships. [param def] is a [PlaylotWeaponDef] whose
-## `meta.pack_def` is the pack's [DotWeaponDef].
+## `meta.pack_def` is the pack's [GSWeaponDef].
 static func add_provider_def(def: PlaylotWeaponDef, provider: Object = null) -> void:
 	var pack_def: Variant = def.meta.get("pack_def")
-	if pack_def is DotWeaponDef:
+	if pack_def is GSWeaponDef:
 		_provider_defs[zee_id(def)] = pack_def
 		if provider != null:
 			_art_providers[zee_id(def)] = weakref(provider)
@@ -97,7 +97,7 @@ static func pack_art() -> Array[ZeeWeaponArt]:
 	var asked := {}
 	for table: Dictionary in [_pack_defs, _provider_defs]:
 		for id: StringName in table:
-			var def: DotWeaponDef = table[id]
+			var def: GSWeaponDef = table[id]
 			var ref: Variant = _art_providers.get(id)
 			var provider: Object = (ref as WeakRef).get_ref() if ref is WeakRef else null
 			out.append(_art_for(def, provider, asked))
@@ -105,7 +105,7 @@ static func pack_art() -> Array[ZeeWeaponArt]:
 
 
 ## [param asked] caches each provider's answers (instance id -> {arts, rows}) for one [method pack_art] call.
-static func _art_for(def: DotWeaponDef, provider: Object, asked: Dictionary = {}) -> ZeeWeaponArt:
+static func _art_for(def: GSWeaponDef, provider: Object, asked: Dictionary = {}) -> ZeeWeaponArt:
 	var answers: Dictionary = {}
 	if provider != null:
 		var key := provider.get_instance_id()
@@ -139,20 +139,20 @@ static func _learn_art() -> void:
 
 
 ## The pack's definition of the weapon [param id]: the zee catalogue's, a Workshop weapon's or a provider's.
-static func pack_def(id: StringName) -> DotWeaponDef:
+static func pack_def(id: StringName) -> GSWeaponDef:
 	if catalogue().has(id):
 		return catalogue().get_def(id)
 	return _pack_defs.get(id, _provider_defs.get(id))
 
 
 ## Replaces the Workshop weapons the rigs may be given. [param defs] are [PlaylotWeaponDef]s whose
-## `meta.pack_def` is the pack's [DotWeaponDef].
+## `meta.pack_def` is the pack's [GSWeaponDef].
 static func set_pack_defs(defs: Array) -> void:
 	_pack_defs.clear()
 	_with_packs = null
 	for def: PlaylotWeaponDef in defs:
 		var pack_def: Variant = def.meta.get("pack_def")
-		if pack_def is DotWeaponDef:
+		if pack_def is GSWeaponDef:
 			_pack_defs[zee_id(def)] = pack_def
 	_learn_art()
 
@@ -160,7 +160,7 @@ static func set_pack_defs(defs: Array) -> void:
 ## The catalogue a rig holding [param def] is built over: the pack's own, plus Workshop weapons it
 ## does not already have (code wins an id, as in dot-weapon). A copy rather than an addition to
 ## [method catalogue], so a solo subscription never leaks into a table a server also reads.
-static func catalogue_for(def: PlaylotWeaponDef) -> DotWeaponCatalogue:
+static func catalogue_for(def: PlaylotWeaponDef) -> GSWeaponCatalogue:
 	if def == null or not def.meta.has("pack_def") or catalogue().has(zee_id(def)):
 		return catalogue()
 	if _with_packs == null:
@@ -240,18 +240,18 @@ static func arm(
 	var ctl: Variant = player.get("controller")
 	rig.wall_extra_mask = ctl.tunables.collision_mask if ctl != null else 0
 	rig.catalogue = catalogue_for(def)
-	rig.player_ref = DotNodeRef.of_path(player.get_path())
+	rig.player_ref = GSNodeRef.of_path(player.get_path())
 	rig.ads_rules = ads_rules
 
 	if view_model != null:
-		rig.view_model_ref = DotNodeRef.of_path(view_model.get_path())
+		rig.view_model_ref = GSNodeRef.of_path(view_model.get_path())
 
 	player.add_child(rig)
 
 	var ready_now := rig.setup()
 
 	if not ready_now.ok:
-		DotLog.warn(CHANNEL, "a weapon rig would not set up", {
+		GSLog.warn(CHANNEL, "a weapon rig would not set up", {
 			"weapon": String(def.id), "why": ready_now.error.message,
 		})
 		player.remove_child(rig)
@@ -262,7 +262,7 @@ static func arm(
 	var given := rig.give(id)
 
 	if not given.ok:
-		DotLog.warn(CHANNEL, "the rig refused a weapon", {
+		GSLog.warn(CHANNEL, "the rig refused a weapon", {
 			"weapon": String(id), "why": given.error.message,
 		})
 
@@ -297,7 +297,7 @@ static func disarm(player: Node) -> void:
 ##
 ## The same three bits every tool here rides on: USER_0 is fire, USER_1 the alt (a bash),
 ## USER_2 reload. The slot is the one the rig already holds; this game switches weapons by
-## asking for one, not by a slot key. Buttons rather than a [DotFpsCommand] so the offline
+## asking for one, not by a slot key. Buttons rather than a [GSFpsCommand] so the offline
 ## client, which has no command until its controller samples one, builds it the same way.
 # --- NPCs ----------------------------------------------------------------------
 
@@ -370,12 +370,12 @@ const SETTLE_SEC := 0.6
 
 ## One tick of the drawn gun's quiet clock on [param player] (`zee_quiet`): reset by a trigger,
 ## a reload or a switch, else counted up by [param delta] simulated seconds.
-static func note_drawn(player: Node, rig: ZeeWeaponRig, command: DotWeaponCommand, delta: float) -> void:
+static func note_drawn(player: Node, rig: ZeeWeaponRig, command: GSWeaponCommand, delta: float) -> void:
 	if player == null or rig == null or rig.arsenal == null:
 		return
 
-	var busy := command != null and (command.is_pressed(DotWeaponCommand.BUTTON_ATTACK)
-		or command.is_pressed(DotWeaponCommand.BUTTON_RELOAD))
+	var busy := command != null and (command.is_pressed(GSWeaponCommand.BUTTON_ATTACK)
+		or command.is_pressed(GSWeaponCommand.BUTTON_RELOAD))
 	busy = busy or rig.arsenal.is_reloading() or rig.arsenal.is_switching()
 	var quiet: float = float(player.get("zee_quiet")) if player.get("zee_quiet") != null else 0.0
 	player.set("zee_quiet", 0.0 if busy else quiet + maxf(delta, 0.0))
@@ -420,7 +420,7 @@ static func rig_is_melee(rig: Node) -> bool:
 
 static func rig_is_automatic(rig: Node) -> bool:
 	var def := (rig as ZeeWeaponRig).current_def() if rig is ZeeWeaponRig else null
-	return def != null and (def.fire_mode == DotWeaponDef.Fire.AUTO or def.fire_mode == DotWeaponDef.Fire.HOLD)
+	return def != null and (def.fire_mode == GSWeaponDef.Fire.AUTO or def.fire_mode == GSWeaponDef.Fire.HOLD)
 
 
 static func rig_magazine_empty(rig: Node) -> bool:
@@ -440,14 +440,14 @@ static func rig_magazine_empty(rig: Node) -> bool:
 ## rolled into `pellets`, and tracing the direction instead puts every shotgun pellet down
 ## one line — a shotgun that is a rifle.
 static func trace_outcome(
-	space: PhysicsDirectSpaceState3D, outcome: DotWeaponOutcome, exclude: Array[RID]
+	space: PhysicsDirectSpaceState3D, outcome: GSWeaponOutcome, exclude: Array[RID]
 ) -> Array[Dictionary]:
 	var out: Array[Dictionary] = []
 
 	if space == null or outcome == null:
 		return out
 
-	for shot: DotShot in outcome.shots:
+	for shot: GSShot in outcome.shots:
 		var directions: Array = shot.pellets if not shot.pellets.is_empty() else [shot.direction]
 		var per_pellet := shot.damage
 
@@ -473,12 +473,12 @@ static func trace_outcome(
 	return out
 
 
-static func command_for(buttons: int, yaw: float, pitch: float, slot: int, aim: bool = false) -> DotWeaponCommand:
-	var command := DotWeaponCommand.new()
-	command.set_button(DotWeaponCommand.BUTTON_AIM, aim)
-	command.set_button(DotWeaponCommand.BUTTON_ATTACK, (buttons & DotFpsCommand.BUTTON_USER_0) != 0)
-	command.set_button(DotWeaponCommand.BUTTON_ALT, (buttons & DotFpsCommand.BUTTON_USER_1) != 0)
-	command.set_button(DotWeaponCommand.BUTTON_RELOAD, (buttons & DotFpsCommand.BUTTON_USER_2) != 0)
+static func command_for(buttons: int, yaw: float, pitch: float, slot: int, aim: bool = false) -> GSWeaponCommand:
+	var command := GSWeaponCommand.new()
+	command.set_button(GSWeaponCommand.BUTTON_AIM, aim)
+	command.set_button(GSWeaponCommand.BUTTON_ATTACK, (buttons & GSFpsCommand.BUTTON_USER_0) != 0)
+	command.set_button(GSWeaponCommand.BUTTON_ALT, (buttons & GSFpsCommand.BUTTON_USER_1) != 0)
+	command.set_button(GSWeaponCommand.BUTTON_RELOAD, (buttons & GSFpsCommand.BUTTON_USER_2) != 0)
 	command.yaw = yaw
 	command.pitch = pitch
 	command.slot = slot
@@ -500,12 +500,12 @@ static func slot_of(rig: ZeeWeaponRig) -> int:
 ## players touch each other's props. A second answer to "may I move that crate" would be
 ## a server where you cannot pick somebody's crate up and can shoot it across the map.
 static func shove_props(
-	player: Node, outcome: DotWeaponOutcome, may_touch_others: bool
+	player: Node, outcome: GSWeaponOutcome, may_touch_others: bool
 ) -> int:
 	if outcome == null or player == null or not (player is Node3D):
 		return 0
 
-	var gun: DotGravGun = player.get("grav_gun")
+	var gun: GSGravGun = player.get("grav_gun")
 
 	if gun == null or not (player as Node3D).is_inside_tree():
 		return 0
@@ -513,7 +513,7 @@ static func shove_props(
 	var space := (player as Node3D).get_world_3d().direct_space_state
 	var moved := 0
 
-	for shot: DotShot in outcome.shots:
+	for shot: GSShot in outcome.shots:
 		var direction := shot.direction.normalized()
 		var reach := gun.reach
 		gun.reach = shot.max_range

@@ -67,7 +67,7 @@ static func survey(
 ## Returns `{crouch_only: cells only a crouched player stands on, crouch_reached: how many of those a
 ## spawn leads to, cut_off: lines for each region of them no spawn leads to even crouched (an area
 ## in [param declared] is left out)}`. [param crouch_height] is the family hull a map is made for
-## (`DotFpsTunables.crouch_height`), never a number of this survey's own: a player that cannot
+## (`GSFpsTunables.crouch_height`), never a number of this survey's own: a player that cannot
 ## fit a passage is not a reason to reopen the passage.
 static func crouch_cut_off(
 	map: Node3D, ways_out: Array, spawns: Array[Vector3], declared: Array, crouch_height: float
@@ -116,7 +116,7 @@ static func survey_solids(
 	return s._run(ways_out, spawns, declared)
 
 
-## The ways out a run timer's zone set declares: every box END zone, and every box RESPAWN zone as a pit too. [param zones] is a dot-timer `DotTimerZoneSet` or null, read by duck
+## The ways out a run timer's zone set declares: every box END zone, and every box RESPAWN zone as a pit too. [param zones] is a dot-timer `GSTimerZoneSet` or null, read by duck
 ## typing because the timer is an optional addon here and a script naming its classes does not compile without it (see `addons/pg_timer`).
 static func ways_out_of(zones: Object) -> Array:
 	var out: Array = []

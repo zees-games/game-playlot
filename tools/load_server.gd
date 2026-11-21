@@ -11,7 +11,7 @@ const PlaylotPlatform := preload("../game/playlot_platform.gd")
 
 const CHANNEL := "load_server"
 
-var server: DotServer = null
+var server: GSServer = null
 var game: Playlot = null
 var platform: PlaylotPlatform = null
 var module: Object = null
@@ -32,8 +32,8 @@ var _report: Callable = _report_stat
 
 
 func _ready() -> void:
-	DotLog.set_level(DotLog.Level.WARN)
-	DotFrameCost.enabled = true
+	GSLog.set_level(GSLog.Level.WARN)
+	GSFrameCost.enabled = true
 	_run.call_deferred()
 
 
@@ -45,11 +45,11 @@ func _arg(name: String, fallback: String) -> String:
 
 func _run() -> void:
 	var dir := ProjectSettings.globalize_path("user://load_server")
-	DotPaths.remove_tree(dir)
+	GSPaths.remove_tree(dir)
 	DirAccess.make_dir_recursive_absolute(dir)
 	var slots := int(_arg("--slots", "128"))
 
-	var config := DotServerConfig.new()
+	var config := GSServerConfig.new()
 	config.autoexec_config = ""
 	config.hostname = "load test"
 	config.max_players = slots
@@ -62,19 +62,19 @@ func _run() -> void:
 	config.audit_log_path = "%s/audit.jsonl" % dir
 	config.stdin_console_enabled = false
 
-	server = DotServer.new()
+	server = GSServer.new()
 	server.name = "Server"
 	server.config = config
 	add_child(server)
 	for _i in 60:
 		await get_tree().process_frame
-		if server.state == DotServer.State.RUNNING:
+		if server.state == GSServer.State.RUNNING:
 			break
 	# The hardcoded 10-burst, 2/s per-address connect limit would refuse a swarm that shares 127.0.0.1
 	# (a LAN party behind one NAT meets the same wall; filed with the results).
-	server._connect_limiter = DotRateLimiter.new(10000.0, 10000.0)
+	server._connect_limiter = GSRateLimiter.new(10000.0, 10000.0)
 	# server.cfg sets sv_maxplayers 32 after boot and wins over config.max_players.
-	var slots_cvar: DotConVar = server.console.find_cvar("sv_maxplayers")
+	var slots_cvar: GSConVar = server.console.find_cvar("sv_maxplayers")
 	if slots_cvar != null:
 		slots_cvar.set_value(str(slots))
 
@@ -93,22 +93,22 @@ func _run() -> void:
 	platform.name = "Identity"
 	platform.directory = "%s/identity" % dir
 	add_child(platform)
-	var _identity: DotResult = await platform.setup()
-	var _p: DotResult = await server.modules.load_module("res://addons/dot_platform/dot_platform_module.gd")
+	var _identity: GSResult = await platform.setup()
+	var _p: GSResult = await server.modules.load_module("res://addons/dot_platform/dot_platform_module.gd")
 	(load("res://game/playlot_module.gd") as GDScript).set("punishments_path", "%s/punishments.json" % dir)
-	var loaded: DotResult = await server.modules.load_module("res://game/playlot_module.gd")
+	var loaded: GSResult = await server.modules.load_module("res://game/playlot_module.gd")
 	for n in server.modules.loaded_names():
 		var m: Object = server.modules.get_module(n)
 		if m != null and m.get("net") != null:
 			module = m
-	var tuned: DotNetManager = module.get("net") if module != null else null
+	var tuned: GSNetManager = module.get("net") if module != null else null
 	if tuned != null:
 		tuned.config.snapshot_workers = int(_arg("--workers", "0"))
 		var far_every := int(_arg("--far-every", "1"))
-		if far_every > 1 and tuned.interest is DotNetInterestDistance:
-			(tuned.interest as DotNetInterestDistance).far_every = far_every
-			(tuned.interest as DotNetInterestDistance).far_distance = float(_arg("--far-distance", "40"))
-	var cvar: DotConVar = server.console.find_cvar("sv_maxplayers")
+		if far_every > 1 and tuned.interest is GSNetInterestDistance:
+			(tuned.interest as GSNetInterestDistance).far_every = far_every
+			(tuned.interest as GSNetInterestDistance).far_distance = float(_arg("--far-distance", "40"))
+	var cvar: GSConVar = server.console.find_cvar("sv_maxplayers")
 	print("load_server: module loaded=%s port=%d slots=%d sv_maxplayers=%s" % [
 		loaded.ok, config.port, slots, cvar.get_int() if cvar != null else "?"])
 	_second_at = Time.get_ticks_msec() / 1000.0
@@ -160,7 +160,7 @@ func _physics_process(_delta: float) -> void:
 	_gather_costs()
 	if module == null:
 		return
-	var net: DotNetManager = module.get("net")
+	var net: GSNetManager = module.get("net")
 	if net == null:
 		return
 	# The swarm cannot say READY (that needs the game's message schema on its end), so the
@@ -189,7 +189,7 @@ func _physics_process(_delta: float) -> void:
 	_report.call(net, now)
 
 
-func _report_stat(net: DotNetManager, now: float) -> void:
+func _report_stat(net: GSNetManager, now: float) -> void:
 	var wall := now - _wall_last
 	var cpu := _cpu_seconds()
 	var d := net.describe()
@@ -224,7 +224,7 @@ func _mean(values: PackedFloat64Array) -> float:
 
 
 func _gather_costs() -> void:
-	var taken := DotFrameCost.take()
+	var taken := GSFrameCost.take()
 	for system: StringName in taken:
 		_costs[system] = float(_costs.get(system, 0.0)) + float(taken[system]["ms"])
 	_costs[&"frames"] = float(_costs.get(&"frames", 0.0)) + 1.0

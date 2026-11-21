@@ -38,7 +38,7 @@ var game: Playlot = null
 ## The arena, when the module has built one. See [PlaylotSpectate.arena].
 var arena: PlaylotArena = null
 
-var effects: DotEffectManager = null
+var effects: GSEffectManager = null
 
 ## Whether being downed happens at all.
 var enabled: bool = false
@@ -46,10 +46,10 @@ var enabled: bool = false
 var _reviving: Dictionary = {}
 
 
-func setup(p_game: Playlot) -> DotResult:
+func setup(p_game: Playlot) -> GSResult:
 	game = p_game
 
-	effects = DotEffectManager.new()
+	effects = GSEffectManager.new()
 	effects.name = "Effects"
 	effects.authoritative = game.authoritative
 	effects.rules = _rules()
@@ -71,11 +71,11 @@ func setup(p_game: Playlot) -> DotResult:
 		died.emit(_player_of(entity), reason))
 	effects.damaged.connect(_on_damaged)
 
-	return DotResult.success(null)
+	return GSResult.success(null)
 
 
-func _rules() -> DotEffectRules:
-	var rules := DotEffectRules.new()
+func _rules() -> GSEffectRules:
+	var rules := GSEffectRules.new()
 	rules.downed_enabled = true
 	rules.downed_health = 300.0
 	# 300 over about ninety seconds at this game's rate, which is the genre's number
@@ -92,8 +92,8 @@ func _rules() -> DotEffectRules:
 
 
 ## The effects a downed player carries. One, and it does the whole job.
-static func table(rate: int) -> Array[DotEffectDef]:
-	var down := DotEffectDef.make(&"pg_downed", 0)
+static func table(rate: int) -> Array[GSEffectDef]:
+	var down := GSEffectDef.make(&"pg_downed", 0)
 	down.display_name = "Incapacitated"
 	down.label = "DOWN"
 	down.tags = PackedStringArray(["debuff"])
@@ -115,14 +115,14 @@ func set_enabled(on: bool) -> void:
 		for id: Variant in game.players.keys():
 			effects.stand_up(_entity_of(StringName(id)), true)
 		_reviving.clear()
-	DotLog.info(CHANNEL, "downs are %s" % ("on" if on else "off"))
+	GSLog.info(CHANNEL, "downs are %s" % ("on" if on else "off"))
 
 
 func is_down(player_id: StringName) -> bool:
 	return enabled and effects != null and effects.is_down(_entity_of(player_id))
 
 
-func state_of(player_id: StringName) -> DotDowned:
+func state_of(player_id: StringName) -> GSDowned:
 	return effects.downed_state(_entity_of(player_id)) if effects != null else null
 
 
@@ -139,9 +139,9 @@ func report_zero_health(player_id: StringName) -> StringName:
 
 
 ## Start picking somebody up. What holding the use key on a downed player does.
-func begin_revive(player_id: StringName, by: StringName) -> DotResult:
+func begin_revive(player_id: StringName, by: StringName) -> GSResult:
 	if not enabled or effects == null:
-		return DotResult.fail(DotError.CODE_STATE, "Nobody goes down here.")
+		return GSResult.fail(GSError.CODE_STATE, "Nobody goes down here.")
 
 	# **Both have to be real players.** dot-effects tests the distance between two
 	# positions, and `_position_of` answers with a sentinel far away for somebody it
@@ -150,12 +150,12 @@ func begin_revive(player_id: StringName, by: StringName) -> DotResult:
 	# revives a casualty who does not exist, and the only symptom is that a player who
 	# should have bled out is standing up.
 	if not game.players.has(player_id):
-		return DotResult.fail(
-			DotError.CODE_INVALID, "There is no player '%s' here." % player_id
+		return GSResult.fail(
+			GSError.CODE_INVALID, "There is no player '%s' here." % player_id
 		)
 	if not game.players.has(by):
-		return DotResult.fail(
-			DotError.CODE_INVALID, "There is no player '%s' here." % by
+		return GSResult.fail(
+			GSError.CODE_INVALID, "There is no player '%s' here." % by
 		)
 
 	return effects.begin_revive(_entity_of(player_id), _entity_of(by))
@@ -202,7 +202,7 @@ func tick(_delta: float) -> void:
 		player.controller.state.velocity = Vector3.ZERO
 
 		var state := state_of(player_id)
-		if state != null and state.state == DotDowned.State.REVIVING:
+		if state != null and state.state == GSDowned.State.REVIVING:
 			reviving.emit(
 				player_id, _player_of(state.reviver), state.revive_fraction(effects.rules)
 			)

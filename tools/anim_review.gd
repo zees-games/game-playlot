@@ -69,7 +69,7 @@ func _ready() -> void:
 	_run.call_deferred()
 
 
-## `--key=value` only: the game's map drop intake (DotMapDropIntake) takes any bare argument naming a
+## `--key=value` only: the game's map drop intake (GSMapDropIntake) takes any bare argument naming a
 ## folder that exists, such as the output folder, as a map dropped on the window.
 func _parse_args(args: PackedStringArray) -> bool:
 	for arg: String in args:
@@ -205,7 +205,7 @@ func _clip(art: ZeeWeaponArt, clip: String, other: ZeeWeaponArt) -> void:
 	_stage_views()
 	await RenderingServer.frame_post_draw
 	var samples: Array[Dictionary] = []
-	var body := DotClipMetrics.new()
+	var body := GSClipMetrics.new()
 	for i in frames:
 		if at.has(i):
 			(at[i] as Callable).call()
@@ -271,9 +271,9 @@ func _tag(node: Node, layer: int) -> void:
 
 
 ## One frame's numbers: the hands against the grip, and the view model's place in camera space.
-func _sample(time: float, body: DotClipMetrics) -> Dictionary:
+func _sample(time: float, body: GSClipMetrics) -> Dictionary:
 	var out := {"t": snappedf(time, 0.001)}
-	var arms := _client.view_arms as DotPlayerViewArms
+	var arms := _client.view_arms as GSPlayerViewArms
 	if arms != null and _client.held_grip != null:
 		out["hand"] = snappedf(arms.hand_error(_client.held_grip), 0.001)
 	var hands := _client.zee_view as ZeeViewModel
@@ -283,7 +283,7 @@ func _sample(time: float, body: DotClipMetrics) -> Dictionary:
 		out["pos"] = local.origin
 		out["rot"] = local.basis.get_euler()
 	var character := _client.player.character
-	var figure: DotHumanoidFigure = character.call(&"_figure") if character != null else null
+	var figure: GSHumanoidFigure = character.call(&"_figure") if character != null else null
 	if figure != null and figure.skeleton() != null:
 		var state := _client.player.controller.state
 		body.add(body.pose_sample(time, figure.skeleton(), state.position, state.is_grounded()))
@@ -296,7 +296,7 @@ func _hand_limit(art: ZeeWeaponArt) -> float:
 	return 0.13 if art.pose == &"heavy" else 0.10
 
 
-func _report(art: ZeeWeaponArt, clip: String, samples: Array[Dictionary], body: DotClipMetrics) -> void:
+func _report(art: ZeeWeaponArt, clip: String, samples: Array[Dictionary], body: GSClipMetrics) -> void:
 	var why: PackedStringArray = []
 	var step_scale := 30.0 / float(_fps)
 	var pop_m := 0.0

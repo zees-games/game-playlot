@@ -2,14 +2,14 @@
 
 ## A vehicle is a prop with seats in it
 
-dot-vehicle is installed for the half this game would get wrong, and **not** for spawning. Every vehicle arrives through `DotPropSpawner` and is handed over with `DotVehicleSpawner.adopt()` (added to dot-vehicle for this game), so it is a `DotPropInstance` first: budget, undo, removed with its owner, liftable and puntable. The join is one field of `meta`: `{ "kind": "vehicle", "vehicle": "buggy" }`.
+dot-vehicle is installed for the half this game would get wrong, and **not** for spawning. Every vehicle arrives through `GSPropSpawner` and is handed over with `GSVehicleSpawner.adopt()` (added to dot-vehicle for this game), so it is a `GSPropInstance` first: budget, undo, removed with its owner, liftable and puntable. The join is one field of `meta`: `{ "kind": "vehicle", "vehicle": "buggy" }`.
 
-`PlaylotVehicles` is a second catalogue, deliberately not merged with the prop one: `DotPropCatalogue` says what may be put in the world and what it costs, `DotVehicleCatalogue` says how it drives. **The prop rows are derived from the vehicle rows**, so the mass the physics gun checks and the mass the chassis puts on the body are one number.
+`PlaylotVehicles` is a second catalogue, deliberately not merged with the prop one: `GSPropCatalogue` says what may be put in the world and what it costs, `GSVehicleCatalogue` says how it drives. **The prop rows are derived from the vehicle rows**, so the mass the physics gun checks and the mass the chassis puts on the body are one number.
 
 ## Traps
 
 - **A wheel above the bottom of the chassis box is a car that does not move.** `PlaylotProp` centres the collision box on the origin, so a 0.9 m body reaches 0.45 m down; wheels must reach below that. `wheel_y` is negative for that reason. A raycast vehicle with no wheel in contact has no traction, steering or brakes while every tunable reads correctly. The suite counts wheels separately from the drive, because "no wheels" and "wheels touching nothing" are the same symptom.
-- **`configure` before `adopt`.** `DotVehicleWheeled` caches the body's `VehicleWheel3D` children once, at bind.
+- **`configure` before `adopt`.** `GSVehicleWheeled` caches the body's `VehicleWheel3D` children once, at bind.
 - **`continuous_cd` is turned back off for a vehicle.** `PlaylotProp` turns it on (a sandbox throws things); under wheel raycasts it fights the wheel solver and the car judders at speed.
 - **`Basis.looking_at(dir)` aims -Z at `dir`, and a vehicle's forward is -Z.** Negating it puts the car on the grid backwards.
 - **A rider's node is carried; their movement state is not.** dot-vehicle reparents the rider into the seat (which moves the camera), but a run timer, the NPC list, the HUD and `PlaylotPlayerNet` read `controller.state.position`. `Playlot._carry_riders` writes it back after the vehicles tick and before a run timer ([simulation.md](simulation.md#the-game-owns-the-tick-loop)).

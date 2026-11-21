@@ -14,7 +14,7 @@ const TIMER_SECTIONS := 2
 const TIMER_CHECKS := 14
 
 func _ready() -> void:
-	DotLog.set_level(DotLog.Level.ERROR)
+	GSLog.set_level(GSLog.Level.ERROR)
 	# The real `PlaylotClient`s below each build a presentation layer, and that layer's
 	# settings go to a scratch directory emptied first, never the player's own file (see
 	# `PlaylotPresentation.use_scratch_settings`).
@@ -335,7 +335,7 @@ func _the_warmup_ran_under_the_cover() -> void:
 	var keys := {}
 	var twice := 0
 	for item: Variant in _tcb_client.gate.warm_items():
-		var key: String = DotRenderWarmup.item_key(item)
+		var key: String = GSRenderWarmup.item_key(item)
 		if key != "" and keys.has(key):
 			twice += 1
 		keys[key] = true

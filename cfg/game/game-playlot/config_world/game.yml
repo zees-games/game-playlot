@@ -14,9 +14,9 @@
 # wave_speed_scale: 1.0
 
 # --- Movement
-# Ground speed, m/s (`DotFpsTunables.max_speed`). Sent to every client in HELLO and again when it changes, so... [1.0..30.0]
+# Ground speed, m/s (`GSFpsTunables.max_speed`). Sent to every client in HELLO and again when it changes, so... [1.0..30.0]
 # move_speed: 7.0
-# Jump height, metres (`DotFpsTunables.jump_height`). Replicated like move_speed. [0.2..5.0]
+# Jump height, metres (`GSFpsTunables.jump_height`). Replicated like move_speed. [0.2..5.0]
 # jump_height: 1.15
-# Gravity, m/s² (`DotFpsTunables.gravity`, and the map toys'). Replicated like move_speed. [2.0..60.0]
+# Gravity, m/s² (`GSFpsTunables.gravity`, and the map toys'). Replicated like move_speed. [2.0..60.0]
 # move_gravity: 20.0

@@ -2,17 +2,17 @@ extends RefCounted
 
 ## The undo stack: one entry per thing a player spawned, props and addon-made disasters alike, newest first.
 ##
-## A prop entry only marks its place and undoing it asks [method DotPropSpawner.undo], so the two stacks cannot disagree.
+## A prop entry only marks its place and undoing it asks [method GSPropSpawner.undo], so the two stacks cannot disagree.
 
 signal undone(who: StringName, at: Vector3)
 
 const MAX_ENTRIES := 64
 
-var _props: DotPropSpawner = null
+var _props: GSPropSpawner = null
 var _stacks: Dictionary = {}
 
 
-func attach(props: DotPropSpawner) -> void:
+func attach(props: GSPropSpawner) -> void:
 	_props = props
 	props.spawned.connect(_on_spawned)
 	props.removed.connect(_on_removed)
@@ -62,13 +62,13 @@ func _add(who: StringName, entry: Dictionary) -> void:
 		stack.pop_front()
 
 
-func _on_spawned(prop: DotPropInstance) -> void:
+func _on_spawned(prop: GSPropInstance) -> void:
 	var node := prop.node as Node3D if prop != null else null
 	var at := node.global_position if node != null and node.is_inside_tree() else Vector3.ZERO
 	_add(prop.owner_id, {"prop": prop.instance_id, "fn": Callable(), "at": at})
 
 
-func _on_removed(prop: DotPropInstance, _reason: StringName) -> void:
+func _on_removed(prop: GSPropInstance, _reason: StringName) -> void:
 	var stack: Array = _stacks.get(prop.owner_id, [])
 	for i in range(stack.size() - 1, -1, -1):
 		if int((stack[i] as Dictionary)["prop"]) == prop.instance_id:

@@ -1,5 +1,5 @@
 extends RefCounted
-## A person: one of the family's animated people (dot-player-char's `DotHumanoidFigure`, the
+## A person: one of the family's animated people (dot-player-char's `GSHumanoidFigure`, the
 ## style every game's players, bots and NPCs share), dressed from the site's three choices.
 ##
 ## [b]Why a figure at all.[/b] Players and NPCs here were capsules, and a member who dressed
@@ -8,7 +8,7 @@ extends RefCounted
 ## [b]Per part, still.[/b] The site's avatar is Kenney's blocky kit, a face, a top and legs each
 ## one of its eighteen skins; the person takes its skin and hair from the face's skin (which
 ## also picks which of the four bodies), its top from the top's and its trousers from the legs'
-## (`DotHumanoidLook.SITE_SKINS`), so a member is recognisable as what they chose.
+## (`GSHumanoidLook.SITE_SKINS`), so a member is recognisable as what they chose.
 ##
 ## [b]Facing -Z, feet at the origin[/b], like every figure here; the person turns itself.
 
@@ -24,11 +24,11 @@ const CHANNEL := "playlot.figure"
 static func build(height: float, skins: PackedInt32Array, fallback_key: String = "") -> Node3D:
 	var look := look_of(skins, fallback_key)
 
-	var person := DotHumanoidFigure.new()
+	var person := GSHumanoidFigure.new()
 	person.name = "Figure"
 	person.build(look, height)
 	if not person.from_art:
-		DotLog.warn(CHANNEL, "no people art; drawing the capsule", {})
+		GSLog.warn(CHANNEL, "no people art; drawing the capsule", {})
 		person.free()
 		return null
 	return person
@@ -36,14 +36,14 @@ static func build(height: float, skins: PackedInt32Array, fallback_key: String =
 
 ## The look [method build] dresses a person in: the same [param skins] and [param fallback_key] give the same
 ## look, and so the same body, which is what a warm-up reads to build that body's clips ahead of time.
-static func look_of(skins: PackedInt32Array, fallback_key: String = "") -> DotHumanoidLook:
+static func look_of(skins: PackedInt32Array, fallback_key: String = "") -> GSHumanoidLook:
 	var resolved := resolve(skins, fallback_key)
 	var face := PlaylotAvatars.LETTERS[resolved[0]]
-	var look := DotHumanoidLook.from_letter(face)
+	var look := GSHumanoidLook.from_letter(face)
 	if look == null:
-		look = DotHumanoidLook.stock(hash(fallback_key))
-	var top: DotHumanoidLook = DotHumanoidLook.from_letter(PlaylotAvatars.LETTERS[resolved[1]])
-	var legs: DotHumanoidLook = DotHumanoidLook.from_letter(PlaylotAvatars.LETTERS[resolved[2]])
+		look = GSHumanoidLook.stock(hash(fallback_key))
+	var top: GSHumanoidLook = GSHumanoidLook.from_letter(PlaylotAvatars.LETTERS[resolved[1]])
+	var legs: GSHumanoidLook = GSHumanoidLook.from_letter(PlaylotAvatars.LETTERS[resolved[2]])
 	if top != null:
 		look.top = top.top
 	if legs != null:
@@ -70,8 +70,8 @@ static func resolve(skins: PackedInt32Array, fallback_key: String) -> PackedInt3
 
 
 ## The person in [param figure], or null for a capsule.
-static func person_of(figure: Node) -> DotHumanoidFigure:
-	return figure as DotHumanoidFigure
+static func person_of(figure: Node) -> GSHumanoidFigure:
+	return figure as GSHumanoidFigure
 
 
 ## Swaps a body's primitive `Mesh` child for a figure [param height] tall, standing on the
@@ -89,7 +89,7 @@ static func dress_body(body: Node3D, height: float, key: String) -> bool:
 
 	figure.position.y -= height * 0.5
 	# Nothing here knows how fast an NPC or a prop moves: the person measures it.
-	(figure as DotHumanoidFigure).auto_animate = true
+	(figure as GSHumanoidFigure).auto_animate = true
 	body.add_child(figure)
 
 	var mesh := body.get_node_or_null(^"Mesh") as MeshInstance3D

@@ -1,11 +1,11 @@
-extends DotGameNetchaosServer
+extends GSGameNetchaosServer
 
 const Playlot := preload("../game/playlot.gd")
 const PlaylotConfig := preload("../game/playlot_config.gd")
 const PlaylotPlatform := preload("../game/playlot_platform.gd")
 const PlaylotPresentation := preload("../game/playlot_presentation.gd")
 
-## Playlot's side of `tools/netchaos.sh` (dot-game's DotGameNetchaosServer): the flat sandbox, the platform layer and the module.
+## Playlot's side of `tools/netchaos.sh` (dot-game's GSGameNetchaosServer): the flat sandbox, the platform layer and the module.
 
 var _game: Playlot = null
 var _platform: PlaylotPlatform = null
@@ -36,10 +36,10 @@ func _boot_world() -> void:
 	_platform.name = "Identity"
 	_platform.directory = "%s/identity" % data_dir
 	add_child(_platform)
-	var _identity: DotResult = await _platform.setup()
-	var _p: DotResult = await server.modules.load_module("res://addons/dot_platform/dot_platform_module.gd")
+	var _identity: GSResult = await _platform.setup()
+	var _p: GSResult = await server.modules.load_module("res://addons/dot_platform/dot_platform_module.gd")
 	(load("res://game/playlot_module.gd") as GDScript).set("punishments_path", "%s/punishments.json" % data_dir)
-	var loaded: DotResult = await server.modules.load_module("res://game/playlot_module.gd")
+	var loaded: GSResult = await server.modules.load_module("res://game/playlot_module.gd")
 	if not loaded.ok:
 		printerr("netchaos server: ", loaded.error)
 		return
@@ -48,7 +48,7 @@ func _boot_world() -> void:
 		if m != null and m.get("net") != null:
 			module = m
 	if module != null and solid != "":
-		var cv: DotConVar = server.console.find_cvar("mp_solidplayers")
+		var cv: GSConVar = server.console.find_cvar("mp_solidplayers")
 		if cv != null:
 			cv.force_set(solid)
 

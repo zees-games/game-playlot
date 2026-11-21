@@ -4,7 +4,7 @@ const PlaylotWeaponDef := preload("playlot_weapon_def.gd")
 
 ## One thing a player can hold, as a document rather than as a class.
 ##
-## [b]Deliberately not a [DotPropDef].[/b] dot-props' catalogue is "things you spawn
+## [b]Deliberately not a [GSPropDef].[/b] dot-props' catalogue is "things you spawn
 ## into the world", and it requires a `scene_path` because that is what a spawn needs.
 ## A weapon is never spawned — it is held, it has no body, and giving it a scene path
 ## so it would fit in a catalogue it does not belong in is exactly the sort of lie that
@@ -36,7 +36,7 @@ var category: StringName = &"tools"
 var colour: Color = Color(0.62, 0.68, 0.78)
 
 ## Anything the weapon's own script reads. Tuning lives here, not in the script, so
-## one script can serve several entries — the same argument as [DotPropDef.meta].
+## one script can serve several entries — the same argument as [GSPropDef.meta].
 var meta: Dictionary = {}
 
 
@@ -54,18 +54,18 @@ func name_or_id() -> String:
 	return display_name if display_name != "" else String(id)
 
 
-func validate() -> DotResult:
+func validate() -> GSResult:
 	if id == &"":
-		return DotResult.fail(DotError.CODE_INVALID, "A weapon needs an id.")
+		return GSResult.fail(GSError.CODE_INVALID, "A weapon needs an id.")
 
 	# A zee-dot-weapons entry has no script: dot-weapon's machinery is behind it, named by
 	# `meta.zee` (see PlaylotZee).
 	if script_path == "" and not meta.has("zee"):
-		return DotResult.fail(
-			DotError.CODE_INVALID, "A weapon needs a script.", String(id)
+		return GSResult.fail(
+			GSError.CODE_INVALID, "A weapon needs a script.", String(id)
 		)
 
-	return DotResult.success(null)
+	return GSResult.success(null)
 
 
 func describe() -> Dictionary:

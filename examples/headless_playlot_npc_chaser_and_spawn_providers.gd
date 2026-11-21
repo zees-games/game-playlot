@@ -25,8 +25,8 @@ func _test_a_chaser_commits(playlot: Playlot) -> void:
 
 	# Two candidates a fraction of a metre apart, swapping which is marginally nearer
 	# every tick. This is the shape the old chaser flickered on.
-	var near := DotNpcSenses.Candidate.new(&"one", Vector3(0, 2, -10), &"player")
-	var also := DotNpcSenses.Candidate.new(&"two", Vector3(0, 2, -10.4), &"player")
+	var near := GSNpcSenses.Candidate.new(&"one", Vector3(0, 2, -10), &"player")
+	var also := GSNpcSenses.Candidate.new(&"two", Vector3(0, 2, -10.4), &"player")
 
 	playlot.npc_candidates = [near, also]
 
@@ -73,7 +73,7 @@ func _test_a_chaser_commits(playlot: Playlot) -> void:
 	# A target that disconnects. The grace would otherwise walk the NPC to an empty
 	# corner for two and a half seconds, steering at a position nobody is at.
 	playlot.npc_candidates = [
-		DotNpcSenses.Candidate.new(&"ghost", Vector3(0, 2, -6), &"player")
+		GSNpcSenses.Candidate.new(&"ghost", Vector3(0, 2, -6), &"player")
 	]
 	_test_a_chaser_commits_2(playlot)
 	_acc_spawned = null
@@ -100,7 +100,7 @@ func _test_a_chaser_commits_2(playlot: Playlot) -> void:
 ## `npc_chaser` stays in the catalogue; this one adds a reaction time, a character per NPC and a machine whose transitions are the design.
 var _ahd_spawned
 var _ahd_hunter
-var _ahd_machine: DotNpcAiMachine
+var _ahd_machine: GSNpcAiMachine
 
 func _test_a_hunter_decides(playlot: Playlot) -> void:
 	_ahd_spawned = playlot.props.spawn(&"npc_hunter", &"bot", Vector3(0.0, 2.0, 0.0))
@@ -121,7 +121,7 @@ func _test_a_hunter_decides(playlot: Playlot) -> void:
 		"and a character, which is what a difficulty setting is instead of"
 	)
 
-	var character: DotNpcAiCharacter = _ahd_hunter.get("character")
+	var character: GSNpcAiCharacter = _ahd_hunter.get("character")
 
 	# [b]Seeded from the instance, and this is the check that matters.[/b] A preset is one
 	# resource, and twenty NPCs sharing it share a seed — so every one of them reacts at
@@ -129,7 +129,7 @@ func _test_a_hunter_decides(playlot: Playlot) -> void:
 	var second := playlot.props.spawn(&"npc_hunter", &"bot", Vector3(4.0, 2.0, 0.0))
 
 	if second != null:
-		var other: DotNpcAiCharacter = (second.node as PlaylotEntity).get("character")
+		var other: GSNpcAiCharacter = (second.node as PlaylotEntity).get("character")
 		_check(
 			other != null and other.seed_value != character.seed_value,
 			"two hunters do not share a seed",
@@ -154,7 +154,7 @@ func _test_a_hunter_decides(playlot: Playlot) -> void:
 	seen.teleport(Vector3(0.0, 2.0, -8.0))
 
 	playlot.npc_candidates = [
-		DotNpcSenses.Candidate.new(&"seen", Vector3(0, 2, -8), &"player")
+		GSNpcSenses.Candidate.new(&"seen", Vector3(0, 2, -8), &"player")
 	]
 	playlot.npc_senses.update_target(
 		_ahd_hunter.npc, playlot.npc_candidates, 0.0, 8
@@ -237,10 +237,10 @@ func playlot_receive(msg: Dictionary) -> void:
 	var addons := PlaylotAddons.new()
 	var host := Node3D.new()
 	add_child(host)
-	var mirrored_add := DotLog.mirror_to_engine
-	DotLog.mirror_to_engine = false
+	var mirrored_add := GSLog.mirror_to_engine
+	GSLog.mirror_to_engine = false
 	var count := addons.scan(host, true, root)
-	DotLog.mirror_to_engine = mirrored_add
+	GSLog.mirror_to_engine = mirrored_add
 	_check(count == 1 and addons.hook_count() == 1, "one folder with a hook is loaded", str(count))
 
 	# A hook published before the Playlot rename: the former file and function names still work.
@@ -248,9 +248,9 @@ func playlot_receive(msg: Dictionary) -> void:
 	var former_source := hooked.replace("func playlot_", "func %s" % PlaylotAddons.FORMER_REGISTER.trim_suffix("register"))
 	_write_fake_addon(former_root, "fake_former", former_source, PlaylotAddons.FORMER_HOOK_FILE)
 	var former := PlaylotAddons.new()
-	DotLog.mirror_to_engine = false
+	GSLog.mirror_to_engine = false
 	var former_count := former.scan(host, true, former_root)
-	DotLog.mirror_to_engine = mirrored_add
+	GSLog.mirror_to_engine = mirrored_add
 	var former_hook := host.get_node_or_null(^"Addon_fake_former")
 	_check(former_count == 1 and former.hook_count() == 1 and former_hook != null,
 		"a hook under the former file and register names still loads", str(former_count))
@@ -277,7 +277,7 @@ func playlot_receive(msg: Dictionary) -> void:
 	_check(not addons.deliver("fake_plain", {}), "and a message for an addon with no hook goes nowhere")
 
 	var wire := PlaylotEvents.write_addon("fake_with_hook", {"x": 2})
-	var back := PlaylotEvents.read_addon(DotNetReader.new(wire))
+	var back := PlaylotEvents.read_addon(GSNetReader.new(wire))
 	_check(bool(back["ok"]) and back["addon"] == "fake_with_hook" and int(back["body"]["x"]) == 2,
 		"an addon message survives the wire")
 	_check(preload("../game/net/playlot_event.gd").fits(), "and every event kind still fits its field")
@@ -296,9 +296,9 @@ func playlot_receive(msg: Dictionary) -> void:
 	var both := PlaylotAddons.new()
 	var both_host := Node3D.new()
 	add_child(both_host)
-	DotLog.mirror_to_engine = false
+	GSLog.mirror_to_engine = false
 	var both_count := both.scan(both_host, true, root) + both.scan(both_host, true, mounted)
-	DotLog.mirror_to_engine = mirrored_add
+	GSLog.mirror_to_engine = mirrored_add
 	_check(both_count == 2 and both.find("fake_mounted/hello") != null,
 		"a hook under the second root registers its entries", str(both_count))
 	_check(both.hook_count() == 2, "and a folder name already loaded from the first root does not run twice", str(both.hook_count()))
@@ -311,7 +311,7 @@ func playlot_receive(msg: Dictionary) -> void:
 	var own_kinds: Variant = ((own_provides as Dictionary).get("accepts", {}) as Dictionary).get("kinds", []) if own_provides is Dictionary else []
 	_check(own_kinds is Array and (own_kinds as Array).has("addon"),
 		"Playlot accepts addon packs from other games (provides.json accepts.kinds)", str(own_kinds))
-	_check(DotAddonApi.declared_uses("res://").has("natural_disasters"),
+	_check(GSAddonApi.declared_uses("res://").has("natural_disasters"),
 		"requires.uses.json names natural_disasters, so web solo fetches its overlay")
 
 	# The real folder: dot_core has no hook, natural-disasters has an adapter
@@ -373,8 +373,8 @@ func playlot_receive(msg: Dictionary) -> void:
 	gun.wielder = &"bot"
 	var points_before: int = playlot.waypoints.size()
 	_check(gun.call("set_mode", &"waypoint", {"chain": true}).ok, "the tool gun takes the waypoint tool")
-	var first: DotResult = await _tool_at_ground(gun, 20.0, 20.0, &"primary")
-	var second: DotResult = await _tool_at_ground(gun, 28.0, 20.0, &"primary")
+	var first: GSResult = await _tool_at_ground(gun, 20.0, 20.0, &"primary")
+	var second: GSResult = await _tool_at_ground(gun, 28.0, 20.0, &"primary")
 	_check(first.ok and second.ok and playlot.waypoints.size() == points_before + 2,
 		"two points are laid", str(playlot.waypoints.size()))
 
@@ -383,14 +383,14 @@ func playlot_receive(msg: Dictionary) -> void:
 		var b: Node = second.value
 		_check(a.links.has(b) and b.links.has(a), "and linked, both ways, because the second chained to the last")
 		_check(not (a.get("ropes") as Array).is_empty(), "with a rope between them for every client to draw")
-		var third: DotResult = await _tool_at_ground(gun, 28.0, 28.0, &"primary")
+		var third: GSResult = await _tool_at_ground(gun, 28.0, 28.0, &"primary")
 		_check(third.ok and third.value.links.has(b), "a third chains on from the second")
-		playlot.props.remove((a.get("instance") as DotPropInstance).instance_id)
+		playlot.props.remove((a.get("instance") as GSPropInstance).instance_id)
 		await get_tree().physics_frame
 		await get_tree().physics_frame
 		_check(not b.links.has(a), "removing a point unlinks its neighbours")
 
-	var cleared: DotResult = await _tool_at_ground(gun, 0.0, 0.0, &"reload")
+	var cleared: GSResult = await _tool_at_ground(gun, 0.0, 0.0, &"reload")
 	await get_tree().physics_frame
 	await get_tree().physics_frame
 	_check(cleared.ok and playlot.waypoints.size() == points_before, "reload removes my points")
@@ -399,7 +399,7 @@ func playlot_receive(msg: Dictionary) -> void:
 	var route: Array = []
 	var last: Node = null
 	for x in [-10.0, 10.0]:
-		var laid: DotResult = await _tool_at_ground(gun, x, -20.0, &"primary")
+		var laid: GSResult = await _tool_at_ground(gun, x, -20.0, &"primary")
 		if laid.ok:
 			route.append(laid.value)
 	_check(route.size() == 2 and route[0].links.has(route[1]), "a patrol route of two points")
@@ -415,13 +415,13 @@ func playlot_receive(msg: Dictionary) -> void:
 		if far > 8.0:
 			break
 	_check(far > 8.0, "an NPC with a route walks it", "%.1f m from the start" % far)
-	playlot.props.clear_all(DotPropSpawner.REASON_ADMIN)
+	playlot.props.clear_all(GSPropSpawner.REASON_ADMIN)
 	await get_tree().physics_frame
 
 	# The NPC spawner tool
 	_check(gun.call("set_mode", &"npc_spawn", {"kind": "npc_soldier", "weapon": "zee_shotgun", "count": 2.0}).ok,
 		"the tool gun takes the NPC spawner")
-	var squad: DotResult = await _tool_at_ground(gun, 40.0, 0.0, &"primary")
+	var squad: GSResult = await _tool_at_ground(gun, 40.0, 0.0, &"primary")
 	_check(squad.ok and int(squad.value) == 2, "a click spawns two NPCs")
 	var armed := 0
 	for entity in playlot.armed_npcs:
@@ -431,7 +431,7 @@ func playlot_receive(msg: Dictionary) -> void:
 
 	# Tool-spawned NPCs shoot: an enemy of theirs a few metres off, and they fire.
 	_check(gun.call("set_mode", &"npc_spawn", {"kind": "npc_rebel", "weapon": "default", "count": 1.0}).ok, "and a rebel")
-	var _rebel: DotResult = await _tool_at_ground(gun, 40.0, -14.0, &"primary")
+	var _rebel: GSResult = await _tool_at_ground(gun, 40.0, -14.0, &"primary")
 	var fired := false
 	for i in 128 * 8:
 		await get_tree().physics_frame
@@ -444,12 +444,12 @@ func playlot_receive(msg: Dictionary) -> void:
 	_check(fired, "NPCs the tool spawned use their weapons")
 
 	# A spawn point
-	playlot.props.clear_all(DotPropSpawner.REASON_ADMIN)
+	playlot.props.clear_all(GSPropSpawner.REASON_ADMIN)
 	await get_tree().physics_frame
 	var _sp: Variant = gun.call("set_mode", &"npc_spawn", {
 		"kind": "npc_wanderer", "weapon": "none", "point": true, "interval": 1.0, "limit": 2.0,
 	})
-	var point_res: DotResult = await _tool_at_ground(gun, -40.0, 30.0, &"primary")
+	var point_res: GSResult = await _tool_at_ground(gun, -40.0, 30.0, &"primary")
 	_check(point_res.ok and point_res.value.has_meta(&"spawn_point"), "a spawn point is laid")
 	var made := 0
 	for i in 128 * 10:
@@ -469,7 +469,7 @@ func playlot_receive(msg: Dictionary) -> void:
 			made += 1
 	_check(made == 2, "and stops there")
 
-	playlot.props.clear_all(DotPropSpawner.REASON_ADMIN)
+	playlot.props.clear_all(GSPropSpawner.REASON_ADMIN)
 	DirAccess.remove_absolute("%s/fake_with_hook/%s" % [root, PlaylotAddons.HOOK_FILE])
 	_done()
 
@@ -480,7 +480,7 @@ var _sp_pack_script: GDScript
 var _sp_none: PlaylotAddons
 var _sp_addons: PlaylotAddons
 var _sp_pmenu: PlaylotSpawnMenu
-var _sp_pstack: DotScreenStack
+var _sp_pstack: GSScreenStack
 var _sp_ptabs: TabBar
 var _sp_npc_tab
 var _sp_via: PlaylotAddons
@@ -519,7 +519,7 @@ func _test_spawn_providers() -> void:
 	_sp_pmenu.catalogue = playlot.props.catalogue
 	_sp_pmenu.weapons = playlot.weapons
 	add_child(_sp_pmenu)
-	_sp_pstack = DotScreenStack.new()
+	_sp_pstack = GSScreenStack.new()
 	add_child(_sp_pstack)
 	_sp_pstack.setup()
 	_sp_pstack.register(_sp_pmenu)
@@ -581,13 +581,13 @@ func _test_spawn_providers_2() -> void:
 	var former_reg: Object = _sp_pack_script.new()
 	var reg_name := StringName(PlaylotAddons.REGISTRY_PREFIX + ".reg_pack")
 	var former_reg_name := StringName(PlaylotAddons.FORMER_REGISTRY_PREFIX + ".old_pack")
-	DotRegistry.register(reg_name, reg)
-	DotRegistry.register(former_reg_name, former_reg)
+	GSRegistry.register(reg_name, reg)
+	GSRegistry.register(former_reg_name, former_reg)
 	_sp_via = PlaylotAddons.new()
 	_sp_via.scan_providers(playlot, _sp_fixtures + "/spawn_pack_none")
-	DotRegistry.unregister(reg_name)
-	DotRegistry.unregister(former_reg_name)
-	_check(_sp_via.find("reg_pack/test_gun") != null, "a provider registered in DotRegistry is found too")
+	GSRegistry.unregister(reg_name)
+	GSRegistry.unregister(former_reg_name)
+	_check(_sp_via.find("reg_pack/test_gun") != null, "a provider registered in GSRegistry is found too")
 	_check(_sp_via.find("old_pack/test_gun") != null, "and one registered under the former prefix")
 
 	# Activation: server-authoritative.
@@ -595,7 +595,7 @@ func _test_spawn_providers_2() -> void:
 	_sp_at = bot.global_position + Vector3(0, 0, -6)
 	_sp_prior_addons = playlot.addons
 	playlot.addons = _sp_addons
-	playlot.props.clear_all(DotPropSpawner.REASON_ADMIN)
+	playlot.props.clear_all(GSPropSpawner.REASON_ADMIN)
 	var picked: Array = []
 	var on_pick := func(who: StringName, w: StringName) -> void: picked.append([who, w])
 	playlot.weapon_picked_up.connect(on_pick)
@@ -645,7 +645,7 @@ func _test_spawn_providers_3() -> void:
 	_check(not playlot.activate_addon_item("spawn_pack/test_guard", 0, _sp_at, &"bot").ok,
 		"a client never runs an entry")
 	playlot.authoritative = client_side
-	playlot.props.clear_all(DotPropSpawner.REASON_ADMIN)
+	playlot.props.clear_all(GSPropSpawner.REASON_ADMIN)
 	# A static on the fixture's script outlives the suite; what it recorded points back into the game.
 	_sp_pack_script.set("custom_calls", [])
 	# Each scan builds lambdas that capture their item and the scanner: release() breaks that cycle.

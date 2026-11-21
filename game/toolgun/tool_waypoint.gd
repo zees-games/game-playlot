@@ -33,19 +33,19 @@ static func is_point(body: Variant) -> bool:
 	return body is Node and (body as Node).get("links") is Array and (body as Node).has_method("link")
 
 
-func primary(gun: Object, hit: Dictionary) -> DotResult:
+func primary(gun: Object, hit: Dictionary) -> GSResult:
 	if not hit.has("point"):
-		return DotResult.fail(DotError.CODE_STATE, "Point at the ground.")
+		return GSResult.fail(GSError.CODE_STATE, "Point at the ground.")
 
 	var body: Variant = hit.get("body")
 
 	if is_point(body):
 		return _pick_or_link(gun, body as Node3D)
 
-	var spawner: DotPropSpawner = gun.get("spawner")
+	var spawner: GSPropSpawner = gun.get("spawner")
 
 	if spawner == null:
-		return DotResult.fail(DotError.CODE_STATE, "This weapon has no world.")
+		return GSResult.fail(GSError.CODE_STATE, "This weapon has no world.")
 
 	var normal: Vector3 = hit.get("normal", Vector3.UP)
 	var at: Vector3 = (hit["point"] as Vector3) + normal * 0.1
@@ -53,7 +53,7 @@ func primary(gun: Object, hit: Dictionary) -> DotResult:
 
 	if prop == null:
 		# The refusal has gone to the player through the spawner's `refused`.
-		return DotResult.fail(DotError.CODE_QUOTA, "")
+		return GSResult.fail(GSError.CODE_QUOTA, "")
 
 	var made := prop.node as Node3D
 
@@ -64,22 +64,22 @@ func primary(gun: Object, hit: Dictionary) -> DotResult:
 			return linked
 
 	pending = {"point": made}
-	return DotResult.success(made)
+	return GSResult.success(made)
 
 
-func _pick_or_link(gun: Object, point: Node3D) -> DotResult:
+func _pick_or_link(gun: Object, point: Node3D) -> GSResult:
 	if pending.has("point") and is_instance_valid(pending["point"]) and pending["point"] != point:
 		var res := _link(gun, pending["point"] as Node3D, point)
 		pending = {"point": point}
 		return res
 
 	pending = {"point": point}
-	return DotResult.success("first")
+	return GSResult.success("first")
 
 
-func _link(gun: Object, a: Node3D, b: Node3D) -> DotResult:
+func _link(gun: Object, a: Node3D, b: Node3D) -> GSResult:
 	if not bool(a.call("link", b)):
-		return DotResult.fail(DotError.CODE_CONFLICT, "Those two are already linked.")
+		return GSResult.fail(GSError.CODE_CONFLICT, "Those two are already linked.")
 
 	# The visible half: a rope between two frozen bodies moves nothing and is drawn on every
 	# client. Not counted against the player's constraints.
@@ -91,34 +91,34 @@ func _link(gun: Object, a: Node3D, b: Node3D) -> DotResult:
 			b as RigidBody3D, b.global_position, 0.0, false
 		)
 
-	return DotResult.success(b)
+	return GSResult.success(b)
 
 
-func secondary(gun: Object, hit: Dictionary) -> DotResult:
+func secondary(gun: Object, hit: Dictionary) -> GSResult:
 	var body: Variant = hit.get("body")
 
 	if not is_point(body):
 		pending = {}
-		return DotResult.success(0)
+		return GSResult.success(0)
 
 	var prop: Variant = hit.get("prop")
 
 	if pending.get("point") == body:
 		pending = {}
 
-	if prop is DotPropInstance:
-		gun.get("spawner").remove((prop as DotPropInstance).instance_id, DotPropSpawner.REASON_PLAYER)
+	if prop is GSPropInstance:
+		gun.get("spawner").remove((prop as GSPropInstance).instance_id, GSPropSpawner.REASON_PLAYER)
 
-	return DotResult.success(1)
+	return GSResult.success(1)
 
 
-func reload(gun: Object, _hit: Dictionary) -> DotResult:
+func reload(gun: Object, _hit: Dictionary) -> GSResult:
 	var game: Variant = gun.get("game")
 	var mine: StringName = gun.get("wielder")
 	var removed := 0
 
 	if game == null:
-		return DotResult.fail(DotError.CODE_STATE, "This weapon has no world.")
+		return GSResult.fail(GSError.CODE_STATE, "This weapon has no world.")
 
 	for point in (game.get("waypoints") as Array).duplicate():
 		if not is_instance_valid(point):
@@ -126,9 +126,9 @@ func reload(gun: Object, _hit: Dictionary) -> DotResult:
 
 		var instance: Variant = point.get("instance")
 
-		if instance is DotPropInstance and (instance as DotPropInstance).owner_id == mine:
-			if gun.get("spawner").remove((instance as DotPropInstance).instance_id, DotPropSpawner.REASON_PLAYER):
+		if instance is GSPropInstance and (instance as GSPropInstance).owner_id == mine:
+			if gun.get("spawner").remove((instance as GSPropInstance).instance_id, GSPropSpawner.REASON_PLAYER):
 				removed += 1
 
 	pending = {}
-	return DotResult.success(removed)
+	return GSResult.success(removed)

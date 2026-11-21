@@ -8,7 +8,7 @@ func _ready() -> void:
 	# One palette for the whole menu from dot-ui's theme, rounder than the default: every
 	# widget below inherits it, and the few that need more (cards, tabs, the panel) take
 	# their boxes from PlaylotMenuStyle so a changed accent changes all of them.
-	_palette = DotUiTheme.dark()
+	_palette = GSUiTheme.dark()
 	_palette.corner = 12.0
 	_palette.accent = Style.ACCENT
 	theme = _palette.build()
@@ -325,7 +325,7 @@ func _rebuild_grid() -> void:
 		elif _tab == Tab.TOOLS:
 			card = _tool_card(entry as Object)
 		else:
-			card = _prop_card(entry as DotPropDef)
+			card = _prop_card(entry as GSPropDef)
 
 		_grid.add_child(card)
 		_reveal(card, _grid.get_child_count() - 1)
@@ -346,13 +346,13 @@ func _rebuild_grid() -> void:
 		)
 
 
-func _prop_card(def: DotPropDef) -> Button:
+func _prop_card(def: GSPropDef) -> Button:
 	var card := _card(
 		PlaylotIcons.for_def(def),
 		def.name_or_id(),
 		"%s\n%s · %.0f kg · costs %d" % [
 			def.name_or_id(),
-			DotPropDef.Size.keys()[def.size].capitalize(),
+			GSPropDef.Size.keys()[def.size].capitalize(),
 			def.mass,
 			def.cost,
 		]
@@ -411,8 +411,8 @@ func _pack_card(row: Dictionary) -> Button:
 	var def: Variant = row.get("def")
 	if icon == null and def is PlaylotWeaponDef:
 		icon = PlaylotIcons.for_weapon(def as PlaylotWeaponDef)
-	elif icon == null and def is DotPropDef:
-		icon = PlaylotIcons.for_def(def as DotPropDef)
+	elif icon == null and def is GSPropDef:
+		icon = PlaylotIcons.for_def(def as GSPropDef)
 	var card := _card(icon, str(row.get("name", id)), str(row.get("tip", "")))
 	if row.get("kind") == &"weapon":
 		card.pressed.connect(_on_weapon_pressed.bind(id))
@@ -624,7 +624,7 @@ func show_tab(tab: Tab) -> void:
 	# one, so a caller can ask for a tab that is not there: ignore it rather than index
 	# the bar out of bounds.
 	if _tabs != null and int(tab) >= _tabs.tab_count:
-		DotLog.warn("playlot.menu", "show_tab: no such tab", {"tab": int(tab), "tabs": _tabs.tab_count})
+		GSLog.warn("playlot.menu", "show_tab: no such tab", {"tab": int(tab), "tabs": _tabs.tab_count})
 		return
 	if _tabs != null:
 		# Through the TabBar rather than by setting `_tab`, so the bar and the grid

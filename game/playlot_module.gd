@@ -1,7 +1,7 @@
 extends "playlot_module_build.gd"
 
 const PlaylotAvatarLibrary := preload("playlot_avatar_library.gd")
-## Binds a [Playlot] to a [DotServer]: the console commands an operator and an admin type.
+## Binds a [Playlot] to a [GSServer]: the console commands an operator and an admin type.
 ##
 ## The only file in the project that names dot-server; a game wanting a dedicated server writes
 ## this one file. Zone commands: stand on one corner, run the command, stand on the other, run it again.
@@ -27,9 +27,9 @@ func _add_delivered_maps() -> void:
 		if games.has_method(method):
 			keys.append_array(games.call(method))
 	for key in keys:
-		var parts := DotGameDescriptor.split_key(key)
+		var parts := GSGameDescriptor.split_key(key)
 		var _added := game.add_map_directory(
-			DotCloudClient.mount_prefix_for(StringName(parts[0]), parts[1]).path_join("maps"))
+			GSCloudClient.mount_prefix_for(StringName(parts[0]), parts[1]).path_join("maps"))
 
 
 func _module_description() -> String:
@@ -40,13 +40,13 @@ func _module_author() -> String:
 	return "dot"
 
 
-func _module_load() -> DotResult:
-	game = DotRegistry.get_node_service(Playlot.SERVICE) as Playlot
+func _module_load() -> GSResult:
+	game = GSRegistry.get_node_service(Playlot.SERVICE) as Playlot
 
 	if game == null:
 		# Refuse: a module that loaded and did nothing accepts players into no game.
-		return DotResult.fail(
-			DotError.CODE_STATE,
+		return GSResult.fail(
+			GSError.CODE_STATE,
 			"No Playlot is registered. Create one before loading this module."
 		)
 
@@ -64,9 +64,9 @@ func _module_load() -> DotResult:
 
 	# Who people are and what they wear. Never fatal: a server with no identity stack is a
 	# server where everybody wears the stock look, which is a configuration.
-	var dressed: DotResult = await _build_identity()
+	var dressed: GSResult = await _build_identity()
 	if not dressed.ok:
-		DotLog.result(CHANNEL, "the identity layer", dressed)
+		GSLog.result(CHANNEL, "the identity layer", dressed)
 
 	_register_commands()
 	_register_map_commands()
@@ -88,7 +88,7 @@ func _module_load() -> DotResult:
 
 	hook_post("client_spawn", _on_client_spawn)
 
-	# dot-server's own chat is cancelled here, not listened to: [DotChatRouter] has the rules, and both
+	# dot-server's own chat is cancelled here, not listened to: [GSChatRouter] has the rules, and both
 	# running would leak admin chat. Only a pre-hook can cancel; handle_message broadcasts on return.
 	hook_pre("player_chat", _on_player_chat)
 
@@ -107,7 +107,7 @@ func _module_load() -> DotResult:
 		"tick_rate": game.tick_rate,
 	})
 
-	return DotResult.success(null)
+	return GSResult.success(null)
 
 
 ## Spawn and style, props, and the commands of the addons an operator turns on.
@@ -136,7 +136,7 @@ func _register_commands() -> void:
 	add_command(
 		"pg_props_clear", _cmd_props_clear,
 		"Remove every prop, or one player's",
-		DotAdminFlags.GENERIC
+		GSAdminFlags.GENERIC
 	).with_chat()
 
 	add_command("pg_status", _cmd_status, "What this server is doing", "").with_chat()
@@ -161,14 +161,14 @@ func _register_map_commands() -> void:
 			var _read := game.load_rotation()
 	)
 
-	var map_commands := DotMapCommands.new()
+	var map_commands := GSMapCommands.new()
 	map_commands.session = game.maps
-	map_commands.change_fn = func(id: StringName) -> DotResult:
+	map_commands.change_fn = func(id: StringName) -> GSResult:
 		return await game.change_map(id)
 	map_commands.allow_chat_change = true
 	map_commands.player_count_fn = func() -> int:
 		return game.players.size()
-	map_commands.rotation_file_fn = func() -> DotMapRotationFile:
+	map_commands.rotation_file_fn = func() -> GSMapRotationFile:
 		return game.rotation_file
 	map_commands.spec_fn = game.rotation_commands
 	map_commands.bind(self)
@@ -187,42 +187,42 @@ func _register_addon_cvars() -> void:
 
 	# Every NPC's reaction time and how good it is, over the character its kind was given.
 	# NOTIFY, because players should know the NPCs just got harder.
-	game.npc_skill.bind_cvars(add_cvar, DotConVar.FLAG_NOTIFY)
+	game.npc_skill.bind_cvars(add_cvar, GSConVar.FLAG_NOTIFY)
 
 	# Thrown grenades: fc_weapons' sv_grenade_* set (bounce, friction, flash, smoke and fire times).
-	var _grenades := game.grenade_rules.bind_cvars(add_cvar, DotConVar.FLAG_ARCHIVE | DotConVar.FLAG_NOTIFY)
+	var _grenades := game.grenade_rules.bind_cvars(add_cvar, GSConVar.FLAG_ARCHIVE | GSConVar.FLAG_NOTIFY)
 	# Dead bodies: dot-player-char's sv_ragdoll* set. The server only picks each death's
 	# reaction from them; REPLICATED, because the clients draw the bodies.
 	var _ragdolls := game.ragdoll_rules.bind_cvars(
-		add_cvar, DotConVar.FLAG_ARCHIVE | DotConVar.FLAG_NOTIFY | DotConVar.FLAG_REPLICATED
+		add_cvar, GSConVar.FLAG_ARCHIVE | GSConVar.FLAG_NOTIFY | GSConVar.FLAG_REPLICATED
 	)
 	var _drops = game.weapon_layer.bind_cvars(add_cvar)
 	# The map's toys: dot-props' sv_toys* set. REPLICATED, because a client hides the toys the
 	# server took away and draws the rest.
 	var _toys := game.toy_rules.bind_cvars(
-		add_cvar, DotConVar.FLAG_ARCHIVE | DotConVar.FLAG_NOTIFY | DotConVar.FLAG_REPLICATED
+		add_cvar, GSConVar.FLAG_ARCHIVE | GSConVar.FLAG_NOTIFY | GSConVar.FLAG_REPLICATED
 	)
 	# Aim down sights: the numbers the simulation reads cross as one JSON cvar, `zee_ads_rules`.
 	var _ads := game.ads_rules.bind_cvars(
-		add_cvar, DotConVar.FLAG_ARCHIVE | DotConVar.FLAG_NOTIFY | DotConVar.FLAG_REPLICATED
+		add_cvar, GSConVar.FLAG_ARCHIVE | GSConVar.FLAG_NOTIFY | GSConVar.FLAG_REPLICATED
 	)
 
 	# dot-player-controller's mp_forceview (view mode) and mp_solidplayers (players block each other),
 	# REPLICATED: the client places its camera under the first and predicts its player under the second.
 	var _views := game.view_rules.bind_cvars(
-		add_cvar, DotConVar.FLAG_ARCHIVE | DotConVar.FLAG_NOTIFY | DotConVar.FLAG_REPLICATED
+		add_cvar, GSConVar.FLAG_ARCHIVE | GSConVar.FLAG_NOTIFY | GSConVar.FLAG_REPLICATED
 	)
 	# sv_mobile_*, sv_aim_assist*, sv_autofire*: dot-mobile's touch controls.
 	var _mobile := game.mobile_rules.bind_cvars(
-		add_cvar, DotConVar.FLAG_ARCHIVE | DotConVar.FLAG_NOTIFY | DotConVar.FLAG_REPLICATED
+		add_cvar, GSConVar.FLAG_ARCHIVE | GSConVar.FLAG_NOTIFY | GSConVar.FLAG_REPLICATED
 	)
 	var _bodies := game.body_rules.bind_cvars(
-		add_cvar, DotConVar.FLAG_ARCHIVE | DotConVar.FLAG_NOTIFY | DotConVar.FLAG_REPLICATED
+		add_cvar, GSConVar.FLAG_ARCHIVE | GSConVar.FLAG_NOTIFY | GSConVar.FLAG_REPLICATED
 	)
 
 	var _ambient := game.ambient_rules.bind_cvars(
-		add_cvar, DotConVar.FLAG_ARCHIVE | DotConVar.FLAG_NOTIFY | DotConVar.FLAG_REPLICATED,
-		DotConVar.FLAG_ARCHIVE | DotConVar.FLAG_NOTIFY
+		add_cvar, GSConVar.FLAG_ARCHIVE | GSConVar.FLAG_NOTIFY | GSConVar.FLAG_REPLICATED,
+		GSConVar.FLAG_ARCHIVE | GSConVar.FLAG_NOTIFY
 	)
 	_add_avatar_library_cvars()
 	# The Workbench started with the netcode, before these addon cvars existed: list their sets now.
@@ -233,17 +233,17 @@ func _register_addon_cvars() -> void:
 func _register_addon_commands() -> void:
 	add_command(
 		"pg_services", _cmd_services,
-		"Show chat, voice and moderation", DotAdminFlags.GENERIC
+		"Show chat, voice and moderation", GSAdminFlags.GENERIC
 	)
 	add_command(
 		"pg_arena", _cmd_arena,
 		"pg_arena [on|off] — health, weapons that hurt, and a round",
-		DotAdminFlags.CHANGEMAP
+		GSAdminFlags.CHANGEMAP
 	)
 	add_command(
 		"pg_waves", _cmd_waves,
 		"pg_waves [on|off|clear] — NPCs the server releases",
-		DotAdminFlags.CHANGEMAP
+		GSAdminFlags.CHANGEMAP
 	)
 	# No flag: this is a player command rather than an administrative one, and
 	# `_on_chat_command` routes `!pg_spec` through the console like every other.
@@ -254,21 +254,21 @@ func _register_addon_commands() -> void:
 	add_command(
 		"pg_shop", _cmd_shop,
 		"pg_shop [on|off|prices] — a price list over the spawn menu",
-		DotAdminFlags.CHANGEMAP
+		GSAdminFlags.CHANGEMAP
 	)
 	add_command(
 		"pg_credits", _cmd_credits,
 		"pg_credits [player] [+amount] — what somebody has, and giving them some",
-		DotAdminFlags.CHANGEMAP
+		GSAdminFlags.CHANGEMAP
 	)
 	add_command(
 		"pg_give", _cmd_give,
 		"pg_give <player> <prop> [count] — put something in somebody's bag",
-		DotAdminFlags.CHANGEMAP
+		GSAdminFlags.CHANGEMAP
 	)
 	add_command(
 		"pg_inv", _cmd_inv,
-		"pg_inv <player> — what somebody is carrying", DotAdminFlags.GENERIC
+		"pg_inv <player> — what somebody is carrying", GSAdminFlags.GENERIC
 	)
 	add_command(
 		"pg_achievements", _cmd_achievements,
@@ -277,10 +277,10 @@ func _register_addon_commands() -> void:
 	# MUTE rather than BAN: quieting somebody and removing them are different powers, and
 	# dot-server's own flags are what distinguish them.
 	add_command(
-		"pg_gag", _cmd_gag, "pg_gag <who> <seconds> [reason]", DotAdminFlags.MUTE
+		"pg_gag", _cmd_gag, "pg_gag <who> <seconds> [reason]", GSAdminFlags.MUTE
 	).with_chat()
 	add_command(
-		"pg_mute", _cmd_mute, "pg_mute <who> <seconds> [reason]", DotAdminFlags.MUTE
+		"pg_mute", _cmd_mute, "pg_mute <who> <seconds> [reason]", GSAdminFlags.MUTE
 	).with_chat()
 
 
@@ -290,16 +290,16 @@ func _register_addon_commands() -> void:
 func _add_avatar_library_cvars() -> void:
 	add_cvar("sv_avatar_app_id", str(PlaylotAvatarLibrary.app_id),
 		"Playlot's app id on Gamespice, sent on every avatar library call (0 = not set)",
-		DotConVar.FLAG_ARCHIVE | DotConVar.FLAG_NOTIFY | DotConVar.FLAG_REPLICATED).with_min(0.0).changed.connect(
+		GSConVar.FLAG_ARCHIVE | GSConVar.FLAG_NOTIFY | GSConVar.FLAG_REPLICATED).with_min(0.0).changed.connect(
 		func(_old: String, new_value: String) -> void:
 			PlaylotAvatarLibrary.app_id = int(new_value.to_float()))
 	add_cvar("sv_avatar_loadout_max_entries", "0",
 		"Most entries one avatar loadout message carries (0 = unlimited); over it the loadout is refused, never trimmed",
-		DotConVar.FLAG_ARCHIVE | DotConVar.FLAG_NOTIFY).with_min(0.0).changed.connect(
+		GSConVar.FLAG_ARCHIVE | GSConVar.FLAG_NOTIFY).with_min(0.0).changed.connect(
 		func(_old: String, new_value: String) -> void:
-			var _r := PlaylotAvatarLibrary.apply_loadout_limits(int(new_value.to_float()), DotGameAvatarLoadouts.max_per_kind))
+			var _r := PlaylotAvatarLibrary.apply_loadout_limits(int(new_value.to_float()), GSGameAvatarLoadouts.max_per_kind))
 	add_cvar("sv_avatar_loadout_max_per_kind", "0",
 		"Most equipped emotes, poses or gestures of one kind the server accepts (0 = unlimited); over it the read is refused",
-		DotConVar.FLAG_ARCHIVE | DotConVar.FLAG_NOTIFY).with_min(0.0).changed.connect(
+		GSConVar.FLAG_ARCHIVE | GSConVar.FLAG_NOTIFY).with_min(0.0).changed.connect(
 		func(_old: String, new_value: String) -> void:
-			var _r := PlaylotAvatarLibrary.apply_loadout_limits(DotGameAvatarLoadoutMessage.max_entries, int(new_value.to_float())))
+			var _r := PlaylotAvatarLibrary.apply_loadout_limits(GSGameAvatarLoadoutMessage.max_entries, int(new_value.to_float())))

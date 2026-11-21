@@ -1,4 +1,4 @@
-extends DotGameCheckSuite
+extends GSGameCheckSuite
 
 const PlaylotClient := preload("../game/playlot_client.gd")
 const PlaylotConfig := preload("../game/playlot_config.gd")
@@ -20,7 +20,7 @@ var _client: PlaylotClient = null
 
 
 func _ready() -> void:
-	DotLog.set_level(DotLog.Level.ERROR)
+	GSLog.set_level(GSLog.Level.ERROR)
 	_run.call_deferred()
 
 
@@ -98,7 +98,7 @@ func _test_one_rig() -> void:
 	_entered += 1
 	print("One arms rig")
 	await _hold(&"zee_pistol")
-	_check(_count(_client, &"DotPlayerViewArms") == 1, "exactly one avatar arms rig on the client", str(_count(_client, &"DotPlayerViewArms")))
+	_check(_count(_client, &"GSPlayerViewArms") == 1, "exactly one avatar arms rig on the client", str(_count(_client, &"GSPlayerViewArms")))
 	_check(_count(_client, &"ZeeViewArms") == 0, "and no weapon-owned arms")
 	_check(_client.zee_view != null and not _client.zee_view.show_arms, "the view model draws no hands of its own")
 	_check(_count(_client, &"ZeeViewModel") == 1,
@@ -114,7 +114,7 @@ func _test_catalogue() -> void:
 	_client.player.set_view_mode(false)
 	var weapons := _weapons()
 	_check(weapons.size() >= 20, "the catalogue lists the weapons", str(weapons.size()))
-	var arms_rig := _client.view_arms as DotPlayerViewArms
+	var arms_rig := _client.view_arms as GSPlayerViewArms
 	var arms: Node3D = arms_rig.arms() if arms_rig != null else null
 	var arms_scale := arms.transform.basis.get_scale() if arms != null else Vector3.ZERO
 	var body: Node3D = _client.player.character.body() if _client.player.character != null else null
@@ -133,7 +133,7 @@ func _test_catalogue() -> void:
 		elif _meshes(_client.zee_view) == 0 or _client.zee_view.equipped() != PlaylotZee.zee_id(def):
 			lacking.append(wid)
 		var now_arms: Node3D = arms_rig.arms() if arms_rig != null else null
-		if now_arms != arms or _count(_client, &"DotPlayerViewArms") != 1 \
+		if now_arms != arms or _count(_client, &"GSPlayerViewArms") != 1 \
 				or not now_arms.transform.basis.get_scale().is_equal_approx(arms_scale) \
 				or body == null or not body.global_transform.basis.get_scale().is_equal_approx(body_scale):
 			reshaped.append(wid)
@@ -191,7 +191,7 @@ func _test_remote() -> void:
 		return
 	var body := remote.character.body()
 	var body_scale := body.global_transform.basis.get_scale()
-	var figures := _count(remote, &"DotHumanoidFigure")
+	var figures := _count(remote, &"GSHumanoidFigure")
 	var meshes := -1
 	var changed: PackedStringArray = []
 	var missing: PackedStringArray = []
@@ -206,9 +206,9 @@ func _test_remote() -> void:
 		var own := _meshes(body, world)
 		if meshes < 0:
 			meshes = own
-		if own != meshes or _count(remote, &"DotHumanoidFigure") != figures or not body.global_transform.basis.get_scale().is_equal_approx(body_scale):
+		if own != meshes or _count(remote, &"GSHumanoidFigure") != figures or not body.global_transform.basis.get_scale().is_equal_approx(body_scale):
 			changed.append(String(def.id))
-	_check(_count(remote, &"DotPlayerViewArms") == 0, "a remote player carries no first-person arms")
+	_check(_count(remote, &"GSPlayerViewArms") == 0, "a remote player carries no first-person arms")
 	_check(missing.is_empty(), "a remote player's hand holds one model of every weapon", ", ".join(missing))
 	_check(changed.is_empty(), "and its body is the same whatever it holds", ", ".join(changed))
 	_completed += 1

@@ -19,10 +19,10 @@ const TUNED: PackedStringArray = ["health", "speed", "sight", "sight_angle", "he
 signal weapon_pack_added(pack: String)
 
 var roots := PackedStringArray()
-var npcs: DotProfileSet = null
+var npcs: GSProfileSet = null
 ## Every pack's weapon profiles as the one `weapon` kind; its runtime layer is what the packs rebuild from.
-var weapons: DotWeaponProfileGroup = null
-var runtime: DotProfileRuntime = null
+var weapons: GSWeaponProfileGroup = null
+var runtime: GSProfileRuntime = null
 ## The weapon packs whose provider was scanned, in order: what is loaded, for the Workbench's per-pack headings.
 var weapon_packs := PackedStringArray()
 
@@ -33,10 +33,10 @@ var _clones: PackedStringArray = PackedStringArray()
 ## Builds the NPC set and the runtime layer over it; [param p_roots] replaces the config roots (tests).
 func setup(p_roots: PackedStringArray = PackedStringArray()) -> void:
 	roots = p_roots
-	npcs = DotNpcProfiles.make_set(GAME, roots)
-	runtime = DotProfileRuntime.new()
+	npcs = GSNpcProfiles.make_set(GAME, roots)
+	runtime = GSProfileRuntime.new()
 	runtime.add_set(npcs)
-	weapons = DotWeaponProfileGroup.make(GAME, roots)
+	weapons = GSWeaponProfileGroup.make(GAME, roots)
 	runtime.add_set(weapons)
 	runtime.permit = func(actor: Variant, _flag: String) -> bool: return typeof(actor) == TYPE_STRING_NAME and actor == LOCAL_ACTOR
 
@@ -64,11 +64,11 @@ func weapon_layer() -> Dictionary:
 
 ## Applies every NPC profile (or just [param only]) to [param catalogue]. Returns how many entries
 ## a profile touched. Safe to repeat: each entry restarts from what the catalogue held first.
-func apply_npcs(catalogue: DotPropCatalogue, only: String = "") -> int:
+func apply_npcs(catalogue: GSPropCatalogue, only: String = "") -> int:
 	if npcs == null or catalogue == null:
 		return 0
 	var menu := {}
-	for e: Dictionary in DotNpcProfiles.menu_entries(npcs, true):
+	for e: Dictionary in GSNpcProfiles.menu_entries(npcs, true):
 		menu[e["id"]] = e
 	var touched := 0
 	var listed := npcs.list_ids()
@@ -81,14 +81,14 @@ func apply_npcs(catalogue: DotPropCatalogue, only: String = "") -> int:
 			continue
 		var res := npcs.load_profile(id)
 		if not res.ok:
-			DotLog.warn(CHANNEL, "npc profile skipped", {"id": id, "why": res.error.message})
+			GSLog.warn(CHANNEL, "npc profile skipped", {"id": id, "why": res.error.message})
 			continue
 		if _apply_npc(catalogue, id, res.value, menu.get(id, {})):
 			touched += 1
 	return touched
 
 
-func _restore(catalogue: DotPropCatalogue, id: String) -> void:
+func _restore(catalogue: GSPropCatalogue, id: String) -> void:
 	if _clones.has(id):
 		var _gone := catalogue.remove(StringName(id))
 		_clones.remove_at(_clones.find(id))
@@ -104,18 +104,18 @@ func _restore(catalogue: DotPropCatalogue, id: String) -> void:
 	_snap.erase(id)
 
 
-func _apply_npc(catalogue: DotPropCatalogue, id: String, p: DotProfile, entry: Dictionary) -> bool:
+func _apply_npc(catalogue: GSPropCatalogue, id: String, p: GSProfile, entry: Dictionary) -> bool:
 	var def := catalogue.get_prop(StringName(id))
 	if def == null:
 		var base := catalogue.get_prop(StringName(str(p.get_extra("base", ""))))
 		if base == null:
-			DotLog.warn(CHANNEL, "npc profile names no catalogue entry; set extra.base to add one", {"id": id})
+			GSLog.warn(CHANNEL, "npc profile names no catalogue entry; set extra.base to add one", {"id": id})
 			return false
-		def = base.duplicate(true) as DotPropDef
+		def = base.duplicate(true) as GSPropDef
 		def.id = StringName(id)
 		var added := catalogue.add(def)
 		if not added.ok:
-			DotLog.warn(CHANNEL, "npc profile entry refused", {"id": id, "why": added.error.message})
+			GSLog.warn(CHANNEL, "npc profile entry refused", {"id": id, "why": added.error.message})
 			return false
 		_clones.append(id)
 	if not _snap.has(id):
@@ -128,7 +128,7 @@ func _apply_npc(catalogue: DotPropCatalogue, id: String, p: DotProfile, entry: D
 	def.meta = (snap["meta"] as Dictionary).duplicate(true)
 
 	var defaults := {}
-	for f: Dictionary in DotNpcProfiles.schema():
+	for f: Dictionary in GSNpcProfiles.schema():
 		defaults[f["name"]] = f["default"]
 	var explicit := npcs.runtime_paths(id)
 	# A key counts as stated when it differs from the schema default or was edited at runtime.
@@ -169,7 +169,7 @@ func refine_weapon_entries(pack: String, entries: Array) -> Array:
 	if set.list_ids().is_empty():
 		return entries
 	var menu := {}
-	for e: Dictionary in DotWeaponProfiles.menu_entries(set, true):
+	for e: Dictionary in GSWeaponProfiles.menu_entries(set, true):
 		menu[e["id"]] = e
 	var out: Array = []
 	for row: Variant in entries:

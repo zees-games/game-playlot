@@ -45,7 +45,7 @@ const BACKPACK_WEIGHT := 400.0
 ## The actor every server-originated op is applied as: a purchase, a spawn from the bag, an
 ## admin's give. What a refusal in the log is attributed to.
 ##
-## [b]It was the player's own id, and that was a bug.[/b] `DotInvManager` rate-limits per
+## [b]It was the player's own id, and that was a bug.[/b] `GSInvManager` rate-limits per
 ## actor at 30 a second, which is right for what a CLIENT sends. `give` and `take` passed the
 ## player's id, so the server's own changes spent the player's budget: thirty beach balls into
 ## a sixty-cell bag and the thirty-first was refused as "too many inventory operations". A
@@ -62,11 +62,11 @@ const OPS_PER_SECOND := 30
 ## Somebody's carried items changed.
 signal changed(player_id: StringName)
 
-## player id -> [DotInvManager].
+## player id -> [GSInvManager].
 var _managers: Dictionary = {}
 
 ## The catalogue, built once from the spawnables list.
-var catalogue: DotInvCatalogue = null
+var catalogue: GSInvCatalogue = null
 
 @export var authoritative: bool = true
 
@@ -77,18 +77,18 @@ var catalogue: DotInvCatalogue = null
 var _service_name: StringName = SERVICE
 
 
-func setup(spawnables: DotPropCatalogue, scope: StringName = &"") -> DotResult:
+func setup(spawnables: GSPropCatalogue, scope: StringName = &"") -> GSResult:
 	catalogue = build_catalogue(spawnables)
 	var res := catalogue.validate()
 	if not res.ok:
 		return res.wrap("the playlot's item catalogue")
-	_service_name = DotRegistry.scoped_name(SERVICE, scope) if scope != &"" else SERVICE
-	DotRegistry.register(_service_name, self)
-	return DotResult.success(null)
+	_service_name = GSRegistry.scoped_name(SERVICE, scope) if scope != &"" else SERVICE
+	GSRegistry.register(_service_name, self)
+	return GSResult.success(null)
 
 
 func _exit_tree() -> void:
-	DotRegistry.unregister_instance(_service_name, self)
+	GSRegistry.unregister_instance(_service_name, self)
 
 
 ## An item catalogue derived from the prop catalogue, rather than written beside it.
@@ -97,15 +97,15 @@ func _exit_tree() -> void:
 ## somebody adds a prop — which is this tree's most repeated bug, and it has happened to
 ## `setup.sh`, two guard scripts, both bootstrap scripts and a vendoring list. The size, the
 ## weight and the tags all come from the prop's own definition.
-static func build_catalogue(spawnables: DotPropCatalogue) -> DotInvCatalogue:
-	var c := DotInvCatalogue.new()
+static func build_catalogue(spawnables: GSPropCatalogue) -> GSInvCatalogue:
+	var c := GSInvCatalogue.new()
 	c.add_grid(BACKPACK, BACKPACK_W, BACKPACK_H, BACKPACK_WEIGHT)
 
 	if spawnables == null:
 		return c
 
 	for def in spawnables.props:
-		var item := DotInvItem.new()
+		var item := GSInvItem.new()
 		item.id = def.id
 		# A translation key, not a name. An item document is stored and sent, and a stored
 		# display name is also a stored typo -- fixing one means rewriting every save that
@@ -114,7 +114,7 @@ static func build_catalogue(spawnables: DotPropCatalogue) -> DotInvCatalogue:
 		# Unique rather than stackable: every prop in this game carries its own state the
 		# moment it is spawned -- where it is, whether it is frozen, who owns it -- and an
 		# item that stacks is one whose state cannot be told apart from its neighbour's.
-		item.kind = DotInvItem.Kind.UNIQUE
+		item.kind = GSInvItem.Kind.UNIQUE
 		item.stack_max = 1
 		# The prop's own mass, which dot-props already carries and which this family found
 		# was being read by exactly one thing -- a catalogue saying 900 kg over a scene
@@ -131,7 +131,7 @@ static func build_catalogue(spawnables: DotPropCatalogue) -> DotInvCatalogue:
 
 
 ## The tag a query filters on, from the kind the spawner already derives.
-static func _kind_tag(def: DotPropDef) -> StringName:
+static func _kind_tag(def: GSPropDef) -> StringName:
 	match PlaylotSpawnables.kind_of(def):
 		PlaylotSpawnables.Kind.ENTITY:
 			return &"entity"
@@ -147,24 +147,24 @@ static func _kind_tag(def: DotPropDef) -> StringName:
 ## re-declared LARGE takes more room in a bag without anybody remembering to say so. A
 ## vehicle is three by three whatever its band says -- a car in a backpack is a joke the
 ## grid should not have to make twice.
-static func _size_for(def: DotPropDef) -> Vector2i:
+static func _size_for(def: GSPropDef) -> Vector2i:
 	if PlaylotSpawnables.kind_of(def) == PlaylotSpawnables.Kind.VEHICLE:
 		return Vector2i(3, 3)
 	match def.size:
-		DotPropDef.Size.LARGE:
+		GSPropDef.Size.LARGE:
 			return Vector2i(3, 2)
-		DotPropDef.Size.SMALL:
+		GSPropDef.Size.SMALL:
 			return Vector2i(1, 1)
 		_:
 			return Vector2i(2, 2)
 
 
 ## The manager for one player, made on demand.
-func for_player(player_id: StringName) -> DotInvManager:
+func for_player(player_id: StringName) -> GSInvManager:
 	if _managers.has(player_id):
 		return _managers[player_id]
 
-	var m := DotInvManager.new()
+	var m := GSInvManager.new()
 	m.name = "Inv_%s" % player_id
 	m.catalogue = catalogue
 	m.authoritative = authoritative
@@ -185,17 +185,17 @@ func for_player(player_id: StringName) -> DotInvManager:
 
 	var res := m.setup([BACKPACK])
 	if not res.ok:
-		DotLog.warn(CHANNEL, "an inventory could not be made", {
+		GSLog.warn(CHANNEL, "an inventory could not be made", {
 			"player": String(player_id), "why": res.error.message
 		})
 
-	m.applied.connect(func(_op: DotInvOp, _r: DotResult) -> void: changed.emit(player_id))
+	m.applied.connect(func(_op: GSInvOp, _r: GSResult) -> void: changed.emit(player_id))
 	_managers[player_id] = m
 	return m
 
 
 func forget(player_id: StringName) -> void:
-	var m: DotInvManager = _managers.get(player_id)
+	var m: GSInvManager = _managers.get(player_id)
 	if m != null:
 		m.queue_free()
 	_managers.erase(player_id)
@@ -217,22 +217,22 @@ func keys() -> Array[StringName]:
 ## Puts a bought item in somebody's bag. Returns what it could not fit.
 ##
 ## As [constant SERVER_ACTOR], not as the player: see there.
-func give(player_id: StringName, item_id: StringName, count: int = 1) -> DotResult:
+func give(player_id: StringName, item_id: StringName, count: int = 1) -> GSResult:
 	var m := for_player(player_id)
-	return m.apply(DotInvOp.add(item_id, count, BACKPACK), SERVER_ACTOR)
+	return m.apply(GSInvOp.add(item_id, count, BACKPACK), SERVER_ACTOR)
 
 
 ## Whether [method give] would take [param count] of [param item_id], asked before anything
 ## is charged for it.
 ##
-## `DotInvManager.validate` of the same ADD, which asks the item, the container, the weight
+## `GSInvManager.validate` of the same ADD, which asks the item, the container, the weight
 ## and — since 2026-09-25 — the ROOM. It did not ask room before, so a purchase into a full
 ## bag passed, was charged for, and was then refused, with dot-inventory logging an ERROR that
 ## said it "failed after it had been validated"; this used to ask first-fit itself. Kept as a
 ## method because "may this be given" is the shop's question, and the answer should not
 ## depend on the caller knowing which container a purchase goes into.
-func may_give(player_id: StringName, item_id: StringName, count: int = 1) -> DotResult:
-	return for_player(player_id).validate(DotInvOp.add(item_id, count, BACKPACK))
+func may_give(player_id: StringName, item_id: StringName, count: int = 1) -> GSResult:
+	return for_player(player_id).validate(GSInvOp.add(item_id, count, BACKPACK))
 
 
 ## Takes one out, for spawning it. Refuses when they do not have one.
@@ -240,18 +240,18 @@ func may_give(player_id: StringName, item_id: StringName, count: int = 1) -> Dot
 ## [b]The refusal is the whole feature.[/b] Before this, `pg_shop` charged on every spawn
 ## and nothing was ever held — so "buy three crates" and "buy one crate three times" were
 ## the same thing, and a player could not carry anything anywhere.
-func take(player_id: StringName, item_id: StringName) -> DotResult:
+func take(player_id: StringName, item_id: StringName) -> GSResult:
 	var m := for_player(player_id)
 	var container := m.doc.get_container(BACKPACK)
 	if container == null:
-		return DotResult.fail(DotError.CODE_STATE, "no backpack")
+		return GSResult.fail(GSError.CODE_STATE, "no backpack")
 
 	for uid in container.entries.keys():
 		if str((container.entries[uid] as Dictionary).get("item", "")) == String(item_id):
-			return m.apply(DotInvOp.drop(BACKPACK, uid, 1), SERVER_ACTOR)
+			return m.apply(GSInvOp.drop(BACKPACK, uid, 1), SERVER_ACTOR)
 
-	return DotResult.fail(
-		DotError.CODE_STATE, "you are not carrying a %s" % item_id
+	return GSResult.fail(
+		GSError.CODE_STATE, "you are not carrying a %s" % item_id
 	)
 
 
@@ -269,11 +269,11 @@ func carries(player_id: StringName, item_id: StringName) -> int:
 ## responsible for a preference and costs a round trip per keystroke.
 func query(player_id: StringName, text: String = "", tag: StringName = &"") -> Array[Dictionary]:
 	var m := for_player(player_id)
-	var q := DotInvQuery.new()
+	var q := GSInvQuery.new()
 	q.text = text
 	if tag != &"":
 		q.tags = [tag]
-	q.sort_by = DotInvQuery.Sort.WEIGHT
+	q.sort_by = GSInvQuery.Sort.WEIGHT
 	return q.run(m.doc, catalogue)
 
 
@@ -281,7 +281,7 @@ func describe_lines() -> PackedStringArray:
 	var out := PackedStringArray()
 	out.append("inventories: %d" % _managers.size())
 	for id in _managers.keys():
-		var m: DotInvManager = _managers[id]
+		var m: GSInvManager = _managers[id]
 		out.append("  %s" % id)
 		for line in m.doc.describe_lines(catalogue):
 			out.append("    %s" % line)

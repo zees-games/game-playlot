@@ -80,47 +80,47 @@ func current() -> Object:
 ## An unknown mode is refused rather than ignored: a client asking for a mode this server
 ## does not have is a client from a different build, and doing nothing would read as the
 ## tool gun being broken.
-func set_mode(p_mode: StringName, settings: Dictionary = {}) -> DotResult:
+func set_mode(p_mode: StringName, settings: Dictionary = {}) -> GSResult:
 	if modes.is_empty():
 		_equip()
 
 	if not modes.has(p_mode):
-		return DotResult.fail(DotError.CODE_INVALID, "No such tool.", String(p_mode))
+		return GSResult.fail(GSError.CODE_INVALID, "No such tool.", String(p_mode))
 
 	if p_mode != mode and current() != null:
 		current().call("cancel")
 
 	mode = p_mode
 	current().call("apply_settings", settings)
-	return DotResult.success(current())
+	return GSResult.success(current())
 
 
 # --- The buttons ----------------------------------------------------------------
 
-func _primary(space: Variant, origin: Vector3, aim: Vector3) -> DotResult:
+func _primary(space: Variant, origin: Vector3, aim: Vector3) -> GSResult:
 	return _use(&"primary", space, origin, aim)
 
 
-func _secondary(space: Variant, origin: Vector3, aim: Vector3) -> DotResult:
+func _secondary(space: Variant, origin: Vector3, aim: Vector3) -> GSResult:
 	return _use(&"secondary", space, origin, aim)
 
 
-func _reload(space: Variant, origin: Vector3, aim: Vector3) -> DotResult:
+func _reload(space: Variant, origin: Vector3, aim: Vector3) -> GSResult:
 	return _use(&"reload", space, origin, aim)
 
 
-func _use(button: StringName, space: Variant, origin: Vector3, aim: Vector3) -> DotResult:
+func _use(button: StringName, space: Variant, origin: Vector3, aim: Vector3) -> GSResult:
 	var tool := current()
 
 	if tool == null:
-		return DotResult.fail(DotError.CODE_STATE, "No tool selected.")
+		return GSResult.fail(GSError.CODE_STATE, "No tool selected.")
 
 	var hit := trace(space, origin, aim)
 
 	if hit.has("refused"):
 		return hit["refused"]
 
-	var res: DotResult = tool.call(button, self, hit)
+	var res: GSResult = tool.call(button, self, hit)
 	last_message = ""
 
 	if res != null and res.ok and str(res.value) == "first":
@@ -130,7 +130,7 @@ func _use(button: StringName, space: Variant, origin: Vector3, aim: Vector3) -> 
 
 
 ## Where the player is pointing: `{point, normal, body, prop}` for a prop, `{point, normal,
-## world: true}` for the map, `{}` for nothing, `{refused: DotResult}` for somebody else's.
+## world: true}` for the map, `{}` for nothing, `{refused: GSResult}` for somebody else's.
 func trace(space: Variant, origin: Vector3, aim: Vector3) -> Dictionary:
 	var state := space as PhysicsDirectSpaceState3D
 
@@ -156,7 +156,7 @@ func trace(space: Variant, origin: Vector3, aim: Vector3) -> Dictionary:
 
 		if prop != null:
 			if not may_touch(prop):
-				return {"refused": DotResult.fail(DotError.CODE_FORBIDDEN, "That is not yours.")}
+				return {"refused": GSResult.fail(GSError.CODE_FORBIDDEN, "That is not yours.")}
 
 			hit["body"] = collider
 			hit["prop"] = prop
@@ -173,7 +173,7 @@ func trace(space: Variant, origin: Vector3, aim: Vector3) -> Dictionary:
 # --- What modes ask the gun -----------------------------------------------------
 
 ## Whether the wielder may change [param prop]. Theirs, or anybody's on a server that says so.
-func may_touch(prop: DotPropInstance) -> bool:
+func may_touch(prop: GSPropInstance) -> bool:
 	if prop == null or not prop.is_alive():
 		return false
 
@@ -192,33 +192,33 @@ func constraints() -> Object:
 
 
 ## Whether the wielder may make one more weld, rope or no-collide.
-func may_constrain() -> DotResult:
+func may_constrain() -> GSResult:
 	if game == null or game.constraints == null:
-		return DotResult.fail(DotError.CODE_STATE, "This world cannot tie things.")
+		return GSResult.fail(GSError.CODE_STATE, "This world cannot tie things.")
 
 	var cap := game.spawn_limits.limit_for(wielder, PlaylotLimits.CONSTRAINTS)
 	var have: int = game.constraints.count_owned(wielder)
 
 	if cap > 0 and have >= cap:
-		return DotResult.fail(
-			DotError.CODE_QUOTA,
+		return GSResult.fail(
+			GSError.CODE_QUOTA,
 			"You have reached your constraints limit (%d)." % cap,
 			"%d of %d" % [have, cap]
 		)
 
-	return DotResult.success(null)
+	return GSResult.success(null)
 
 
 ## A balloon of [param lift] in [param colour], at [param at], counted against `balloons`.
-func spawn_balloon(at: Vector3, lift: float, colour: String) -> DotResult:
+func spawn_balloon(at: Vector3, lift: float, colour: String) -> GSResult:
 	if spawner == null:
-		return DotResult.fail(DotError.CODE_STATE, "This weapon has no world.")
+		return GSResult.fail(GSError.CODE_STATE, "This weapon has no world.")
 
 	var prop := spawner.spawn(BALLOON_ID, wielder, at)
 
 	if prop == null:
 		# The refusal has already gone to the player through the spawner's `refused`.
-		return DotResult.fail(DotError.CODE_QUOTA, "")
+		return GSResult.fail(GSError.CODE_QUOTA, "")
 
 	var body := prop.node as RigidBody3D
 
@@ -227,7 +227,7 @@ func spawn_balloon(at: Vector3, lift: float, colour: String) -> DotResult:
 		if body.has_method("set_tint") and Color.html_is_valid(colour):
 			body.call("set_tint", Color.html(colour))
 
-	return DotResult.success(body)
+	return GSResult.success(body)
 
 
 func describe() -> Dictionary:

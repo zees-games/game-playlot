@@ -1,6 +1,6 @@
 extends RefCounted
 
-## What the sandbox's ambience is: dot-audio's [DotAmbienceDirector] tables and the cvar defaults. Shared by the
+## What the sandbox's ambience is: dot-audio's [GSAmbienceDirector] tables and the cvar defaults. Shared by the
 ## simulation (which binds the `pg_ambient*` cvars) and the presentation (which plays them).
 
 const PREFIX := "pg"
@@ -18,8 +18,8 @@ const PREFIX_MOODS := {
 }
 
 
-static func make_rules() -> DotAmbienceRules:
-	var r := DotAmbienceRules.new()
+static func make_rules() -> GSAmbienceRules:
+	var r := GSAmbienceRules.new()
 	r.prefix = PREFIX
 	r.volume = LEVEL
 	r.frequency = RATE
@@ -30,7 +30,7 @@ static func make_rules() -> DotAmbienceRules:
 static func cvar_types() -> Dictionary:
 	var rules := make_rules()
 	var out := {}
-	for key: String in DotAmbienceRules.VARS:
-		var row: Array = DotAmbienceRules.VARS[key]
+	for key: String in GSAmbienceRules.VARS:
+		var row: Array = GSAmbienceRules.VARS[key]
 		out[rules.cvar_of(row)] = "string" if row[2] == null else "float"
 	return out

@@ -12,7 +12,7 @@ extends "playlot_entity.gd"
 ##
 ## What it buys, concretely:
 ##
-## - **A reaction time.** `DotNpcAiCharacter` is the arena shooters' characteristics
+## - **A reaction time.** `GSNpcAiCharacter` is the arena shooters' characteristics
 ##   table, and
 ##   `has_reacted()` is the gate every "act on what you see" branch belongs behind. An NPC
 ##   that turns and commits on the tick it first perceives somebody is one no player can
@@ -39,13 +39,13 @@ const STATE_CHASE := &"chase"
 const STATE_LOST := &"lost"
 
 ## The decision, and the memory it is made against.
-var machine: DotNpcAiMachine = null
-var blackboard: DotNpcAiBlackboard = null
-var context: DotNpcAiContext = null
-var character: DotNpcAiCharacter = null
+var machine: GSNpcAiMachine = null
+var blackboard: GSNpcAiBlackboard = null
+var context: GSNpcAiContext = null
+var character: GSNpcAiCharacter = null
 
 ## The character as the catalogue named it, before the server's skill moved it.
-var _base_character: DotNpcAiCharacter = null
+var _base_character: GSNpcAiCharacter = null
 var _skill_revision: int = -1
 
 var _heading: Vector3 = Vector3.FORWARD
@@ -60,22 +60,22 @@ func _entity_ready() -> void:
 	# [b]A character per NPC, seeded from the spawn.[/b] A preset is one resource, and
 	# twenty NPCs sharing it share a seed — so every one of them reacts at the same
 	# moment, which reads as a firing squad. `with_seed` is the one call that prevents it.
-	_base_character = DotNpcAiCharacter.preset(tune_string(&"skill", "normal")).with_seed(
+	_base_character = GSNpcAiCharacter.preset(tune_string(&"skill", "normal")).with_seed(
 		npc.seed if npc != null else 0
 	)
 
-	blackboard = DotNpcAiBlackboard.new()
-	context = DotNpcAiContext.make(npc, self, blackboard)
+	blackboard = GSNpcAiBlackboard.new()
+	context = GSNpcAiContext.make(npc, self, blackboard)
 	_refresh_character()
 
 	_heading = Vector3.FORWARD.rotated(
 		Vector3.UP, float(npc.seed if npc != null else 0)
 	)
 
-	machine = DotNpcAiMachine.new()
+	machine = GSNpcAiMachine.new()
 
 	machine.add(
-		DotNpcAiState.make(STATE_PATROL, _patrol)
+		GSNpcAiState.make(STATE_PATROL, _patrol)
 			.when(_sees_somebody, STATE_ALERT)
 	)
 	machine.add(
@@ -83,19 +83,19 @@ func _entity_ready() -> void:
 		# check inside CHASE.[/b] An NPC that "reacted" by standing perfectly still for a
 		# third of a second and then sprinting is a different thing from one that turns to
 		# look and then sprints — and only the second reads as having noticed you.
-		DotNpcAiState.make(STATE_ALERT, _turn_toward)
-			.when(func(_c: DotNpcAiContext) -> bool: return not _has_target(), STATE_LOST)
-			.when(func(_c: DotNpcAiContext) -> bool: return _reacted(), STATE_CHASE)
+		GSNpcAiState.make(STATE_ALERT, _turn_toward)
+			.when(func(_c: GSNpcAiContext) -> bool: return not _has_target(), STATE_LOST)
+			.when(func(_c: GSNpcAiContext) -> bool: return _reacted(), STATE_CHASE)
 	)
 	machine.add(
-		DotNpcAiState.make(STATE_CHASE, _chase)
-			.when(func(_c: DotNpcAiContext) -> bool: return not _has_target(), STATE_LOST)
+		GSNpcAiState.make(STATE_CHASE, _chase)
+			.when(func(_c: GSNpcAiContext) -> bool: return not _has_target(), STATE_LOST)
 	)
 	machine.add(
 		# [b]LOST has a floor as well as a condition.[/b] Without the timer an NPC on the
 		# edge of its sight range flickers between CHASE and PATROL every tick, which
 		# looks like a fit — the classic broken NPC this family already documented once.
-		DotNpcAiState.make(STATE_LOST, _search)
+		GSNpcAiState.make(STATE_LOST, _search)
 			.when(_sees_somebody, STATE_ALERT)
 			.after(tune(&"give_up_seconds", 2.5), STATE_PATROL)
 	)
@@ -103,7 +103,7 @@ func _entity_ready() -> void:
 	var started := machine.go_to(context, STATE_PATROL)
 
 	if not started.ok:
-		DotLog.warn("playlot.npc", "a hunter could not start patrolling", {
+		GSLog.warn("playlot.npc", "a hunter could not start patrolling", {
 			"why": started.error.message,
 		})
 
@@ -119,10 +119,10 @@ func _entity_tick(delta: float) -> void:
 
 ## The character in force, worked out again only when the server's skill changed.
 ##
-## The same thing `DotNpcAiBrain` does for a spawned NPC; this entity is built by the spawn
+## The same thing `GSNpcAiBrain` does for a spawned NPC; this entity is built by the spawn
 ## menu rather than by a spawner, so it has no brain to do it and asks the world instead.
 func _refresh_character() -> void:
-	var skill: DotNpcAiSkill = game.npc_skill if game != null else null
+	var skill: GSNpcAiSkill = game.npc_skill if game != null else null
 	var revision := skill.revision if skill != null else 0
 
 	if revision == _skill_revision and character != null:
@@ -139,22 +139,22 @@ func _refresh_character() -> void:
 
 # --- States ----------------------------------------------------------------
 
-func _patrol(ctx: DotNpcAiContext) -> void:
+func _patrol(ctx: GSNpcAiContext) -> void:
 	# Wandered rather than re-rolled. A direction chosen fresh every tick is Brownian
 	# motion: it averages to standing still, and an NPC that never goes anywhere is one
 	# players never meet.
-	var angle := DotNpcAiSteering.wander(
+	var angle := GSNpcAiSteering.wander(
 		atan2(_heading.z, _heading.x), 0.35,
 		(npc.seed if npc != null else 0) + int(ctx.now * 3.0)
 	)
-	_heading = DotNpcAiSteering.angle_to_direction(angle)
+	_heading = GSNpcAiSteering.angle_to_direction(angle)
 
 	# Slower than a chase. An NPC that patrols at full speed cannot be crept up on and
 	# cannot be outrun, which removes both halves of the encounter.
 	drive(_heading, _speed * 0.35, ctx.delta)
 
 
-func _turn_toward(ctx: DotNpcAiContext) -> void:
+func _turn_toward(ctx: GSNpcAiContext) -> void:
 	var to := _to_target()
 
 	if to == Vector3.ZERO:
@@ -166,7 +166,7 @@ func _turn_toward(ctx: DotNpcAiContext) -> void:
 	drive(Vector3.ZERO, 0.0, ctx.delta)
 
 
-func _chase(ctx: DotNpcAiContext) -> void:
+func _chase(ctx: GSNpcAiContext) -> void:
 	var chasing := target()
 
 	if chasing == null:
@@ -186,11 +186,11 @@ func _chase(ctx: DotNpcAiContext) -> void:
 	# horizontal offset of nothing from the one below — so it chases perfectly at a dead
 	# stop with every number about it correct.
 	var here := global_position
-	var apart := DotNpcAiSteering.separate(
+	var apart := GSNpcAiSteering.separate(
 		here, _neighbours(2.4), 2.4, global_basis.x
 	)
-	var wanted := DotNpcAiSteering.blend([
-		[DotNpcAiSteering.seek(here, here + to), 1.0], [apart, 0.6]
+	var wanted := GSNpcAiSteering.blend([
+		[GSNpcAiSteering.seek(here, here + to), 1.0], [apart, 0.6]
 	])
 
 	if wanted.length() < 0.001:
@@ -199,7 +199,7 @@ func _chase(ctx: DotNpcAiContext) -> void:
 	drive(wanted, _speed, ctx.delta)
 
 
-func _search(ctx: DotNpcAiContext) -> void:
+func _search(ctx: GSNpcAiContext) -> void:
 	# Toward where they were last seen rather than standing still. An NPC that stops dead
 	# the instant it loses you is one you escape by stepping behind a crate; one that
 	# comes to look is one you have to actually leave.
@@ -218,7 +218,7 @@ func _search(ctx: DotNpcAiContext) -> void:
 
 # --- Conditions ------------------------------------------------------------
 
-func _sees_somebody(_ctx: DotNpcAiContext) -> bool:
+func _sees_somebody(_ctx: GSNpcAiContext) -> bool:
 	if not _has_target():
 		return false
 
@@ -240,8 +240,8 @@ func _has_target() -> bool:
 ## `engaged_at` is refreshed on every pass in which the target is perceived — which is what
 ## a reclaim asks about — so a reaction time measured against it never elapses for an NPC
 ## that can currently see somebody. The first version of this file used it and the hunter
-## sat in ALERT for ever; so did [method DotNpcAiBrain.has_reacted], which is where the fix
-## actually belongs and where it now is. `DotNpcInstance.target_since` was added to dot-npc
+## sat in ALERT for ever; so did [method GSNpcAiBrain.has_reacted], which is where the fix
+## actually belongs and where it now is. `GSNpcInstance.target_since` was added to dot-npc
 ## for exactly this and moves only when the commitment does.
 func _reacted() -> bool:
 	if character == null or npc == null or context == null:

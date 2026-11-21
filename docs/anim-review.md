@@ -32,7 +32,7 @@ The harness fails a clip on:
 - a view-model jump between frames (`fire` allows its kick);
 - the firing or support hand off its grip for too long (melee, thrown and fists are exempt);
 - no view model for too long (`draw` is exempt);
-- a third-person bone turning faster than `bone_pop` allows (dot-core's `DotClipMetrics`).
+- a third-person bone turning faster than `bone_pop` allows (dot-core's `GSClipMetrics`).
 
 The numbers do not cover everything. Look at the sheets for:
 
@@ -54,6 +54,6 @@ Each clip is posted with its verdict and metrics; the report's reason goes in as
 
 ## Arguments
 
-The harness takes `--key=value` arguments only. The map drop intake (DotMapDropIntake) treats any
+The harness takes `--key=value` arguments only. The map drop intake (GSMapDropIntake) treats any
 bare argument that names an existing folder, such as the output folder, as a map dropped on the
 window.

@@ -49,8 +49,8 @@ func _run() -> void:
 	get_tree().quit(0)
 
 
-func _spawn(id: StringName, at: Vector3) -> DotWeaponSpawn:
-	var spawn := DotWeaponSpawn.new()
+func _spawn(id: StringName, at: Vector3) -> GSWeaponSpawn:
+	var spawn := GSWeaponSpawn.new()
 	spawn.id = id
 	spawn.origin = at
 	spawn.gravity_scale = 0.0
@@ -61,8 +61,8 @@ func _spawn(id: StringName, at: Vector3) -> DotWeaponSpawn:
 	return spawn
 
 
-## Frame sequence after each still (GS_SHOT_FRAMES, set by the .sh); see DotShotSeq.
-var _seq := DotShotSeq.new()
+## Frame sequence after each still (GS_SHOT_FRAMES, set by the .sh); see GSShotSeq.
+var _seq := GSShotSeq.new()
 
 
 func _shot(shot_name: String) -> void:

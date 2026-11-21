@@ -98,25 +98,25 @@ static func parse_roles(text: String) -> PackedStringArray:
 
 ## Whether [param holder] may pick up [param target]. Every refusal says why, because a
 ## beam that goes through a player and does nothing reads as the gun being broken.
-func may_pick_up(holder: PlaylotPlayer, target: PlaylotPlayer) -> DotResult:
+func may_pick_up(holder: PlaylotPlayer, target: PlaylotPlayer) -> GSResult:
 	if not enabled:
-		return DotResult.fail(DotError.CODE_FORBIDDEN, "Picking up players is off on this server.")
+		return GSResult.fail(GSError.CODE_FORBIDDEN, "Picking up players is off on this server.")
 	if holder == null or target == null or holder == target:
-		return DotResult.fail(DotError.CODE_INVALID, "Nobody there to pick up.")
+		return GSResult.fail(GSError.CODE_INVALID, "Nobody there to pick up.")
 	if holder.riding:
-		return DotResult.fail(DotError.CODE_STATE, "You cannot pick anybody up from where you are.")
+		return GSResult.fail(GSError.CODE_STATE, "You cannot pick anybody up from where you are.")
 	if _holds.has(holder.player_id):
-		return DotResult.fail(DotError.CODE_STATE, "You are already holding somebody.")
+		return GSResult.fail(GSError.CODE_STATE, "You are already holding somebody.")
 	if target.riding or _holder_of.has(target.player_id):
-		return DotResult.fail(DotError.CODE_STATE, "%s cannot be picked up right now." % target.display_name)
+		return GSResult.fail(GSError.CODE_STATE, "%s cannot be picked up right now." % target.display_name)
 	if target.creative:
-		return DotResult.fail(DotError.CODE_FORBIDDEN, "%s is in creative mode." % target.display_name)
+		return GSResult.fail(GSError.CODE_FORBIDDEN, "%s is in creative mode." % target.display_name)
 	if holder.creative:
-		return DotResult.fail(DotError.CODE_FORBIDDEN, "You cannot pick anybody up in creative mode.")
+		return GSResult.fail(GSError.CODE_FORBIDDEN, "You cannot pick anybody up in creative mode.")
 	if _holds.has(target.player_id):
 		# A holder picked up would carry their own beam with them: A holds B, C holds A,
 		# and B now moves with C's mouse through A's. Refused rather than modelled.
-		return DotResult.fail(DotError.CODE_STATE, "%s is holding somebody." % target.display_name)
+		return GSResult.fail(GSError.CODE_STATE, "%s is holding somebody." % target.display_name)
 
 	if not immune_roles.is_empty():
 		var theirs := roles_of(target.player_id)
@@ -129,12 +129,12 @@ func may_pick_up(holder: PlaylotPlayer, target: PlaylotPlayer) -> DotResult:
 			var mine := roles_of(holder.player_id)
 			for role in override_roles:
 				if mine.has(role):
-					return DotResult.success(target)
-			return DotResult.fail(
-				DotError.CODE_FORBIDDEN, "%s cannot be picked up (%s)." % [target.display_name, immune]
+					return GSResult.success(target)
+			return GSResult.fail(
+				GSError.CODE_FORBIDDEN, "%s cannot be picked up (%s)." % [target.display_name, immune]
 			)
 
-	return DotResult.success(target)
+	return GSResult.success(target)
 
 
 ## The player [param holder] is looking at, within [member reach] and with nothing solid
@@ -170,7 +170,7 @@ func player_in_beam(
 ##
 ## A refusal carries [code]error.context.pickup[/code] (the target's id), so a caller that
 ## got it through [method Playlot.phys_gun_grab] can tell it from a prop refusal.
-func pick_up(holder: PlaylotPlayer, target: PlaylotPlayer, origin: Vector3) -> DotResult:
+func pick_up(holder: PlaylotPlayer, target: PlaylotPlayer, origin: Vector3) -> GSResult:
 	var allowed := may_pick_up(holder, target)
 	if not allowed.ok:
 		allowed.error.context["pickup"] = String(target.player_id) if target != null else ""
@@ -183,9 +183,9 @@ func pick_up(holder: PlaylotPlayer, target: PlaylotPlayer, origin: Vector3) -> D
 	target.set_held(true)
 	target.stop_run(&"teleport")
 
-	DotLog.info(CHANNEL, "picked up", {"holder": String(holder.player_id), "target": String(target.player_id)})
+	GSLog.info(CHANNEL, "picked up", {"holder": String(holder.player_id), "target": String(target.player_id)})
 	changed.emit(holder.player_id, target.player_id, true)
-	return DotResult.success(target)
+	return GSResult.success(target)
 
 
 ## Moves the hold nearer or further, as the scroll wheel does a held prop.

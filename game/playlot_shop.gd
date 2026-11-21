@@ -17,9 +17,9 @@ const Playlot := preload("playlot.gd")
 ## because everything it needs is already here: a prop catalogue with fourteen entries,
 ## three weapons, four vehicles, and a wave director that knows when something died.
 ##
-## [b]It sells ids and grants nothing.[/b] `DotEconomyManager.bought` carries an id and
+## [b]It sells ids and grants nothing.[/b] `GSEconomyManager.bought` carries an id and
 ## this layer answers "yes, spawn it" — the spawn itself stays where it already was, in
-## `Playlot` and `DotPropSpawner`. dot-economy has never heard of a `DotPropDef` and
+## `Playlot` and `GSPropSpawner`. dot-economy has never heard of a `GSPropDef` and
 ## does not need to.
 
 const CHANNEL := "playlot.shop"
@@ -47,7 +47,7 @@ signal purchased(player_id: StringName, id: StringName)
 
 var game: Playlot = null
 
-var economy: DotEconomyManager = null
+var economy: GSEconomyManager = null
 
 ## Whether prices apply at all. `pg_shop`.
 var enabled: bool = false
@@ -55,10 +55,10 @@ var enabled: bool = false
 var _stipend_ticks: int = 0
 
 
-func setup(p_game: Playlot) -> DotResult:
+func setup(p_game: Playlot) -> GSResult:
 	game = p_game
 
-	economy = DotEconomyManager.new()
+	economy = GSEconomyManager.new()
 	economy.name = "Economy"
 	economy.authoritative = game.authoritative
 	economy.rules = _rules()
@@ -79,11 +79,11 @@ func setup(p_game: Playlot) -> DotResult:
 	# whose every refusal correctly says the window is closed.
 	economy.on_round_start(game.current_tick())
 
-	return DotResult.success(null)
+	return GSResult.success(null)
 
 
-func _rules() -> DotEconomyRules:
-	var rules := DotEconomyRules.new()
+func _rules() -> GSEconomyRules:
+	var rules := GSEconomyRules.new()
 	rules.start_money = START_CREDITS
 	rules.max_money = MAX_CREDITS
 	rules.buy_time_ticks = 0        # Always open. A sandbox has no buy phase.
@@ -107,22 +107,22 @@ func _rules() -> DotEconomyRules:
 ## that goes stale the first time somebody adds a fifteenth, and this tree has shipped
 ## that bug four times in shell scripts alone. A price comes from what a thing *is* —
 ## its mass and its size for a prop, a flat rate for a weapon, more for a vehicle.
-static func catalogue(game: Playlot) -> Array[DotShopItem]:
-	var out: Array[DotShopItem] = []
+static func catalogue(game: Playlot) -> Array[GSShopItem]:
+	var out: Array[GSShopItem] = []
 
 	if game == null:
 		return out
 
-	var props: DotPropCatalogue = game.props.catalogue if game.props != null else null
+	var props: GSPropCatalogue = game.props.catalogue if game.props != null else null
 
 	if props != null:
 		for def in props.props:
-			var item := DotShopItem.make(def.id, price_of(def), def.display_name)
+			var item := GSShopItem.make(def.id, price_of(def), def.display_name)
 			item.tags = PackedStringArray(["prop"])
 			out.append(item)
 
 	for weapon in game.weapons:
-		var item := DotShopItem.make(weapon.id, 350, weapon.display_name)
+		var item := GSShopItem.make(weapon.id, 350, weapon.display_name)
 		item.tags = PackedStringArray(["weapon"])
 		# One each. A second physics gun is not a second physics gun, and paying for
 		# one is the sort of refund request an operator does not want.
@@ -137,11 +137,11 @@ static func catalogue(game: Playlot) -> Array[DotShopItem]:
 ## The curve is deliberately shallow. A price list whose top entry is forty times its
 ## bottom one is a list where thirteen of the fourteen entries are noise.
 ##
-## `DotPropDef.cost` is the prop's weight against a player's *budget*, which is a
+## `GSPropDef.cost` is the prop's weight against a player's *budget*, which is a
 ## separate limit from money and stays one: a shop that replaced the budget would let
 ## somebody with credits fill the map, and the budget exists because a filled map is a
 ## server nobody else can play on.
-static func price_of(def: DotPropDef) -> int:
+static func price_of(def: GSPropDef) -> int:
 	var mass := maxf(def.mass, 1.0)
 	var bulk := float(int(def.size) + 1)
 	var weight := float(maxi(def.cost, 1))
@@ -152,7 +152,7 @@ func set_enabled(on: bool) -> void:
 	if enabled == on:
 		return
 	enabled = on
-	DotLog.info(CHANNEL, "the shop is %s" % ("on" if on else "off"))
+	GSLog.info(CHANNEL, "the shop is %s" % ("on" if on else "off"))
 
 
 func balance(player_id: StringName) -> int:
@@ -165,9 +165,9 @@ func balance(player_id: StringName) -> int:
 ## layer a caller can consult unconditionally rather than a branch every call site has
 ## to remember. The spawn menu asks this to grey a card out; `Playlot` asks it before
 ## spawning; neither of them knows whether the shop is on.
-func may_have(player_id: StringName, id: StringName) -> DotResult:
+func may_have(player_id: StringName, id: StringName) -> GSResult:
 	if not enabled or economy == null:
-		return DotResult.success(null)
+		return GSResult.success(null)
 	return economy.may_buy(String(player_id), id)
 
 
@@ -176,9 +176,9 @@ func may_have(player_id: StringName, id: StringName) -> DotResult:
 ## Ordered that way deliberately: charging first and spawning second means a spawn
 ## refused by the prop budget has already been paid for, and "it took my credits and
 ## nothing appeared" is the one bug report a shop must not produce.
-func charge(player_id: StringName, id: StringName) -> DotResult:
+func charge(player_id: StringName, id: StringName) -> GSResult:
 	if not enabled or economy == null:
-		return DotResult.success(null)
+		return GSResult.success(null)
 
 	var res := economy.buy(String(player_id), id)
 
@@ -189,9 +189,9 @@ func charge(player_id: StringName, id: StringName) -> DotResult:
 
 
 ## Give it back. What an undo is worth.
-func refund(player_id: StringName, id: StringName) -> DotResult:
+func refund(player_id: StringName, id: StringName) -> GSResult:
 	if not enabled or economy == null:
-		return DotResult.success(null)
+		return GSResult.success(null)
 	return economy.refund(String(player_id), id)
 
 

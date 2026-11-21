@@ -58,14 +58,14 @@ func chosen_weapon() -> StringName:
 	return &"" if weapon == OWN else StringName(weapon)
 
 
-func primary(gun: Object, hit: Dictionary) -> DotResult:
+func primary(gun: Object, hit: Dictionary) -> GSResult:
 	if not hit.has("point"):
-		return DotResult.fail(DotError.CODE_STATE, "Point at the ground.")
+		return GSResult.fail(GSError.CODE_STATE, "Point at the ground.")
 
-	var spawner: DotPropSpawner = gun.get("spawner")
+	var spawner: GSPropSpawner = gun.get("spawner")
 
 	if spawner == null:
-		return DotResult.fail(DotError.CODE_STATE, "This weapon has no world.")
+		return GSResult.fail(GSError.CODE_STATE, "This weapon has no world.")
 
 	var wielder: StringName = gun.get("wielder")
 	var normal: Vector3 = hit.get("normal", Vector3.UP)
@@ -76,11 +76,11 @@ func primary(gun: Object, hit: Dictionary) -> DotResult:
 		var prop := spawner.spawn(&"spawn_point", wielder, at)
 
 		if prop == null:
-			return DotResult.fail(DotError.CODE_QUOTA, "")
+			return GSResult.fail(GSError.CODE_QUOTA, "")
 
 		var made := prop.node
 		made.call("configure_point", kind, chosen_weapon(), float(setting("interval")), int(setting("limit")))
-		return DotResult.success(made)
+		return GSResult.success(made)
 
 	var spawned: Array = []
 
@@ -100,34 +100,34 @@ func primary(gun: Object, hit: Dictionary) -> DotResult:
 			var _armed: Variant = body.call("arm_with", chosen_weapon())
 
 	if spawned.is_empty():
-		return DotResult.fail(DotError.CODE_QUOTA, "")
+		return GSResult.fail(GSError.CODE_QUOTA, "")
 
-	return DotResult.success(spawned.size())
+	return GSResult.success(spawned.size())
 
 
-func secondary(gun: Object, hit: Dictionary) -> DotResult:
+func secondary(gun: Object, hit: Dictionary) -> GSResult:
 	var prop: Variant = hit.get("prop")
 
-	if not (prop is DotPropInstance):
+	if not (prop is GSPropInstance):
 		return nothing_there()
 
-	var node := (prop as DotPropInstance).node
+	var node := (prop as GSPropInstance).node
 	var is_npc := node != null and (node.get("npc") != null or node.has_meta(&"spawn_point"))
 
 	if not is_npc:
-		return DotResult.fail(DotError.CODE_STATE, "Point at an NPC or a spawn point.")
+		return GSResult.fail(GSError.CODE_STATE, "Point at an NPC or a spawn point.")
 
-	gun.get("spawner").remove((prop as DotPropInstance).instance_id, DotPropSpawner.REASON_PLAYER)
-	return DotResult.success(1)
+	gun.get("spawner").remove((prop as GSPropInstance).instance_id, GSPropSpawner.REASON_PLAYER)
+	return GSResult.success(1)
 
 
-func reload(gun: Object, _hit: Dictionary) -> DotResult:
-	var spawner: DotPropSpawner = gun.get("spawner")
+func reload(gun: Object, _hit: Dictionary) -> GSResult:
+	var spawner: GSPropSpawner = gun.get("spawner")
 	var mine: StringName = gun.get("wielder")
 	var removed := 0
 
 	if spawner == null:
-		return DotResult.fail(DotError.CODE_STATE, "This weapon has no world.")
+		return GSResult.fail(GSError.CODE_STATE, "This weapon has no world.")
 
 	for entity in (gun.get("game").get("entities") as Array).duplicate():
 		if not is_instance_valid(entity) or not (entity as Node).has_meta(&"spawn_point"):
@@ -135,8 +135,8 @@ func reload(gun: Object, _hit: Dictionary) -> DotResult:
 
 		var instance: Variant = entity.get("instance")
 
-		if instance is DotPropInstance and (instance as DotPropInstance).owner_id == mine:
-			if spawner.remove((instance as DotPropInstance).instance_id, DotPropSpawner.REASON_PLAYER):
+		if instance is GSPropInstance and (instance as GSPropInstance).owner_id == mine:
+			if spawner.remove((instance as GSPropInstance).instance_id, GSPropSpawner.REASON_PLAYER):
 				removed += 1
 
-	return DotResult.success(removed)
+	return GSResult.success(removed)

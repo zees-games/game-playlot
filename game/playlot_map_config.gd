@@ -1,6 +1,6 @@
 extends RefCounted
 
-## Playlot's per-map settings: dot-game's [DotGameMapConfig] over the cvars a map may change.
+## Playlot's per-map settings: dot-game's [GSGameMapConfig] over the cvars a map may change.
 ##
 ## `cfg/game/game-playlot/dot_map/map/<name>.yml` (a glob such as `pgc_%.yml` covers a class of maps), overridable from `cfg/server/...`. Only the keys in [constant KEYS] are accepted. All are server-side or replicated, so a client needs no hook of its own.
 
@@ -17,5 +17,5 @@ const KEYS := {
 
 
 ## The applier over [param console]'s cvars. Call `apply(map_id)` on every map load.
-static func build(console: DotConsole) -> DotGameMapConfig:
-	return DotGameMapConfig.for_console(GAME_ID, console, KEYS)
+static func build(console: GSConsole) -> GSGameMapConfig:
+	return GSGameMapConfig.for_console(GAME_ID, console, KEYS)

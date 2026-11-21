@@ -46,9 +46,9 @@ func _run() -> void:
 		await _frames(5)
 		var _r := screen.form.set_value("extra.damage", 99)
 	await _shot("workbench_weapon")
-	# dot-workbench's F9 panel (DotGameWorkbench) over the same profiles and the game settings.
+	# dot-workbench's F9 panel (GSGameWorkbench) over the same profiles and the game settings.
 	_client.screens.close_all() if _client.screens.has_method("close_all") else null
-	var panel := _client.get_node_or_null("Workbench") as DotGameWorkbench
+	var panel := _client.get_node_or_null("Workbench") as GSGameWorkbench
 	if panel != null:
 		panel.open()
 		await _frames(10)
@@ -56,8 +56,8 @@ func _run() -> void:
 	get_tree().quit()
 
 
-## Frame sequence after each still (GS_SHOT_FRAMES, set by the .sh); see DotShotSeq.
-var _seq := DotShotSeq.new()
+## Frame sequence after each still (GS_SHOT_FRAMES, set by the .sh); see GSShotSeq.
+var _seq := GSShotSeq.new()
 
 
 func _shot(shot_name: String) -> void:

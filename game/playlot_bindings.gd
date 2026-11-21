@@ -1,11 +1,11 @@
 extends RefCounted
 
-## Every key this game reads, as one dot-menu [DotMenuBindings] table: the action, the setting
+## Every key this game reads, as one dot-menu [GSMenuBindings] table: the action, the setting
 ## that stores it, the words a player sees, the default, and the card it goes on.
 ##
 ## [b]A table, because four things read it and they must never disagree:[/b] the client
 ## matches events against the actions, the settings document stores one binding per row
-## ([method DotMenuBindings.add_to_schema], from [method PlaylotPresentation.schema]), the
+## ([method GSMenuBindings.add_to_schema], from [method PlaylotPresentation.schema]), the
 ## Escape menu's Controls page draws a key button per row, and the help screen (H) lists
 ## them with the key each is on now. Until 2026-10-11 every one of these was a keycode in
 ## `PlaylotClient._unhandled_input`, which no page could show or move.
@@ -47,13 +47,13 @@ const PROFILES := &"pg_profiles"
 const MAP_EDIT := &"pg_map_edit"
 const MAP_EDIT_PICK := &"pg_map_edit_pick"
 const SCOREBOARD := &"pg_scoreboard"
-## The chat box's own actions (`PlaylotPresentation`'s `DotChatWindow`).
+## The chat box's own actions (`PlaylotPresentation`'s `GSChatWindow`).
 const CHAT := &"playlot_chat"
 const CHAT_NEAR := &"playlot_chat_near"
 
 
-static func make() -> DotMenuBindings:
-	var keys := DotMenuBindings.new()
+static func make() -> GSMenuBindings:
+	var keys := GSMenuBindings.new()
 	keys.add_movement()
 
 	keys.add(SPAWN_MENU, &"bind_spawn_menu", "Spawn menu (hold, or press to pin it open)", "Q", "Building")
@@ -66,7 +66,7 @@ static func make() -> DotMenuBindings:
 	keys.add(GRAV_GUN, &"bind_grav_gun", "Gravity gun", "2", "Tools")
 	keys.add(WEAPONS, &"bind_weapons", "Next weapon", "3", "Tools")
 	# The wheel cycles tools (dot-menu API 10); a held prop keeps it for push and pull.
-	keys.add_wheel_weapons(DotMenuBindings.WEAPON_PREVIOUS_ACTION, DotMenuBindings.WEAPON_NEXT_ACTION, "Tools")
+	keys.add_wheel_weapons(GSMenuBindings.WEAPON_PREVIOUS_ACTION, GSMenuBindings.WEAPON_NEXT_ACTION, "Tools")
 	keys.add(VEHICLE, &"bind_vehicle", "Use what you look at, or get in or out of a vehicle", "F", "Tools")
 	keys.add(DROP_WEAPON, &"bind_drop_weapon", "Throw the gun in your hands", "O", "Tools")
 	keys.add(AIM, &"bind_aim", "Aim down a gun's sights (hold)", "Mouse 2", "Tools")
@@ -82,15 +82,15 @@ static func make() -> DotMenuBindings:
 	keys.add(SCOREBOARD, &"bind_scoreboard", "Scoreboard (hold)", "Tab", "General")
 	# The chat keys keep the settings they were stored under before this table existed
 	# (declared in `PlaylotPresentation.schema`, per ACCOUNT, applied there as well).
-	keys.add(CHAT, &"chat_open_key", "Chat", "Y", "General", DotSettingsDef.Scope.ACCOUNT)
-	keys.add(CHAT_NEAR, &"chat_near_key", "Chat with nearby players", "U", "General", DotSettingsDef.Scope.ACCOUNT)
-	# dot-voice's talk action (DotVoiceManager.TALK_ACTION).
+	keys.add(CHAT, &"chat_open_key", "Chat", "Y", "General", GSSettingsDef.Scope.ACCOUNT)
+	keys.add(CHAT_NEAR, &"chat_near_key", "Chat with nearby players", "U", "General", GSSettingsDef.Scope.ACCOUNT)
+	# dot-voice's talk action (GSVoiceManager.TALK_ACTION).
 	keys.add_voice("General", "K")
-	# Look at a player and press (dot-game's DotGameClient): H is help.
+	# Look at a player and press (dot-game's GSGameClient): H is help.
 	keys.add(VOICE_GAG, &"bind_voice_gag", "Look at a player: stop (or resume) hearing them", "J", "General")
 	keys.add(VOICE_MUTE, &"bind_voice_mute", "Look at a player: mute (or unmute) their voice and chat", "L", "General")
 	keys.add_help("General")
 	# B is the arena's loadout (dot-menu's `dot_menu_loadout`), where the host has it (API 6).
-	if DotAddonApi.build_level("dot_menu") >= 6 and keys.has_method(&"add_loadout"):
+	if GSAddonApi.build_level("dot_menu") >= 6 and keys.has_method(&"add_loadout"):
 		var _l: Variant = keys.call(&"add_loadout", "General")
 	return keys

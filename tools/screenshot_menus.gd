@@ -24,7 +24,7 @@ const PlaylotWeapons := preload("../game/playlot_weapons.gd")
 const OUT_DIR := "res://screenshots"
 const SETTLE := 3
 
-var _stack: DotScreenStack = null
+var _stack: GSScreenStack = null
 ## What a spawn provider hands the menu, as PlaylotAddons.describe_items makes it.
 const PROVIDER_ROWS: Array = [
 	{"key": "demo_pack/rifle", "label": "Rifle", "category": "Firearms", "hint": "Rifle - weapon from demo_pack", "kind": "weapon"},
@@ -38,7 +38,7 @@ const PROVIDER_ROWS: Array = [
 var _menu: PlaylotSpawnMenu = null
 var _workshop: PlaylotWorkshop = null
 var _presentation: PlaylotPresentation = null
-var _game_menu: DotMenu = null
+var _game_menu: GSMenu = null
 var _shots: Array[Dictionary] = []
 var _at := 0
 var _wait := SETTLE
@@ -70,10 +70,10 @@ func _sample_board() -> Dictionary:
 
 func _follow_zee_pack(menu: PlaylotSpawnMenu) -> void:
 	# A subscribed weapon pack, as the solo client wires it: the real zee provides.json in a
-	# DotContentIndex, followed by the workshop adapter, so the tab is the one a player sees.
+	# GSContentIndex, followed by the workshop adapter, so the tab is the one a player sees.
 	var zee_dir := ProjectSettings.globalize_path("res://").path_join("../zee-dot-weapons").simplify_path()
 	var zee_provides: Variant = JSON.parse_string(FileAccess.get_file_as_string(zee_dir.path_join("provides.json")))
-	var index := DotContentIndex.new()
+	var index := GSContentIndex.new()
 	var _zee := index.add_pack({
 		"content_id": "gamemann/zee-dot-weapons", "version": "1.0.0", "prefix": zee_dir,
 		"session": "solo", "source": "subscription", "provides": zee_provides,
@@ -86,19 +86,19 @@ func _follow_zee_pack(menu: PlaylotSpawnMenu) -> void:
 func _initialize() -> void:
 	# Scratch settings, so a render never touches a player's file.
 	var _scratch := PlaylotPresentation.use_scratch_settings("screenshot_menus")
-	DotLog.set_level(DotLog.Level.ERROR)
+	GSLog.set_level(GSLog.Level.ERROR)
 	DirAccess.make_dir_recursive_absolute(OUT_DIR)
 
 
 ## Built on the first frame: from `_initialize` nothing is in the tree yet, and the
-## presentation and `DotGameClient.setup()` would set up outside it.
+## presentation and `GSGameClient.setup()` would set up outside it.
 func _build() -> void:
 	_presentation = PlaylotPresentation.new()
 	_presentation.name = "Presentation"
 	root.add_child(_presentation)
 	_presentation.setup()
 
-	_stack = DotScreenStack.new()
+	_stack = GSScreenStack.new()
 	_stack.name = "Stack"
 	_stack.register_service = false
 	_stack.manage_mouse = false
@@ -124,7 +124,7 @@ func _build() -> void:
 
 	# The Escape menu the client builds (dot-menu's), over this game's own settings document,
 	# and its Tab board with a roster shaped like the one dot-server sends.
-	_game_menu = DotMenu.new()
+	_game_menu = GSMenu.new()
 	_game_menu.name = "GameMenu"
 	_game_menu.settings = _presentation.settings
 	_game_menu.open_on_escape = false
@@ -135,7 +135,7 @@ func _build() -> void:
 	_presentation.build_console(_game_menu)
 	PlaylotClient.add_general_rows(_game_menu)
 	# The platform wires the stats columns and the Store page exactly as the client does.
-	var platform := DotGameClient.new()
+	var platform := GSGameClient.new()
 	platform.name = "Platform"
 	platform.use_settings = false
 	platform.use_console = false
@@ -211,14 +211,14 @@ func _shot_list() -> Array[Dictionary]:
 		{"id": &"game_menu", "file": "menu_controls.png", "page": &"controls"},
 		{"id": &"board", "file": "menu_scoreboard.png"},
 		{"id": &"game_menu", "file": "menu_store.png", "page": &"store"},
-		# The console, open: DotConsoleKit's panel, on the layer it puts it on.
+		# The console, open: GSConsoleKit's panel, on the layer it puts it on.
 		# The first pack tab, after Addons: zee's weapons grouped by the pack's own categories.
 		{"id": &"spawn_menu", "file": "menu_pack_weapons.png", "tab": PlaylotSpawnMenu.Tab.size()},
 		{"id": &"console", "file": "console.png"},
 	]
 
 
-var _platform: DotGameClient = null
+var _platform: GSGameClient = null
 
 
 func _show_menu_tab(shot: Dictionary) -> void:
@@ -241,8 +241,8 @@ func _show_menu_tab(shot: Dictionary) -> void:
 	_menu.call("_rebuild_settings")
 
 
-## Frame sequence after each still (GS_SHOT_FRAMES, set by the .sh); see DotShotSeq. The state machine holds still while it records, and `_seq_end` defers the quit until it is done.
-var _seq := DotShotSeq.new()
+## Frame sequence after each still (GS_SHOT_FRAMES, set by the .sh); see GSShotSeq. The state machine holds still while it records, and `_seq_end` defers the quit until it is done.
+var _seq := GSShotSeq.new()
 var _seq_active := false
 var _seq_end := false
 

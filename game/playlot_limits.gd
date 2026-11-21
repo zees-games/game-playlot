@@ -18,8 +18,8 @@ extends RefCounted
 ## admin groups by name, plus `admin` for anybody with an admin flag and `root` for the
 ## root flag. A value of 0 is "no limit". The defaults are the `pg_max_<group>` cvars.
 ##
-## dot-props counts and refuses ([member DotPropLimits.group_limits],
-## [member DotPropSpawner.limit_resolver]); this file only answers "how many for this
+## dot-props counts and refuses ([member GSPropLimits.group_limits],
+## [member GSPropSpawner.limit_resolver]); this file only answers "how many for this
 ## player". Constraints are not props, so the tool gun asks [method limit_for] itself.
 
 const CHANNEL := "playlot.limits"
@@ -65,7 +65,7 @@ var roles: Dictionary = {}
 var roles_fn: Callable = Callable()
 
 
-## The answer to [member DotPropSpawner.limit_resolver]: [param base] unless one of the
+## The answer to [member GSPropSpawner.limit_resolver]: [param base] unless one of the
 ## player's roles says more. Bound as `props.limit_resolver = limits.resolve`.
 func resolve(player_id: StringName, key: StringName, base: int) -> int:
 	return limit_for(player_id, key, base)
@@ -116,7 +116,7 @@ func roles_of(player_id: StringName) -> PackedStringArray:
 ## Refused whole on any mistake, and the old roles kept: half-applied overrides are a
 ## server where the admins have their new NPC limit and lost their prop one, and nothing
 ## says which.
-func set_roles_from(text: String) -> DotResult:
+func set_roles_from(text: String) -> GSResult:
 	var parsed := {}
 
 	for chunk in text.split(";", false):
@@ -128,8 +128,8 @@ func set_roles_from(text: String) -> DotResult:
 		var colon := part.find(":")
 
 		if colon <= 0:
-			return DotResult.fail(
-				DotError.CODE_INVALID, "Each role is 'name: group=number ...'.", part
+			return GSResult.fail(
+				GSError.CODE_INVALID, "Each role is 'name: group=number ...'.", part
 			)
 
 		var role := part.substr(0, colon).strip_edges().to_lower()
@@ -139,15 +139,15 @@ func set_roles_from(text: String) -> DotResult:
 			var bits := pair.split("=")
 
 			if bits.size() != 2 or not bits[1].strip_edges().is_valid_int():
-				return DotResult.fail(
-					DotError.CODE_INVALID, "Each limit is 'group=number'.", pair
+				return GSResult.fail(
+					GSError.CODE_INVALID, "Each limit is 'group=number'.", pair
 				)
 
 			var key := StringName(bits[0].strip_edges().to_lower())
 
 			if not defaults.has(key) and not EXTRA_KEYS.has(key):
-				return DotResult.fail(
-					DotError.CODE_INVALID,
+				return GSResult.fail(
+					GSError.CODE_INVALID,
 					"Unknown limit '%s'. Known: %s." % [String(key), ", ".join(known_keys())],
 					pair
 				)
@@ -157,8 +157,8 @@ func set_roles_from(text: String) -> DotResult:
 		parsed[StringName(role)] = row
 
 	roles = parsed
-	DotLog.debug(CHANNEL, "role limits parsed", {"roles": parsed.size()})
-	return DotResult.success(parsed)
+	GSLog.debug(CHANNEL, "role limits parsed", {"roles": parsed.size()})
+	return GSResult.success(parsed)
 
 
 func known_keys() -> PackedStringArray:
@@ -174,7 +174,7 @@ func known_keys() -> PackedStringArray:
 
 
 ## Copies the defaults onto dot-props' limits, so a cvar change reaches the spawner.
-func apply_to(prop_limits: DotPropLimits) -> void:
+func apply_to(prop_limits: GSPropLimits) -> void:
 	if prop_limits == null:
 		return
 

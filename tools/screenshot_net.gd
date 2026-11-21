@@ -59,8 +59,8 @@ const SWING := 5.0
 
 var _server_game: Playlot = null
 var _client_game: Playlot = null
-var _server_net: DotNetManager = null
-var _client_net: DotNetManager = null
+var _server_net: GSNetManager = null
+var _client_net: GSNetManager = null
 var _server_bridge: PlaylotNetBridge = null
 var _client_bridge: PlaylotNetBridge = null
 var _to_client: Array = []
@@ -109,7 +109,7 @@ var _downed := false
 ## does what `PlaylotClient.fall` does (the death rides `Kind.COMBAT`): a ragdoll copied
 ## from the crawling figure. Frames are saved the instant it spawns and again once it settles.
 var _died := false
-var _ragdolls: DotPlayerRagdolls = null
+var _ragdolls: GSPlayerRagdolls = null
 var _presentation: PlaylotPresentation = null
 
 
@@ -118,13 +118,13 @@ func _ready() -> void:
 	# `PlaylotPresentation.use_scratch_settings`): a render must not save into a player's
 	# file, nor draw from whatever the player last saved there.
 	var _scratch := PlaylotPresentation.use_scratch_settings("screenshot_net")
-	DotLog.set_level(DotLog.Level.ERROR)
+	GSLog.set_level(GSLog.Level.ERROR)
 	Engine.max_fps = RENDER_FPS
 	_run.call_deferred()
 
 
-## Frame sequence after each still (GS_SHOT_FRAMES, set by the .sh); see DotShotSeq.
-var _seq := DotShotSeq.new()
+## Frame sequence after each still (GS_SHOT_FRAMES, set by the .sh); see GSShotSeq.
+var _seq := GSShotSeq.new()
 
 
 func _run() -> void:
@@ -189,11 +189,11 @@ func _bleed_out(base: String) -> void:
 	if body == null:
 		print("died: no body drawn")
 		return
-	_ragdolls = DotPlayerRagdolls.new()
+	_ragdolls = GSPlayerRagdolls.new()
 	_ragdolls.name = "Ragdolls"
 	_ragdolls.rules = _client_game.ragdoll_rules
 	add_child(_ragdolls)
-	var made := _ragdolls.spawn(body, DotPlayerDeath.new(), Vector3.ZERO)
+	var made := _ragdolls.spawn(body, GSPlayerDeath.new(), Vector3.ZERO)
 	print("died: ragdoll ", "spawned" if made != null else "NOT spawned")
 	for i in range(4):
 		for _f in range(1 if i == 0 else 20):
@@ -235,7 +235,7 @@ func _build() -> void:
 	# about commands it never stamped, the clock runs away from them and the other player is
 	# drawn in uneven steps, which is the thing this tool is for looking at (headless_net,
 	# c903760). By the constant map, so this parses against a dot-net from before the report.
-	var lead_bit := int((DotNetMessageRegistry as Script).get_script_constant_map().get("FEATURE_INPUT_LEAD", 0))
+	var lead_bit := int((GSNetMessageRegistry as Script).get_script_constant_map().get("FEATURE_INPUT_LEAD", 0))
 	_client_net.messages.features &= ~lead_bit
 
 	_server_bridge = PlaylotNetBridge.new()
@@ -288,8 +288,8 @@ func _make_game(server: bool, scope: StringName, parent: Node) -> Playlot:
 
 func _make_manager(
 	server: bool, scope: StringName, peer_id: int, parent: Node, tick_rate: int
-) -> DotNetManager:
-	var manager := DotNetManager.new()
+) -> GSNetManager:
+	var manager := GSNetManager.new()
 	manager.name = "Server" if server else "Client"
 	manager.is_server = server
 	manager.local_peer_id = peer_id
@@ -297,7 +297,7 @@ func _make_manager(
 	manager.auto_tick = false
 	manager.config_file = ""
 
-	var config := DotNetConfig.new()
+	var config := GSNetConfig.new()
 	config.tick_rate = tick_rate
 	if _walk:
 		config.snapshot_rate = 32
@@ -345,8 +345,8 @@ func _physics_process(delta: float) -> void:
 ## What this client's own keys say this tick: nothing, or with `--walk` the cycle in the
 ## class note. Facing north, as the camera does, and strafing, so the view never turns and
 ## what moves on screen is the eye.
-func _local_command() -> DotFpsCommand:
-	var command := DotFpsCommand.new()
+func _local_command() -> GSFpsCommand:
+	var command := GSFpsCommand.new()
 
 	if not _walk or not _placed or _settle > 0:
 		return command
@@ -415,7 +415,7 @@ func _drive_other() -> void:
 	if _downed:
 		# What `PlaylotDowns.tick` sets every tick on the server; still, as a downed player is.
 		bea.downed = true
-		(bea.get_node("Net") as PlaylotPlayerNet).last_move = DotFpsCommand.new()
+		(bea.get_node("Net") as PlaylotPlayerNet).last_move = GSFpsCommand.new()
 		return
 
 	var offset := bea.controller.state.position.x - _home.x
@@ -424,11 +424,11 @@ func _drive_other() -> void:
 	elif offset < -SWING:
 		_heading = -90.0
 
-	var run := DotFpsCommand.new()
+	var run := GSFpsCommand.new()
 	run.move = Vector2(0.0, 1.0)
 	run.yaw = _heading
 	if _zee != &"" or (_hold and _settle < 26):
-		run.set_button(DotFpsCommand.BUTTON_USER_0, true)
+		run.set_button(GSFpsCommand.BUTTON_USER_0, true)
 	(bea.get_node("Net") as PlaylotPlayerNet).last_move = run
 
 

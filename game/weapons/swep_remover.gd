@@ -16,11 +16,11 @@ extends "playlot_weapon.gd"
 ## `remove`, which frees it and tells its owner's budget, and it is not put back by Z.
 
 
-func _primary(space: Variant, origin: Vector3, aim: Vector3) -> DotResult:
+func _primary(space: Variant, origin: Vector3, aim: Vector3) -> GSResult:
 	var prop := target(space, origin, aim)
 
 	if prop == null:
-		return DotResult.fail(DotError.CODE_STATE, "Nothing in range.")
+		return GSResult.fail(GSError.CODE_STATE, "Nothing in range.")
 
 	var allowed := may_act_on(prop, _may_touch_others())
 
@@ -30,18 +30,18 @@ func _primary(space: Variant, origin: Vector3, aim: Vector3) -> DotResult:
 	# The instance id, not the node: `queue_free` is deferred, so a caller that
 	# removed by node would still find it valid for the rest of the frame — which is
 	# exactly the window in which a second click removes it again.
-	spawner.remove(prop.instance_id, DotPropSpawner.REASON_PLAYER)
+	spawner.remove(prop.instance_id, GSPropSpawner.REASON_PLAYER)
 
-	return DotResult.success(prop)
+	return GSResult.success(prop)
 
 
-func _secondary(_space: Variant, _origin: Vector3, _aim: Vector3) -> DotResult:
+func _secondary(_space: Variant, _origin: Vector3, _aim: Vector3) -> GSResult:
 	if spawner == null:
-		return DotResult.fail(DotError.CODE_STATE, "This weapon has no world.")
+		return GSResult.fail(GSError.CODE_STATE, "This weapon has no world.")
 
-	var removed := spawner.clear_player(wielder, DotPropSpawner.REASON_PLAYER)
+	var removed := spawner.clear_player(wielder, GSPropSpawner.REASON_PLAYER)
 
-	return DotResult.success(removed)
+	return GSResult.success(removed)
 
 
 ## Whether this server lets a player touch what somebody else made.

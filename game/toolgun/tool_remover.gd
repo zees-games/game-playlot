@@ -15,41 +15,41 @@ func _init() -> void:
 	super()
 
 
-func primary(gun: Object, hit: Dictionary) -> DotResult:
+func primary(gun: Object, hit: Dictionary) -> GSResult:
 	var prop: Variant = hit.get("prop")
 
-	if not (prop is DotPropInstance):
+	if not (prop is GSPropInstance):
 		return nothing_there()
 
-	gun.get("spawner").remove((prop as DotPropInstance).instance_id, DotPropSpawner.REASON_PLAYER)
-	return DotResult.success(1)
+	gun.get("spawner").remove((prop as GSPropInstance).instance_id, GSPropSpawner.REASON_PLAYER)
+	return GSResult.success(1)
 
 
-func secondary(gun: Object, hit: Dictionary) -> DotResult:
+func secondary(gun: Object, hit: Dictionary) -> GSResult:
 	var prop: Variant = hit.get("prop")
 
-	if not (prop is DotPropInstance):
+	if not (prop is GSPropInstance):
 		return nothing_there()
 
-	var spawner: DotPropSpawner = gun.get("spawner")
+	var spawner: GSPropSpawner = gun.get("spawner")
 	var removed := 0
 
-	for body in gun.call("constraints").joined_to((prop as DotPropInstance).node):
+	for body in gun.call("constraints").joined_to((prop as GSPropInstance).node):
 		var other := spawner.prop_for_node(body)
 
 		# Only what the wielder may touch: a contraption tied to somebody else's crate
 		# loses its own half, not theirs.
 		if other != null and bool(gun.call("may_touch", other)):
-			if spawner.remove(other.instance_id, DotPropSpawner.REASON_PLAYER):
+			if spawner.remove(other.instance_id, GSPropSpawner.REASON_PLAYER):
 				removed += 1
 
-	return DotResult.success(removed)
+	return GSResult.success(removed)
 
 
-func reload(gun: Object, hit: Dictionary) -> DotResult:
+func reload(gun: Object, hit: Dictionary) -> GSResult:
 	var body := rigid_body(hit)
 
 	if body == null:
 		return nothing_there()
 
-	return DotResult.success(gun.call("constraints").remove_on(body))
+	return GSResult.success(gun.call("constraints").remove_on(body))

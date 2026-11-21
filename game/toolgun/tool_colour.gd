@@ -27,17 +27,17 @@ func schema() -> Array[Dictionary]:
 	}]
 
 
-func primary(_gun: Object, hit: Dictionary) -> DotResult:
+func primary(_gun: Object, hit: Dictionary) -> GSResult:
 	var body := prop_body(hit)
 
 	if body == null:
 		return nothing_there()
 
 	body.call("set_tint", Color.html(str(setting("colour"))))
-	return DotResult.success(setting("colour"))
+	return GSResult.success(setting("colour"))
 
 
-func secondary(_gun: Object, hit: Dictionary) -> DotResult:
+func secondary(_gun: Object, hit: Dictionary) -> GSResult:
 	var body := prop_body(hit)
 
 	if body == null:
@@ -46,24 +46,24 @@ func secondary(_gun: Object, hit: Dictionary) -> DotResult:
 	var tint: Color = body.get("tint")
 	var colour: Color = tint if tint.a > 0.0 else _own_colour(body)
 	settings["colour"] = colour.to_html(false)
-	return DotResult.success(settings["colour"])
+	return GSResult.success(settings["colour"])
 
 
-func reload(_gun: Object, hit: Dictionary) -> DotResult:
+func reload(_gun: Object, hit: Dictionary) -> GSResult:
 	var body := prop_body(hit)
 
 	if body == null:
 		return nothing_there()
 
 	body.call("set_tint", Color(0, 0, 0, 0))
-	return DotResult.success(null)
+	return GSResult.success(null)
 
 
 static func _own_colour(body: Node) -> Color:
 	var def: Variant = body.get("def")
 
-	if def is DotPropDef:
-		var raw := str((def as DotPropDef).meta.get("colour", ""))
+	if def is GSPropDef:
+		var raw := str((def as GSPropDef).meta.get("colour", ""))
 		if Color.html_is_valid(raw):
 			return Color.html(raw)
 

@@ -2,18 +2,18 @@ extends "playlot_tick.gd"
 
 
 ## Sets what [param player_id]'s next NPCs carry. Refuses a weapon an NPC cannot use.
-func set_npc_weapon_choice(player_id: StringName, weapon_id: StringName) -> DotResult:
+func set_npc_weapon_choice(player_id: StringName, weapon_id: StringName) -> GSResult:
 	if weapon_id == &"" or weapon_id == &"none":
 		npc_weapon_choice[player_id] = weapon_id
-		return DotResult.success(weapon_id)
+		return GSResult.success(weapon_id)
 
 	var def := weapon_def(weapon_id)
 
 	if def == null or not PlaylotZee.npc_can_use(def):
-		return DotResult.fail(DotError.CODE_INVALID, "NPCs cannot use that weapon.", String(weapon_id))
+		return GSResult.fail(GSError.CODE_INVALID, "NPCs cannot use that weapon.", String(weapon_id))
 
 	npc_weapon_choice[player_id] = weapon_id
-	return DotResult.success(weapon_id)
+	return GSResult.success(weapon_id)
 
 
 ## How many welds, ropes and no-collides [param player_id] has. For `pg_limits`.
@@ -23,7 +23,7 @@ func constraint_count(player_id: StringName) -> int:
 
 ## A player's zee weapon fired: NPCs in earshot hear it, and NPCs it hits are hurt. The third thing a shot does, beside players
 ## hurting players (the arena's) and `PlaylotZee.shove_props`.
-func player_shots_fired(player_id: StringName, outcome: DotWeaponOutcome) -> void:
+func player_shots_fired(player_id: StringName, outcome: GSWeaponOutcome) -> void:
 	if outcome == null:
 		return
 
@@ -44,7 +44,7 @@ func player_shots_fired(player_id: StringName, outcome: DotWeaponOutcome) -> voi
 		return
 
 	npc_sounds.emit(
-		DotNpcAiSounds.Kind.COMBAT, shooter.global_position, GUNFIRE_RADIUS,
+		GSNpcAiSounds.Kind.COMBAT, shooter.global_position, GUNFIRE_RADIUS,
 		npc_world.now() if npc_world != null else 0.0, 0.5, player_id
 	)
 
@@ -71,7 +71,7 @@ func player_shots_fired(player_id: StringName, outcome: DotWeaponOutcome) -> voi
 ## An armed NPC's weapon fired: what it hits is hurt — another NPC always, a player only
 ## while the arena is on (a sandbox where nobody can be killed stays one) — a loose prop is
 ## shoved, and everything in earshot hears it.
-func npc_shots_fired(entity: Node3D, outcome: DotWeaponOutcome) -> void:
+func npc_shots_fired(entity: Node3D, outcome: GSWeaponOutcome) -> void:
 	if outcome == null or entity == null or not entity.is_inside_tree():
 		return
 
@@ -81,7 +81,7 @@ func npc_shots_fired(entity: Node3D, outcome: DotWeaponOutcome) -> void:
 		var _thrown := projectiles.accept(outcome, shooter_id, entity)
 
 	npc_sounds.emit(
-		DotNpcAiSounds.Kind.COMBAT, entity.global_position, GUNFIRE_RADIUS,
+		GSNpcAiSounds.Kind.COMBAT, entity.global_position, GUNFIRE_RADIUS,
 		npc_world.now(), 0.5, shooter_id
 	)
 
@@ -126,7 +126,7 @@ static func pickup_id_of(weapon_id: StringName) -> StringName:
 
 ## Drops [param weapon_id] at [param at], cleaned up after [param lifetime] seconds. Owned
 ## by nobody, so it counts against no player's weapons limit.
-func drop_weapon(weapon_id: StringName, at: Vector3, lifetime: float = 0.0) -> DotPropInstance:
+func drop_weapon(weapon_id: StringName, at: Vector3, lifetime: float = 0.0) -> GSPropInstance:
 	if props == null:
 		return null
 
@@ -145,16 +145,16 @@ func pick_up_weapon(player_id: StringName, weapon_id: StringName) -> void:
 
 ## Reads maps.yml (the game's `res://maps.yml` under [member PlaylotConfig.map_rotation_file], also looked for in the `--config`
 ## directory) and applies it; the server module calls it at boot and `sv_map_rotation_file` again. The merge and rules are dot-map's
-## [DotMapRotationFile]. A present but unreadable file is an ERROR and changes nothing: rotating every map beats rotating none.
-func load_rotation() -> DotResult:
+## [GSMapRotationFile]. A present but unreadable file is an ERROR and changes nothing: rotating every map beats rotating none.
+func load_rotation() -> GSResult:
 	var stem := config.map_rotation_file if config != null else ""
-	var dir := DotMapRotationFile.config_dir_arg()
-	var found := DotMapRotationFile.find(stem, dir)
+	var dir := GSMapRotationFile.config_dir_arg()
+	var found := GSMapRotationFile.find(stem, dir)
 
 	if found == "" and stem != "" and (dir != "" or stem != PlaylotConfig.new().map_rotation_file):
 		# The default name being absent is an install with no maps.yml; a name or a directory
 		# somebody chose that finds nothing is a typo they would otherwise never hear about.
-		DotLog.warn(CHANNEL, "the map rotation file was not found; every map rotates", {
+		GSLog.warn(CHANNEL, "the map rotation file was not found; every map rotates", {
 			"file": stem, "config_dir": dir,
 		})
 
@@ -163,10 +163,10 @@ func load_rotation() -> DotResult:
 		if candidate != "" and not paths.has(candidate) and FileAccess.file_exists(candidate):
 			paths.append(candidate)
 
-	var read := DotMapRotationFile.load_files(paths, "game-playlot")
+	var read := GSMapRotationFile.load_files(paths, "game-playlot")
 
 	if not read.ok:
-		DotLog.error(CHANNEL, "the map rotation file could not be read; every map rotates", {
+		GSLog.error(CHANNEL, "the map rotation file could not be read; every map rotates", {
 			"why": read.error.message,
 		})
 		rotation_file = null
@@ -175,7 +175,7 @@ func load_rotation() -> DotResult:
 
 	rotation_file = read.value
 	if rotation_file.has_rotations():
-		DotLog.info(CHANNEL, "the map rotation file", {
+		GSLog.info(CHANNEL, "the map rotation file", {
 			"paths": ", ".join(rotation_file.sources), "active": rotation_file.active_name(),
 		})
 
@@ -183,7 +183,7 @@ func load_rotation() -> DotResult:
 	return read
 
 
-## Marks every catalogue map in or out of rotation ([member DotMapDef.in_rotation]) from the
+## Marks every catalogue map in or out of rotation ([member GSMapDef.in_rotation]) from the
 ## file. With no file, or one with no rotations, every map is in: what this game did before
 ## maps.yml. The vote's ballot, nominations, `next` and the rotation's draw all read the mark.
 func apply_rotation() -> void:
@@ -192,7 +192,7 @@ func apply_rotation() -> void:
 
 	if rotation_file != null and rotation_file.has_rotations():
 		# An empty rotation plays every installed map: the same set as having no file.
-		rotation_file.fallback_in = func(_map: DotMapDef) -> bool: return true
+		rotation_file.fallback_in = func(_map: GSMapDef) -> bool: return true
 		rotation_file.apply(maps.rotation)
 		return
 
@@ -204,7 +204,7 @@ func apply_rotation() -> void:
 
 ## Whether maps.yml's active rotation plays [param id]. A map the catalogue lacks is not.
 func in_rotation(id: StringName) -> bool:
-	var def: DotMapDef = maps.catalogue.get_map(id) if maps != null and maps.catalogue != null else null
+	var def: GSMapDef = maps.catalogue.get_map(id) if maps != null and maps.catalogue != null else null
 
 	return def != null and def.in_rotation
 
@@ -223,7 +223,7 @@ func command_names(role: String) -> PackedStringArray:
 	if not names.has(role):
 		return PackedStringArray([role])
 
-	return DotCommandNames.all_of("", names, {}, role)
+	return GSCommandNames.all_of("", names, {}, role)
 
 
 ## Adds the map documents in [param dir] to this game's live catalogue, and puts them in
@@ -234,11 +234,11 @@ func add_map_directory(dir: String) -> int:
 		return 0
 	var added := add_map_docs(maps.catalogue, dir)
 	if added > 0:
-		maps.rotation = DotMapRotation.of(maps.catalogue)
+		maps.rotation = GSMapRotation.of(maps.catalogue)
 		maps.rotation.cooldown = 1
 		# A new rotation object has forgotten the file's order and its in/out marks.
 		apply_rotation()
-		DotLog.info(CHANNEL, "custom maps added", {"dir": dir, "maps": added})
+		GSLog.info(CHANNEL, "custom maps added", {"dir": dir, "maps": added})
 	return added
 
 
@@ -279,7 +279,7 @@ func _claim_record_key(id: StringName, key: StringName) -> void:
 		# The same account twice at once would share one timer, and the second seat's
 		# runs would be filed under the first's. It keeps its match id as its key: a
 		# legacy-shaped key, which is never ranked.
-		DotLog.warn(CHANNEL, "an account is already playing; this seat has no records", {
+		GSLog.warn(CHANNEL, "an account is already playing; this seat has no records", {
 			"player": String(id), "key": String(key),
 		})
 		return
@@ -344,28 +344,28 @@ func add_player(id: StringName, display_name: String, p_record_key: StringName =
 
 	var _styled := player.set_style(movement_styles[&"normal"])
 
-	player.phys_gun = DotPhysGun.new()
+	player.phys_gun = GSPhysGun.new()
 	player.phys_gun.spawner = props
 	player.phys_gun.wielder = id
 
 		# A held prop, a frozen prop and a loose one are three rows in the layout: `sandbox_3d` carries `held_prop` and `frozen_prop`
 		# for this. Without dot-props' three signals a layer could only be set at spawn, and a carried crate collided with its carrier.
 	player.phys_gun.grabbed.connect(
-		func(prop: DotPropInstance, who: StringName) -> void:
+		func(prop: GSPropInstance, who: StringName) -> void:
 			reclassify_prop(prop.node, false, true)
 			held_changed.emit(who, prop, true)
 	)
 	player.phys_gun.released.connect(
-		func(prop: DotPropInstance, who: StringName) -> void:
+		func(prop: GSPropInstance, who: StringName) -> void:
 			reclassify_prop(prop.node, prop.frozen, false)
 			held_changed.emit(who, prop, false)
 	)
 	player.phys_gun.freeze_changed.connect(
-		func(prop: DotPropInstance, frozen: bool) -> void:
+		func(prop: GSPropInstance, frozen: bool) -> void:
 			reclassify_prop(prop.node, frozen, prop.held_by != &"")
 	)
 
-	player.grav_gun = DotGravGun.new()
+	player.grav_gun = GSGravGun.new()
 	player.grav_gun.spawner = props
 	player.grav_gun.wielder = id
 
@@ -397,7 +397,7 @@ func add_player(id: StringName, display_name: String, p_record_key: StringName =
 	# a layer so every layer sees the same id whether or not the others are switched
 	# on; `PlaylotDowns` and `PlaylotArena` would otherwise each mint their own.
 	var opened := entity_table.open(
-		DotEntity.KIND_PLAYER,
+		GSEntity.KIND_PLAYER,
 		player,
 		&"",
 		id,
@@ -407,7 +407,7 @@ func add_player(id: StringName, display_name: String, p_record_key: StringName =
 	if not opened.ok:
 		# Guarded above by the `players.has(id)` early return, so a refusal means this
 		# id is already an entity and something removed a player without closing them.
-		DotLog.error(CHANNEL, "could not open an entity for a player", {
+		GSLog.error(CHANNEL, "could not open an entity for a player", {
 			"player": String(id), "why": opened.error.message,
 		})
 
@@ -434,7 +434,7 @@ func remove_player(id: StringName) -> void:
 	# Closed after the signal and before the node goes: a listener asking the table
 	# who this was must still get an answer, and anything holding the id afterwards
 	# gets nothing rather than getting whoever joins next -- serials are not reused.
-	entity_table.close(entity_table.id_for_key(id), DotEntityTable.REASON_OWNER_LEFT)
+	entity_table.close(entity_table.id_for_key(id), GSEntityTable.REASON_OWNER_LEFT)
 
 	# Their rock-the-vote goes with them. Without it a server whose players trickle
 	# away keeps their votes while the threshold falls with the player count, so a
@@ -494,8 +494,8 @@ func set_player_style(id: StringName, style_id: StringName) -> bool:
 ## Starts offering what the player subscribed to (the Workshop) on the spawn menu and the map list: pack weapons, props, NPCs,
 ## entities and maps of the kinds `provides.json` accepts. Solo only, and the caller decides: the offline client calls it and a
 ## dedicated server or connected client never does. [param index] defaults to the shared one.
-func follow_workshop(index: DotContentIndex = null) -> PlaylotWorkshop:
-	var shared := index if index != null else DotContentIndex.shared()
+func follow_workshop(index: GSContentIndex = null) -> PlaylotWorkshop:
+	var shared := index if index != null else GSContentIndex.shared()
 	if workshop == null:
 		workshop = PlaylotWorkshop.new()
 		workshop.changed.connect(func() -> void: workshop_changed.emit())
@@ -523,7 +523,7 @@ func weapon_def(id: StringName) -> PlaylotWeaponDef:
 ## already held) is an answer, not a miss, so the prop behind is not grabbed; a beam that meets nobody falls through to the gun.
 func phys_gun_grab(
 	player: PlaylotPlayer, space: Variant, origin: Vector3, aim: Vector3, view: Basis, may_touch: bool
-) -> DotResult:
+) -> GSResult:
 	var target := pickup.player_in_beam(players, player, space, origin, aim) if pickup.enabled else null
 	if target != null:
 		return pickup.pick_up(player, target, origin)
@@ -539,17 +539,17 @@ func phys_gun_release(player: PlaylotPlayer) -> void:
 
 ## Turns creative mode on or off for [param id]: their props protected in dot-props, out of anybody's beam, and the arena's damage
 ## refused both ways (a player nobody can hurt who could hurt everybody would win the arena). Refused when the server does not allow it.
-func set_creative(id: StringName, on: bool) -> DotResult:
+func set_creative(id: StringName, on: bool) -> GSResult:
 	var player: PlaylotPlayer = players.get(id)
 
 	if player == null:
-		return DotResult.fail(DotError.CODE_INVALID, "No such player.")
+		return GSResult.fail(GSError.CODE_INVALID, "No such player.")
 
 	if on and config != null and not config.allow_creative:
-		return DotResult.fail(DotError.CODE_FORBIDDEN, "Creative mode is off on this server.")
+		return GSResult.fail(GSError.CODE_FORBIDDEN, "Creative mode is off on this server.")
 
 	if player.creative == on:
-		return DotResult.success(on)
+		return GSResult.success(on)
 
 	player.creative = on
 
@@ -566,16 +566,16 @@ func set_creative(id: StringName, on: bool) -> DotResult:
 			if other_id == id:
 				continue
 			var other: PlaylotPlayer = players[other_id]
-			var held: DotPropInstance = other.phys_gun.held if other.phys_gun != null else null
+			var held: GSPropInstance = other.phys_gun.held if other.phys_gun != null else null
 			if held != null and held.owner_id == id:
 				other.phys_gun.release()
-			var carried: DotPropInstance = other.grav_gun.carried if other.grav_gun != null else null
+			var carried: GSPropInstance = other.grav_gun.carried if other.grav_gun != null else null
 			if carried != null and carried.owner_id == id:
 				var _dropped := other.grav_gun.drop()
 
-	DotLog.info(CHANNEL, "creative mode", {"player": String(id), "on": on})
+	GSLog.info(CHANNEL, "creative mode", {"player": String(id), "on": on})
 	creative_changed.emit(id, on)
-	return DotResult.success(on)
+	return GSResult.success(on)
 
 
 func is_creative(id: StringName) -> bool:
@@ -596,7 +596,7 @@ func shoot_toy(collider: Variant, hit: Dictionary) -> bool:
 	if toys == null or not authoritative or not (collider is Object):
 		return false
 	return toys.shot(collider as Object, hit["point"], hit["direction"], float(hit["damage"])) >= 0 \
-		or DotPropBodyBox.toy_of(collider) != null
+		or GSPropBodyBox.toy_of(collider) != null
 
 
 ## A player thrown by a toy: its count goes up, which every client hears. Server side.
@@ -623,7 +623,7 @@ func tracks_on_this_map() -> Array[int]:
 ## Called by a run timer's hook to plug itself in. See [member run_timer].
 func attach_run_timer(timer: Object) -> void:
 	run_timer = timer
-	DotLog.info(CHANNEL, "a run timer is attached", {"by": str(timer.get_script().resource_path)})
+	GSLog.info(CHANNEL, "a run timer is attached", {"by": str(timer.get_script().resource_path)})
 
 
 ## A time as `m:ss.mmm`, the way every run timer shows one: thousandths, always, because
@@ -640,7 +640,7 @@ static func format_time(seconds: float) -> String:
 
 ## The nearest vehicle a player could get into, or null. Measured from the eye, not the feet: a player beside a car is about 1.7 m
 ## above the point their body reports, and a reach from there fails while they look straight at the door.
-func vehicle_near(player_id: StringName, reach: float = 3.5) -> DotVehicleInstance:
+func vehicle_near(player_id: StringName, reach: float = 3.5) -> GSVehicleInstance:
 	var player: PlaylotPlayer = players.get(player_id)
 
 	if player == null or vehicles == null:
@@ -652,11 +652,11 @@ func vehicle_near(player_id: StringName, reach: float = 3.5) -> DotVehicleInstan
 ## What F does: presses the button, throws the lever or swings the door in front of the player, otherwise gets in or out of a
 ## vehicle. One entry point for both, because the player pressed one key and a client guessing enter versus exit asks to enter the car
 ## it is already in; the bridge already carries it (`ask_use_vehicle`), so a button needs no new message.
-func use_vehicle(player_id: StringName) -> DotResult:
+func use_vehicle(player_id: StringName) -> GSResult:
 	var player: PlaylotPlayer = players.get(player_id)
 
 	if player == null or vehicles == null:
-		return DotResult.fail(DotError.CODE_STATE, "No such player.")
+		return GSResult.fail(GSError.CODE_STATE, "No such player.")
 
 	if vehicles.vehicle_of_rider(player_id) == null:
 		var used := use_prop(player_id)
@@ -671,7 +671,7 @@ func use_vehicle(player_id: StringName) -> DotResult:
 	var near := vehicle_near(player_id)
 
 	if near == null:
-		return DotResult.fail(DotError.CODE_STATE, "There is nothing to get into.")
+		return GSResult.fail(GSError.CODE_STATE, "There is nothing to get into.")
 
 	return vehicles.ride.enter(near, player_id, player)
 
@@ -679,17 +679,17 @@ func use_vehicle(player_id: StringName) -> DotResult:
 ## Presses what [param player_id] is looking at within [constant USE_REACH]: a button fires
 ## `pressed`, a lever switches and fires `switched` with its new state, a door swings. Fails
 ## when there is nothing usable in front of them. On the authority only.
-func use_prop(player_id: StringName) -> DotResult:
+func use_prop(player_id: StringName) -> GSResult:
 	var player: PlaylotPlayer = players.get(player_id)
 
 	if player == null or io == null or not authoritative or player.grav_gun == null or not player.is_inside_tree():
-		return DotResult.fail(DotError.CODE_STATE, "Nothing to use.")
+		return GSResult.fail(GSError.CODE_STATE, "Nothing to use.")
 
 	# A toy looked at, before any prop: a kick, a push, a switch, a honk.
 	var toy := toy_aimed(player)
 
 	if toy >= 0 and toys.use(toy, player.eye_position(), player.aim_direction()):
-		return DotResult.success(toys.toy(toy))
+		return GSResult.success(toys.toy(toy))
 
 	var gun := player.grav_gun
 	var reach := gun.reach
@@ -698,17 +698,17 @@ func use_prop(player_id: StringName) -> DotResult:
 	gun.reach = reach
 
 	if prop == null or prop.def == null:
-		return DotResult.fail(DotError.CODE_STATE, "Nothing to use.")
+		return GSResult.fail(GSError.CODE_STATE, "Nothing to use.")
 
 	if _doors.has(prop.instance_id):
 		_set_door(prop, not bool(_doors[prop.instance_id]["open"]))
-		return DotResult.success(prop)
+		return GSResult.success(prop)
 
-	var outputs := DotPropIO.outputs_of(prop.def)
+	var outputs := GSPropIO.outputs_of(prop.def)
 
 	if outputs.has("pressed"):
 		var _heard := io.fire(prop.instance_id, &"pressed")
-		return DotResult.success(prop)
+		return GSResult.success(prop)
 
 	if outputs.has("switched"):
 		var on := not bool(_levers.get(prop.instance_id, false))
@@ -716,9 +716,9 @@ func use_prop(player_id: StringName) -> DotResult:
 		if prop.node is PlaylotProp:
 			(prop.node as PlaylotProp).set_tint(Color(0.3, 0.8, 0.35) if on else Color(0.8, 0.3, 0.3))
 		var _heard := io.fire(prop.instance_id, &"switched", on)
-		return DotResult.success(prop)
+		return GSResult.success(prop)
 
-	return DotResult.fail(DotError.CODE_STATE, "Nothing to use.")
+	return GSResult.fail(GSError.CODE_STATE, "Nothing to use.")
 
 
 ## Whether the door [param instance_id] is open (or opening). For the suites and `describe`.
@@ -785,7 +785,7 @@ func time_left_text() -> String:
 
 
 func _exit_tree() -> void:
-	DotRegistry.unregister_instance(DotRegistry.scoped_name(SERVICE, service_scope), self)
+	GSRegistry.unregister_instance(GSRegistry.scoped_name(SERVICE, service_scope), self)
 	if addons != null:
 		addons.release()
 	if profiles != null:

@@ -28,7 +28,7 @@ func _run() -> void:
 			var entry: Dictionary = props[stem]
 			var path := dir.path_join("%s.glb" % stem)
 			var scale := float(entry.get("scale", defaults.get("scale", 1.0)))
-			var measured := DotPropModel.measure(path, scale, str(entry.get("shape", "convex")))
+			var measured := GSPropModel.measure(path, scale, str(entry.get("shape", "convex")))
 
 			if not measured.ok:
 				printerr("%s/%s: %s" % [kit, stem, measured.error.message])
@@ -74,7 +74,7 @@ func _thumb(path: String, scale: float, value: Dictionary, png: String) -> void:
 	sun.light_energy = 1.1
 	vp.add_child(sun)
 
-	var node := DotPropModel.visual(path, scale, value["offset"])
+	var node := GSPropModel.visual(path, scale, value["offset"])
 	vp.add_child(node)
 
 	var extent: Vector3 = value["extent"]

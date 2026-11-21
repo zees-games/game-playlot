@@ -14,7 +14,7 @@ const PLAYER_WIDTH := 0.8
 const HEIGHT := 1.8
 const STEP := 0.4
 
-## Degrees. `DotFpsTunables.max_slope_angle` as the server applies it.
+## Degrees. `GSFpsTunables.max_slope_angle` as the server applies it.
 const MAX_SLOPE := 46.0
 
 ## Most slide steps followed down one face before the survey gives up on it.

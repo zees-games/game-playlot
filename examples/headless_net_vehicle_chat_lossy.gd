@@ -25,10 +25,10 @@ func _test_prop_removal() -> void:
 
 ## A vehicle spawned, driven and ridden with a real socket between the two ends.
 ##
-## The only run of [DotVehicleNetSync] across a wire: a spec dot-net refuses, a wheel angle arriving as a body rotation, an unread seat mask, an unsent driver input, a rider drawn at the wrong spot.
+## The only run of [GSVehicleNetSync] across a wire: a spec dot-net refuses, a wheel angle arriving as a body rotation, an unread seat mask, an unsent driver input, a rider drawn at the wrong spot.
 var _votw_driver: PlaylotPlayer
-var _votw_spawned: DotPropInstance
-var _votw_vehicle: DotVehicleInstance
+var _votw_spawned: GSPropInstance
+var _votw_vehicle: GSVehicleInstance
 var _votw_mirror: PlaylotVehicle
 var _votw_rider_body: PlaylotCharacter
 var _votw_head: Node3D
@@ -65,7 +65,7 @@ func _test_vehicle_over_the_wire() -> void:
 	_check(_votw_mirror != null, "the client builds its own copy of it")
 	_check(
 		_votw_mirror != null and _votw_mirror.get_node_or_null("Net") is PlaylotVehicleNet,
-		"replicating through DotVehicleNetSync rather than as a plain prop"
+		"replicating through GSVehicleNetSync rather than as a plain prop"
 	)
 	_check(
 		_votw_mirror != null and (_votw_mirror as PlaylotVehicle).wheel_count() == 4,
@@ -185,7 +185,7 @@ func _test_vehicle_over_the_wire_3() -> void:
 	)
 
 	# Turning the wheels. A client cannot derive this from anything else it is sent.
-	var turn := DotFpsCommand.new()
+	var turn := GSFpsCommand.new()
 	turn.move = Vector2(1.0, 1.0)
 	await _steps(60, turn)
 	_exchange()
@@ -198,8 +198,8 @@ func _test_vehicle_over_the_wire_3() -> void:
 	)
 
 	# Getting out, from the client, with the server owning the refusal.
-	var brake := DotFpsCommand.new()
-	brake.set_button(DotFpsCommand.BUTTON_CROUCH, true)
+	var brake := GSFpsCommand.new()
+	brake.set_button(GSFpsCommand.BUTTON_CROUCH, true)
 	await _steps(200, brake)
 
 	if _votw_mirror != null:
@@ -229,7 +229,7 @@ func _test_vehicle_over_the_wire_3() -> void:
 
 func _test_vehicle_over_the_wire_4() -> void:
 
-	_server_game.props.remove(_votw_spawned.instance_id, DotPropSpawner.REASON_ADMIN)
+	_server_game.props.remove(_votw_spawned.instance_id, GSPropSpawner.REASON_ADMIN)
 	_exchange()
 	await _steps(6)
 
@@ -239,9 +239,9 @@ func _test_vehicle_over_the_wire_4() -> void:
 
 ## What the driver feels: how far their own car is behind their keys. See `[veh-3]`.
 ##
-## The mirror is drawn where [method DotNetManager.interpolate_frame] puts it, behind the newest snapshot, over a loopback with [constant VEHICLE_TRANSIT_TICKS] transit and every [constant VEHICLE_DROP_EVERY]rd snapshot dropped. Figures are printed; asserted is that the mirror follows and converges once the car stops (decision: docs/vehicles.md, "What a driver feels").
+## The mirror is drawn where [method GSNetManager.interpolate_frame] puts it, behind the newest snapshot, over a loopback with [constant VEHICLE_TRANSIT_TICKS] transit and every [constant VEHICLE_DROP_EVERY]rd snapshot dropped. Figures are printed; asserted is that the mirror follows and converges once the car stops (decision: docs/vehicles.md, "What a driver feels").
 func _measure_round_trip(
-	vehicle: DotVehicleInstance, mirror: Node3D, brake: DotFpsCommand
+	vehicle: GSVehicleInstance, mirror: Node3D, brake: GSFpsCommand
 ) -> void:
 	var car := vehicle.body()
 	# Turned round where it stands. The drive above ends nose-first against map geometry
@@ -266,7 +266,7 @@ func _measure_round_trip(
 	var last_mirror := [mirror.global_position]
 
 	# One tick: step, draw the mirror as the renderer would, and record the gap.
-	var sample := func(command: DotFpsCommand) -> void:
+	var sample := func(command: GSFpsCommand) -> void:
 		await _step(command)
 		# The interpolation `present_frame` does, called directly: it asks whether the manager is RUNNING,
 		# which this hand-driven client is not yet, and going through it drew the newest snapshot every tick.
@@ -312,7 +312,7 @@ func _measure_round_trip(
 
 	# Steer on, at speed. Measured as a departure from the heading each was holding,
 	# extrapolated at the yaw rate it had over the tick before the key.
-	var steer := DotFpsCommand.new()
+	var steer := GSFpsCommand.new()
 	steer.move = Vector2(-1.0, 1.0)
 	var yaw_car := car.global_rotation.y
 	var yaw_mirror := mirror.global_rotation.y
@@ -460,7 +460,7 @@ func _find_vehicle_node(game: Playlot) -> PlaylotVehicle:
 var _cete_store: String
 var _cete_services: PlaylotServices
 var _cete_heard: Array[Dictionary]
-var _cete_refused: Array[DotResult]
+var _cete_refused: Array[GSResult]
 var _cete_on_chat
 var _cete_on_say
 
@@ -477,9 +477,9 @@ func _test_chat_end_to_end() -> void:
 	_cete_services.punishments_path = NET_PUNISHMENTS
 	_server_bridge.get_parent().add_child(_cete_services)
 
-	var ready: DotResult = _cete_services.setup(null, _server_game, _server_bridge)
+	var ready: GSResult = _cete_services.setup(null, _server_game, _server_bridge)
 	_check(
-		ready.ok, "the services come up on DotGameServices with no DotServer",
+		ready.ok, "the services come up on GSGameServices with no GSServer",
 		str(ready.error) if not ready.ok else ""
 	)
 	_check(
@@ -500,7 +500,7 @@ func _test_chat_end_to_end() -> void:
 	_cete_on_chat = func(wire: Dictionary) -> void:
 		_cete_heard.append(wire)
 	_cete_on_say = func(peer_id: int, channel_id: StringName, text: String) -> void:
-		var said: DotResult = _cete_services.say(peer_id, channel_id, text)
+		var said: GSResult = _cete_services.say(peer_id, channel_id, text)
 		if not said.ok:
 			_cete_refused.append(said)
 	_client_bridge.chat_received.connect(_cete_on_chat)
@@ -538,9 +538,9 @@ func _test_chat_end_to_end_2() -> void:
 		"%d lines" % _cete_heard.size()
 	)
 
-	var subject := DotPunishmentSubject.for_uid("local:%d" % SESSION)
-	var gagged: DotResult = await _cete_services.moderation.issue(
-		DotPunishment.Kind.GAG, subject, "testing", "console", 60
+	var subject := GSPunishmentSubject.for_uid("local:%d" % SESSION)
+	var gagged: GSResult = await _cete_services.moderation.issue(
+		GSPunishment.Kind.GAG, subject, "testing", "console", 60
 	)
 	_check(gagged.ok, "a gag is issued", str(gagged.error) if not gagged.ok else "")
 
@@ -565,7 +565,7 @@ func _test_chat_end_to_end_2() -> void:
 	DirAccess.remove_absolute(_cete_store)
 
 	_check(
-		not DotRegistry.has(DotModerationManager.MUTE_SERVICE),
+		not GSRegistry.has(GSModerationManager.MUTE_SERVICE),
 		"and the mute source goes with it, so no later section inherits a gag"
 	)
 	_done()
@@ -632,19 +632,19 @@ func _test_blind_and_beacon() -> void:
 	var server_net := _server_player().get_node_or_null("Net") as PlaylotPlayerNet
 	_check(
 		server_net != null
-		and server_net.find_var(&"net_blind").audience == DotNetVar.Audience.OWNER
-		and server_net.find_var(&"net_beacon").audience == DotNetVar.Audience.EVERYONE,
+		and server_net.find_var(&"net_blind").audience == GSNetVar.Audience.OWNER
+		and server_net.find_var(&"net_beacon").audience == GSNetVar.Audience.EVERYONE,
 		"the blind is declared owner-only and the beacon for everybody"
 	)
 
 	var handlers := PlaylotModTools.handlers(_server_game, null)
-	var blind: Callable = handlers[DotModTools.ACTION_BLIND]
-	var beacon: Callable = handlers[DotModTools.ACTION_BEACON]
+	var blind: Callable = handlers[GSModTools.ACTION_BLIND]
+	var beacon: Callable = handlers[GSModTools.ACTION_BEACON]
 	var them := StringName(str(SESSION + 1))
 	var me := StringName(str(SESSION))
 
-	var on_blind: DotResult = blind.call(them, {"on": true, "actor": "1"})
-	var on_beacon: DotResult = beacon.call(them, {"on": true, "actor": "1"})
+	var on_blind: GSResult = blind.call(them, {"on": true, "actor": "1"})
+	var on_beacon: GSResult = beacon.call(them, {"on": true, "actor": "1"})
 	_check(on_blind.ok and on_beacon.ok, "the server blinds and beacons player 8")
 
 	# Several snapshots' worth, so an absence below is not a snapshot that had not come.
@@ -672,16 +672,16 @@ func _test_blind_and_beacon() -> void:
 		"a beaconed player is relevant to every peer, as every player here already is"
 	)
 
-	var mine: DotResult = blind.call(me, {"on": true, "actor": "1"})
+	var mine: GSResult = blind.call(me, {"on": true, "actor": "1"})
 	await _steps(12)
 	_check(
 		mine.ok and _client_player().blinded,
 		"a blind on this client's OWN player reaches it, so its HUD goes dark"
 	)
 
-	var _off_me: DotResult = blind.call(me, {"on": false, "actor": "1"})
-	var _off_them: DotResult = blind.call(them, {"on": false, "actor": "1"})
-	var _unlit: DotResult = beacon.call(them, {"on": false, "actor": "1"})
+	var _off_me: GSResult = blind.call(me, {"on": false, "actor": "1"})
+	var _off_them: GSResult = blind.call(them, {"on": false, "actor": "1"})
+	var _unlit: GSResult = beacon.call(them, {"on": false, "actor": "1"})
 	await _steps(12)
 	_check(
 		not _client_player().blinded and _bab_theirs != null and not _bab_theirs.beacon,

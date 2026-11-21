@@ -1,4 +1,4 @@
-extends DotGameCheckSuite
+extends GSGameCheckSuite
 
 const Playlot := preload("../game/playlot.gd")
 const PlaylotConfig := preload("../game/playlot_config.gd")
@@ -20,8 +20,8 @@ const PlaylotPlayerStack := preload("../game/playlot_player_stack.gd")
 ##
 ## - the collision layout, which named its layers in the inspector and put no body on one;
 ## - the spawn director, which was fed every start on the map and asked nothing;
-## - the view switch, which is the only place `DotTpsController` runs in this family;
-## - the character, which is the only implementation of `DotPlayerCharVisual` anywhere.
+## - the view switch, which is the only place `GSTpsController` runs in this family;
+## - the character, which is the only implementation of `GSPlayerCharVisual` anywhere.
 
 const CHECKS := 40
 
@@ -33,7 +33,7 @@ var _game: Playlot = null
 
 
 func _ready() -> void:
-	DotLog.set_level(DotLog.Level.ERROR)
+	GSLog.set_level(GSLog.Level.ERROR)
 	_run()
 
 
@@ -148,14 +148,14 @@ func _test_roster_sides_and_classes() -> void:
 
 	# The bridge that had no caller in any game.
 	var health := StubHealth.new()
-	var tunables := DotFpsTunables.new()
-	var base := DotFpsTunables.new()
-	_check(DotPlayerClassApply.to_health(def, health) > 0, "whose numbers can be applied")
+	var tunables := GSFpsTunables.new()
+	var base := GSFpsTunables.new()
+	_check(GSPlayerClassApply.to_health(def, health) > 0, "whose numbers can be applied")
 	_check(
 		is_equal_approx(health.max_health, def.max_health), "to a health component"
 	)
 	_check(
-		DotPlayerClassApply.to_movement(def, tunables, base) > 0, "and to movement"
+		GSPlayerClassApply.to_movement(def, tunables, base) > 0, "and to movement"
 	)
 	_check(
 		is_equal_approx(tunables.max_speed, base.max_speed * def.move_speed_scale),
@@ -178,7 +178,7 @@ func _test_spawn_director() -> void:
 	if not res.ok:
 		return
 
-	var choice := res.value as DotSpawnChoice
+	var choice := res.value as GSSpawnChoice
 	_check(
 		int(choice.site.meta.get("track", -1)) == 0,
 		"with the site belonging to the track asked for"
@@ -194,7 +194,7 @@ func _test_spawn_director() -> void:
 			rad_to_deg(choice.transform.basis.get_euler().y)
 			- map.spawn_yaw_for(0)
 		) < 0.5,
-		"facing the way the map says — the site holds radians and DotFpsState.yaw is "
+		"facing the way the map says — the site holds radians and GSFpsState.yaw is "
 		+ "degrees, and the conversion was missing at both ends"
 	)
 
@@ -218,7 +218,7 @@ func _test_view_switch() -> void:
 	_check(player.tps != null, "with a third-person controller under it")
 
 	# [b]One frame, and the reason is the switch's own.[/b]
-	# `DotPlayerControllerSwitch._ready` defers `_activate_default` deliberately: a
+	# `GSPlayerControllerSwitch._ready` defers `_activate_default` deliberately: a
 	# sibling controller's `_ready` has not necessarily run when the switch's does, so
 	# its `controller_id` may still be the scene's default and the switch would register
 	# it under the wrong name. Reading `view_mode()` on the same frame as the build
@@ -254,7 +254,7 @@ func _test_character() -> void:
 		return
 
 	_check(
-		player.character is DotPlayerCharVisual,
+		player.character is GSPlayerCharVisual,
 		"which is dot-player-char's own abstract node — the one that had no "
 		+ "implementation in any project in this family"
 	)
@@ -312,7 +312,7 @@ func _test_character() -> void:
 
 # --- Harness ---------------------------------------------------------------
 
-## Stands in for a `DotHealth` without naming dot-combat, which this section does not need.
+## Stands in for a `GSHealth` without naming dot-combat, which this section does not need.
 class StubHealth extends Object:
 	var max_health: float = 1.0
 	var max_armour: float = 0.0

@@ -18,8 +18,8 @@ var _failed := false
 
 
 func _initialize() -> void:
-	DotLog.set_level(DotLog.Level.ERROR)
-	DotFpsSampler.register_default_actions()
+	GSLog.set_level(GSLog.Level.ERROR)
+	GSFpsSampler.register_default_actions()
 	var config := PlaylotConfig.new()
 	config.records_directory = ""
 	config.initial_map = &"pg_flatgrass"
@@ -37,20 +37,20 @@ func _run() -> void:
 	for i in 6:
 		await physics_frame
 
-	var tunables := DotTpsTunables.new()
+	var tunables := GSTpsTunables.new()
 	var offset := Vector3(tunables.shoulder_offset, 0.0, tunables.camera_distance)
 	var mask: int = _game.player_stack.physics.layout.mask_of([&"world", &"prop"])
-	var pivots := DotCameraCheck.pivots_near_walls(root.get_world_3d(), AABB(Vector3(-80, -20, -80), Vector3(160, 60, 160)), mask, tunables.camera_height, 3.0, 3.0, 40)
+	var pivots := GSCameraCheck.pivots_near_walls(root.get_world_3d(), AABB(Vector3(-80, -20, -80), Vector3(160, 60, 160)), mask, tunables.camera_height, 3.0, 3.0, 40)
 	var got := {}
 	for pivot in pivots:
-		got = DotCameraCheck.add(got, DotCameraCheck.fly(root.get_world_3d(), DotCameraCheck.orbit_path(pivot), offset, mask))
-	_check(not got.is_empty() and DotCameraCheck.passed(got), "third person round %d places by the walls of %s: %s" % [pivots.size(), String(_game.maps.current.id) if "id" in _game.maps.current else "the map", DotCameraCheck.summary(got) if not got.is_empty() else "no places"])
+		got = GSCameraCheck.add(got, GSCameraCheck.fly(root.get_world_3d(), GSCameraCheck.orbit_path(pivot), offset, mask))
+	_check(not got.is_empty() and GSCameraCheck.passed(got), "third person round %d places by the walls of %s: %s" % [pivots.size(), String(_game.maps.current.id) if "id" in _game.maps.current else "the map", GSCameraCheck.summary(got) if not got.is_empty() else "no places"])
 
 	var view := _game.view_rules
 	_check(view.may_toggle() and view.toggled(false), "the view key may go to third person by default")
-	view.force_view = DotPlayerViewRules.FIRST_ONLY
+	view.force_view = GSPlayerViewRules.FIRST_ONLY
 	_check(not view.toggled(false), "mp_forceview 1 refuses it")
-	view.force_view = DotPlayerViewRules.ANY
+	view.force_view = GSPlayerViewRules.ANY
 
 	var a := _game.add_player(&"a", "A")
 	var b := _game.add_player(&"b", "B")
@@ -71,7 +71,7 @@ func _walk(a: PlaylotPlayer, b: PlaylotPlayer, solid: bool) -> float:
 	var spot := b.controller.state.position
 	var from := spot + Vector3(0.0, 0.0, 2.6)
 	a.controller.teleport(from, 0.0, 0.0)
-	var go := DotFpsCommand.new()
+	var go := GSFpsCommand.new()
 	go.yaw = 0.0
 	go.move = Vector2(0, 1)
 	var closest := INF

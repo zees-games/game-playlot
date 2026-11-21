@@ -1,4 +1,4 @@
-extends DotScreen
+extends GSScreen
 
 
 const PlaylotBindings := preload("playlot_bindings.gd")
@@ -14,7 +14,7 @@ const SwepToolgun := preload("weapons/swep_toolgun.gd")
 
 ## The spawn menu: hold Q, pick something, click it; a quick tap pins it open. It never spawns
 ## anything itself: it emits, and [PlaylotClient] asks the server. Props and entities are one
-## [DotPropCatalogue] split by [method PlaylotSpawnables.kind_of]; weapons are their own registry.
+## [GSPropCatalogue] split by [method PlaylotSpawnables.kind_of]; weapons are their own registry.
 
 # No CHANNEL: a screen, and nothing it draws is an operator's to act on. What a player picks is
 # logged where it is acted on — by the spawner, or by the server the bridge asks.
@@ -83,7 +83,7 @@ signal build_chosen(build_name: String)
 signal trail_chosen(trail_id: String)
 
 ## What the props and entities tabs are built from. Set before the first push.
-var catalogue: DotPropCatalogue = null
+var catalogue: GSPropCatalogue = null
 
 ## This player's saved builds, `{name, props, custom}` each — what the server last sent.
 ## Kept by the server, never by the client: a build outlives the machine it was made on.
@@ -137,7 +137,7 @@ var _tool_modes: Array = []
 var _settings_box: VBoxContainer = null
 var _npc_weapon_row: Control = null
 
-var _palette: DotUiTheme = null
+var _palette: GSUiTheme = null
 var _tab: Tab = Tab.PROPS
 var _category: StringName = ALL
 var _search: String = ""

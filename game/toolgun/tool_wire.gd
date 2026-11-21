@@ -1,7 +1,7 @@
 extends "playlot_tool.gd"
 
 ## Wires a button or a lever to a door: left click what says something, then what hears it.
-## Right click takes every wire off a prop. dot-props' [DotPropIO] keeps the wires; what an
+## Right click takes every wire off a prop. dot-props' [GSPropIO] keeps the wires; what an
 ## input does is [Playlot]'s.
 ##
 ## [b]Which input is a setting, not a third click.[/b] A door has three (open, close,
@@ -25,45 +25,45 @@ func schema() -> Array[Dictionary]:
 	]
 
 
-func primary(gun: Object, hit: Dictionary) -> DotResult:
-	var prop: DotPropInstance = hit.get("prop")
+func primary(gun: Object, hit: Dictionary) -> GSResult:
+	var prop: GSPropInstance = hit.get("prop")
 
 	if prop == null:
 		return nothing_there()
 
-	var io: DotPropIO = gun.get("game").get("io") if gun.get("game") != null else null
+	var io: GSPropIO = gun.get("game").get("io") if gun.get("game") != null else null
 
 	if io == null:
-		return DotResult.fail(DotError.CODE_STATE, "Wiring is not available here.")
+		return GSResult.fail(GSError.CODE_STATE, "Wiring is not available here.")
 
 	if pending.is_empty():
-		var outputs := DotPropIO.outputs_of(prop.def)
+		var outputs := GSPropIO.outputs_of(prop.def)
 
 		if outputs.is_empty():
-			return DotResult.fail(DotError.CODE_INVALID, "%s has nothing to say. Start at a button or a lever." % prop.def.name_or_id())
+			return GSResult.fail(GSError.CODE_INVALID, "%s has nothing to say. Start at a button or a lever." % prop.def.name_or_id())
 
 		pending = {"from": prop.instance_id, "output": outputs[0]}
-		return DotResult.success("first")
+		return GSResult.success("first")
 
 	var from := int(pending["from"])
 	var output := StringName(str(pending["output"]))
 	pending = {}
 
-	var inputs := DotPropIO.inputs_of(prop.def)
+	var inputs := GSPropIO.inputs_of(prop.def)
 	var wanted := str(setting("input"))
 	var input := wanted if inputs.has(wanted) else (inputs[0] if not inputs.is_empty() else "")
 
 	if input == "":
-		return DotResult.fail(DotError.CODE_INVALID, "%s hears nothing. End at a door." % prop.def.name_or_id())
+		return GSResult.fail(GSError.CODE_INVALID, "%s hears nothing. End at a door." % prop.def.name_or_id())
 
 	return io.link(from, output, prop.instance_id, StringName(input))
 
 
-func secondary(gun: Object, hit: Dictionary) -> DotResult:
-	var prop: DotPropInstance = hit.get("prop")
+func secondary(gun: Object, hit: Dictionary) -> GSResult:
+	var prop: GSPropInstance = hit.get("prop")
 
 	if prop == null:
 		return nothing_there()
 
-	var io: DotPropIO = gun.get("game").get("io") if gun.get("game") != null else null
-	return DotResult.success(io.unlink_all(prop.instance_id) if io != null else 0)
+	var io: GSPropIO = gun.get("game").get("io") if gun.get("game") != null else null
+	return GSResult.success(io.unlink_all(prop.instance_id) if io != null else 0)

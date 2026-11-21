@@ -4,15 +4,15 @@ extends RefCounted
 ## rounded boxes, a bold face and a key cap. A menu asks this instead of mixing its own
 ## colours, so a changed accent changes every widget. Nothing here touches a node tree.
 
-## Colours and radii come from the Workbench menu's DotWorkbenchStyle so the two overlays read as one product.
-const ACCENT := DotWorkbenchStyle.ACCENT
-const PANEL := Color(DotWorkbenchStyle.BG, 0.97)
-const TEXT := DotWorkbenchStyle.TEXT
-const DIM := DotWorkbenchStyle.TEXT_DIM
-const FAINT := DotWorkbenchStyle.TEXT_FAINT
-const DANGER := DotWorkbenchStyle.DANGER
-const RADIUS := DotWorkbenchStyle.RADIUS
-const CARD_RADIUS := DotWorkbenchStyle.CARD_RADIUS
+## Colours and radii come from the Workbench menu's GSWorkbenchStyle so the two overlays read as one product.
+const ACCENT := GSWorkbenchStyle.ACCENT
+const PANEL := Color(GSWorkbenchStyle.BG, 0.97)
+const TEXT := GSWorkbenchStyle.TEXT
+const DIM := GSWorkbenchStyle.TEXT_DIM
+const FAINT := GSWorkbenchStyle.TEXT_FAINT
+const DANGER := GSWorkbenchStyle.DANGER
+const RADIUS := GSWorkbenchStyle.RADIUS
+const CARD_RADIUS := GSWorkbenchStyle.CARD_RADIUS
 const LINE := Color(1, 1, 1, 0.07)
 const SURFACE := Color(1, 1, 1, 0.045)
 const SURFACE_HOVER := Color(1, 1, 1, 0.095)

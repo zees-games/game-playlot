@@ -1,4 +1,4 @@
-extends DotPropTool
+extends GSPropTool
 
 const PlaylotPaths := preload("../playlot_paths.gd")
 
@@ -7,9 +7,9 @@ const PlaylotWeaponDef := preload("playlot_weapon_def.gd")
 
 ## The base every SWEP extends: two mouse buttons and a tick.
 ##
-## [b]It extends [DotPropTool], which is most of the work.[/b] A weapon in a sandbox is
+## [b]It extends [GSPropTool], which is most of the work.[/b] A weapon in a sandbox is
 ## a thing that points at props and does something to them, and that is exactly what
-## `DotPropTool` is: it carries the spawner, the wielder, the reach, a `target()` that
+## `GSPropTool` is: it carries the spawner, the wielder, the reach, a `target()` that
 ## resolves a ray to a prop, and a `may_act_on()` that answers the ownership question
 ## the host decides rather than the tool. A physics gun and a gravity gun are the two
 ## dot-props ships; these are the game's own, and they are the same kind of object.
@@ -22,7 +22,7 @@ const PlaylotWeaponDef := preload("playlot_weapon_def.gd")
 ## [codeblock]
 ## extends "res://game/weapons/playlot_weapon.gd"
 ##
-## func _primary(space: Variant, origin: Vector3, aim: Vector3) -> DotResult:
+## func _primary(space: Variant, origin: Vector3, aim: Vector3) -> GSResult:
 ##     return _launch(origin, aim, 30.0)
 ## [/codeblock]
 
@@ -41,7 +41,7 @@ var def: PlaylotWeaponDef = null
 var armed: StringName = &""
 
 ## Simulated seconds since equipping. Not a wall clock, for the reason on
-## [member DotPropSpawner.advance].
+## [member GSPropSpawner.advance].
 var age: float = 0.0
 
 
@@ -60,16 +60,16 @@ func holster() -> void:
 	_holster()
 
 
-func primary(space: Variant, origin: Vector3, aim: Vector3) -> DotResult:
+func primary(space: Variant, origin: Vector3, aim: Vector3) -> GSResult:
 	return _primary(space, origin, aim.normalized())
 
 
-func secondary(space: Variant, origin: Vector3, aim: Vector3) -> DotResult:
+func secondary(space: Variant, origin: Vector3, aim: Vector3) -> GSResult:
 	return _secondary(space, origin, aim.normalized())
 
 
 ## The reload key. Most toys ignore it; the tool gun's modes each give it a meaning.
-func reload(space: Variant, origin: Vector3, aim: Vector3) -> DotResult:
+func reload(space: Variant, origin: Vector3, aim: Vector3) -> GSResult:
 	return _reload(space, origin, aim.normalized())
 
 
@@ -88,16 +88,16 @@ func _holster() -> void:
 	pass
 
 
-func _primary(_space: Variant, _origin: Vector3, _aim: Vector3) -> DotResult:
-	return DotResult.fail(DotError.CODE_UNSUPPORTED, "This does nothing.")
+func _primary(_space: Variant, _origin: Vector3, _aim: Vector3) -> GSResult:
+	return GSResult.fail(GSError.CODE_UNSUPPORTED, "This does nothing.")
 
 
-func _secondary(_space: Variant, _origin: Vector3, _aim: Vector3) -> DotResult:
-	return DotResult.fail(DotError.CODE_UNSUPPORTED, "This does nothing.")
+func _secondary(_space: Variant, _origin: Vector3, _aim: Vector3) -> GSResult:
+	return GSResult.fail(GSError.CODE_UNSUPPORTED, "This does nothing.")
 
 
-func _reload(_space: Variant, _origin: Vector3, _aim: Vector3) -> DotResult:
-	return DotResult.fail(DotError.CODE_UNSUPPORTED, "")
+func _reload(_space: Variant, _origin: Vector3, _aim: Vector3) -> GSResult:
+	return GSResult.fail(GSError.CODE_UNSUPPORTED, "")
 
 
 func _tick(_space: Variant, _origin: Vector3, _aim: Vector3, _delta: float) -> void:
@@ -122,9 +122,9 @@ func tune(key: StringName, fallback: float) -> float:
 ## impulse is divided by the mass — which is what makes a punt feel weighty and is
 ## exactly wrong here: a launcher whose boulder leaves at a fortieth of the speed of
 ## its ball is a launcher nobody can aim. A muzzle velocity is a muzzle velocity.
-func launch(prop_id: StringName, origin: Vector3, aim: Vector3, speed: float) -> DotResult:
+func launch(prop_id: StringName, origin: Vector3, aim: Vector3, speed: float) -> GSResult:
 	if game == null or spawner == null:
-		return DotResult.fail(DotError.CODE_STATE, "This weapon has no world.")
+		return GSResult.fail(GSError.CODE_STATE, "This weapon has no world.")
 
 	var at := origin + aim * tune(&"muzzle", 2.0)
 	var prop := spawner.spawn(prop_id, wielder, at)
@@ -133,14 +133,14 @@ func launch(prop_id: StringName, origin: Vector3, aim: Vector3, speed: float) ->
 		# The refusal reason has already gone to the player through the spawner's own
 		# `refused` signal, which the HUD is listening to. Saying it again here would
 		# put the same line on screen twice.
-		return DotResult.fail(DotError.CODE_FORBIDDEN, "")
+		return GSResult.fail(GSError.CODE_FORBIDDEN, "")
 
 	var body := prop.body()
 
 	if body != null:
 		body.linear_velocity = aim * speed
 
-	return DotResult.success(prop)
+	return GSResult.success(prop)
 
 
 func describe() -> Dictionary:

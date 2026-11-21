@@ -11,7 +11,7 @@ func _wire_presentation() -> void:
 
 	# Both ends: a map change frees the world the live effects are parented into.
 	playlot.maps.changed.connect(
-		func(map: DotMapDef, _loaded: Node) -> void: presentation.on_map_changed(map.id if map != null else &"")
+		func(map: GSMapDef, _loaded: Node) -> void: presentation.on_map_changed(map.id if map != null else &"")
 	)
 	# Glass breaking is heard on both ends: offline the game breaks it, connected the server's
 	# PANE event does, and either way the signal is this end's.
@@ -43,7 +43,7 @@ func _wire_presentation() -> void:
 		)
 		return
 
-	playlot.props.spawned.connect(func(prop: DotPropInstance) -> void:
+	playlot.props.spawned.connect(func(prop: GSPropInstance) -> void:
 		var body := prop.node as Node3D if prop != null else null
 		if body != null:
 			presentation.on_prop_spawned(body.global_position, prop.owner_id == player_id)
@@ -157,7 +157,7 @@ func _build_view() -> void:
 
 	# Somebody walking into the first-person camera is hidden at the lens. The third-person
 	# camera is dot-player-controller's rig, which has a fade of its own (`_build_view_switch`).
-	var fade := DotCameraFade.new()
+	var fade := GSCameraFade.new()
 	fade.name = "Fade"
 	fade.bodies_fn = _other_players
 	camera.add_child(fade)
@@ -182,7 +182,7 @@ func _build_view_switch() -> void:
 		playlot.view_rules.changed.connect(_on_view_rules_changed)
 
 	if not player.build_view_switch():
-		DotLog.warn(CHANNEL, "no view switch for the local player", {
+		GSLog.warn(CHANNEL, "no view switch for the local player", {
 			"player": String(player_id)
 		})
 
@@ -238,7 +238,7 @@ func _on_mouse_button(event: InputEventMouseButton) -> void:
 ## one tick cannot cycle on both paths.
 func _wheel_cycle(event: InputEvent) -> bool:
 	if _wheel == null:
-		_wheel = DotWeaponWheel.new()
+		_wheel = GSWeaponWheel.new()
 		_wheel.ring_provider = _tool_ring
 		_wheel.current_provider = func() -> Variant: return tool
 		_wheel.blocked = func() -> bool: return _holding
@@ -283,7 +283,7 @@ func _set_tool(id: StringName) -> void:
 		return
 
 	# Everything is let go of on the way out: a gravity gun still carrying a crate after the switch
-	# to the physics gun would mean two tools holding one prop, which `DotPropInstance.held_by`
+	# to the physics gun would mean two tools holding one prop, which `GSPropInstance.held_by`
 	# refuses, so the physics gun would do nothing with nothing on screen to say why.
 	_primary_up()
 	_secondary_up()
@@ -334,7 +334,7 @@ func _set_tool(id: StringName) -> void:
 			weapon.armed = selected_prop
 
 			if weapon.has_method("set_mode"):
-				var _moded: DotResult = weapon.call("set_mode", tool_mode, tool_mode_settings)
+				var _moded: GSResult = weapon.call("set_mode", tool_mode, tool_mode_settings)
 
 	if menu != null:
 		menu.tool = tool
@@ -368,13 +368,13 @@ func _cycle_weapon() -> void:
 
 func _primary_down() -> void:
 	if toy_view != null and is_instance_valid(toy_view):
-		(toy_view as DotToolView).kick()
+		(toy_view as GSToolView).kick()
 	if bridge != null:
-		_net_buttons |= DotFpsCommand.BUTTON_USER_0
+		_net_buttons |= GSFpsCommand.BUTTON_USER_0
 		return
 
 	if _zee_rig() != null:
-		_zee_buttons |= DotFpsCommand.BUTTON_USER_0
+		_zee_buttons |= GSFpsCommand.BUTTON_USER_0
 		return
 
 	if weapon != null:
@@ -392,11 +392,11 @@ func _primary_down() -> void:
 
 func _secondary_down() -> void:
 	if bridge != null:
-		_net_buttons |= DotFpsCommand.BUTTON_USER_1
+		_net_buttons |= GSFpsCommand.BUTTON_USER_1
 		return
 
 	if _zee_rig() != null:
-		_zee_buttons |= DotFpsCommand.BUTTON_USER_1
+		_zee_buttons |= GSFpsCommand.BUTTON_USER_1
 		return
 
 	if weapon != null:
@@ -580,34 +580,34 @@ func _use_mods_menu() -> void:
 	if platform == null or not platform.user_tier_on or game_menu == null or not game_menu.has_method(&"use_mods"):
 		return
 	var console_node: Object = platform.console
-	if console_node != null and console_node.get(&"config") is DotConsoleConfig:
-		var _applied := (console_node.get(&"config") as DotConsoleConfig).apply_cfg_file()
-	var base := DotConsoleConfig.new()
+	if console_node != null and console_node.get(&"config") is GSConsoleConfig:
+		var _applied := (console_node.get(&"config") as GSConsoleConfig).apply_cfg_file()
+	var base := GSConsoleConfig.new()
 	var schema: Array = [
-		DotProfileSet.field("height_fraction", "float", base.height_fraction, {"min": 0.1, "max": 1.0}),
-		DotProfileSet.field("background_opacity", "float", base.background_opacity, {"min": 0.0, "max": 1.0}),
-		DotProfileSet.field("font_size", "int", base.font_size, {"min": 6, "max": 48}),
+		GSProfileSet.field("height_fraction", "float", base.height_fraction, {"min": 0.1, "max": 1.0}),
+		GSProfileSet.field("background_opacity", "float", base.background_opacity, {"min": 0.0, "max": 1.0}),
+		GSProfileSet.field("font_size", "int", base.font_size, {"min": 6, "max": 48}),
 	]
-	var editor := DotAddonConfigEditorScreen.new()
-	editor.add_file(DotConsoleConfig.CFG_ADDON, "console.yml", schema, "Console")
+	var editor := GSAddonConfigEditorScreen.new()
+	editor.add_file(GSConsoleConfig.CFG_ADDON, "console.yml", schema, "Console")
 	game_menu.call(&"use_mods", editor)
 	# After use_mods: a form built while the editor is outside the tree leaks at exit.
-	var _opened := editor.open(DotConsoleConfig.CFG_ADDON, "console.yml")
+	var _opened := editor.open(GSConsoleConfig.CFG_ADDON, "console.yml")
 
 
 func _use_loadout_menu() -> void:
-	if DotAddonApi.build_level("dot_menu") < 6 or DotAddonApi.build_level("dot_loadout") < 2:
+	if GSAddonApi.build_level("dot_menu") < 6 or GSAddonApi.build_level("dot_loadout") < 2:
 		return
 	if game_menu == null or not game_menu.has_method(&"use_loadout"):
 		return
 	loadout_menu = game_menu.call(&"use_loadout",
-		func() -> Variant: return DotResult.fail(DotError.CODE_STATE, LOADOUT_ARENA_ONLY),
-		func(_picks: Dictionary) -> Variant: return DotResult.fail(DotError.CODE_STATE, LOADOUT_ARENA_ONLY),
+		func() -> Variant: return GSResult.fail(GSError.CODE_STATE, LOADOUT_ARENA_ONLY),
+		func(_picks: Dictionary) -> Variant: return GSResult.fail(GSError.CODE_STATE, LOADOUT_ARENA_ONLY),
 		decorate_loadout_choice)
 	if loadout_menu != null:
 		loadout_menu.set(&"title", "Arena loadout")
 		# Connected, the menu asks the server's `/loadout locked`; there is no solo loadout here.
-		if DotAddonApi.build_level("dot_game") >= 40:
+		if GSAddonApi.build_level("dot_game") >= 40:
 			platform.add_loadout_store(loadout_menu, func() -> Object: return null, func() -> String: return "")
 		# Remembered on this device and sent again on the next join, never under a suite's or a
 		# render's scratch settings.
@@ -645,9 +645,9 @@ func decorate_loadout_choice(_slot_id: String, choice: Dictionary) -> Dictionary
 	var icon := PlaylotIcons.for_weapon(def)
 	if icon != null:
 		out["icon"] = icon
-	if PlaylotZee.is_zee(def) and DotAddonApi.build_level("zee_weapons") >= 3:
+	if PlaylotZee.is_zee(def) and GSAddonApi.build_level("zee_weapons") >= 3:
 		var cards_path := "res://addons/zee_weapons/content/zee_weapon_cards.gd"
-		var zee_def: DotWeaponDef = PlaylotZee.catalogue().get_def(PlaylotZee.zee_id(def))
+		var zee_def: GSWeaponDef = PlaylotZee.catalogue().get_def(PlaylotZee.zee_id(def))
 		if zee_def != null and ResourceLoader.exists(cards_path):
 			var card: Variant = (load(cards_path) as Script).call(&"card", zee_def)
 			if card is Dictionary:
@@ -679,7 +679,7 @@ func _arm_zee(def: PlaylotWeaponDef) -> bool:
 
 	zee_view = ZeeViewModel.new()
 	zee_view.name = "ZeeViewModel"
-	var own_hands := PlaylotViewGrip.available() and view_arms is DotPlayerViewArms
+	var own_hands := PlaylotViewGrip.available() and view_arms is GSPlayerViewArms
 	(zee_view as ZeeViewModel).show_arms = not own_hands
 	if own_hands:
 		(zee_view as ZeeViewModel).hands_reached.connect(_on_hands_reached)
@@ -721,7 +721,7 @@ func _on_hands_reached(anchor: Node3D, grip: Vector3, fore: Vector3, pose: Strin
 	var made := PlaylotViewGrip.update(held_grip, anchor, grip, fore, pose)
 	if made != held_grip:
 		held_grip = made
-		(view_arms as DotPlayerViewArms).set_held(held_grip)
+		(view_arms as GSPlayerViewArms).set_held(held_grip)
 
 
 func _disarm_zee() -> void:
@@ -739,11 +739,11 @@ func _disarm_zee() -> void:
 	held_grip = null
 	_seated_for = &""
 	hand_seat_offset = Vector3.ZERO
-	if view_arms is DotPlayerViewArms:
-		(view_arms as DotPlayerViewArms).set_held(null)
+	if view_arms is GSPlayerViewArms:
+		(view_arms as GSPlayerViewArms).set_held(null)
 
 	_zee_buttons = 0
-	_net_buttons &= ~DotFpsCommand.BUTTON_USER_2
+	_net_buttons &= ~GSFpsCommand.BUTTON_USER_2
 
 
 ## Builds the first-person model for a toy or tool, after [method _disarm_zee] cleared the last.
@@ -755,7 +755,7 @@ func _arm_toy_view(id: StringName) -> void:
 		return
 	var def := playlot.weapon_def(id) if playlot != null else null
 	var colour := def.colour if def != null else (Color(0.55, 0.4, 0.9) if id == TOOL_GRAV else Color(0.9, 0.55, 0.2))
-	toy_view = DotToolView.make(colour, id == &"impulse", camera)
+	toy_view = GSToolView.make(colour, id == &"impulse", camera)
 
 
 func _set_reload(down: bool) -> void:
@@ -765,11 +765,11 @@ func _set_reload(down: bool) -> void:
 		_report(weapon.reload(_space(), player.eye_position(), player.aim_direction()))
 
 	if down:
-		_zee_buttons |= DotFpsCommand.BUTTON_USER_2
-		_net_buttons |= DotFpsCommand.BUTTON_USER_2
+		_zee_buttons |= GSFpsCommand.BUTTON_USER_2
+		_net_buttons |= GSFpsCommand.BUTTON_USER_2
 	else:
-		_zee_buttons &= ~DotFpsCommand.BUTTON_USER_2
-		_net_buttons &= ~DotFpsCommand.BUTTON_USER_2
+		_zee_buttons &= ~GSFpsCommand.BUTTON_USER_2
+		_net_buttons &= ~GSFpsCommand.BUTTON_USER_2
 
 
 ## The figure an avatar action plays on: that peer's player, or the local one offline.

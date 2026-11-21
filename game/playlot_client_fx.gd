@@ -3,7 +3,7 @@ extends "playlot_client_flash.gd"
 
 ## Chat and voice, once the bridge exists.
 func _build_client_services() -> void:
-	chat = DotChatClient.new()
+	chat = GSChatClient.new()
 	chat.name = "Chat"
 	# The same channel definitions the server routes with — shared rather than sent, for
 	# the reason every constant in this family is shared: a client holding a different set
@@ -31,7 +31,7 @@ func _build_client_services() -> void:
 			bridge.link.send_voice(1, bytes)
 	add_child(voice)
 
-	voice.setup(not DotPlatform.is_headless())
+	voice.setup(not GSPlatform.is_headless())
 	bridge.voice_arrived.connect(voice.receive)
 
 	platform.look_voice = voice.manager
@@ -41,18 +41,18 @@ func _build_client_services() -> void:
 
 
 func _build_screens() -> void:
-	screens = DotScreenStack.new()
+	screens = GSScreenStack.new()
 	screens.name = "Screens"
 	# Captured whenever nothing is open, which is what puts the mouse back on the
 	# view the instant the menu closes. Doing it by hand in the close path means
 	# every future screen has to remember to.
-	screens.idle_mouse_mode = DotScreen.Mouse.CAPTURED
+	screens.idle_mouse_mode = GSScreen.Mouse.CAPTURED
 	add_child(screens)
 
 	var ready := screens.setup()
 
 	if not ready.ok:
-		DotLog.error(CHANNEL, "the screen stack could not be set up", {
+		GSLog.error(CHANNEL, "the screen stack could not be set up", {
 			"why": ready.error.message
 		})
 		return
@@ -86,7 +86,7 @@ func _build_screens() -> void:
 		menu.trail_chosen.connect(_on_trail_chosen)
 
 	var registered := screens.register(menu)
-	DotLog.result(CHANNEL, "registering the spawn menu", registered)
+	GSLog.result(CHANNEL, "registering the spawn menu", registered)
 
 	# The server list. [b]Registered even offline[/b], because a person running this
 	# locally is exactly the person who wants to find somewhere to play — and a screen that
@@ -94,20 +94,20 @@ func _build_screens() -> void:
 	browser = PlaylotBrowser.new()
 	browser.name = "Servers"
 	browser.joined.connect(_on_server_chosen)
-	DotLog.result(
+	GSLog.result(
 		CHANNEL, "registering the server browser", screens.register(browser)
 	)
 
 	profile_screen = PlaylotProfileScreen.new()
 	profile_screen.name = "ProfileWorkbench"
 	profile_screen.profiles = playlot.profiles
-	profile_screen.submit = func(req: Dictionary) -> DotResult:
+	profile_screen.submit = func(req: Dictionary) -> GSResult:
 		return presentation.profile_submit(req) if presentation != null \
-			else DotResult.fail(DotError.CODE_STATE, "no presentation")
+			else GSResult.fail(GSError.CODE_STATE, "no presentation")
 	profile_screen.target_requested.connect(_on_profile_target)
 	profile_screen.pushed.connect(func() -> void: _mute_profile_replies(true))
 	profile_screen.popped.connect(func() -> void: _mute_profile_replies(false))
-	DotLog.result(CHANNEL, "registering the profile workbench", screens.register(profile_screen))
+	GSLog.result(CHANNEL, "registering the profile workbench", screens.register(profile_screen))
 
 	_build_pause()
 
@@ -116,18 +116,18 @@ func _build_screens() -> void:
 ## sidebar action. Escape keeps its two steps (first releases the pointer, second opens the menu;
 ## see KEY_ESCAPE in `_unhandled_input`), so the menu does not open on Escape but still closes on it.
 func _build_pause() -> void:
-	var settings: DotSettingsManager = presentation.settings if presentation != null else null
+	var settings: GSSettingsManager = presentation.settings if presentation != null else null
 
 	# Keys on the InputMap before anything reads them: help key, movement and this client's own.
 	keys = PlaylotBindings.make()
 	if settings != null:
 		keys.apply_all(settings)
 
-	game_menu = DotMenu.new()
+	game_menu = GSMenu.new()
 	game_menu.name = "GameMenu"
 	game_menu.settings = settings
 	game_menu.bindings = keys
-	var config := DotMenuConfig.new()
+	var config := GSMenuConfig.new()
 	config.brand_name = "Zee's Playlot"
 	# By name: an older dot-menu has no such property, and assigning it would stop this function.
 	if &"menu_button_corner" in config:
@@ -140,15 +140,15 @@ func _build_pause() -> void:
 	game_menu.leave_on_its_own = true
 	add_child(game_menu)
 	var _set := game_menu.setup()
-	# The platform takes the menu, then builds the console after it so DotConsoleKit registers
+	# The platform takes the menu, then builds the console after it so GSConsoleKit registers
 	# it as one of the menu's overlays.
 	platform.board_snapshot_fn = board_snapshot
 	platform.board_prepare_fn = _prepare_board
 	platform.adopt_menu(game_menu)
 	var _platform_up := platform.setup()
-	if DotAddonApi.build_level("dot_game") >= 38:
+	if GSAddonApi.build_level("dot_game") >= 38:
 		platform.add_store_panel(game_menu, func() -> String:
-			var auth: Object = DotRegistry.get_node_service(&"dot_auth_client")
+			var auth: Object = GSRegistry.get_node_service(&"dot_auth_client")
 			if auth == null or not is_instance_valid(auth) or not auth.has_method(&"account_key"):
 				return ""
 			return str(auth.call(&"account_key")))
@@ -157,10 +157,10 @@ func _build_pause() -> void:
 		func() -> Variant: return camera if view_id() == &"fp" else null,
 		func() -> bool: return _aim_wanted() and mouse_drives_view() and not _menu_is_open() and view_id() == &"fp")
 	# The starter set: the equipped list needs a credential the client does not hold (the server reads it).
-	DotLog.result("playlot.client", "avatar actions", platform.add_avatar_actions(net, _avatar_figure))
+	GSLog.result("playlot.client", "avatar actions", platform.add_avatar_actions(net, _avatar_figure))
 	_add_noblock_and_workbench()
 	if presentation != null:
-		presentation.adopt_console(platform.add_console(presentation.settings) as DotConsoleController)
+		presentation.adopt_console(platform.add_console(presentation.settings) as GSConsoleController)
 
 	add_general_rows(game_menu)
 	fill_help(game_menu.help)
@@ -181,7 +181,7 @@ func _build_pause() -> void:
 		platform.refresh_blocked())
 
 	if settings != null:
-		applier = DotMenuApplier.new()
+		applier = GSMenuApplier.new()
 		applier.name = "Applier"
 		applier.settings = settings
 		applier.bindings = keys
@@ -255,7 +255,7 @@ func _process(_delta: float) -> void:
 	var hands := zee_view as ZeeViewModel if zee_view != null and is_instance_valid(zee_view) and _zee_rig() != null else null
 	var zoom := hands.aim_fov_scale() if hands != null else 1.0
 	# The look slows with the lens, so a zoomed scope is steady to aim (the arena's look_scale).
-	for sampler: DotFpsSampler in [_sampler, player.sampler]:
+	for sampler: GSFpsSampler in [_sampler, player.sampler]:
 		if sampler != null:
 			sampler.look_scale = zoom
 	player.present_camera(camera, _delta, fov, shake, punch, zoom)

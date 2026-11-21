@@ -3,23 +3,23 @@ extends "res://examples/headless_playlot_run_timer_and_map_change.gd"
 const WeaponScript := preload("res://game/weapons/playlot_weapon.gd")
 
 ## The stock model props and a dropped-in model.
-var _mp_catalogue: DotPropCatalogue
+var _mp_catalogue: GSPropCatalogue
 
 func _test_model_props() -> void:
 	_section("model props and the drop-in folder")
 
-	var on_lobby: DotResult = await playlot.change_map(&"pg_flatgrass")
+	var on_lobby: GSResult = await playlot.change_map(&"pg_flatgrass")
 	if not on_lobby.ok:
 		_check(false, "the sandbox loads", on_lobby.error.message)
 		_done()
 		return
 
 	_mp_catalogue = playlot.props.catalogue
-	var models: Array[DotPropDef] = []
+	var models: Array[GSPropDef] = []
 	var uncredited := 0
 	var categories: Dictionary = {}
 
-	var everything: Array[DotPropDef] = []
+	var everything: Array[GSPropDef] = []
 	for category in _mp_catalogue.categories():
 		everything.append_array(_mp_catalogue.in_category(StringName(category)))
 
@@ -39,7 +39,7 @@ func _test_model_props() -> void:
 
 	var player: PlaylotPlayer = playlot.players[&"bot"]
 	playlot.props.limits.spawn_interval = 0.0
-	playlot.props.clear_all(DotPropSpawner.REASON_ADMIN)
+	playlot.props.clear_all(GSPropSpawner.REASON_ADMIN)
 	player.teleport(Vector3(-60.0, 1.0, -60.0), 90.0)
 
 	var shapeless := 0
@@ -71,7 +71,7 @@ func _test_model_props() -> void:
 			fallen += 1
 
 	_check(fallen == 0, "and every one stays above the floor", "%d fell through" % fallen)
-	playlot.props.clear_all(DotPropSpawner.REASON_ADMIN)
+	playlot.props.clear_all(GSPropSpawner.REASON_ADMIN)
 	await _test_model_props_2()
 
 func _test_model_props_2() -> void:
@@ -128,17 +128,17 @@ func _test_model_props_2() -> void:
 	var again := playlot.rescan_props()
 	_check(again.is_empty(), "a second scan adds nothing twice")
 
-	_check(DotPropFolder.sanitize_id("Bad Id!") == "bad_id", "sanitised ids are lower-case words")
-	_check(DotPropFolder.sanitize_id("../../x") == "x", "and carry no path")
+	_check(GSPropFolder.sanitize_id("Bad Id!") == "bad_id", "sanitised ids are lower-case words")
+	_check(GSPropFolder.sanitize_id("../../x") == "x", "and carry no path")
 	_check(not _mp_catalogue.has(&"res://assets/props/food/apple.glb"), "a path is not an id")
 
-	playlot.props.clear_all(DotPropSpawner.REASON_ADMIN)
+	playlot.props.clear_all(GSPropSpawner.REASON_ADMIN)
 	_done()
 
 
 ## Every prop this build ships is one scene, and the definition is what differs.
 ##
-## The mass column matters: `DotPropDef.mass` is read only by a physics gun's `grab_mass_limit`, so unless the spawner puts it on the body a 900 kg catalogue entry on a 20 kg scene is punted like a beach ball and nothing errors.
+## The mass column matters: `GSPropDef.mass` is read only by a physics gun's `grab_mass_limit`, so unless the spawner puts it on the body a 900 kg catalogue entry on a 20 kg scene is punted like a beach ball and nothing errors.
 func _test_props_are_built_from_their_definitions() -> void:
 	_section("props built from their definitions")
 
@@ -228,16 +228,16 @@ func _test_props_are_built_from_their_definitions_2() -> void:
 	_check(catalogue.problems().is_empty(), "and nothing is wrong with it",
 		"; ".join(catalogue.problems()))
 
-	playlot.props.clear_all(DotPropSpawner.REASON_ADMIN)
+	playlot.props.clear_all(GSPropSpawner.REASON_ADMIN)
 	_done()
 
 
 ## Clears the sandbox and puts the bot somewhere out of everybody's way.
 func _sandbox_floor() -> void:
-	var loaded: DotResult = await playlot.change_map(&"pg_flatgrass")
+	var loaded: GSResult = await playlot.change_map(&"pg_flatgrass")
 	_check(loaded.ok, "the sandbox loads")
 	playlot.props.limits.spawn_interval = 0.0
-	playlot.props.clear_all(DotPropSpawner.REASON_ADMIN)
+	playlot.props.clear_all(GSPropSpawner.REASON_ADMIN)
 	var bot: PlaylotPlayer = playlot.players.get(&"bot")
 	if bot != null:
 		bot.teleport(Vector3(-60.0, 1.0, -60.0), 0.0)
@@ -303,14 +303,14 @@ func _test_limits_per_kind() -> void:
 	limits.defaults = PlaylotLimits.DEFAULTS.duplicate()
 	limits.apply_to(playlot.props.limits)
 	playlot.props.limits.per_player_budget = budget_was
-	playlot.props.clear_all(DotPropSpawner.REASON_ADMIN)
+	playlot.props.clear_all(GSPropSpawner.REASON_ADMIN)
 	_done()
 
 
 ## Points the tool gun at [param body] from three metres away and presses [param button].
 ##
 ## After a physics step, not in the same frame as the last press: a resize rebuilds the collision shape and queries do not see it until the server steps, and no player clicks twice inside one step.
-func _tool_at(gun: Object, body: Node3D, button: StringName) -> DotResult:
+func _tool_at(gun: Object, body: Node3D, button: StringName) -> GSResult:
 	await get_tree().physics_frame
 	var space := body.get_world_3d().direct_space_state
 	var origin := body.global_position + Vector3(0.0, 0.2, 3.0)
@@ -320,7 +320,7 @@ func _tool_at(gun: Object, body: Node3D, button: StringName) -> DotResult:
 
 var _ttg_gun: WeaponScript
 var _ttg_body: RigidBody3D
-var _ttg_other: DotPropInstance
+var _ttg_other: GSPropInstance
 var _ttg_other_body: RigidBody3D
 
 func _test_the_tool_gun() -> void:
@@ -385,9 +385,9 @@ func _test_the_tool_gun() -> void:
 	# Weld
 	_ttg_other_body = _ttg_other.node as RigidBody3D
 	var _w: Variant = _ttg_gun.call("set_mode", &"weld", {})
-	var first: DotResult = await _tool_at(_ttg_gun, _ttg_body, &"primary")
+	var first: GSResult = await _tool_at(_ttg_gun, _ttg_body, &"primary")
 	_check(first.ok and str(first.value) == "first", "a weld takes a first prop")
-	var made: DotResult = await _tool_at(_ttg_gun, _ttg_other_body, &"primary")
+	var made: GSResult = await _tool_at(_ttg_gun, _ttg_other_body, &"primary")
 	_check(made.ok and playlot.constraints.size() == 1, "and a second, and they are welded")
 	_check(made.ok and is_instance_valid(made.value.joint) and made.value.joint is Generic6DOFJoint3D,
 		"by a real joint the physics enforces")
@@ -402,7 +402,7 @@ func _test_the_tool_gun_2() -> void:
 	# The constraint limit
 	playlot.spawn_limits.defaults[PlaylotLimits.CONSTRAINTS] = 1
 	var _w1 := await _tool_at(_ttg_gun, _ttg_body, &"secondary")
-	var refused: DotResult = await _tool_at(_ttg_gun, _ttg_other_body, &"secondary")
+	var refused: GSResult = await _tool_at(_ttg_gun, _ttg_other_body, &"secondary")
 	_check(not refused.ok and refused.error.message.contains("constraints"),
 		"welds, ropes and no-collides have their own limit",
 		refused.error.message if not refused.ok else "allowed")
@@ -427,7 +427,7 @@ func _test_the_tool_gun_2() -> void:
 	anchor_body.freeze = true
 	var _r: Variant = _ttg_gun.call("set_mode", &"rope", {"slack": 1.0})
 	var _r1 := await _tool_at(_ttg_gun, anchor_body, &"primary")
-	var roped: DotResult = await _tool_at(_ttg_gun, hanging_body, &"primary")
+	var roped: GSResult = await _tool_at(_ttg_gun, hanging_body, &"primary")
 	_check(roped.ok, "a rope ties two props")
 	var length: float = roped.value.length if roped.ok else 0.0
 	for i in 180:
@@ -444,7 +444,7 @@ func _test_the_tool_gun_2() -> void:
 	var lifted_body := lifted.node as RigidBody3D
 	var start_y := lifted_body.global_position.y
 	var _b: Variant = _ttg_gun.call("set_mode", &"balloon", {"lift": 3000.0, "length": 2.0})
-	var tied: DotResult = await _tool_at(_ttg_gun, lifted_body, &"primary")
+	var tied: GSResult = await _tool_at(_ttg_gun, lifted_body, &"primary")
 	_check(tied.ok, "a balloon is tied on")
 	_check(playlot.props.group_count(&"bot", &"balloons") == 1,
 		"counted as a balloon, not as a prop")
@@ -470,7 +470,7 @@ func _test_the_tool_gun_3() -> void:
 	var was := playlot.config.touch_others_props
 	playlot.config.touch_others_props = false
 	var _rs: Variant = _ttg_gun.call("set_mode", &"resize", {})
-	var not_mine: DotResult = await _tool_at(_ttg_gun, theirs.node as Node3D, &"primary")
+	var not_mine: GSResult = await _tool_at(_ttg_gun, theirs.node as Node3D, &"primary")
 	_check(not not_mine.ok and not_mine.error.message.contains("not yours"),
 		"and on a server that says so, it cannot touch somebody else's")
 	playlot.config.touch_others_props = was
@@ -480,11 +480,11 @@ func _test_the_tool_gun_3() -> void:
 	var _w2 := await _tool_at(_ttg_gun, _ttg_body, &"primary")
 	var _w3 := await _tool_at(_ttg_gun, _ttg_other_body, &"primary")
 	var _rmv: Variant = _ttg_gun.call("set_mode", &"remover", {})
-	var gone: DotResult = await _tool_at(_ttg_gun, _ttg_body, &"secondary")
+	var gone: GSResult = await _tool_at(_ttg_gun, _ttg_body, &"secondary")
 	_check(gone.ok and int(gone.value) == 2, "right click with the remover takes a whole contraption",
 		str(gone.value) if gone.ok else gone.error.message)
 
-	playlot.props.clear_all(DotPropSpawner.REASON_ADMIN)
+	playlot.props.clear_all(GSPropSpawner.REASON_ADMIN)
 	_check(playlot.constraints.size() == 0, "and every constraint goes with its props")
 	_done()
 
@@ -492,13 +492,13 @@ func _test_the_tool_gun_3() -> void:
 ## The tool gun's edit mode: click a prop, and the settings ARE that prop.
 var _easp_gun: WeaponScript
 var _easp_mode: Object
-var _easp_crate: DotPropInstance
-var _easp_other: DotPropInstance
+var _easp_crate: GSPropInstance
+var _easp_other: GSPropInstance
 var _easp_body: RigidBody3D
 var _easp_other_body: RigidBody3D
 var _easp_only_colour: Dictionary
 var _easp_grow: Dictionary
-var _easp_doomed: DotPropInstance
+var _easp_doomed: GSPropInstance
 
 func _test_editing_a_selected_prop() -> void:
 	_section("editing a selected prop with the tool gun")
@@ -526,7 +526,7 @@ func _test_editing_a_selected_prop() -> void:
 	await get_tree().physics_frame
 
 	# Selecting reads the prop
-	var picked: DotResult = await _tool_at(_easp_gun, _easp_body, &"primary")
+	var picked: GSResult = await _tool_at(_easp_gun, _easp_body, &"primary")
 	var report: Dictionary = picked.value if picked.ok and picked.value is Dictionary else {}
 	_check(report.get("node") == _easp_body, "left click selects the prop under the crosshair")
 	var read: Dictionary = report.get("settings", {})
@@ -558,7 +558,7 @@ func _test_editing_a_selected_prop() -> void:
 		"and nothing else")
 
 	# The second prop's settings are its own, not the first's
-	var second: DotResult = await _tool_at(_easp_gun, _easp_other_body, &"primary")
+	var second: GSResult = await _tool_at(_easp_gun, _easp_other_body, &"primary")
 	var second_read: Dictionary = (second.value as Dictionary).get("settings", {}) if second.ok else {}
 	_check(is_equal_approx(float(second_read.get("size", 0.0)), 1.0) and bool(second_read.get("gravity", false)),
 		"selecting a second prop reads ITS properties, not the last one's", str(second_read))
@@ -585,7 +585,7 @@ func _test_editing_a_selected_prop_2() -> void:
 	freeze["frozen"] = true
 	var _f: Variant = _easp_gun.call("set_mode", &"edit", freeze)
 	_check(_easp_other.frozen and _easp_other_body.freeze, "it freezes the prop")
-	var reselect: DotResult = await _tool_at(_easp_gun, _easp_body, &"primary")
+	var reselect: GSResult = await _tool_at(_easp_gun, _easp_body, &"primary")
 	var was_frozen_cap := playlot.props.limits.per_player_frozen
 	playlot.props.limits.per_player_frozen = 1
 	var freeze_first := ((reselect.value as Dictionary).get("settings", {}) as Dictionary).duplicate()
@@ -599,22 +599,22 @@ func _test_editing_a_selected_prop_2() -> void:
 	playlot.props.limits.per_player_frozen = was_frozen_cap
 
 	# Reload puts it back
-	var _back: DotResult = await _tool_at(_easp_gun, _easp_body, &"reload")
+	var _back: GSResult = await _tool_at(_easp_gun, _easp_body, &"reload")
 	_check(is_equal_approx(float(_easp_body.get("size_scale")), 1.0) and (_easp_body.get("tint") as Color).a == 0.0
 		and _easp_body.gravity_scale == 1.0 and is_equal_approx(_easp_body.mass, _easp_crate.def.mass),
 		"reload puts size, paint, gravity and weight back to the catalogue's", "%.1f kg" % _easp_body.mass)
-	var re_other: DotResult = await _tool_at(_easp_gun, _easp_other_body, &"reload")
+	var re_other: GSResult = await _tool_at(_easp_gun, _easp_other_body, &"reload")
 	_check(re_other.ok and _easp_other.frozen, "and leaves a frozen prop frozen")
 
 	# Letting go
-	var gone: DotResult = await _tool_at(_easp_gun, _easp_body, &"secondary")
+	var gone: GSResult = await _tool_at(_easp_gun, _easp_body, &"secondary")
 	_check(gone.ok and (gone.value as Dictionary).get("node") == null, "right click lets go of it")
 	var after := (_easp_mode.get("settings") as Dictionary).duplicate()
 	after["size"] = 3.0
 	var _a: Variant = _easp_gun.call("set_mode", &"edit", after)
 	_check(is_equal_approx(float(_easp_body.get("size_scale")), 1.0), "and a change with nothing selected changes nothing")
 
-	var _p: DotResult = await _tool_at(_easp_gun, _easp_body, &"primary")
+	var _p: GSResult = await _tool_at(_easp_gun, _easp_body, &"primary")
 	var _sw: Variant = _easp_gun.call("set_mode", &"resize", {})
 	var stale := after.duplicate()
 	var _e: Variant = _easp_gun.call("set_mode", &"edit", stale)
@@ -626,7 +626,7 @@ func _test_editing_a_selected_prop_2() -> void:
 	await get_tree().physics_frame
 	var was_touch := playlot.config.touch_others_props
 	playlot.config.touch_others_props = true
-	var theirs_pick: DotResult = await _tool_at(_easp_gun, theirs.node as Node3D, &"primary")
+	var theirs_pick: GSResult = await _tool_at(_easp_gun, theirs.node as Node3D, &"primary")
 	_check(theirs_pick.ok, "on a server that allows it, somebody else's prop can be selected")
 	playlot.config.touch_others_props = false
 	_easp_grow = ((theirs_pick.value as Dictionary).get("settings", {}) as Dictionary).duplicate() if theirs_pick.ok else {}
@@ -643,7 +643,7 @@ func _test_editing_a_selected_prop_2() -> void:
 	await get_tree().physics_frame
 
 func _test_editing_a_selected_prop_3() -> void:
-	var _d: DotResult = await _tool_at(_easp_gun, _easp_doomed.node as Node3D, &"primary")
+	var _d: GSResult = await _tool_at(_easp_gun, _easp_doomed.node as Node3D, &"primary")
 	var _rm := playlot.props.remove(_easp_doomed.instance_id)
 	await get_tree().physics_frame
 	var _x: Variant = _easp_gun.call("set_mode", &"edit", _easp_grow)
@@ -652,18 +652,18 @@ func _test_editing_a_selected_prop_3() -> void:
 
 	# The wire
 	var bytes := PlaylotEvents.write_selection(42, "Wooden crate", {"size": 2.0, "frozen": true}, "")
-	var back := PlaylotEvents.read_selection(DotNetReader.new(bytes))
+	var back := PlaylotEvents.read_selection(GSNetReader.new(bytes))
 	_check(bool(back["ok"]) and int(back["net_id"]) == 42 and str(back["name"]) == "Wooden crate"
 		and is_equal_approx(float((back["settings"] as Dictionary)["size"]), 2.0) and bool((back["settings"] as Dictionary)["frozen"]),
 		"a selection survives the wire", str(back))
 
-	playlot.props.clear_all(DotPropSpawner.REASON_ADMIN)
+	playlot.props.clear_all(GSPropSpawner.REASON_ADMIN)
 	_done()
 
 
 ## A tool gun press at the ground under (x, z), from above: the waypoint and spawner tools
 ## work on a point in the world, not on a prop.
-func _tool_at_ground(gun: Object, x: float, z: float, button: StringName) -> DotResult:
+func _tool_at_ground(gun: Object, x: float, z: float, button: StringName) -> GSResult:
 	await get_tree().physics_frame
 	var space := playlot.world.get_world_3d().direct_space_state
 	return gun.call(button, space, Vector3(x, 4.0, z), Vector3.DOWN)

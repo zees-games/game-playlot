@@ -10,24 +10,24 @@ const PlaylotMapSources := preload("client/playlot_map_sources.gd")
 
 ## The maps this build ships; a server with delivered maps loads a JSON catalogue. An instance method that forwards, and a static
 ## one beside it because the server browser needs the list without a game: a copy written into the menu went stale four times.
-func _map_catalogue() -> DotMapCatalogue:
+func _map_catalogue() -> GSMapCatalogue:
 	return map_catalogue()
 
 
-static func map_catalogue() -> DotMapCatalogue:
-	var catalogue := DotMapCatalogue.new()
+static func map_catalogue() -> GSMapCatalogue:
+	var catalogue := GSMapCatalogue.new()
 
 	var table := [
 		# The base: a big flat plate of grass, and the default everywhere.
-		[&"pg_flatgrass", "Flatgrass", DotMapDef.KIND_SANDBOX, 1],
+		[&"pg_flatgrass", "Flatgrass", GSMapDef.KIND_SANDBOX, 1],
 		# The one map in this family that is not written down. A sandbox's content is
 		# what the players build in it, so "somewhere new" is worth more here than
 		# "somewhere good".
-		[&"pg_generated", "Playlot: Generated", DotMapDef.KIND_SANDBOX, 1],
+		[&"pg_generated", "Playlot: Generated", GSMapDef.KIND_SANDBOX, 1],
 	]
 
 	for row in table:
-		var map := DotMapDef.new()
+		var map := GSMapDef.new()
 		map.id = row[0]
 		map.display_name = row[1]
 		map.kind = row[2]
@@ -50,7 +50,7 @@ static func map_catalogue() -> DotMapCatalogue:
 ## map pack of a "Play map" link), from the host it publishes as `dot_solo`. Looked up by name and duck-typed: a delivered game
 ## may not name a host's class. Empty everywhere else (a server, a networked client, a run from the repository, a suite).
 static func solo_map_dirs(subdir: String) -> PackedStringArray:
-	var host: Object = DotRegistry.get_service(SOLO_SERVICE)
+	var host: Object = GSRegistry.get_service(SOLO_SERVICE)
 	if host == null or not host.has_method(&"map_dirs"):
 		return PackedStringArray()
 	return host.call(&"map_dirs", subdir)
@@ -60,7 +60,7 @@ static func solo_map_dirs(subdir: String) -> PackedStringArray:
 ## older shell without `start_map`, or none asked. The first map is [member PlaylotConfig.initial_map] unless this names one
 ## the catalogue has.
 static func solo_start_map() -> StringName:
-	var host: Object = DotRegistry.get_service(SOLO_SERVICE)
+	var host: Object = GSRegistry.get_service(SOLO_SERVICE)
 	if host == null or not (&"start_map" in host):
 		return &""
 	return StringName(str(host.get(&"start_map")))
@@ -69,7 +69,7 @@ static func solo_start_map() -> StringName:
 ## Adds every map document (`*.json`) in [param dir] to [param catalogue], each built by [constant DATA_MAP_SCENE] with its path in
 ## `meta.doc` and the Source map it was converted from, if any, in `meta.source_map`. An unreadable document is left out with a WARN; an existing id is kept, so a delivered map never replaces a
 ## built-in one. Returns how many were added.
-static func add_map_docs(catalogue: DotMapCatalogue, dir: String) -> int:
+static func add_map_docs(catalogue: GSMapCatalogue, dir: String) -> int:
 	if not DirAccess.dir_exists_absolute(dir):
 		return 0
 	var added := 0
@@ -79,18 +79,18 @@ static func add_map_docs(catalogue: DotMapCatalogue, dir: String) -> int:
 		if not file.ends_with(".json"):
 			continue
 		var path := dir.path_join(file)
-		var read: DotResult = _data_map_script().read_doc(path)
+		var read: GSResult = _data_map_script().read_doc(path)
 		if not read.ok:
-			DotLog.warn(CHANNEL, "a map document was left out", {"path": path, "why": read.error.message})
+			GSLog.warn(CHANNEL, "a map document was left out", {"path": path, "why": read.error.message})
 			continue
 		var doc: Dictionary = read.value
 		var id := StringName(str(doc["id"]))
 		if catalogue.get_map(id) != null:
 			continue
-		var map := DotMapDef.new()
+		var map := GSMapDef.new()
 		map.id = id
 		map.display_name = str(doc.get("name", String(id)))
-		map.kind = StringName(str(doc.get("map_kind", DotMapDef.KIND_SANDBOX)))
+		map.kind = StringName(str(doc.get("map_kind", GSMapDef.KIND_SANDBOX)))
 		map.tier = int(doc.get("tier", 1))
 		map.author = str(doc.get("author", ""))
 		map.scene_path = PlaylotPaths.rebase(DATA_MAP_SCENE)

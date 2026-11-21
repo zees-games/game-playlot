@@ -4,8 +4,8 @@ extends RefCounted
 ## and bounce on it, how a player moves on it, and whether it is a liquid you are IN.
 ##
 ## [b]The numbers are dot-physics' standard table, read once.[/b] Friction, bounce and
-## density go to the solver from `DotPhysicsSurface`; the player's movement comes from the
-## same entry through dot-player-controller's `DotFpsSurface.from_physics`, so ice is one
+## density go to the solver from `GSPhysicsSurface`; the player's movement comes from the
+## same entry through dot-player-controller's `GSFpsSurface.from_physics`, so ice is one
 ## number for a crate and for a person. The only thing this file adds is the LOOK, which is
 ## this game's (a colour over the prototype grid, lit by the map's sun).
 ##
@@ -41,21 +41,21 @@ const LOOKS := {
 	"foliage": Color(0.25, 0.50, 0.20, 0.80),
 }
 
-static var _physics: DotPhysicsSurfaceSet = null
-static var _player: DotFpsSurfaceSet = null
+static var _physics: GSPhysicsSurfaceSet = null
+static var _player: GSFpsSurfaceSet = null
 
 
 ## dot-physics' standard surfaces, built once.
-static func physics() -> DotPhysicsSurfaceSet:
+static func physics() -> GSPhysicsSurfaceSet:
 	if _physics == null:
-		_physics = DotPhysicsSurfaceSet.standard()
+		_physics = GSPhysicsSurfaceSet.standard()
 	return _physics
 
 
 ## The same table as a player's movement surfaces, for every player's controller.
-static func player_surfaces() -> DotFpsSurfaceSet:
+static func player_surfaces() -> GSFpsSurfaceSet:
 	if _player == null:
-		_player = DotFpsSurfaceSet.from_physics(physics())
+		_player = GSFpsSurfaceSet.from_physics(physics())
 	return _player
 
 
@@ -63,7 +63,7 @@ static func is_known(id: String) -> bool:
 	return physics().has(StringName(id))
 
 
-static func surface(id: String) -> DotPhysicsSurface:
+static func surface(id: String) -> GSPhysicsSurface:
 	return physics().find(StringName(id))
 
 

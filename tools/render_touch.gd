@@ -17,7 +17,7 @@ var _client: PlaylotClient = null
 
 
 func _ready() -> void:
-	DotPlatform.touch_override = 1
+	GSPlatform.touch_override = 1
 	PlaylotPresentation.use_scratch_settings("render_touch")
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUT_DIR))
 	_client = PlaylotClient.new()

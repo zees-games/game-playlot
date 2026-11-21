@@ -38,11 +38,11 @@ static func adopt(path: String, former: String) -> String:
 		return path
 	var err := _copy(former, path)
 	if err != OK:
-		DotLog.error(CHANNEL, "could not copy a file from its former path, reading the former one", {
+		GSLog.error(CHANNEL, "could not copy a file from its former path, reading the former one", {
 			"from": former, "to": path, "error": error_string(err),
 		})
 		return former
-	DotLog.info(CHANNEL, "adopted a file from its former path", {"from": former, "to": path})
+	GSLog.info(CHANNEL, "adopted a file from its former path", {"from": former, "to": path})
 	return path
 
 

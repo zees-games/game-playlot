@@ -32,7 +32,7 @@ var seed_value: int = 0
 var seed_source: Object = null
 
 ## The document that was generated, for a console command and for the suite.
-var document: DotProcGenDoc = null
+var document: GSProcGenDoc = null
 
 ## Where the generator put things worth putting a prop on.
 var prop_points: Array[Vector3] = []
@@ -81,7 +81,7 @@ func _build() -> void:
 		# Refused rather than half-built. A partially generated sandbox is a room with no
 		# way out, which is worse than an empty plate -- and the plate is what a player
 		# gets, with the reason said out loud.
-		DotLog.warn(
+		GSLog.warn(
 			"playlot.map",
 			"the sandbox could not be generated; falling back to a plain plate",
 			{"why": res.error.message}
@@ -89,13 +89,13 @@ func _build() -> void:
 		_plain_plate()
 		return
 
-	document = res.value as DotProcGenDoc
+	document = res.value as GSProcGenDoc
 	var built := PlaylotWorldGen.build(self, document)
 
 	fallback_spawn = built["spawn"]
 	prop_points.assign(built["props"])
 
-	DotLog.info("playlot.map", "pg_generated", {
+	GSLog.info("playlot.map", "pg_generated", {
 		"what": PlaylotWorldGen.describe(document),
 		"walls": int(built["walls"]),
 		"props": prop_points.size(),

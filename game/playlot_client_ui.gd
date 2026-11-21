@@ -62,7 +62,7 @@ func _sync_hud() -> void:
 ## spawn-menu key fed the same press and release, so hold-to-open and tap-to-pin are the keyboard's own; the
 ## tool arrows step the weapon wheel's actions, TAB holds the scoreboard and CHAT opens the chat box.
 func _build_touch() -> void:
-	if not DotPlatform.has_touch() or hud == null or active_sampler() == null:
+	if not GSPlatform.has_touch() or hud == null or active_sampler() == null:
 		return
 	_touch = PlaylotTouch.build(hud, active_sampler(), playlot.mobile_rules, {
 		PlaylotTouch.FIRE: func(down: bool) -> void:
@@ -88,12 +88,12 @@ func _build_touch() -> void:
 				else:
 					game_menu.scoreboard.close(),
 		PlaylotTouch.CHAT: func(down: bool) -> void:
-			var window: DotChatWindow = presentation.chat_window if presentation != null else null
+			var window: GSChatWindow = presentation.chat_window if presentation != null else null
 			if down and window != null and not _menu_is_open():
 				window.open(),
 	})
-	var built: DotTouchButtons = _touch.buttons
-	if DotPlatform.has_touch() and built != null and platform != null and platform.has_method(&"fit_touch_buttons"):
+	var built: GSTouchButtons = _touch.buttons
+	if GSPlatform.has_touch() and built != null and platform != null and platform.has_method(&"fit_touch_buttons"):
 		var _scale: Variant = platform.call(&"fit_touch_buttons", built, PlaylotTouch.layout())
 
 
@@ -119,8 +119,8 @@ func _on_screen_touch(event: InputEvent) -> void:
 	if _menu_is_open() or (_touch != null and _touch.takes(event)):
 		return
 	var sampler := active_sampler()
-	if sampler is DotFpsTouchSampler:
-		(sampler as DotFpsTouchSampler).set_screen_width(get_viewport().get_visible_rect().size.x)
+	if sampler is GSFpsTouchSampler:
+		(sampler as GSFpsTouchSampler).set_screen_width(get_viewport().get_visible_rect().size.x)
 	if sampler != null:
 		sampler.handle_event(event)
 
@@ -140,7 +140,7 @@ func _on_mouse_motion(event: InputEventMouseMotion) -> void:
 
 	if _rotating and _holding:
 		# Turning the prop instead of the view, which is what makes the physics gun
-		# a building tool. `DotPhysGun` stores the orientation relative to the view,
+		# a building tool. `GSPhysGun` stores the orientation relative to the view,
 		# so this composes with looking around rather than fighting it.
 		player.phys_gun.rotate_held(-event.relative.x * 0.4, -event.relative.y * 0.4)
 		return
@@ -252,10 +252,10 @@ func _tool_mode_name() -> String:
 
 
 func _primary_up() -> void:
-	_zee_buttons &= ~DotFpsCommand.BUTTON_USER_0
+	_zee_buttons &= ~GSFpsCommand.BUTTON_USER_0
 
 	if bridge != null:
-		_net_buttons &= ~DotFpsCommand.BUTTON_USER_0
+		_net_buttons &= ~GSFpsCommand.BUTTON_USER_0
 		return
 
 	if tool == TOOL_PHYS and _holding:
@@ -264,10 +264,10 @@ func _primary_up() -> void:
 
 
 func _secondary_up() -> void:
-	_zee_buttons &= ~DotFpsCommand.BUTTON_USER_1
+	_zee_buttons &= ~GSFpsCommand.BUTTON_USER_1
 
 	if bridge != null:
-		_net_buttons &= ~DotFpsCommand.BUTTON_USER_1
+		_net_buttons &= ~GSFpsCommand.BUTTON_USER_1
 		return
 
 	if tool == TOOL_GRAV and _pulling:
@@ -286,7 +286,7 @@ func _present_splashes() -> void:
 	var bodies: Array[Node3D] = []
 	for id in playlot.players:
 		bodies.append(playlot.players[id] as Node3D)
-	for prop: DotPropInstance in playlot.props.all_props():
+	for prop: GSPropInstance in playlot.props.all_props():
 		if prop.node is Node3D:
 			bodies.append(prop.node as Node3D)
 	if bridge != null:
@@ -400,7 +400,7 @@ func _clear_selection_box() -> void:
 	_selection_box = null
 
 
-func _report(result: DotResult) -> void:
+func _report(result: GSResult) -> void:
 	# The edit mode answers a click with what it selected. Offline that is the prop's own
 	# node; connected the same report arrives as a SELECTION event instead.
 	if result.ok and result.value is Dictionary and (result.value as Dictionary).has("settings"):
@@ -431,7 +431,7 @@ func _grab() -> void:
 
 
 func _punt() -> void:
-	var punted: DotPropInstance = player.grav_gun.punt(
+	var punted: GSPropInstance = player.grav_gun.punt(
 		_space(), player.eye_position(), player.aim_direction(),
 		playlot.may_touch_others()
 	)
@@ -468,7 +468,7 @@ func _present_tool_beam(eye: Vector3, forward: Vector3) -> void:
 	if not _holding or tool != TOOL_PHYS or player == null or presentation == null:
 		return
 
-	var held: DotPropInstance = player.phys_gun.held
+	var held: GSPropInstance = player.phys_gun.held
 	var body := held.node as Node3D if held != null else null
 	if body != null and body.is_inside_tree():
 		presentation.on_tool_beam(eye, forward, body.global_position)
@@ -512,13 +512,13 @@ func _on_prop_chosen(prop_id: StringName) -> void:
 func _on_trail_chosen(trail_id: String) -> void:
 	var worn := wear_trail(trail_id)
 	if not worn.ok:
-		DotLog.warn(CHANNEL, "the trail could not be worn", {"trail": trail_id, "why": worn.error.message})
+		GSLog.warn(CHANNEL, "the trail could not be worn", {"trail": trail_id, "why": worn.error.message})
 
 
 ## Puts a subscribed pack's trail on the local player; "off" takes it off.
-func wear_trail(trail_id: String) -> DotResult:
+func wear_trail(trail_id: String) -> GSResult:
 	if playlot == null or playlot.workshop == null:
-		return DotResult.fail(DotError.CODE_STATE, "pack trails are offered in solo play only")
+		return GSResult.fail(GSError.CODE_STATE, "pack trails are offered in solo play only")
 	return playlot.workshop.trails.equip(player, trail_id)
 
 
@@ -579,7 +579,7 @@ func _on_addon_item_chosen(key: String) -> void:
 		bridge.ask_addon_item(key, at)
 	else:
 		var started := playlot.activate_addon_item(key, 0, at, player_id)
-		DotLog.result(CHANNEL, "starting an addon item", started)
+		GSLog.result(CHANNEL, "starting an addon item", started)
 
 
 func _on_build_chosen(build_name: String) -> void:
@@ -610,7 +610,7 @@ func _on_menu_action(action: StringName) -> void:
 				return
 
 			var removed := playlot.props.clear_player(
-				player_id, DotPropSpawner.REASON_PLAYER
+				player_id, GSPropSpawner.REASON_PLAYER
 			)
 
 			if hud != null:
@@ -640,7 +640,7 @@ func _unfreeze_all() -> void:
 		if not prop.frozen:
 			continue
 
-		DotPhysGun.set_frozen(prop, false)
+		GSPhysGun.set_frozen(prop, false)
 		thawed += 1
 
 	if hud != null:
@@ -727,10 +727,10 @@ func _adopt_view_camera(mode: StringName) -> void:
 ## handed the other players (they have no collider the fade's query would find while
 ## mp_solidplayers is 0).
 func _guard_rig() -> void:
-	var rig: DotTpsCameraRig = player.tps.rig if player != null and player.tps != null else null
+	var rig: GSTpsCameraRig = player.tps.rig if player != null and player.tps != null else null
 	if rig == null or rig.arm == null:
 		return
-	var layout: DotPhysicsLayout = playlot.player_stack.physics.layout \
+	var layout: GSPhysicsLayout = playlot.player_stack.physics.layout \
 		if playlot.player_stack != null and playlot.player_stack.physics != null else null
 	if layout != null:
 		rig.arm.collision_mask = layout.mask_of([&"world", &"prop"])
@@ -753,9 +753,9 @@ func _other_players() -> Array:
 ## Solo: [param id] now. A client does not change the map when connected: one client loading
 ## a different world from everybody else is not a map change, it is a client playing alone in
 ## a world nobody else is in; the server's map menu decides there.
-func change_from_menu(id: StringName) -> DotResult:
+func change_from_menu(id: StringName) -> GSResult:
 	if bridge != null:
-		return DotResult.fail(DotError.CODE_STATE, "The server changes the map.")
+		return GSResult.fail(GSError.CODE_STATE, "The server changes the map.")
 	return await playlot.change_map(id)
 
 

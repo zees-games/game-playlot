@@ -6,18 +6,18 @@ const WorkshopScript := preload("res://game/playlot_workshop.gd")
 ##
 ## The scene is a bare `RigidBody3D`; the script comes from `meta` and is loaded by PATH, because a mounted pack's `class_name` globals are not registered in the host.
 var _erts_at: Vector3
-var _erts_npc: DotPropInstance
+var _erts_npc: GSPropInstance
 var _erts_body: PlaylotEntity
 var _erts_mirrored_ent: bool
 var _erts_before_count: int
-var _erts_refused: DotPropInstance
+var _erts_refused: GSPropInstance
 
 func _test_entities_run_their_scripts() -> void:
 	_section("entities that run their own scripts")
 
 	# On the sandbox, deliberately: an NPC on the bhop map's gapped blocks falls off, and the
 	# test would measure the terrain rather than the script.
-	var loaded: DotResult = await playlot.change_map(&"pg_flatgrass")
+	var loaded: GSResult = await playlot.change_map(&"pg_flatgrass")
 	_check(loaded.ok, "the sandbox loads")
 
 	playlot.spawn_player(&"bot")
@@ -25,10 +25,10 @@ func _test_entities_run_their_scripts() -> void:
 	# Driven with an EMPTY command: `apply_command` leaves the pending command set, so the bot
 	# arrives still holding forward and jump and auto-hops away; it also needs the third of a
 	# second to fall onto the floor.
-	await _drive(&"bot", DotFpsCommand.new(), 60)
+	await _drive(&"bot", GSFpsCommand.new(), 60)
 
 	playlot.props.limits.spawn_interval = 0.0
-	playlot.props.clear_all(DotPropSpawner.REASON_ADMIN)
+	playlot.props.clear_all(GSPropSpawner.REASON_ADMIN)
 
 	_erts_at = Vector3(0.0, 1.2, 0.0)
 	_erts_npc = playlot.props.spawn(&"npc_wanderer", &"bot", _erts_at)
@@ -128,13 +128,13 @@ func _test_entities_run_their_scripts_2() -> void:
 
 	# A definition whose script is missing must not leave a body: it would sit there as a crate,
 	# indistinguishable from an NPC with nothing to do.
-	var broken := DotPropDef.make(&"npc_broken", PlaylotSpawnables.SCENE_ENTITY)
+	var broken := GSPropDef.make(&"npc_broken", PlaylotSpawnables.SCENE_ENTITY)
 	broken.meta = {"kind": "entity", "script": "res://game/entities/nope.gd"}
 	playlot.props.catalogue.add(broken)
 
 	# Both refusals below log at ERROR on purpose.
-	_erts_mirrored_ent = DotLog.mirror_to_engine
-	DotLog.mirror_to_engine = false
+	_erts_mirrored_ent = GSLog.mirror_to_engine
+	GSLog.mirror_to_engine = false
 	_erts_before_count = playlot.props.world_count()
 	_erts_refused = playlot.props.spawn(&"npc_broken", &"bot", _erts_at)
 
@@ -154,7 +154,7 @@ func _test_entities_run_their_scripts_3() -> void:
 
 	# One that points at a real script which is not an entity is the same failure by
 	# a different route, and it is the one a copy-paste actually produces.
-	var wrong := DotPropDef.make(&"npc_wrong", PlaylotSpawnables.SCENE_ENTITY)
+	var wrong := GSPropDef.make(&"npc_wrong", PlaylotSpawnables.SCENE_ENTITY)
 	wrong.meta = {"kind": "entity", "script": "res://game/playlot_config.gd"}
 	playlot.props.catalogue.add(wrong)
 
@@ -167,11 +167,11 @@ func _test_entities_run_their_scripts_3() -> void:
 		playlot.props.world_count() == _erts_before_count,
 		"and so does one whose script is not an entity"
 	)
-	DotLog.mirror_to_engine = _erts_mirrored_ent
+	GSLog.mirror_to_engine = _erts_mirrored_ent
 
 	playlot.props.catalogue.remove(&"npc_broken")
 	playlot.props.catalogue.remove(&"npc_wrong")
-	playlot.props.clear_all(DotPropSpawner.REASON_ADMIN)
+	playlot.props.clear_all(GSPropSpawner.REASON_ADMIN)
 
 	await get_tree().process_frame
 
@@ -185,8 +185,8 @@ func _test_entities_run_their_scripts_3() -> void:
 var _zw_player: PlaylotPlayer
 var _zw_eye: Vector3
 var _zw_aim: Vector3
-var _zw_crate: DotPropInstance
-var _zw_shots: Array[DotShot]
+var _zw_crate: GSPropInstance
+var _zw_shots: Array[GSShot]
 var _zw_moved: int
 var _zw_state
 
@@ -224,7 +224,7 @@ func _test_zee_weapons() -> void:
 
 	_zw_player = playlot.players[&"bot"]
 	playlot.props.limits.spawn_interval = 0.0
-	playlot.props.clear_all(DotPropSpawner.REASON_ADMIN)
+	playlot.props.clear_all(GSPropSpawner.REASON_ADMIN)
 	_zw_player.teleport(Vector3(-60.0, 1.0, -60.0), 90.0)
 	await get_tree().physics_frame
 
@@ -235,7 +235,7 @@ func _test_zee_weapons() -> void:
 	_check(rig != null and _zw_player.zee_rig == rig, "a server's rig goes on the player")
 	_check(rig != null and rig.ads_rules == playlot.ads_rules and rig.ads_move_scale() == 1.0,
 		"and takes the game's zee_ads_rules without slowing an unaimed player")
-	_check(_zw_player.component(&"DotFpsController") == _zw_player.controller,
+	_check(_zw_player.component(&"GSFpsController") == _zw_player.controller,
 		"and the player answers dot-weapon's controller lookup")
 
 	# A crate four metres along the way the player faces.
@@ -249,7 +249,7 @@ func _test_zee_weapons() -> void:
 	_zw_state = _zw_player.controller.state
 
 	for i in range(200):
-		var held := DotFpsCommand.BUTTON_USER_0 if (i / 20) % 2 == 0 else 0
+		var held := GSFpsCommand.BUTTON_USER_0 if (i / 20) % 2 == 0 else 0
 		var outcome := rig.simulate_tick(
 			PlaylotZee.command_for(held, _zw_state.yaw, _zw_state.pitch, PlaylotZee.slot_of(rig)),
 			playlot.current_tick() + i
@@ -297,7 +297,7 @@ func _test_zee_weapons_2() -> void:
 		var base := playlot.current_tick() + 1000
 		var fired := 0
 		for i in range(rate * 3):
-			var held := DotFpsCommand.BUTTON_USER_0 if i >= rate * 2 else 0
+			var held := GSFpsCommand.BUTTON_USER_0 if i >= rate * 2 else 0
 			var out := smg.simulate_tick(
 				PlaylotZee.command_for(held, _zw_state.yaw, _zw_state.pitch, PlaylotZee.slot_of(smg)),
 				base + i
@@ -319,7 +319,7 @@ func _test_zee_weapons_2() -> void:
 	PlaylotZee.disarm(_zw_player)
 	_test_shared_shot_sound()
 
-	playlot.props.clear_all(DotPropSpawner.REASON_ADMIN)
+	playlot.props.clear_all(GSPropSpawner.REASON_ADMIN)
 	_done()
 
 
@@ -343,8 +343,8 @@ func _test_shared_shot_sound() -> void:
 	var heard: Array = []
 	second.heard.connect(func(stream: AudioStream) -> void: heard.append(stream))
 	var at := Vector3(-60.0, 1.5, -60.0)
-	var played_a: bool = first.shot_sound.call(&"zee_pistol", DotWeaponOutcome.KIND_SHOT, at, false)
-	var played_b: bool = second.shot_sound.call(&"zee_rifle", DotWeaponOutcome.KIND_SHOT, at, false)
+	var played_a: bool = first.shot_sound.call(&"zee_pistol", GSWeaponOutcome.KIND_SHOT, at, false)
+	var played_b: bool = second.shot_sound.call(&"zee_rifle", GSWeaponOutcome.KIND_SHOT, at, false)
 	_check(played_a and played_b and sound.played == 2 and heard.size() == 1,
 		"two armed rigs play their shots through the client's one layered shot, and still say what was heard",
 		"%s %s, %d played, %d heard" % [played_a, played_b, sound.played, heard.size()])
@@ -357,14 +357,14 @@ func _test_shared_shot_sound() -> void:
 
 
 ## The Workshop in solo play: packs a player subscribed to land on the Q menu, only in solo.
-var _wx_index: DotContentIndex
+var _wx_index: GSContentIndex
 var _wx_own_weapons: int
 var _wx_own_props: int
 var _wx_changes: Array
 var _wx_shop: WorkshopScript
 var _wx_sidearm_def: PlaylotWeaponDef
 var _wx_menu: PlaylotSpawnMenu
-var _wx_stack: DotScreenStack
+var _wx_stack: GSScreenStack
 var _wx_player: PlaylotPlayer
 var _wx_before: int
 
@@ -374,12 +374,12 @@ func _test_workshop() -> void:
 	# The pack's files, written where a pack would be mounted: user://, which is not res://.
 	var root := "user://workshop_fixture"
 	DirAccess.make_dir_recursive_absolute(root.path_join("defs"))
-	var sidearm := PlaylotZee.catalogue().get_def(&"pistol").duplicate() as DotWeaponDef
+	var sidearm := PlaylotZee.catalogue().get_def(&"pistol").duplicate() as GSWeaponDef
 	sidearm.id = &"fixture_sidearm"
 	sidearm.display_name = "Fixture Sidearm"
-	var crate := DotPropDef.make(&"fixture_crate", "res://game/prop.tscn")
+	var crate := GSPropDef.make(&"fixture_crate", "res://game/prop.tscn")
 	crate.display_name = "Fixture Crate"
-	var npc := DotNpcDef.make(&"fixture_guard", "")
+	var npc := GSNpcDef.make(&"fixture_guard", "")
 	_check(ResourceSaver.save(sidearm, root + "/defs/sidearm.tres") == OK
 		and ResourceSaver.save(crate, root + "/defs/crate.tres") == OK
 		and ResourceSaver.save(npc, root + "/defs/guard.tres") == OK, "the fixture pack's definitions are written")
@@ -393,8 +393,8 @@ func _test_workshop() -> void:
 			{"kind": "npc", "id": "fixture_guard", "name": "Fixture Guard", "def": "defs/guard.tres", "category": "stuff"},
 		],
 	}
-	_wx_index = DotContentIndex.new()
-	_wx_index.set_session(DotContentIndex.SESSION_SOLO)
+	_wx_index = GSContentIndex.new()
+	_wx_index.set_session(GSContentIndex.SESSION_SOLO)
 	var added := _wx_index.add_pack({
 		"content_id": "tmc/fixture-pack", "version": "1.0.0", "prefix": root,
 		"session": "solo", "source": "subscription", "provides": provides,
@@ -426,7 +426,7 @@ func _test_workshop() -> void:
 	_wx_menu.weapons = playlot.weapons
 	_wx_menu.set_pack_rows(_wx_shop.rows())
 	add_child(_wx_menu)
-	_wx_stack = DotScreenStack.new()
+	_wx_stack = GSScreenStack.new()
 	add_child(_wx_stack)
 	var _ready_result := _wx_stack.setup()
 	var _registered := _wx_stack.register(_wx_menu)
@@ -462,7 +462,7 @@ func _test_workshop_2() -> void:
 	# Spawning: the prop and the npc through the spawner, the weapon through a rig that fires.
 	_wx_player = playlot.players[&"bot"]
 	playlot.props.limits.spawn_interval = 0.0
-	playlot.props.clear_all(DotPropSpawner.REASON_ADMIN)
+	playlot.props.clear_all(GSPropSpawner.REASON_ADMIN)
 	_wx_player.teleport(Vector3(-60.0, 1.0, -60.0), 90.0)
 	await get_tree().physics_frame
 	var spawned_crate := playlot.props.spawn(&"ws_fixture_crate", &"bot", _wx_player.eye_position() + _wx_player.aim_direction() * 3.0)
@@ -480,7 +480,7 @@ func _test_workshop_2() -> void:
 	var shots := 0
 	var state := _wx_player.controller.state
 	for i in range(120):
-		var held := DotFpsCommand.BUTTON_USER_0 if (i / 10) % 2 == 0 else 0
+		var held := GSFpsCommand.BUTTON_USER_0 if (i / 10) % 2 == 0 else 0
 		var outcome := rig.simulate_tick(
 			PlaylotZee.command_for(held, state.yaw, state.pitch, PlaylotZee.slot_of(rig)),
 			playlot.current_tick() + i
@@ -491,7 +491,7 @@ func _test_workshop_2() -> void:
 	_check(PlaylotZee.catalogue().has(&"fixture_sidearm") == false,
 		"without leaking into the table a server reads")
 	PlaylotZee.disarm(_wx_player)
-	playlot.props.clear_all(DotPropSpawner.REASON_ADMIN)
+	playlot.props.clear_all(GSPropSpawner.REASON_ADMIN)
 
 	# A pack mounted later arrives; a map pack lists on the map menu.
 	_wx_before = _wx_changes[0]
@@ -503,9 +503,9 @@ func _test_workshop_2() -> void:
 			{"kind": "map", "id": "ws_arena", "name": "Fixture Arena", "scene": "maps/pg_flatgrass.tscn", "map_kind": "arena"},
 		]},
 	})
-	_check(not playlot.maps.catalogue.available().filter(func(m: DotMapDef) -> bool: return m.id == &"ws_lobby").is_empty(),
+	_check(not playlot.maps.catalogue.available().filter(func(m: GSMapDef) -> bool: return m.id == &"ws_lobby").is_empty(),
 		"solo: a sandbox map pack is on the map list")
-	_check(playlot.maps.catalogue.available().filter(func(m: DotMapDef) -> bool: return m.id == &"ws_arena").is_empty(),
+	_check(playlot.maps.catalogue.available().filter(func(m: GSMapDef) -> bool: return m.id == &"ws_arena").is_empty(),
 		"and a map of a kind the game does not accept is not")
 	_check(_wx_changes[0] == _wx_before, "a pack with nothing for the menu does not redraw it")
 
@@ -514,20 +514,20 @@ func _test_workshop_3() -> void:
 	# Online: all of it is gone, from every list, and comes back with solo. The pack's tab is
 	# the open one, so the fall back to Props is what is being checked.
 	_wx_menu.show_tab(PlaylotSpawnMenu.Tab.size() as PlaylotSpawnMenu.Tab)
-	_wx_index.set_session(DotContentIndex.SESSION_ONLINE)
+	_wx_index.set_session(GSContentIndex.SESSION_ONLINE)
 	_check(playlot.weapon_def(&"ws_fixture_sidearm") == null and playlot.weapons.size() == _wx_own_weapons,
 		"online: the pack weapon is not on the menu")
 	_check(not playlot.props.catalogue.has(&"ws_fixture_crate") and not playlot.props.catalogue.has(&"ws_fixture_guard")
 		and playlot.props.catalogue.size() == _wx_own_props, "online: the pack props and npcs are gone")
 	_check(_wx_shop.rows().is_empty(), "online: no rows")
-	_check(playlot.maps.catalogue.available().filter(func(m: DotMapDef) -> bool: return m.id == &"ws_lobby").is_empty(),
+	_check(playlot.maps.catalogue.available().filter(func(m: GSMapDef) -> bool: return m.id == &"ws_lobby").is_empty(),
 		"online: the pack map is gone")
 	_wx_menu.set_pack_rows(_wx_shop.rows())
 	await get_tree().process_frame
 	_check(_wx_menu.describe()["pack_tabs"] == [] and _wx_menu.describe()["tab"] == "PROPS",
 		"online: the menu has no pack tab, and the one that was open fell back")
 	_check(_wx_changes[0] > _wx_before, "and the session change was announced")
-	_wx_index.set_session(DotContentIndex.SESSION_SOLO)
+	_wx_index.set_session(GSContentIndex.SESSION_SOLO)
 	_check(playlot.weapon_def(&"ws_fixture_sidearm") != null and playlot.props.catalogue.has(&"ws_fixture_crate"),
 		"back in solo they return")
 
@@ -608,8 +608,8 @@ func _test_workshop_trails() -> void:
 ## Weapons: a script loaded by path, held rather than spawned.
 var _w_defs: Array[PlaylotWeaponDef]
 var _w_launcher: WeaponScript
-var _w_fired: DotResult
-var _w_stuck: DotPropInstance
+var _w_fired: GSResult
+var _w_stuck: GSPropInstance
 
 func _test_weapons() -> void:
 	_section("weapons")
@@ -641,8 +641,8 @@ func _test_weapons() -> void:
 	# The two ways a catalogue entry is wrong, and neither may hand back a working-
 	# looking weapon: a base `PlaylotWeapon` whose buttons do nothing is
 	# indistinguishable from a weapon that is fine and pointed at nothing.
-	var mirrored_wpn := DotLog.mirror_to_engine
-	DotLog.mirror_to_engine = false
+	var mirrored_wpn := GSLog.mirror_to_engine
+	GSLog.mirror_to_engine = false
 	var missing := PlaylotWeaponDef.make(&"x", "X", "res://game/weapons/nope.gd")
 	_check(
 		PlaylotWeapons.make(missing) == null,
@@ -656,12 +656,12 @@ func _test_weapons() -> void:
 		PlaylotWeapons.make(not_a_weapon) == null,
 		"and so is one whose script is not a weapon"
 	)
-	DotLog.mirror_to_engine = mirrored_wpn
+	GSLog.mirror_to_engine = mirrored_wpn
 
 	# The launcher fires whatever the menu armed, which is what saves it having a
 	# second list of ammunition and a second way to choose from it.
 	playlot.props.limits.spawn_interval = 0.0
-	playlot.props.clear_all(DotPropSpawner.REASON_ADMIN)
+	playlot.props.clear_all(GSPropSpawner.REASON_ADMIN)
 
 	_w_launcher.equip(playlot, PlaylotWeapons.find(_w_defs, &"launcher"))
 	_w_launcher.wielder = &"bot"
@@ -676,7 +676,7 @@ func _test_weapons() -> void:
 func _test_weapons_2() -> void:
 
 	if _w_fired.ok:
-		var shot := _w_fired.value as DotPropInstance
+		var shot := _w_fired.value as GSPropInstance
 
 		_check(shot.def.id == &"beach_ball", "the prop the menu armed")
 		_check(
@@ -694,7 +694,7 @@ func _test_weapons_2() -> void:
 
 		_check(
 			heavy.ok and is_equal_approx(
-				(heavy.value as DotPropInstance).body().linear_velocity.length(),
+				(heavy.value as GSPropInstance).body().linear_velocity.length(),
 				shot.body().linear_velocity.length()
 			),
 			"and a 900 kg prop leaves as fast as a 2 kg one"
@@ -712,12 +712,12 @@ func _test_weapons_2() -> void:
 	# The impulse gun shoves what is near it, and leaves frozen props alone: freezing
 	# is how a builder says "this is finished", and a blast that undid it would make
 	# the two tools fight.
-	playlot.props.clear_all(DotPropSpawner.REASON_ADMIN)
+	playlot.props.clear_all(GSPropSpawner.REASON_ADMIN)
 
 	var loose := playlot.props.spawn(&"crate", &"bot", Vector3(2.0, 1.0, 0.0))
 	_w_stuck = playlot.props.spawn(&"crate", &"bot", Vector3(-2.0, 1.0, 0.0))
 
-	DotPhysGun.set_frozen(_w_stuck, true)
+	GSPhysGun.set_frozen(_w_stuck, true)
 
 	var impulse := PlaylotWeapons.make(PlaylotWeapons.find(_w_defs, &"impulse"))
 	impulse.equip(playlot, PlaylotWeapons.find(_w_defs, &"impulse"))
@@ -757,5 +757,5 @@ func _test_weapons_3() -> void:
 	_check(cleared.ok and int(cleared.value) >= 2, "the remover clears your props")
 	_check(playlot.props.player_count(&"bot") == 0, "and the budget goes with them")
 
-	playlot.props.clear_all(DotPropSpawner.REASON_ADMIN)
+	playlot.props.clear_all(GSPropSpawner.REASON_ADMIN)
 	_done()

@@ -68,7 +68,7 @@ func _entity_ready() -> void:
 	made.set("body", self)
 
 	var preset := tune_string(&"skill", "normal")
-	made.set("character", DotNpcAiCharacter.preset(preset))
+	made.set("character", GSNpcAiCharacter.preset(preset))
 	# One squad per player AND per side. Per player, so two players' armies do not share
 	# slots; per side, because a player who spawns soldiers and rebels has spawned two
 	# armies, not one — and the first version put both in one squad, so each side's
@@ -85,25 +85,25 @@ func _entity_ready() -> void:
 
 ## Puts [param id] in its hands, or empties them for an empty id. Refuses a weapon an NPC
 ## cannot use. What the tool gun's NPC-weapon mode calls.
-func arm_with(id: StringName) -> DotResult:
+func arm_with(id: StringName) -> GSResult:
 	if id == &"" or id == &"none":
 		PlaylotZee.disarm(self)
 		weapon_id = &""
-		return DotResult.success(&"")
+		return GSResult.success(&"")
 
 	var def := game.weapon_def(id) if game != null else null
 
 	if def == null or not PlaylotZee.npc_can_use(def):
-		return DotResult.fail(DotError.CODE_INVALID, "An NPC cannot use that.", String(id))
+		return GSResult.fail(GSError.CODE_INVALID, "An NPC cannot use that.", String(id))
 
 	var rig := PlaylotZee.arm(self, def, ZeeWeaponRig.Role.SERVER, true, game.tick_rate, game.current_tick(), null, game.ads_rules)
 
 	if rig == null:
-		return DotResult.fail(DotError.CODE_STATE, "That weapon could not be armed.")
+		return GSResult.fail(GSError.CODE_STATE, "That weapon could not be armed.")
 
 	weapon_id = id
 	PlaylotZee.top_up(rig)
-	return DotResult.success(id)
+	return GSResult.success(id)
 
 
 func is_armed() -> bool:
@@ -149,13 +149,13 @@ func _drive_weapon() -> void:
 	var rig := zee_rig as ZeeWeaponRig
 	var fire := bool(brain.get("wants_fire"))
 
-	var command := DotWeaponCommand.new()
+	var command := GSWeaponCommand.new()
 	# Held, then released, for a semi-automatic weapon: a trigger held down fires one shot
 	# and then nothing, which is a semi's whole definition — so a held trigger is let go
 	# every other tick. An automatic one simply fires at its own rate while held.
 	var press := fire and not (_held_trigger and not PlaylotZee.rig_is_automatic(rig))
-	command.set_button(DotWeaponCommand.BUTTON_ATTACK, press)
-	command.set_button(DotWeaponCommand.BUTTON_RELOAD, PlaylotZee.rig_magazine_empty(rig))
+	command.set_button(GSWeaponCommand.BUTTON_ATTACK, press)
+	command.set_button(GSWeaponCommand.BUTTON_RELOAD, PlaylotZee.rig_magazine_empty(rig))
 	command.slot = PlaylotZee.slot_of(rig)
 	_held_trigger = press
 
@@ -173,7 +173,7 @@ func _drive_weapon() -> void:
 	var origin := muzzle()
 	var direction := (aim - origin).normalized() if fire and aim.distance_to(origin) > 0.01 else -global_basis.z
 
-	var ctx := DotWeaponContext.new()
+	var ctx := GSWeaponContext.new()
 	ctx.tick = game.current_tick()
 	ctx.origin = origin
 	ctx.direction = direction
@@ -202,7 +202,7 @@ func take_damage(amount: float, by: StringName = &"") -> void:
 	# The shooter's hit marker and number, when the shooter is a player (the game decides).
 	# Above the middle of the body, where a number reads, rather than wherever the pellet went.
 	if game != null and is_inside_tree():
-		game.confirm_hit(by, Playlot.hit_victim_id(DotEntity.KIND_NPC, game.npc_entity_id(self)),
+		game.confirm_hit(by, Playlot.hit_victim_id(GSEntity.KIND_NPC, game.npc_entity_id(self)),
 			taken, global_position + Vector3.UP * 1.4, health <= 0.0)
 
 	if brain != null:
@@ -215,7 +215,7 @@ func take_damage(amount: float, by: StringName = &"") -> void:
 func _die(by: StringName) -> void:
 	_dead = true
 
-	DotLog.debug("playlot.npc", "an armed NPC died", {
+	GSLog.debug("playlot.npc", "an armed NPC died", {
 		"npc": String(def.id) if def != null else "?", "by": String(by),
 	})
 

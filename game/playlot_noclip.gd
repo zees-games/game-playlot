@@ -22,5 +22,5 @@ func _sync_noclip_permits() -> void:
 		if body == null or body.controller == null:
 			continue
 		var want := may_noclip(id)
-		if DotFpsAdminModifiers.has_noclip_permit(body.controller) != want:
-			DotFpsAdminModifiers.set_noclip_permit(body.controller, want)
+		if GSFpsAdminModifiers.has_noclip_permit(body.controller) != want:
+			GSFpsAdminModifiers.set_noclip_permit(body.controller, want)

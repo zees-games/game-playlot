@@ -42,14 +42,14 @@ func schema() -> Array[Dictionary]:
 	]
 
 
-func primary(gun: Object, hit: Dictionary) -> DotResult:
+func primary(gun: Object, hit: Dictionary) -> GSResult:
 	var edit: Variant = _editor(gun)
 
-	if edit is DotResult:
+	if edit is GSResult:
 		return edit
 
 	if not hit.has("point"):
-		return DotResult.fail(DotError.CODE_STATE, "Point at the ground.")
+		return GSResult.fail(GSError.CODE_STATE, "Point at the ground.")
 
 	var ctx := _ctx(gun, hit)
 
@@ -67,14 +67,14 @@ func primary(gun: Object, hit: Dictionary) -> DotResult:
 	return _run(edit, "spawn_add", ctx)
 
 
-func secondary(gun: Object, hit: Dictionary) -> DotResult:
+func secondary(gun: Object, hit: Dictionary) -> GSResult:
 	var edit: Variant = _editor(gun)
 
-	if edit is DotResult:
+	if edit is GSResult:
 		return edit
 
 	if not hit.has("point"):
-		return DotResult.fail(DotError.CODE_STATE, "Point at a spawn point.")
+		return GSResult.fail(GSError.CODE_STATE, "Point at a spawn point.")
 
 	var nearest := ""
 	var best := REACH_REMOVE
@@ -88,17 +88,17 @@ func secondary(gun: Object, hit: Dictionary) -> DotResult:
 			nearest = str(p.get("id"))
 
 	if nearest == "":
-		return DotResult.fail(DotError.CODE_STATE, "No spawn point there.")
+		return GSResult.fail(GSError.CODE_STATE, "No spawn point there.")
 
 	var ctx := _ctx(gun, hit)
 	ctx.args = PackedStringArray([nearest])
 	return _run(edit, "spawn_remove", ctx)
 
 
-func reload(gun: Object, hit: Dictionary) -> DotResult:
+func reload(gun: Object, hit: Dictionary) -> GSResult:
 	var edit: Variant = _editor(gun)
 
-	if edit is DotResult:
+	if edit is GSResult:
 		return edit
 
 	pending = {}
@@ -110,12 +110,12 @@ func _editor(gun: Object) -> Variant:
 	var game: Variant = gun.get("game")
 
 	if game == null or game.get("map_edit") == null or (game.get("map_edit") as Object).get("points") == null:
-		return DotResult.fail(DotError.CODE_UNSUPPORTED, "This server has no map editing.")
+		return GSResult.fail(GSError.CODE_UNSUPPORTED, "This server has no map editing.")
 
 	var allowed: Callable = game.get("map_edit_allowed_fn")
 
 	if not allowed.is_valid() or not bool(allowed.call(gun.get("wielder"))):
-		return DotResult.fail(DotError.CODE_FORBIDDEN, "Map editing is for staff.")
+		return GSResult.fail(GSError.CODE_FORBIDDEN, "Map editing is for staff.")
 
 	var edit: Object = game.get("map_edit")
 
@@ -148,13 +148,13 @@ func _ctx(gun: Object, hit: Dictionary) -> Ctx:
 	return ctx
 
 
-func _run(edit: Object, role: String, ctx: Ctx) -> DotResult:
+func _run(edit: Object, role: String, ctx: Ctx) -> GSResult:
 	# Not awaited: a command that finishes in the call returns its outcome here, and one waiting on
 	# its store (a save) answers through the console like any other.
 	var outcome: Variant = edit.call("run", role, ctx)
 
-	if outcome is DotResult:
-		var done := outcome as DotResult
-		return DotResult.success(ctx.said) if done.ok else done
+	if outcome is GSResult:
+		var done := outcome as GSResult
+		return GSResult.success(ctx.said) if done.ok else done
 
-	return DotResult.success(ctx.said if ctx.said != "" else "Sent.")
+	return GSResult.success(ctx.said if ctx.said != "" else "Sent.")

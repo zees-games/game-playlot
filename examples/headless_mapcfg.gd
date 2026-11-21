@@ -1,4 +1,4 @@
-extends DotGameCheckSuite
+extends GSGameCheckSuite
 
 const PlaylotMapConfig := preload("../game/playlot_map_config.gd")
 
@@ -13,7 +13,7 @@ const SECTIONS := 1
 
 
 func _ready() -> void:
-	DotLog.set_level(DotLog.Level.ERROR)
+	GSLog.set_level(GSLog.Level.ERROR)
 	_run.call_deferred()
 
 
@@ -25,11 +25,11 @@ func _run() -> void:
 	if out != null:
 		out.store_string("pg_destruction: 1\npg_prop_surf: 0\nnot_listed: 3\n")
 		out.close()
-	var console := DotConsole.new()
+	var console := GSConsole.new()
 	add_child(console)
-	console.cvar("pg_destruction", "0", "", DotConVar.FLAG_ARCHIVE)
-	console.cvar("pg_prop_surf", "1", "", DotConVar.FLAG_ARCHIVE)
-	console.cvar("pg_other", "5", "", DotConVar.FLAG_ARCHIVE)
+	console.cvar("pg_destruction", "0", "", GSConVar.FLAG_ARCHIVE)
+	console.cvar("pg_prop_surf", "1", "", GSConVar.FLAG_ARCHIVE)
+	console.cvar("pg_other", "5", "", GSConVar.FLAG_ARCHIVE)
 	var cfg := PlaylotMapConfig.build(console)
 	_check(out != null, "the test map file was written")
 

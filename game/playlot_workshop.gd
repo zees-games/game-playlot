@@ -9,11 +9,11 @@ const PlaylotZee := preload("playlot_zee.gd")
 ## The Workshop in solo play: what a player subscribed to, offered on the Q menu.
 ##
 ## [b]One adapter, because only the weapon half has an addon behind it.[/b] dot-weapon's
-## [DotWeaponCatalogue] follows the content index itself, so weapons come from its
-## [method DotWeaponCatalogue.listings]. dot-props and dot-npc have no `follow_content` yet, so the
-## prop, npc and entity entries are read off [DotContentIndex] here and turned into the
-## [DotPropDef]s the sandbox already spawns. [b]Follow-up for the addons:[/b] when
-## [DotPropCatalogue] and [DotNpcCatalogue] grow `follow_content`, the `_prop_def` half of this file
+## [GSWeaponCatalogue] follows the content index itself, so weapons come from its
+## [method GSWeaponCatalogue.listings]. dot-props and dot-npc have no `follow_content` yet, so the
+## prop, npc and entity entries are read off [GSContentIndex] here and turned into the
+## [GSPropDef]s the sandbox already spawns. [b]Follow-up for the addons:[/b] when
+## [GSPropCatalogue] and [GSNpcCatalogue] grow `follow_content`, the `_prop_def` half of this file
 ## goes and what stays is the sandbox-specific part (an entity is a prop that runs a script).
 ##
 ## [b]Pack entries are added to the game's own lists and tagged, never kept in a second list.[/b]
@@ -24,7 +24,7 @@ const PlaylotZee := preload("playlot_zee.gd")
 ##
 ## [b]Solo only, and not because this class checks.[/b] The caller decides to follow at all: a
 ## dedicated server and a connected client never do, and the index's session tag then hides
-## everything again for a solo game that goes online ([method DotContentIndex.set_session]). Ids
+## everything again for a solo game that goes online ([method GSContentIndex.set_session]). Ids
 ## are prefixed [constant ID_PREFIX] so a pack can never replace one of the game's own.
 
 const CHANNEL := "playlot.workshop"
@@ -41,15 +41,15 @@ const FALLBACK_COLOUR := Color(0.62, 0.68, 0.78)
 ## The visible pack content changed in any way, including a session switch.
 signal changed
 
-var index: DotContentIndex = null
+var index: GSContentIndex = null
 
 ## The pack weapons, read through dot-weapon. No code weapons: the game's own stay in `weapons`.
-var weapon_catalogue: DotWeaponCatalogue = null
+var weapon_catalogue: GSWeaponCatalogue = null
 
 ## The pack trails (kind `trail`), worn rather than spawned. See [code]playlot_trails.gd[/code].
 var trails := PlaylotTrails.new()
 
-var _props: DotPropCatalogue = null
+var _props: GSPropCatalogue = null
 var _weapons: Array[PlaylotWeaponDef] = []
 var _added_props: Array[StringName] = []
 var _rows: Array[Dictionary] = []
@@ -59,13 +59,13 @@ var _signature: String = ""
 ## Follows [param p_index] (default: the shared one), filling [param p_props] and
 ## [param p_weapons] in place so whatever holds those arrays keeps the same ones.
 func follow(
-	p_index: DotContentIndex, p_props: DotPropCatalogue, p_weapons: Array[PlaylotWeaponDef]
+	p_index: GSContentIndex, p_props: GSPropCatalogue, p_weapons: Array[PlaylotWeaponDef]
 ) -> void:
 	unfollow()
-	index = p_index if p_index != null else DotContentIndex.shared()
+	index = p_index if p_index != null else GSContentIndex.shared()
 	_props = p_props
 	_weapons = p_weapons
-	weapon_catalogue = DotWeaponCatalogue.new()
+	weapon_catalogue = GSWeaponCatalogue.new()
 	weapon_catalogue.follow_content(index)
 	weapon_catalogue.listings_changed.connect(sync)
 	index.pack_added.connect(_on_index_changed)
@@ -140,7 +140,7 @@ func sync() -> void:
 				continue
 			var added := _props.add(def)
 			if not added.ok:
-				DotLog.warn(CHANNEL, "a pack row could not be catalogued", {
+				GSLog.warn(CHANNEL, "a pack row could not be catalogued", {
 					"key": entry.key, "why": added.error.message,
 				})
 				continue
@@ -161,7 +161,7 @@ func sync() -> void:
 	if sig == _signature:
 		return
 	_signature = sig
-	DotLog.debug(CHANNEL, "pack content changed", {"rows": _rows.size(), "session": String(index.session())})
+	GSLog.debug(CHANNEL, "pack content changed", {"rows": _rows.size(), "session": String(index.session())})
 	changed.emit()
 
 
@@ -194,7 +194,7 @@ func _category_names() -> Dictionary:
 ## A listing as the game's own weapon definition. A zee-shaped weapon is the one thing this game
 ## can hold besides its toys, so `meta.zee` names it for the rig, and `meta.pack_def` hands the rig
 ## the pack's definition for an id the built-in catalogue does not have ([method PlaylotZee.catalogue_for]).
-func _weapon_def(listing: DotWeaponListing) -> PlaylotWeaponDef:
+func _weapon_def(listing: GSWeaponListing) -> PlaylotWeaponDef:
 	var def := PlaylotWeaponDef.make(StringName(ID_PREFIX + String(listing.id)), listing.display_name, "")
 	def.description = listing.def.description
 	def.category = StringName(listing.category if listing.category != "" else "other")
@@ -208,8 +208,8 @@ func _weapon_def(listing: DotWeaponListing) -> PlaylotWeaponDef:
 
 ## One index entry of kind prop, npc or entity as a spawnable, or null when its shape is not one
 ## this game understands (logged at DEBUG: a newer pack on an older game is normal).
-func _prop_def(entry: DotContentEntry) -> DotPropDef:
-	var made: DotPropDef = null
+func _prop_def(entry: GSContentEntry) -> GSPropDef:
+	var made: GSPropDef = null
 	var kind := entry.kind
 	var script_path := entry.path("script")
 	var def_path := entry.path("def")
@@ -217,25 +217,25 @@ func _prop_def(entry: DotContentEntry) -> DotPropDef:
 	if def_path != "" and ResourceLoader.exists(def_path):
 		loaded = load(def_path)
 
-	if loaded is DotPropDef:
-		made = (loaded as DotPropDef).duplicate() as DotPropDef
+	if loaded is GSPropDef:
+		made = (loaded as GSPropDef).duplicate() as GSPropDef
 	elif kind == &"prop" and entry.path("scene") != "":
-		made = DotPropDef.make(StringName(entry.id), entry.path("scene"))
-	elif kind != &"prop" and (script_path != "" or loaded is DotNpcDef):
+		made = GSPropDef.make(StringName(entry.id), entry.path("scene"))
+	elif kind != &"prop" and (script_path != "" or loaded is GSNpcDef):
 		# An entity is a bare body running a script named by path; an npc def alone gets the
 		# wanderer, the one NPC script that needs no tuning.
-		made = DotPropDef.make(StringName(entry.id), PlaylotSpawnables.SCENE_ENTITY)
+		made = GSPropDef.make(StringName(entry.id), PlaylotSpawnables.SCENE_ENTITY)
 		if script_path == "":
 			script_path = PlaylotPaths.rebase("res://game/entities/npc_wanderer.gd")
 		made.meta = {"kind": "entity", "script": script_path, "shape": "box", "extent": [0.8, 1.7, 0.8]}
 		made.mass = 80.0
 		made.cost = 5
-		if loaded is DotNpcDef:
-			var npc_def := loaded as DotNpcDef
+		if loaded is GSNpcDef:
+			var npc_def := loaded as GSNpcDef
 			made.meta["sight"] = npc_def.sight_range
 			made.meta["hearing"] = npc_def.hearing_range
 	else:
-		DotLog.debug(CHANNEL, "a pack row has a shape this game does not spawn", {"key": entry.key})
+		GSLog.debug(CHANNEL, "a pack row has a shape this game does not spawn", {"key": entry.key})
 		return null
 
 	made.id = StringName(ID_PREFIX + entry.id)
