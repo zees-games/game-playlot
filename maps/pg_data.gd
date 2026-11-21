@@ -155,8 +155,7 @@ func configure_doc(path: String) -> DotResult:
 	doc = read.value
 	_doc_path = path
 	_liquids = build_into(self, doc)
-	if DisplayServer.get_name() != "headless":
-		PlaylotBoxBatch.build(self)
+	PlaylotBoxBatch.build(self)
 	if _shades_boxes():
 		add_contact_shade()
 	fallback_spawn = _vec(doc.get("spawn", [0, 1, 0]))
