@@ -34,6 +34,8 @@ func _run() -> void:
 	for i in 40:
 		boxes.append({"at": [float(i) * 2.0, 1, 0], "size": [1, 2, 1], "colour": "floor"})
 	boxes.append({"at": [200, 1, 0], "size": [1, 2, 1], "colour": "floor"})
+	boxes.append({"at": [300, 1, 0], "size": [1, 2, 1], "colour": "floor"})
+	boxes.append({"at": [400, 1, 0], "size": [1, 2, 1], "colour": "floor"})
 	boxes.append({"at": [0, 1, 5], "size": [1, 2, 1], "colour": "#ff0000"})
 	boxes.append({"at": [2, 1, 5], "size": [1, 2, 1], "colour": "#ff000040"})
 	var root := Node3D.new()
@@ -42,15 +44,15 @@ func _run() -> void:
 	var before := _visible_meshes(root)
 	var got := PlaylotBoxBatch.build(root, PlaylotBoxBatch.CELL, true)
 	var after := _visible_meshes(root)
-	_check(before == 43, "43 boxes draw 43 meshes before batching (%d)" % before)
-	_check(int(got["boxes"]) == 40, "the 40 opaque floor boxes of two cells fold (%s)" % [got])
+	_check(before == 45, "45 boxes draw 45 meshes before batching (%d)" % before)
+	_check(int(got["boxes"]) == 42, "the 40 floor boxes of two cells and the 2 lone ones of one 256 m cell fold (%s)" % [got])
 	_check(after < before / 2, "the draws fall by more than half (%d -> %d)" % [before, after])
-	_check(after == 5, "two floor cells, the far box, the lone red and the see-through one (%d)" % after)
+	_check(after == 6, "two floor cells, the coarse cell, the far box, the lone red and the see-through one (%d)" % after)
 	var bodies := 0
 	for c in root.get_children():
 		if c is StaticBody3D:
 			bodies += 1
-	_check(bodies == 43, "every box keeps its body (%d)" % bodies)
+	_check(bodies == 45, "every box keeps its body (%d)" % bodies)
 	var holder: Node = root.get_node(PlaylotBoxBatch.NODE_NAME)
 	var merged: MeshInstance3D = holder.get_child(0)
 	var box := merged.mesh.get_aabb()
