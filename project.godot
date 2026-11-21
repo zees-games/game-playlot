@@ -76,3 +76,7 @@ common/physics_ticks_per_second=128
 
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
+
+[gamespice]
+
+perf_game_id="playlot"
