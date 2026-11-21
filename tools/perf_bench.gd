@@ -25,7 +25,8 @@ func _setup_client(c: Node) -> void:
 	config.records_directory = ""
 	config.record_replays = false
 	c.set("config", config)
-	c.set("fetch_content", false)
+	# --fetch-content 1: the client downloads a content (world-pack) map from the content origin, so a pack map can be measured.
+	c.set("fetch_content", str(args.get("fetch-content", "0")) == "1")
 	c.set("mouse_capture_override", true)
 
 
@@ -199,6 +200,8 @@ func _process(_delta: float) -> void:
 
 ## `--render-scan 1`: the report's render.top_draw (materials and meshes by draws and triangles); one scene walk at the end of the recording.
 func _record_begin() -> void:
+	if str(args.get("mesh-census", "0")) == "1":
+		_mesh_census()
 	if str(args.get("render-scan", "0")) == "1" and profiler != null:
 		profiler.config.perf_render_scan = true
 
@@ -208,3 +211,36 @@ func _sidecar_extra(_game: Object) -> Dictionary:
 	if _cam != null:
 		extra["camera"] = [str(_cam.global_position), str(-_cam.global_basis.z), _cam.far, _cam.fov]
 	return extra
+
+
+## `--mesh-census 1`: says what every visible mesh instance is (mesh class, material kind, what owns it), biggest groups first, so the
+## draws a batch left behind have a name: "BoxMesh opaque under StaticBody3D pg_box" is a box the batcher refused.
+func _mesh_census() -> void:
+	var groups := {}
+	var total := 0
+	for node: Node in get_tree().root.find_children("*", "MeshInstance3D", true, false):
+		var mi := node as MeshInstance3D
+		if not mi.is_visible_in_tree() or mi.mesh == null:
+			continue
+		total += 1
+		var mat: Material = mi.material_override
+		if mat == null and mi.mesh.get_surface_count() > 0:
+			mat = mi.mesh.surface_get_material(0)
+		var kind := "none"
+		if mat is StandardMaterial3D:
+			kind = "alpha" if (mat as StandardMaterial3D).transparency != BaseMaterial3D.TRANSPARENCY_DISABLED else "opaque"
+		elif mat != null:
+			kind = mat.get_class()
+		var up := mi.get_parent()
+		var owner_desc := up.get_class()
+		if up.has_meta(&"pg_box"):
+			owner_desc += " pg_box"
+		if up.has_meta(&"pg_material"):
+			owner_desc += " mat=" + str(up.get_meta(&"pg_material"))
+		var key := "%s %s under %s of %s" % [mi.mesh.get_class(), kind, owner_desc, up.get_parent().name if up.get_parent() != null else ""]
+		groups[key] = int(groups.get(key, 0)) + 1
+	var keys := groups.keys()
+	keys.sort_custom(func(a: String, b: String) -> bool: return groups[a] > groups[b])
+	say("mesh census: %d visible mesh instances" % total)
+	for k: String in keys.slice(0, 30):
+		say("census %4d  %s" % [groups[k], k])
