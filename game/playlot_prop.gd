@@ -75,6 +75,10 @@ const ROPE_SLOTS := 3
 var mass_multiplier: float = 1.0
 
 ## The smallest and largest a prop may be resized to.
+## A prop's meshes stop drawing past this many metres per metre of its largest extent (never under [constant DRAW_MIN]):
+## a 1 m crate is gone at 150 m, where it is under half a degree tall. 0 draws props at any distance.
+static var draw_per_metre := 150.0
+const DRAW_MIN := 40.0
 const MIN_SCALE := 0.25
 const MAX_SCALE := 4.0
 
@@ -150,6 +154,7 @@ func _build_body() -> void:
 	mesh.material_override = material
 
 	add_child(mesh)
+	_limit_draw(mesh, extent)
 
 	# An NPC is a person, so it is drawn as one: the kit's figure, its look chosen by what
 	# it is (every soldier alike, a rebel unlike them). The collision stays the definition's
@@ -204,7 +209,26 @@ func _build_model() -> bool:
 	if tint.a > 0.0:
 		_apply_tint(visual, tint)
 
+	_limit_draw(visual, extent_of(def) * size_scale * float(def.meta.get("model_scale", 1.0)))
 	return true
+
+
+## Hides [param node]'s meshes beyond a distance that follows the prop's size (see [member draw_per_metre]), so a pile of
+## small props far away costs the renderer nothing. Godot measures the range from the mesh's origin, so the bound is
+## extended by the prop's own extent.
+static func _limit_draw(node: Node, extent: Vector3) -> void:
+	if draw_per_metre <= 0.0:
+		return
+	var meshes: Array[Node] = node.find_children("*", "GeometryInstance3D", true, false)
+	if node is GeometryInstance3D:
+		meshes.append(node)
+	for found in meshes:
+		var geo := found as GeometryInstance3D
+		var biggest := maxf(extent.x, maxf(extent.y, extent.z))
+		# A model's own bounds win over the definition's extent when they are larger.
+		var bounds := geo.get_aabb().size * geo.scale
+		biggest = maxf(biggest, maxf(bounds.x, maxf(bounds.y, bounds.z)))
+		geo.visibility_range_end = maxf(DRAW_MIN, biggest * draw_per_metre) + biggest
 
 
 func _apply_tint(node: Node, colour: Color) -> void:

@@ -218,3 +218,5 @@ Separate from props: a toy is part of the map, placed by its author, from dot-pr
 Only the offline client follows (`link == null and bridge == null`): a dedicated server and a connected client never do, so in an online session the pack entries disappear and the pack tab goes. Pack rigs use `PlaylotZee.catalogue_for(def)`, a copy, so a subscription never leaks into the table a server reads.
 
 dot-props and dot-npc have no `follow_content` yet; when they gain one, `_prop_def` leaves this file. Pack weapons that are not zee ids have no world model or art, and there is no right-click drop for them.
+
+**Prop draw range.** A prop mesh stops drawing past `PlaylotProp.draw_per_metre` (150) metres per metre of its largest size, never under `DRAW_MIN` (40 m); 0 draws at any distance. Collision and simulation are unchanged; NPC figures keep their own `draw_range`.
