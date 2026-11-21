@@ -2,6 +2,7 @@ extends "../game/playlot_map.gd"
 
 const PlaylotGeometry := preload("../game/playlot_geometry.gd")
 const PlaylotMaterials := preload("../game/playlot_materials.gd")
+const PlaylotBoxBatch := preload("../game/playlot_box_batch.gd")
 
 ## A map that is a document: the one scene every custom sandbox map is built by.
 ##
@@ -154,6 +155,8 @@ func configure_doc(path: String) -> DotResult:
 	doc = read.value
 	_doc_path = path
 	_liquids = build_into(self, doc)
+	if DisplayServer.get_name() != "headless":
+		PlaylotBoxBatch.build(self)
 	if _shades_boxes():
 		add_contact_shade()
 	fallback_spawn = _vec(doc.get("spawn", [0, 1, 0]))
@@ -289,6 +292,11 @@ func attach_world(world: DotMapBspMesh, offset: Vector3, original: bool = false)
 func hide_box_meshes() -> int:
 	var hidden := 0
 	for child in get_children():
+		if child.is_in_group(PlaylotBoxBatch.GROUP):
+			if (child as Node3D).visible:
+				(child as Node3D).visible = false
+				hidden += child.get_child_count()
+			continue
 		if not (child is StaticBody3D and child.has_meta(&"pg_box")):
 			continue
 		if PlaylotMaterials.look(String(PlaylotMaterials.material_of(child)), Color.WHITE).a < 0.999:

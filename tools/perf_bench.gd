@@ -197,6 +197,12 @@ func _process(_delta: float) -> void:
 		_cam.make_current()
 
 
+## `--render-scan 1`: the report's render.top_draw (materials and meshes by draws and triangles); one scene walk at the end of the recording.
+func _record_begin() -> void:
+	if str(args.get("render-scan", "0")) == "1" and profiler != null:
+		profiler.config.perf_render_scan = true
+
+
 func _sidecar_extra(_game: Object) -> Dictionary:
 	var extra := {"props": int(args.get("props", 60)), "npcs": bots}
 	if _cam != null:
