@@ -116,3 +116,6 @@ Thumbs.db
 /cfg/addons
 /addons/dot_flashlight
 /addons/dot_mobile
+/addons/dot_bot_record
+/addons/dot_sql
+/addons/godot-sqlite
