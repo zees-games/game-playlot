@@ -11,7 +11,7 @@ extends Node3D
 ## Paths are loaded rather than named: a script that mentioned `GSDisasterManager` would
 ## not compile in a checkout without the addon.
 
-const MANAGER := "res://addons/natural_disasters/runtime/dot_disaster_manager.gd"
+const MANAGER := "res://addons/natural_disasters/runtime/gs_disaster_manager.gd"
 
 ## Bodies in this group are flung like props wherever they sit in the tree.
 const EXTRA_GROUP := &"disaster_bodies"

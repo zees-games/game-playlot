@@ -482,7 +482,7 @@ func _warm_fx_scene(path: String) -> void:
 	node.free()
 
 
-## dot-fx's muzzle flashes: every flash scene loaded and pinned, and one of each size drawn on the camera until
+## gs-fx's muzzle flashes: every flash scene loaded and pinned, and one of each size drawn on the camera until
 ## the gate opens, so the first shot loads and compiles nothing. Without a camera the scenes are still pinned.
 func _warm_muzzle_flashes() -> void:
 	if not GSMuzzleFlash.available():

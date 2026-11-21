@@ -1,8 +1,8 @@
 {
   "format": 1,
   "addons": {
-    "dot_map": 32,
-    "dot_mobile": 1,
+    "gs_map": 32,
+    "gs_mobile": 1,
     "fc_weapons": 34,
     "natural_disasters": 1,
     "zee_weapons": 6

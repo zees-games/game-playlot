@@ -6,7 +6,7 @@ const PlaylotFigure := preload("playlot_figure.gd")
 const Playlot := preload("playlot.gd")
 const PlaylotPlayer := preload("playlot_player.gd")
 
-## NPCs the **server** releases, paced by dot-npc-ai-director.
+## NPCs the **server** releases, paced by gs-npc-ai-director.
 ##
 ## [b]This is a second population beside the entities, and the split is deliberate.[/b]
 ## This game's own note says an entity is a `GSPropInstance` first — it counts against a
@@ -29,7 +29,7 @@ const CHANNEL := "playlot.waves"
 ## The body a wave NPC is.
 ##
 ## [b]`playlot_`-prefixed, and that is a deployment constraint rather than a style.[/b]
-## dot-server-deploy flattens every built-in game into one `game/` directory — a
+## gs-server-deploy flattens every built-in game into one `game/` directory — a
 ## `.tscn` names its scripts by absolute `res://` path and there is no relative form — so
 ## an unprefixed name is one another game can silently overwrite. `entity.tscn`,
 ## `prop.tscn` and `vehicle.tscn` predate that rule and are the reason it exists: the lobby
@@ -48,7 +48,7 @@ const PLAYER_PREFIX := "p:"
 const GUNFIRE_RADIUS := 30.0
 
 ## The wave's squad — three on a player, the rest surrounding — and what it can hear.
-## On the spawner as metadata, where dot-npc-ai's brain finds both.
+## On the spawner as metadata, where gs-npc-ai's brain finds both.
 var squads: GSNpcAiSquads = GSNpcAiSquads.new()
 var sounds: GSNpcAiSounds = GSNpcAiSounds.new()
 
@@ -111,7 +111,7 @@ static func _add(
 	# make cover meaningless — which is the whole reason `occlusion_mask` exists. The
 	# other two games are open arenas with nothing to be occluded by.
 	def.require_line_of_sight = true
-	# `skill` names the character dot-npc-ai's brain gives it. Until it did, a wave NPC had
+	# `skill` names the character gs-npc-ai's brain gives it. Until it did, a wave NPC had
 	# none, and `has_reacted()` — the gate wave_brain.gd's whole chase sits behind — answered
 	# true on the tick it first saw somebody.
 	def.meta = {"speed": speed, "skill": "normal", "squad": "wave", "attackers": 3}
@@ -146,12 +146,12 @@ func setup(p_game: Playlot) -> GSResult:
 	limits.world_budget = 60
 	limits.per_kind_cap = 20
 	limits.spawn_interval = 0.0
-	# [b]No navigable-spawn requirement.[/b] dot-npc is explicit that "no navigation" is
+	# [b]No navigable-spawn requirement.[/b] gs-npc is explicit that "no navigation" is
 	# not the same as "off the navigation" — this game paths with a direct steer over a
 	# flat map, and requiring a graph would refuse every spawn on a game that has none.
 	limits.require_navigable_spawn = false
 	# Long enough that being chased across the sandbox is a chase rather than a thing that
-	# gives up. dot-npc's default is six seconds and this is a bigger map than that number
+	# gives up. gs-npc's default is six seconds and this is a bigger map than that number
 	# assumes.
 	limits.reclaim_grace = 20.0
 
@@ -167,7 +167,7 @@ func setup(p_game: Playlot) -> GSResult:
 	spawner.limits = limits
 	spawner.authoritative = true
 	# Each wave NPC's own seed (`npc.seed`) comes from the session's seed and its spawn count,
-	# never its object id: see dot-npc's docs/runtime.md.
+	# never its object id: see gs-npc's docs/runtime.md.
 	spawner.seed_base = game.map_seed() if game != null else 0
 	# The world's own node, so a wave NPC is in the same physics space as everything else
 	# — which is what makes its line-of-sight cast see the sandbox's walls.
@@ -201,7 +201,7 @@ func _build_director() -> GSResult:
 	rules.spawn_ahead = 0.0
 	# [b]On, and this is the setting a sandbox actually wants.[/b] Something appearing in
 	# front of you is a jump scare; something appearing behind a pillar and walking round
-	# it is an encounter. dot-npc took its hiding spots from that practice for the same
+	# it is an encounter. gs-npc took its hiding spots from that practice for the same
 	# reason.
 	rules.spawn_out_of_sight = true
 	rules.behind_fraction = 0.25
@@ -213,7 +213,7 @@ func _build_director() -> GSResult:
 	rules.spawn_interval = 1.0
 	rules.reclaim_interval = 3.0
 	# Zero would mean "never" here and "every tick" for `spawn_interval` — two settings
-	# named the same way meaning opposite things at zero, which dot-npc-ai-director
+	# named the same way meaning opposite things at zero, which gs-npc-ai-director
 	# documents and which is set explicitly rather than left.
 	rules.relax_distance = 45.0
 	rules.stress_decay = 0.08

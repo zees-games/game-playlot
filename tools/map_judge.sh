@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # The converted-map judge loop (docs/map-judge-rubric.md): a GPU capture of a converted map (tools/screenshot.sh on
-# a GPU box through dot-bootstrap's gpu.sh, never software rendering), then a FRESH judge (claude -p, no author
+# a GPU box through gs-bootstrap's gpu.sh, never software rendering), then a FRESH judge (claude -p, no author
 # context) that reads the rubric and every frame and writes verdict.json with production_ready true|false; then
 # fix -> recapture -> fresh judge until it passes. Run as gamedev from the game-playlot checkout or a ~/wt worktree:
 #   tools/map_judge.sh --map pgc_fork [--out DIR] [--model opus] [--max-rounds N] [--fix-cmd 'CMD'] [--give-up]
@@ -10,14 +10,14 @@
 # --max-rounds (env MAP_JUDGE_MAX_ROUNDS, default 0 = unlimited): at that round, or with --give-up, every unresolved
 #   blocker/major defect gets a nightly item (key written back into verdict.json) and the tool exits 3.
 # --model: the judge's model, opus (default) or sonnet; never another tier.
-# The verdict schema is dot-game's visual judge's (addons/dot_game/tools/dot_game_visual_judge.sh, clip-based); this
+# The verdict schema is gs-game's visual judge's (addons/gs_game/tools/gs_game_visual_judge.sh, clip-based); this
 # is its still-frame map variant. Move onto that tool's still-frame mode once it has one.
 # Exit: 0 production ready, 1 not ready (defects printed), 3 gave up (items filed), 2 usage, 4 software renderer or no
 #   frames, 5 the judge wrote no valid verdict.
 set -uo pipefail
 cd "$(dirname "$0")/.." || exit 2
 root=$(pwd -L)
-map= out= model=${MAP_JUDGE_MODEL:-opus} max_rounds=${MAP_JUDGE_MAX_ROUNDS:-0} fix= give_up=0 capture=1 views= repos=game-playlot,dot-map-convert,playlot-maps
+map= out= model=${MAP_JUDGE_MODEL:-opus} max_rounds=${MAP_JUDGE_MAX_ROUNDS:-0} fix= give_up=0 capture=1 views= repos=game-playlot,gs-map-convert,playlot-maps
 while (($#)); do
   case $1 in
     --map) map=$2; shift 2 ;;
@@ -40,7 +40,7 @@ out=${out:-$root/screenshots/judge/$map}
 mkdir -p "$out"
 rubric=$root/docs/map-judge-rubric.md
 [[ -f $rubric ]] || die "no docs/map-judge-rubric.md"
-gpu=${GPU_SH:-$HOME/godot/dot-bootstrap/tools/gpu.sh}
+gpu=${GPU_SH:-$HOME/godot/gs-bootstrap/tools/gpu.sh}
 nightly=${NIGHTLY:-/home/core/stack/nightly/bin/nightly}
 run_nightly() { if [[ $(id -un) == core ]]; then "$nightly" "$@"; else sudo -u core "$nightly" "$@"; fi; }
 judge_claude() {

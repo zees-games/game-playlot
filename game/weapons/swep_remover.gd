@@ -6,7 +6,7 @@ extends "playlot_weapon.gd"
 ##
 ## [b]It goes through `may_act_on`, which is the whole point.[/b] Whether a player may
 ## remove somebody else's crate is a server policy — a build server says no, a sandbox
-## says yes, a competitive one says only for admins — and dot-props deliberately
+## says yes, a competitive one says only for admins — and gs-props deliberately
 ## refuses to decide it inside the tool. So this asks, with the host's answer, and a
 ## remover on a build server is a remover that only removes your own things without
 ## anybody editing this file.

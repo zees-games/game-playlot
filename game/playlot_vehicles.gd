@@ -15,7 +15,7 @@ const PlaylotPaths := preload("playlot_paths.gd")
 ## [/codeblock]
 ##
 ## Written the same way [PlaylotSpawnables] is, for the same reason: an operator with
-## a JSON catalogue can reach every number in here, and a dot-cloud pack can deliver one
+## a JSON catalogue can reach every number in here, and a gs-cloud pack can deliver one
 ## because nothing in it names a [code]class_name[/code].
 ##
 ## [b]Two vehicles, one of each chassis kind, and that is the minimum that proves
@@ -69,13 +69,13 @@ static func _buggy() -> GSVehicleDef:
 	t.mass = 620.0
 	t.engine_force = 3600.0
 	t.top_speed = 24.0
-	# Newtons (dot-vehicle 4f4afaf): 10.5 m from 50 km/h on the brake, 7.2 m on the handbrake,
+	# Newtons (gs-vehicle 4f4afaf): 10.5 m from 50 km/h on the brake, 7.2 m on the handbrake,
 	# measured by headless_playlot. Kept from when they were an impulse and stopped it dead.
 	t.brake_force = 5200.0
 	t.handbrake_force = 9000.0
 	t.steering_limit_deg = 34.0
 	t.steering_rate_deg = 150.0
-	# The most important number in the file, per dot-vehicle's own note: full lock at
+	# The most important number in the file, per gs-vehicle's own note: full lock at
 	# speed is a car that spins on the first corner and a player who concludes the
 	# handling is broken. A sandbox car is driven badly on purpose, so it wants MORE
 	# falloff than a racing one, not less.
@@ -164,7 +164,7 @@ static func _skiff() -> GSVehicleDef:
 
 ## A seat with its exit candidates, in preference order.
 ##
-## [b]Candidates, never one offset.[/b] dot-vehicle sweeps a body-sized capsule at each
+## [b]Candidates, never one offset.[/b] gs-vehicle sweeps a body-sized capsule at each
 ## and refuses the exit when none is free, which is the correct answer — every game that
 ## teleports the player anyway is a game where players get outside the map. Left is
 ## tried first for the driver and right for the passenger, so two people getting out of

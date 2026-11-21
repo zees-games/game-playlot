@@ -12,7 +12,7 @@ const PlaylotBoxBatch := preload("../game/playlot_box_batch.gd")
 ## (playlot-maps), mounted at its own prefix, and a script there that `extends`
 ## this game's map base by path names a path that is only right in one of the two places it
 ## runs — the family's mount constraint. A JSON document of boxes is data: both packs can be
-## anywhere, a person can read it when a map will not load, and dot-map's catalogue lists it
+## anywhere, a person can read it when a map will not load, and gs-map's catalogue lists it
 ## without loading anything.
 ##
 ## The document ([constant FORMAT] 1):
@@ -31,11 +31,11 @@ const PlaylotBoxBatch := preload("../game/playlot_box_batch.gd")
 ##  "lighting": {"sun": {...}, "fog": {...}, "sky_top": [r, g, b]}}
 ## [/codeblock]
 ##
-## `lighting` (optional) is a dot-lighting document, the keys `GSLightDocument` reads plus
+## `lighting` (optional) is a gs-lighting document, the keys `GSLightDocument` reads plus
 ## this game's `sky_top`; a map without one gets the game's daylight
 ## (`PlaylotLighting.DAYLIGHT`).
 ##
-## A box's `material` (optional, 2026-10-07) is one of dot-physics' standard surfaces
+## A box's `material` (optional, 2026-10-07) is one of gs-physics' standard surfaces
 ## (`PlaylotMaterials`): concrete, metal, wood, glass, dirt, grass, sand, snow, ice, rock,
 ## mud, rubber, and the liquids water and lava. A solid one is drawn in its material's look
 ## unless it names a colour, slides and bounces as that material, and is that material to a
@@ -50,7 +50,7 @@ const PlaylotBoxBatch := preload("../game/playlot_box_batch.gd")
 ## `material` read as for a box. Convex pieces collide; the survey (boxes only) does not see them.
 ##
 ## `world` (optional, 2026-11-15) names the converted world pack a map converted from a BSP is
-## drawn with (dot-map-convert's mesh route): textured faces, terrain and sky where the boxes are
+## drawn with (gs-map-convert's mesh route): textured faces, terrain and sky where the boxes are
 ## flat colour. It is hide-n-seek's key, `{"pack": "pg_world_<id>", "metres_per_unit": S,
 ## "offset": [x, y, z]}` (the converter's ground shift, undone), or only the pack's name. The
 ## pack is read from beside the document, `<doc dir>/world/<pack>/<id>.json` and `.bin`. A
@@ -63,14 +63,14 @@ const PlaylotBoxBatch := preload("../game/playlot_box_batch.gd")
 ## by nobody in particular (`Playlot.MAP_OWNER`): a door with a button beside it, a stack
 ## of barrels, planks at the top of a slope. Frozen unless it says otherwise, because map
 ## furniture that falls over on load is not furniture. A wire joins two of them by index
-## through dot-props' GSPropIO, exactly as the tool gun's Wire mode does.
+## through gs-props' GSPropIO, exactly as the tool gun's Wire mode does.
 ##
 ## A box is centred on `at` (the [method PlaylotGeometry.box] convention) and turned
 ## about its own centre. `declared` is [method survey_declared]: ground only a noclip
 ## reaches, with the reason.
 ##
 ## [b]Built by [method configure_doc], not in `_ready`[/b], for `pg_generated`'s reason:
-## dot-map instantiates the shared scene and adds it, and the document is only known from
+## gs-map instantiates the shared scene and adds it, and the document is only known from
 ## the catalogue entry, which [Playlot] hands over from its `map_changed` handler before
 ## anybody is spawned.
 
@@ -173,7 +173,7 @@ func configure_doc(path: String) -> GSResult:
 
 # --- The drawn world ------------------------------------------------------------
 
-## Whether the box meshes are what is seen, so they want dot-lighting's contact shade. A
+## Whether the box meshes are what is seen, so they want gs-lighting's contact shade. A
 ## document with a world pack is seen through the pack ([method attach_world] drops the shade),
 ## and a headless server sees nothing: building the shade there is all cost. It is not cheap:
 ## gm_fork's 21,329 boxes took two minutes of it on the build box, and timed out a suite. A
@@ -213,7 +213,7 @@ static func world_prefix(doc_path: String, spec: Dictionary, id: String) -> Stri
 	return doc_path.get_base_dir().path_join(WORLD_DIR).path_join(str(spec["pack"])).path_join(id)
 
 
-## Reads the document's world pack and draws it in place of the box meshes (dot-map's
+## Reads the document's world pack and draws it in place of the box meshes (gs-map's
 ## [GSMapDrawnWorld], as hide-n-seek and zombie-zone draw theirs). Succeeds with true when the
 ## world is drawn, false when there is none to draw; anything else leaves the boxes drawn.
 func load_world() -> GSResult:
@@ -228,7 +228,7 @@ func load_world() -> GSResult:
 		_boxes_stay_drawn()
 		return GSResult.fail(GSError.CODE_IO, "No world pack at %s." % prefix)
 	_world_loading = true
-	var read: GSResult = await GSMapDrawnWorld.read(prefix, GSRegistry.get_service(&"dot_cloud_client"))
+	var read: GSResult = await GSMapDrawnWorld.read(prefix, GSRegistry.get_service(&"gs_cloud_client"))
 	if not read.ok:
 		_world_loading = false
 		GSLog.warn(CHANNEL, "a map's world pack would not read; its boxes are drawn",
@@ -267,7 +267,7 @@ func attach_world(world: GSMapBspMesh, offset: Vector3, original: bool = false) 
 		"transform": Transform3D(Basis.IDENTITY, offset),
 		"environment": environment,
 		"lamps": lamps,
-		"cloud": GSRegistry.get_service(&"dot_cloud_client"),
+		"cloud": GSRegistry.get_service(&"gs_cloud_client"),
 		"props": true,
 		"batch_props": batch_props,
 		"original_textures": original,
@@ -340,7 +340,7 @@ func map_wires() -> Array:
 	return doc.get("wires", [])
 
 
-## The toys this map puts down (dot-props' placements), from the document's `toys`.
+## The toys this map puts down (gs-props' placements), from the document's `toys`.
 func map_toys() -> Array:
 	return doc.get("toys", [])
 
@@ -365,7 +365,7 @@ static func read_doc(path: String) -> GSResult:
 
 
 ## Whether a document's world [param spec] (from [method world_spec]) is the original variant:
-## its pack ends in dot-map's `_orig` mark and carries the map's own textures.
+## its pack ends in gs-map's `_orig` mark and carries the map's own textures.
 static func is_original(spec: Dictionary) -> bool:
 	return str(spec.get("pack", "")).ends_with(GSMapLocalMaps.ORIG_MARK)
 
@@ -412,7 +412,7 @@ static func validate(d: Dictionary) -> GSResult:
 			if PlaylotMaterials.is_liquid(material) and b.has("turn"):
 				return GSResult.fail(GSError.CODE_INVALID, "Map %s: box %d is %s and turned; a liquid is an axis-aligned volume." % [id, i, material])
 	if d.has("lighting") and not (d["lighting"] is Dictionary):
-		return GSResult.fail(GSError.CODE_INVALID, "Map %s: lighting is a dot-lighting document (an object)." % id)
+		return GSResult.fail(GSError.CODE_INVALID, "Map %s: lighting is a gs-lighting document (an object)." % id)
 	if d.has("world"):
 		var bad := _world_fault(d["world"])
 		if bad != "":

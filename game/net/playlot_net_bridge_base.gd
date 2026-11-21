@@ -22,7 +22,7 @@ const PlaylotWeapons := preload("../playlot_weapons.gd")
 const PlaylotZee := preload("../playlot_zee.gd")
 const PlaylotWaves := preload("../playlot_waves.gd")
 
-## Joins a [Playlot] to a [GSNetManager]; the only file here that names both. dot-net drives
+## Joins a [Playlot] to a [GSNetManager]; the only file here that names both. gs-net drives
 ## simulation per entity but this game's tick is whole-game, so [method ensure_game_ticked] makes
 ## the first behaviour through run it. Movement is predicted; props and NPCs are server-authoritative.
 
@@ -80,7 +80,7 @@ signal hit_received(victim: int, amount: float, point: Vector3, killed: bool, he
 signal voice_requested(peer_id: int, payload: PackedByteArray)
 
 ## A peer said READY for the first time and has been told the world. Server side. The one moment
-## anything else may be sent to it: dot-server's `client_spawn` comes BEFORE this on every real
+## anything else may be sent to it: gs-server's `client_spawn` comes BEFORE this on every real
 ## join, so anything gated on [method peer_is_ready] at spawn must be sent from here instead.
 signal peer_admitted(peer_id: int)
 
@@ -119,7 +119,7 @@ var clock_fn: Callable = Callable()
 ## Never adopted means never told, which the HUD answers with the local clock.
 var clock_view: GSVoteClockView = GSVoteClockView.new()
 
-## dot-inventory's half of the wire. See [PlaylotInventoryNet]; null when the game has
+## gs-inventory's half of the wire. See [PlaylotInventoryNet]; null when the game has
 ## no inventory.
 var inventory_net: PlaylotInventoryNet = null
 
@@ -210,7 +210,7 @@ func _style_id(index: int) -> StringName:
 
 
 ## What a session wears, as [face, top, legs] kit skins (see `playlot_avatars.gd`), or an
-## empty array for the stock look. Set by the module from dot-platform; asked as a player is
+## empty array for the stock look. Set by the module from gs-platform; asked as a player is
 ## added, before their JOIN.
 var skin_fn: Callable = Callable()
 
@@ -490,7 +490,7 @@ func _release_toys() -> void:
 
 
 ## Client, on TOYS: a mirror for every id at once, under the holder, whether this end's toys exist
-## yet or not. A client must know every entity a snapshot carries: dot-net stops reading at the
+## yet or not. A client must know every entity a snapshot carries: gs-net stops reading at the
 ## first unknown one, so a missing mirror froze every player after it. Paired with its toy by index.
 func _apply_toys(told: Dictionary) -> void:
 	if net == null or net.is_server:
@@ -617,7 +617,7 @@ var charge_fn: Callable = Callable()
 var may_charge_fn: Callable = Callable()
 
 ## Handed every shot a zee weapon fires on this server, once the props it hit are shoved:
-## [code](player_id: StringName, shot: GSShot) -> void[/code]. The arena's dot-combat sets it
+## [code](player_id: StringName, shot: GSShot) -> void[/code]. The arena's gs-combat sets it
 ## while `pg_arena` is on; unset, a shot moves props and hurts nobody.
 var shot_fn: Callable = Callable()
 

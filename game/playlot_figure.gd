@@ -1,5 +1,5 @@
 extends RefCounted
-## A person: one of the family's animated people (dot-player-char's `GSHumanoidFigure`, the
+## A person: one of the family's animated people (gs-player-char's `GSHumanoidFigure`, the
 ## style every game's players, bots and NPCs share), dressed from the site's three choices.
 ##
 ## [b]Why a figure at all.[/b] Players and NPCs here were capsules, and a member who dressed

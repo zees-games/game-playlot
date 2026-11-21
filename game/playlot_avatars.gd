@@ -1,5 +1,5 @@
 extends RefCounted
-## What a person in the sandbox looks like, as a dot-user-avatar document: face, top and legs,
+## What a person in the sandbox looks like, as a gs-user-avatar document: face, top and legs,
 ## each one of the eighteen painted skins of the character kit.
 ##
 ## [b]Three slots because the site has three.[/b] A member picks a face, a top and legs on

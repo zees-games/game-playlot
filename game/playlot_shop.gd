@@ -19,7 +19,7 @@ const Playlot := preload("playlot.gd")
 ##
 ## [b]It sells ids and grants nothing.[/b] `GSEconomyManager.bought` carries an id and
 ## this layer answers "yes, spawn it" — the spawn itself stays where it already was, in
-## `Playlot` and `GSPropSpawner`. dot-economy has never heard of a `GSPropDef` and
+## `Playlot` and `GSPropSpawner`. gs-economy has never heard of a `GSPropDef` and
 ## does not need to.
 
 const CHANNEL := "playlot.shop"
@@ -63,7 +63,7 @@ func setup(p_game: Playlot) -> GSResult:
 	economy.authoritative = game.authoritative
 	economy.rules = _rules()
 	# A sandbox has no sides, no buy zones and nobody dead for long. Every one of these
-	# would refuse a purchase for a reason that does not exist here, and dot-economy
+	# would refuse a purchase for a reason that does not exist here, and gs-economy
 	# asks rather than assuming precisely so a game can say so.
 	economy.team_fn = func(_key: String) -> int: return 1
 	economy.alive_fn = func(_key: String) -> bool: return true

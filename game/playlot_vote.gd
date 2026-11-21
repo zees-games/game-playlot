@@ -8,10 +8,10 @@ const PlaylotUserFiles := preload("playlot_user_files.gd")
 ## [b]This game already had a rock-the-vote and it was `GSMapTimeLimit`'s, which is half
 ## of one.[/b] That half is real — it counts a fraction of the players and fires — and what
 ## it cannot do is offer a ballot, take nominations, break a tie, respect a cooldown, or
-## give somebody the option to extend. dot-vote is fifty-five settings over exactly those,
+## give somebody the option to extend. gs-vote is fifty-five settings over exactly those,
 ## and the ad-hoc version is now the *time limit* under it rather than the vote itself.
 ##
-## [b]The source is dot-map's catalogue, not dot-server's games.[/b] game-hungario votes
+## [b]The source is gs-map's catalogue, not gs-server's games.[/b] game-hungario votes
 ## over games because its modes are games; this one votes over **maps**, and
 ## `GSVoteMapSource` applies through the [GSMapSession] this game already drives. One
 ## engine, two sources, and neither this file nor that one names the other — which is the
@@ -26,7 +26,7 @@ const CHANNEL := "playlot.vote"
 ## touching code:
 ##
 ## [codeblock]
-## vote_rules()  <  game.yml metadata: map_vote:  <  this file  <  DOT_VOTE_*  <  --vote-*
+## vote_rules()  <  game.yml metadata: map_vote:  <  this file  <  GS_VOTE_*  <  --vote-*
 ## [/codeblock]
 ##
 ## The file is JSON, keyed exactly as [GSVoteRules] is, enums by name. The end-of-map
@@ -55,7 +55,7 @@ const CUE_END := &"vote_end"
 const CUE_WARNING := &"vote_warning"
 const CUE_COUNT := &"vote_count"
 
-## What dot-vote's commands are called here. `vote` rather than `votefor`, so the command
+## What gs-vote's commands are called here. `vote` rather than `votefor`, so the command
 ## a player types is the token this game's own wire already sends.
 const COMMAND_NAMES := {"vote": "vote"}
 
@@ -77,12 +77,12 @@ func _init() -> void:
 	director_name = "Vote"
 	# The module applies the change itself (through the map session it already drives, so clients are told).
 	auto_apply = false
-	# Voters are session ids of the form `u<n>`, dot-vote's own spelling.
+	# Voters are session ids of the form `u<n>`, gs-vote's own spelling.
 	bare_voter_ids = false
 	announce_fn = func(line: String) -> void: announced.emit(line)
 
 
-## dot-map's own source, over the session this game already drives. Nothing here loads a map: `GSVoteMapSource.apply` calls
+## gs-map's own source, over the session this game already drives. Nothing here loads a map: `GSVoteMapSource.apply` calls
 ## `GSMapSession.change_to`, which is the path that already works, including the cloud fetch for a delivered map.
 func _make_source() -> GSVoteSource:
 	return GSVoteMapSource.from_session(game.maps)
@@ -102,7 +102,7 @@ static func vote_rules() -> GSVoteRules:
 	var rules := GSVoteRules.new()
 	rules.enabled = true
 	rules.trigger = GSVoteRules.Trigger.TIME_LIMIT
-	# Forty-five minutes, dot-vote's default and right here: a sandbox map is a place people
+	# Forty-five minutes, gs-vote's default and right here: a sandbox map is a place people
 	# build in, and a short limit throws away the thing they built. The deployed sandbox
 	# runs around the clock instead (`duration_sec: 0` in its game.yml).
 	rules.duration_sec = 2700.0
@@ -114,7 +114,7 @@ static func vote_rules() -> GSVoteRules:
 	rules.include_current = false
 	rules.method = GSVoteRules.Method.PLURALITY
 	rules.tie_break = GSVoteRules.TieBreak.BALLOT_ORDER
-	# [b]Off, and this is the setting dot-vote found a bug in.[/b] With it on, "extend" is
+	# [b]Off, and this is the setting gs-vote found a bug in.[/b] With it on, "extend" is
 	# erased from a tie and the tie goes to the new map; with it off the ordinary tie-break
 	# runs — and every pseudo-option sorts last in ballot order, so `BALLOT_ORDER` hands
 	# the tie to the new map as well. Two documented policies, one behaviour. Set here so
@@ -126,7 +126,7 @@ static func vote_rules() -> GSVoteRules:
 	rules.rtv_enabled = true
 	rules.rtv_fraction = 0.6
 	rules.rtv_min_players = 1
-	# [b]Measured against elapsed time, which is the other bug dot-vote found.[/b]
+	# [b]Measured against elapsed time, which is the other bug gs-vote found.[/b]
 	# `GSVoteClock.running` used to mean "has a limit" rather than "has started", so a
 	# server with no time limit never accumulated elapsed time and rocking the vote was
 	# refused for ever — on exactly the deployment whose only way to change anything is
@@ -134,7 +134,7 @@ static func vote_rules() -> GSVoteRules:
 	rules.rtv_delay_sec = 180.0
 	rules.nominations_enabled = true
 	rules.nominations_per_player = 1
-	# [b]On, and it is the setting that makes `MOST_NOMINATED` mean anything.[/b] dot-vote
+	# [b]On, and it is the setting that makes `MOST_NOMINATED` mean anything.[/b] gs-vote
 	# refused a second player nominating what somebody had already nominated, so every
 	# count was exactly 1 and there was nothing to sort by.
 	rules.nomination_seconding = true
@@ -145,7 +145,7 @@ static func vote_rules() -> GSVoteRules:
 	rules.cooldown_mode = GSVoteRules.Cooldown.PLAYS
 	rules.apply = GSVoteRules.Apply.IMMEDIATE
 	rules.apply_delay_sec = 5.0
-	# The ids PlaylotPresentation's catalogue plays. dot-vote ships every cue empty.
+	# The ids PlaylotPresentation's catalogue plays. gs-vote ships every cue empty.
 	rules.cue_vote_start = String(CUE_START)
 	rules.cue_vote_end = String(CUE_END)
 	rules.cue_warning = String(CUE_WARNING)

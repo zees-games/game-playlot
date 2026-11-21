@@ -4,7 +4,7 @@ const Playlot := preload("playlot.gd")
 const PlaylotArena := preload("playlot_arena.gd")
 const PlaylotPlayer := preload("playlot_player.gd")
 
-## What dot-moderation's live tools mean in a sandbox that may carry a run timer.
+## What gs-moderation's live tools mean in a sandbox that may carry a run timer.
 ##
 ## Movement is `GSFpsAdminModifiers`, so the owning client predicts it. Health belongs to
 ## the arena layer and exists only while `pg_arena` is on, so god, buddha, hp and slay say

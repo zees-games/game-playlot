@@ -3,7 +3,7 @@ extends Node
 const PlaylotEvents := preload("playlot_events.gd")
 const PlaylotInventory := preload("../playlot_inventory.gd")
 
-## dot-inventory over dot-net: a client predicts an op, the server decides, and the client
+## gs-inventory over gs-net: a client predicts an op, the server decides, and the client
 ## is told yes or no. Both halves in one file, because each is exactly the other's inverse
 ## and a reader has to be able to hold both at once.
 ##
@@ -13,7 +13,7 @@ const PlaylotInventory := preload("../playlot_inventory.gd")
 ##
 ## [b]What crosses, and why each piece is shaped the way it is.[/b]
 ##
-## [b]A client sends ops, never state.[/b] dot-inventory's central decision: a diff cannot
+## [b]A client sends ops, never state.[/b] gs-inventory's central decision: a diff cannot
 ## tell "this crate moved" from "this crate was destroyed and an identical one appeared".
 ## Only MOVE, SPLIT, MERGE and DROP are accepted from a client; an ADD is a client giving
 ## itself something and a USE is what spawning does, which is the server's to do.
@@ -23,7 +23,7 @@ const PlaylotInventory := preload("../playlot_inventory.gd")
 ## dictionary, and two ops can be the same dictionary — "drop one of #3", twice. The wire
 ## needs an identity the content does not have, and a sequence number is also what makes an
 ## answer CUMULATIVE: acks come back in order on a reliable channel, so an ack for #6 when #5
-## is still waiting says #5 never arrived. dot-net drops a request past its per-peer message
+## is still waiting says #5 never arrived. gs-net drops a request past its per-peer message
 ## rate without telling anybody, and a predicted op nobody answers would otherwise sit in
 ## the client's bag for ever, neither confirmed nor rolled back.
 ##
@@ -38,7 +38,7 @@ const PlaylotInventory := preload("../playlot_inventory.gd")
 ## whole flight is rewound (newest first, which undoes everything whatever the matching
 ## picks) and the survivors are re-applied here, where each one's number is known.
 ##
-## [b]A change the SERVER makes arrives as the whole bag, not as the op.[/b] dot-inventory
+## [b]A change the SERVER makes arrives as the whole bag, not as the op.[/b] gs-inventory
 ## can now apply a server's op to a predicting manager (`apply_authoritative`, which lands it
 ## underneath the predictions in flight), and the document is still the better message here:
 ## it CONVERGES. Every one puts right whatever the client got wrong since the last — an op
@@ -51,11 +51,11 @@ const PlaylotInventory := preload("../playlot_inventory.gd")
 ##
 ## [b]Only ever to the owner.[/b] An inventory is private: what somebody has bought and not
 ## yet placed is a plan, and in an arena it is a loadout. Nothing here is a replicated field
-## — so dot-net's interest management never sees it and cannot leak it — and every message
+## — so gs-net's interest management never sees it and cannot leak it — and every message
 ## goes through [method PlaylotNetBridge._tell], which refuses peer 0 because peer 0 is the
 ## broadcast address. A bot has a bag and no peer, and is told nothing.
 ##
-## [b]A bag belongs to a person, not to a connection.[/b] dot-server's userid is sequential,
+## [b]A bag belongs to a person, not to a connection.[/b] gs-server's userid is sequential,
 ## so a player who reconnects comes back under a new one. The server keys bags by
 ## [member bag_key_fn] — the pseudonymous per-scope id when there is an identity stack — and
 ## keeps them across a disconnect; with no identity there is nothing that outlasts a
@@ -65,7 +65,7 @@ const CHANNEL := "pg.net.inventory"
 
 ## How long the oldest op may go unanswered before the client asks for the whole bag.
 ##
-## An ack that never comes is a request dot-net dropped at the tail — nothing after it will
+## An ack that never comes is a request gs-net dropped at the tail — nothing after it will
 ## ever say so, because there is nothing after it. Generous, because a slow link answering
 ## late is not a problem and the cost of guessing wrong is only one extra document.
 const RESYNC_AFTER_MS := 3000
@@ -117,7 +117,7 @@ var _peer_of_bag: Dictionary = {}
 
 ## peer -> the bag key it was admitted with.
 ##
-## [b]Remembered, not recomputed on the way out.[/b] [member bag_key_fn] asks dot-server for
+## [b]Remembered, not recomputed on the way out.[/b] [member bag_key_fn] asks gs-server for
 ## the session, and by the time a disconnect is being handled the session may already be
 ## gone — so a key recomputed then comes back as the session's own, the real bag's peer
 ## mapping is never cleared, and a later change to it is sent to whoever is given that peer
@@ -259,7 +259,7 @@ func _server_op(peer_id: int, session_id: int, key: StringName, seq: int, op_dic
 	var m := inventory.for_player(key)
 	_applying_client = true
 	# The actor is the SESSION's player id, from the peer the request arrived on — never
-	# anything in the message, which is dot-inventory's rule about `actor`. It is also what
+	# anything in the message, which is gs-inventory's rule about `actor`. It is also what
 	# the manager's rate limit is keyed on ([constant PlaylotInventory.OPS_PER_SECOND]),
 	# so a flood is refused there and answered here like any other refusal: not dropped,
 	# because the client has already applied it and is waiting to hear.

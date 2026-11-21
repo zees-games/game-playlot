@@ -37,7 +37,7 @@ func _spawn_for(id: StringName, prop_id: StringName) -> void:
 				})
 		return
 
-	# Asked, spawned, and only then charged: a refused spawn must not have been paid for, and a refund can itself be refused (dot-economy's refund is policy).
+	# Asked, spawned, and only then charged: a refused spawn must not have been paid for, and a refund can itself be refused (gs-economy's refund is policy).
 	# "Can they afford it" is one read that changes nothing; refuse with a reason so a silent button is not mistaken for a broken menu.
 	var affordable := _may_charge(id, def.id)
 

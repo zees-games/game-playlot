@@ -17,7 +17,7 @@ var _tcb_sink
 var _tcb_edited
 
 func _the_client_mounts_the_downed_arms() -> void:
-	if GSAddonApi.build_level("dot_player_char") < 7:
+	if GSAddonApi.build_level("gs_player_char") < 7:
 		return
 	var arms := _tcb_client.view_arms as GSPlayerViewArms
 	_check(arms != null and arms.arms() != null and _tcb_client.arms_pivot != null and arms.get_parent() == _tcb_client.arms_pivot,
@@ -55,7 +55,7 @@ func _the_arms_hold_each_weapon_class() -> void:
 			"%s (%s): the arms are mounted and shown on the armed weapon" % [chosen[pose], pose])
 		var one := pose in PlaylotViewGrip.ONE_HAND
 		_check(grip != null and grip.is_two_hand() != one, "%s: %s hands" % [pose, "one" if one else "two"])
-		# An older dot-player-char has no grip kind: nothing to pick, so the check passes there (and the count holds).
+		# An older gs-player-char has no grip kind: nothing to pick, so the check passes there (and the count holds).
 		var kind: StringName = PlaylotViewGrip.POSE_KINDS.get(pose, &"rifle")
 		_check(grip != null and (not ("kind" in grip) or grip.kind == kind), "%s: the fingers take the %s hand pose" % [pose, kind],
 			str(grip.get(&"kind")) if grip != null else "no grip")
@@ -144,7 +144,7 @@ func _test_the_client_boots_2() -> void:
 	_check(
 		_tcb_look != null and _tcb_look_settings != null and is_equal_approx(_tcb_look.mouse_sensitivity,
 			_tcb_look_settings.get_float(&"sensitivity") * GSMenuApplier.DEGREES_PER_COUNT),
-		"the saved sensitivity reaches the offline sampler, at dot-menu's degrees per count",
+		"the saved sensitivity reaches the offline sampler, at gs-menu's degrees per count",
 		"%.4f" % (_tcb_look.mouse_sensitivity if _tcb_look != null else -1.0)
 	)
 	if _tcb_look_settings != null:
@@ -253,7 +253,7 @@ func _test_the_client_boots_4() -> void:
 	)
 	_tcb_kept_menu.close_all()
 
-	# With the menu, the second Escape opens it — dot-menu's, whose own Escape is off so
+	# With the menu, the second Escape opens it — gs-menu's, whose own Escape is off so
 	# this game keeps its two steps — and Escape closes it again.
 	_tcb_kept_menu.open()
 	var opened := _tcb_kept_menu != null and _tcb_kept_menu.is_open()
@@ -319,7 +319,7 @@ func _test_the_client_boots_5() -> void:
 		var said := ((_tcb_client.get("hud") as Node).get("_notice") as Label).text
 		_check(not menu_took and not bool(_tcb_client.get("arena_on")) and said == "Loadouts are in the arena.",
 			"solo B opens nothing and says the loadouts are in the arena", said)
-	# Down a zee gun's sights the HUD hands dot-ui's crosshair the aim; a scope replaces it.
+	# Down a zee gun's sights the HUD hands gs-ui's crosshair the aim; a scope replaces it.
 	_tcb_pg_hud = _tcb_client.get("hud")
 	_tcb_pg_hud.call("set_aim", 1.0, true)
 	var scoped_ok := float((_tcb_pg_hud.get("scope") as Control).get("fraction")) == 1.0 and not (_tcb_pg_hud.get("_crosshair") as Control).visible
@@ -328,7 +328,7 @@ func _test_the_client_boots_5() -> void:
 		"through a scope the HUD shows zee's scope instead of the crosshair, and puts it back at the hip")
 	_tcb_pg_xh = _tcb_pg_hud.get("_crosshair") as GSCrosshair
 	_tcb_pg_hud.call("set_alive", false)
-	_tcb_dead_hidden = GSAddonApi.build_level("dot_ui") < 14 or not _tcb_pg_xh.is_shown()
+	_tcb_dead_hidden = GSAddonApi.build_level("gs_ui") < 14 or not _tcb_pg_xh.is_shown()
 
 func _test_the_client_boots_6() -> void:
 	_tcb_pg_hud.call("set_alive", true)
@@ -419,7 +419,7 @@ func _test_the_client_boots_7() -> void:
 	_themed = _tcb_client.game_menu.settings.set_value(&"ui_theme", &"midnight")
 
 	# Typing at the console must not walk the player: the sampler polls keys every tick and a focused
-	# line edit does not stop `Input.is_action_pressed`; dot-menu's `overlays_changed` suspends the
+	# line edit does not stop `Input.is_action_pressed`; gs-menu's `overlays_changed` suspends the
 	# sampler. W held, measured in metres.
 	var console := _tcb_client.presentation.console if _tcb_client.presentation != null else null
 	var forward: StringName = _tcb_client.player.sampler.actions["forward"]
@@ -502,7 +502,7 @@ func _test_the_client_boots_8() -> void:
 	if _tcb_sink != null:
 		await _test_the_client_boots_9()
 
-	# zee-dot-weapons, offline, through the client's own key handlers and its own tick.
+	# zee-gs-weapons, offline, through the client's own key handlers and its own tick.
 	_tcb_client._set_tool(&"zee_smg")
 	await get_tree().process_frame
 
@@ -520,7 +520,7 @@ func _test_the_client_boots_9() -> void:
 
 	# The physics gun's beam, through the client's own frame: a hook nothing calls is
 	# this file's oldest bug. Holding is set by hand, because a grab needs the prop in
-	# the crosshair and that is dot-props' suite's question, not this one's.
+	# the crosshair and that is gs-props' suite's question, not this one's.
 	var mine := _tcb_client.playlot.props.props_of(_tcb_client.player_id)
 	var crate: GSPropInstance = mine.back() if not mine.is_empty() else null
 	var crate_body := crate.node as Node3D if crate != null else null
@@ -684,7 +684,7 @@ func _test_the_client_boots_12() -> void:
 	var toy_in_hand: Node3D = _tcb_client.toy_view
 	_check(
 		toy_in_hand != null and toy_in_hand.get_parent() == _tcb_client.camera
-			and toy_in_hand.is_in_group(&"dot_view_model"),
+			and toy_in_hand.is_in_group(&"gs_view_model"),
 		"a toy in hand draws a first-person model under the camera, in the viewmodel_fov group"
 	)
 	_tcb_client._set_tool(&"launcher")

@@ -143,7 +143,7 @@ func begin_revive(player_id: StringName, by: StringName) -> GSResult:
 	if not enabled or effects == null:
 		return GSResult.fail(GSError.CODE_STATE, "Nobody goes down here.")
 
-	# **Both have to be real players.** dot-effects tests the distance between two
+	# **Both have to be real players.** gs-effects tests the distance between two
 	# positions, and `_position_of` answers with a sentinel far away for somebody it
 	# does not know — so two unknown ids are at the SAME sentinel, zero apart, and
 	# every distance check between them passes. A rescuer who does not exist then

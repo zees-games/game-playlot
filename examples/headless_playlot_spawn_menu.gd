@@ -205,7 +205,7 @@ func _test_spawn_menu_3() -> void:
 
 	# Clicking spawns. The menu never spawns anything itself — it emits, and the
 	# client asks the server — which is what lets this file work unchanged when the
-	# spawn becomes a dot-net message.
+	# spawn becomes a gs-net message.
 	var chosen: Array[StringName] = []
 	_sm_menu.prop_chosen.connect(
 		func(id: StringName) -> void: chosen.append(id)

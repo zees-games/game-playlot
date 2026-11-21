@@ -1,7 +1,7 @@
 # Animation review
 
 PLAYLOT's visual QA loop for the zee weapons and the avatar, adopted from Fatal Contact's. It is
-game-local until dot-game's shared version lands (nightly dot-game-visual-qa-1); then these tools
+game-local until gs-game's shared version lands (nightly gs-game-visual-qa-1); then these tools
 become thin wrappers around it.
 
 ## Run it
@@ -32,7 +32,7 @@ The harness fails a clip on:
 - a view-model jump between frames (`fire` allows its kick);
 - the firing or support hand off its grip for too long (melee, thrown and fists are exempt);
 - no view model for too long (`draw` is exempt);
-- a third-person bone turning faster than `bone_pop` allows (dot-core's `GSClipMetrics`).
+- a third-person bone turning faster than `bone_pop` allows (gs-core's `GSClipMetrics`).
 
 The numbers do not cover everything. Look at the sheets for:
 

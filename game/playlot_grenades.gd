@@ -25,7 +25,7 @@ var projectiles: Node = null
 var _regions: Array[Dictionary] = []
 var _bodies: Array = []
 var _owners: Array[StringName] = []
-## dot-npc's senses, when the game has them: a smoke cloud registers a sight blocker there. Set by the world.
+## gs-npc's senses, when the game has them: a smoke cloud registers a sight blocker there. Set by the world.
 var senses: GSNpcSenses = null
 ## Smoke clouds up: `{id, left}`, the blocker's id in [member senses] and its seconds to go.
 var _blockers: Array[Dictionary] = []
@@ -97,9 +97,9 @@ func _on_effect(info: Dictionary) -> void:
 			effect.emit(info)
 
 
-## Zombies and NPCs stop seeing through a cloud (hearing passes) until it ends; dot-npc API 6.
+## Zombies and NPCs stop seeing through a cloud (hearing passes) until it ends; gs-npc API 6.
 func _block_sight(at: Vector3, radius: float, seconds: float) -> void:
-	if senses == null or GSAddonApi.build_level("dot_npc") < 6:
+	if senses == null or GSAddonApi.build_level("gs_npc") < 6:
 		return
 
 	# Until removed (seconds 0): the senses' own clock is only set when an NPC decides.

@@ -4,7 +4,7 @@
 	"origin": "https://content.gamespice.net/content",
 	"packs": [
 		{
-			"id": "gamemann/game-playground",
+			"id": "gamemann/game-playlot",
 			"into": "",
 			"kind": "pack",
 			"manifest_sha256": "d753ff1aee27f34c83449c44af044fe8fb1c8f2ebb1b9bdb70272d5a3adae4a1",

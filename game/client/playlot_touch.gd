@@ -1,8 +1,8 @@
 extends RefCounted
 
-## The phone's controls (dot-mobile's [GSMobileControls] driving the client's own sampler): the buttons are fire, alt-fire, jump, crouch, the hold-to-open spawn menu, tool previous/next,
+## The phone's controls (gs-mobile's [GSMobileControls] driving the client's own sampler): the buttons are fire, alt-fire, jump, crouch, the hold-to-open spawn menu, tool previous/next,
 ## the held scoreboard and the chat box.
-## The look and move halves of the screen are [GSFpsTouchSampler]'s; dot-mobile's overlay draws and routes the buttons.
+## The look and move halves of the screen are [GSFpsTouchSampler]'s; gs-mobile's overlay draws and routes the buttons.
 
 const CHANNEL := "playlot.touch"
 const PlaylotPaths := preload("../playlot_paths.gd")
@@ -30,7 +30,7 @@ static func touch_layout() -> GSGameTouchLayout:
 		return GSGameTouchLayout.custom()
 	return res.value
 
-## The rows dot-mobile's overlay is set up with: [method touch_layout]'s, with jump and crouch held on the sampler.
+## The rows gs-mobile's overlay is set up with: [method touch_layout]'s, with jump and crouch held on the sampler.
 static func layout() -> Array[Dictionary]:
 	var rows := touch_layout().buttons()
 	for row: Dictionary in rows:
@@ -42,7 +42,7 @@ static func layout() -> Array[Dictionary]:
 
 
 var controls: GSMobileControls = null
-## dot-ui's buttons inside the overlay, for the shell's DPI fit.
+## gs-ui's buttons inside the overlay, for the shell's DPI fit.
 var buttons: GSTouchButtons:
 	get:
 		return controls.buttons if controls != null else null

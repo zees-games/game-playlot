@@ -7,7 +7,7 @@ extends GSConfig
 ##
 ## [b]The tick rate is the one that matters, and it is deliberately not here.[/b] It
 ## is taken from the engine ([method Playlot._resolve_tick_rate]), which on a
-## dot-server is whatever [code]sv_tickrate[/code] was set to, and a run timer a server
+## gs-server is whatever [code]sv_tickrate[/code] was set to, and a run timer a server
 ## added is handed the same number. One number, in
 ## [code]server.cfg[/code], with everything else — rather than a second copy in a
 ## second file that can disagree with the first and produce plausible, wrong,
@@ -35,7 +35,7 @@ extends GSConfig
 ## It is a setting rather than a debugging affordance for exactly that reason, and the
 ## seed actually used is logged whichever way it arrived.
 ##
-## Zero takes the seed from dot-randomness when the deployment has one, so a generated map
+## Zero takes the seed from gs-randomness when the deployment has one, so a generated map
 ## and everything else random in the session come out of one number rather than two.
 @export var map_seed: int = 0
 
@@ -66,7 +66,7 @@ extends GSConfig
 @export_range(0.0, 86400.0, 30.0) var map_seconds: float = 2700.0
 
 ## The file that says which maps a server ROTATES: `cfg/maps.yml`, layered over the game's own
-## shipped `res://maps.yml` (dot-map's `GSMapRotationFile`: named rotations, `random` or
+## shipped `res://maps.yml` (gs-map's `GSMapRotationFile`: named rotations, `random` or
 ## `cycle`, wildcards, command names). Empty, or no such file, rotates every map. A map the
 ## active rotation leaves out stays installed (`pg_map <id>` loads it); it is only never
 ## chosen, balloted or nominated. `sv_map_rotation_file`.
@@ -130,7 +130,7 @@ extends GSConfig
 
 ## Whether a player may move, freeze or remove somebody else's props.
 ##
-## [b]dot-props deliberately refuses to decide this[/b] — "a build server says no, a
+## [b]gs-props deliberately refuses to decide this[/b] — "a build server says no, a
 ## sandbox says yes, a competitive one says only for admins, and hard-coding either
 ## answer means the other needs a fork" — so it is passed to every tool call as
 ## `can_touch_others`. On by default, because this is a sandbox.
@@ -144,7 +144,7 @@ extends GSConfig
 
 ## Whether standing on a moving prop carries you with it: a crate somebody else swings with
 ## the physics gun, a plank sliding down a ramp, or the one you are holding yourself under
-## your own feet (which is prop surfing). dot-props' GSPropCarry; the prop also takes some
+## your own feet (which is prop surfing). gs-props' GSPropCarry; the prop also takes some
 ## of your weight. Off leaves a crate exactly as solid and as still as the floor.
 @export var prop_surfing: bool = true
 
@@ -170,7 +170,7 @@ extends GSConfig
 ##
 ## [b]A budget alone does not stop a held key.[/b] Reach the cap, remove one, spawn
 ## another — that is a spawn and a free every frame, which costs the server more than
-## the props do. dot-props' own default is 0.15 s; this is looser because a sandwich
+## the props do. gs-props' own default is 0.15 s; this is looser because a sandwich
 ## of planks is built by spawning a dozen quickly, and it is a [GSConfig] field so an
 ## operator who is being spammed can tighten it without a build.
 @export_range(0.0, 10.0, 0.01) var prop_spawn_interval: float = 0.1
@@ -184,7 +184,7 @@ extends GSConfig
 ## warm-up past the gate's time-out, so the weapon phase ran in play instead.
 @export var prewarm_model_props: bool = false
 
-## Whether that warm-up also draws dot-fx's muzzle flashes on the camera and holds an omni light there until the
+## Whether that warm-up also draws gs-fx's muzzle flashes on the camera and holds an omni light there until the
 ## gate opens, so the first shot compiles neither the flash nor its lit variants in play. On a real GPU (RTX 2070,
 ## Compatibility renderer, tools/load_probe.gd --first-use, 3 runs against 3) the first SMG shot's worst frame went
 ## from 124-220 ms to 4-8 ms and the first pistol shot's from 32-36 ms to 10-12 ms, for about 1.5 s more cover (map to
@@ -283,10 +283,10 @@ const CFG_FILES := {
 
 ## The game's own id since the rename, and the ids it had before (oldest first).
 const GAME_ID := "game-playlot"
-const FORMER_IDS: PackedStringArray = ["game-playground"]  # legacy id: operator cfg/rotation keys written before the rename
+const FORMER_IDS: PackedStringArray = ["game-playlot"]  # legacy id: operator cfg/rotation keys written before the rename
 
 
-## Declares the rename to dot-core (API 31), so a deployment's `cfg/game/game-playlot/` tiers and
+## Declares the rename to gs-core (API 31), so a deployment's `cfg/game/game-playlot/` tiers and
 ## rotation `games:` keys keep applying to the game under its new id. Idempotent.
 static func register_ids() -> void:
 	GSAddonConfig.register_former_game(GAME_ID, FORMER_IDS)
@@ -315,10 +315,10 @@ func apply_env(prefix_override: String = "") -> PackedStringArray:
 	if prefix_override != "":
 		return super(prefix_override)
 	for key in config_keys():
-		var former := gs_env_name(FORMER_ENV_PREFIX + key.to_upper())
+		var former := FORMER_ENV_PREFIX + key.to_upper()
 		if OS.has_environment(former):
 			GSLog.warn(CHANNEL, "an environment variable has the old Playlot prefix; rename it", {
-				"variable": former, "use": gs_env_name(env_prefix() + key.to_upper()),
+				"variable": former, "use": env_prefix() + key.to_upper(),
 			})
 	var applied := super(FORMER_ENV_PREFIX)
 	for key in super(env_prefix()):

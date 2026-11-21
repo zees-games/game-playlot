@@ -1,7 +1,7 @@
 extends "playlot_entity.gd"
 
-## A chaser with a **decision** rather than an `if`: dot-npc-ai's state machine and
-## characteristics table, on top of dot-npc's senses.
+## A chaser with a **decision** rather than an `if`: gs-npc-ai's state machine and
+## characteristics table, on top of gs-npc's senses.
 ##
 ## [b]`npc_chaser.gd` is still here and is still correct, and this is not a replacement for
 ## it.[/b] That one is thirty lines and does one thing; this one is what the same NPC looks
@@ -24,13 +24,13 @@ extends "playlot_entity.gd"
 ## - **Separation.** Twelve of these converging on one player climb each other, and the one
 ##   on top has a horizontal offset of nothing from the one below: it chases perfectly at a
 ##   dead stop with every number about it correct. `steer_with_spacing` is the fix and
-##   dot-npc-ai found it the hard way.
+##   gs-npc-ai found it the hard way.
 ## - **A machine rather than a tree**, because there are four states and the transitions
 ##   between them are the whole design. A tree here would be four leaves under a selector
 ##   pretending to be a hierarchy.
 ##
 ## [b]`extends` a PATH, not a class.[/b] A brain is named by path in the catalogue and a
-## mounted dot-cloud pack's `class_name` globals are not registered in the host, so an
+## mounted gs-cloud pack's `class_name` globals are not registered in the host, so an
 ## entity that named a class could only ever ship inside a build.
 
 const STATE_PATROL := &"patrol"
@@ -132,7 +132,7 @@ func _refresh_character() -> void:
 	character = skill.apply(_base_character) if skill != null else _base_character
 	context.character = character
 
-	# How far this one sees, from its character. dot-npc's senses read it per NPC.
+	# How far this one sees, from its character. gs-npc's senses read it per NPC.
 	if npc != null:
 		npc.sight_scale = character.alertness
 
@@ -181,7 +181,7 @@ func _chase(ctx: GSNpcAiContext) -> void:
 		look_at_direction(to)
 		return
 
-	# [b]With spacing, which is the whole reason this uses dot-npc-ai's brain helper.[/b]
+	# [b]With spacing, which is the whole reason this uses gs-npc-ai's brain helper.[/b]
 	# A pack converging on one player climbs each other, and the one on top has a
 	# horizontal offset of nothing from the one below — so it chases perfectly at a dead
 	# stop with every number about it correct.
@@ -241,7 +241,7 @@ func _has_target() -> bool:
 ## a reclaim asks about — so a reaction time measured against it never elapses for an NPC
 ## that can currently see somebody. The first version of this file used it and the hunter
 ## sat in ALERT for ever; so did [method GSNpcAiBrain.has_reacted], which is where the fix
-## actually belongs and where it now is. `GSNpcInstance.target_since` was added to dot-npc
+## actually belongs and where it now is. `GSNpcInstance.target_since` was added to gs-npc
 ## for exactly this and moves only when the commitment does.
 func _reacted() -> bool:
 	if character == null or npc == null or context == null:

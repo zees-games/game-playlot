@@ -74,7 +74,7 @@ func _build_wheels(p_def: GSPropDef) -> void:
 	var half_track := track * 0.5
 	var half_base := base * 0.5
 
-	# -Z is forward everywhere in this family. dot-vehicle's own note records that
+	# -Z is forward everywhere in this family. gs-vehicle's own note records that
 	# Godot's engine force drives +Z and that GSVehicleWheeled inverts it once, so the
 	# wheels are laid out in OUR convention and the addon does the translation.
 	for row in [

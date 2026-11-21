@@ -1,14 +1,14 @@
-extends "res://addons/dot_npc_ai/runtime/dot_npc_ai_brain.gd"
+extends "res://addons/gs_npc_ai/runtime/gs_npc_ai_brain.gd"
 
 ## What a director-released NPC does: come at the players, and back off when it loses them.
 ##
 ## [b]Extended by PATH, like every brain.[/b] A brain is named by
-## [member GSNpcDef.brain_script_path] and a mounted dot-cloud pack's `class_name` globals
+## [member GSNpcDef.brain_script_path] and a mounted gs-cloud pack's `class_name` globals
 ## are not registered in the host — so a brain that named a class could only ever ship
 ## inside a build.
 ##
 ## [b]A tree here, and a machine in `npc_hunter.gd`, and the difference is the point.[/b]
-## dot-npc-ai ships both and says which is which: a machine holds what an NPC *is* and a
+## gs-npc-ai ships both and says which is which: a machine holds what an NPC *is* and a
 ## tree decides what it *does* within that. A wave NPC has one job — reach the players —
 ## and what varies is which of three ways it is currently doing it, in priority order. That
 ## is a selector, and writing it as a machine would be three states whose transitions are
@@ -30,7 +30,7 @@ func _build() -> void:
 	tree = GSNpcAiSelector.new(&"root", [
 		# Reach them. [b]Reactive, because a sequence that resumed at its running action
 		# would keep walking at somebody who is no longer there[/b] — the guard is asked
-		# once and never again, which dot-npc-ai wrote into its own fixture on the first
+		# once and never again, which gs-npc-ai wrote into its own fixture on the first
 		# pass and documents at both ends.
 		GSNpcAiSequence.reactive_with(&"chase", [
 			GSNpcAiLeaf.Condition.new(&"sees", _sees),
@@ -68,7 +68,7 @@ func _sees(_ctx: GSNpcAiContext) -> bool:
 	return npc.has_target() and has_reacted()
 
 
-## Whether there is somewhere worth looking. dot-npc-ai's memory, which lasts the
+## Whether there is somewhere worth looking. gs-npc-ai's memory, which lasts the
 ## character's `memory_time` rather than the ten seconds this file used to hard-code.
 func _has_slot(_ctx: GSNpcAiContext) -> bool:
 	return claim_attack_slot()
@@ -88,7 +88,7 @@ func _advance(ctx: GSNpcAiContext) -> GSNpcAiNode.Status:
 	if goal == Vector3.INF:
 		return GSNpcAiNode.Status.FAILURE
 
-	# Not remembered here any more: dot-npc-ai's brain keeps the last known position itself,
+	# Not remembered here any more: gs-npc-ai's brain keeps the last known position itself,
 	# every tick there is a target, for as long as this NPC's character remembers.
 
 	# With spacing: a wave converging on one player climbs itself, and the one on top has
@@ -98,7 +98,7 @@ func _advance(ctx: GSNpcAiContext) -> GSNpcAiNode.Status:
 	return GSNpcAiNode.Status.RUNNING
 
 
-## Goes there and looks round, then gives up. dot-npc-ai's search: it walks to the spot,
+## Goes there and looks round, then gives up. gs-npc-ai's search: it walks to the spot,
 ## sweeps its sight cone either side, and forgets once it has looked — where this file used
 ## to stop dead on arrival and drift off, which a player read as it never having looked.
 func _search(ctx: GSNpcAiContext) -> GSNpcAiNode.Status:

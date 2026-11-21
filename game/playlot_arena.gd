@@ -14,14 +14,14 @@ const PlaylotWeaponDef := preload("weapons/playlot_weapon_def.gd")
 ##
 ## [b]Three addons, and each does the half this game would otherwise get wrong.[/b]
 ##
-## - **dot-combat** is health, damage types, hitboxes and the resolution. The part that
+## - **gs-combat** is health, damage types, hitboxes and the resolution. The part that
 ##   matters is not the arithmetic — it is that friendly fire, self damage, falloff, hit
 ##   groups and clamping are *policy* rather than `if`s, and that a shot is resolved
 ##   against a rewound world rather than against where somebody is now.
-## - **dot-match** is the loop: warmup, a countdown, rounds, scoring, respawning, and the
+## - **gs-match** is the loop: warmup, a countdown, rounds, scoring, respawning, and the
 ##   idle check. Counted in ticks and driven by one call, so it runs at whatever
 ##   `sv_tickrate` says rather than at a wall clock.
-## - **dot-loadout** is what you spawn with, as a **document of ids** the server validates
+## - **gs-loadout** is what you spawn with, as a **document of ids** the server validates
 ##   against a schema and an entitlement set without loading any content. That is the whole
 ##   claim, and it is why the weapon a player picks is checked by a dedicated server that
 ##   holds none of the models.
@@ -65,7 +65,7 @@ var death_rule_fn: Callable = Callable()
 ## Somebody died. Server side.
 signal player_killed(victim: StringName, killer: StringName)
 
-## Somebody came back in the fight (dot-match's respawn). Server side: the module hands them
+## Somebody came back in the fight (gs-match's respawn). Server side: the module hands them
 ## their loadout's weapon here.
 signal respawned(id: StringName)
 
@@ -90,7 +90,7 @@ var loading_fn: Callable = Callable()
 ## player id -> [GSHealth].
 var _health: Dictionary = {}
 
-## dot-combat keys entities by int and this game keys players by [StringName]. Two id
+## gs-combat keys entities by int and this game keys players by [StringName]. Two id
 ## spaces meeting is exactly where this family loses things.
 ##
 ## [b]Both directions live on [member Playlot.entities] now, and the counter and the
@@ -143,7 +143,7 @@ static func item_catalogue(weapons: Array[PlaylotWeaponDef]) -> GSItemCatalogue:
 
 ## One slot: the weapon an arena spawn puts in the hands (B, `PlaylotModule._arm_from_loadout`).
 static func loadout_schema(weapons: Array[PlaylotWeaponDef]) -> GSLoadoutSchema:
-	# [b]Required, and therefore it must have a default.[/b] dot-loadout refuses a schema
+	# [b]Required, and therefore it must have a default.[/b] gs-loadout refuses a schema
 	# whose required slot has none, and the refusal is exactly right: a loadout missing a
 	# required slot cannot be *repaired* — `conform_on_load` has nothing to put there — so
 	# it can only be refused, and a player who has never chosen could then never spawn.
@@ -170,7 +170,7 @@ static func loadout_schema(weapons: Array[PlaylotWeaponDef]) -> GSLoadoutSchema:
 ## [b]The first free weapon in the arsenal, found rather than named.[/b] Naming one would
 ## be a second declaration of a weapon id, and the copy that goes stale is always the one
 ## nothing reads — this tree's most repeated bug. Empty when there are no free weapons at
-## all, which dot-loadout then refuses loudly, and loudly is right: a server whose every
+## all, which gs-loadout then refuses loudly, and loudly is right: a server whose every
 ## weapon is locked is one nobody can spawn on.
 static func _default_weapon(weapons: Array[PlaylotWeaponDef]) -> StringName:
 	for weapon in weapons:
@@ -229,7 +229,7 @@ func _build_combat() -> GSResult:
 	var ready := combat.setup()
 
 	if not ready.ok:
-		return ready.wrap("dot-combat could not be set up")
+		return ready.wrap("gs-combat could not be set up")
 
 	var kinetic := GSDamageType.make(DAMAGE_ID, "Kinetic")
 	kinetic.falloff_start = 12.0
@@ -292,7 +292,7 @@ func _build_match() -> GSResult:
 	rules.countdown_sec = 3.0
 	rules.min_players = 1
 	rules.team_based = false
-	# [b]Read off the config and declared on the rules, which is the pair dot-match shipped
+	# [b]Read off the config and declared on the rules, which is the pair gs-match shipped
 	# a bug about.[/b] `pause_when_empty` was read from the wrong object, so a match sat in
 	# COUNTDOWN for ever — parse-clean, because a `Resource` property access is not
 	# statically checked. Setting it here is what makes it a decision.
@@ -320,7 +320,7 @@ func _build_match() -> GSResult:
 	var ready := match_node.setup()
 
 	if not ready.ok:
-		return ready.wrap("dot-match could not be set up")
+		return ready.wrap("gs-match could not be set up")
 
 	match_node.state_changed.connect(_on_state_changed)
 	match_node.round_preparing.connect(func(_round: int) -> void: game.weapon_layer.clear())
@@ -356,7 +356,7 @@ func _build_loadouts() -> GSResult:
 	GSGameStoreEntitlements.attach(loadouts)
 	add_child(loadouts)
 
-	return loadouts.setup().wrap("dot-loadout could not be set up")
+	return loadouts.setup().wrap("gs-loadout could not be set up")
 
 
 ## Turns the fight on or off.
@@ -512,7 +512,7 @@ func player_for_entity(entity_id: int) -> StringName:
 
 ## One authoritative step, from the game's own tick.
 ##
-## [b]After the players have moved.[/b] dot-combat rewinds to resolve a shot, and what it
+## [b]After the players have moved.[/b] gs-combat rewinds to resolve a shot, and what it
 ## rewinds to is where everybody was on a tick — so the origin it is told about has to be
 ## the one the movement has just produced. Ticking it first would rewind to a frame that
 ## never existed.
@@ -573,7 +573,7 @@ func _state_label() -> String:
 
 # --- Hurting people --------------------------------------------------------
 
-## A weapon hit somebody. The whole of what a game supplies to dot-combat.
+## A weapon hit somebody. The whole of what a game supplies to gs-combat.
 ##
 ## [b]The resolver decides, not this.[/b] Friendly fire, self damage, the falloff over the
 ## distance and the hit-group multiplier are all policy that lives on the rules and the
@@ -669,7 +669,7 @@ func _on_killed(entity_id: int, damage: GSDamage) -> void:
 		return
 
 	# Down rather than dead, when something else has said so. A downed player is not
-	# reported to dot-match at all: the scoreboard has not lost anybody, the respawn
+	# reported to gs-match at all: the scoreboard has not lost anybody, the respawn
 	# queue must not start counting, and the kill feed would be announcing a death that
 	# did not happen.
 	if death_rule_fn.is_valid():
@@ -681,7 +681,7 @@ func _on_killed(entity_id: int, damage: GSDamage) -> void:
 			})
 			return
 
-	# [b]Through dot-match's own kill report, so the scoreboard, the feed and the respawn
+	# [b]Through gs-match's own kill report, so the scoreboard, the feed and the respawn
 	# queue all agree.[/b] A game that scored a kill itself and then queued a respawn
 	# separately would have two counts of the same event, and the one that is wrong is
 	# whichever nobody prints.
@@ -695,7 +695,7 @@ func _on_killed(entity_id: int, damage: GSDamage) -> void:
 	player_killed.emit(victim, killer)
 
 
-## The fall a death gets: dot-player-char's reaction rule over the server's
+## The fall a death gets: gs-player-char's reaction rule over the server's
 ## `sv_ragdoll_reactions`, seeded from the victim's entity and the tick, with the killing zee
 ## weapon's def (the sniper and the launcher always throw the body). The push is the shot's,
 ## or away from the killer. [param named] is a reaction asked for outright, for a death that is
@@ -725,11 +725,11 @@ func _on_state_changed(_from: GSMatch.State, _to: GSMatch.State) -> void:
 	_announce_clock()
 
 
-## dot-match says somebody may come back. The game is what puts them there.
+## gs-match says somebody may come back. The game is what puts them there.
 ##
-## [b]The addon decides and the game acts, which is dot-timer's division exactly.[/b] What
+## [b]The addon decides and the game acts, which is gs-timer's division exactly.[/b] What
 ## "respawn" means differs between a first-person game, a 2D one and a replay being
-## scrubbed, and dot-match knowing any of that would make it a game.
+## scrubbed, and gs-match knowing any of that would make it a game.
 func _on_respawn_due(key: String, spawn: GSSpawnPoint, _tick_value: int) -> void:
 	var id := StringName(key)
 	var health := health_of(id)

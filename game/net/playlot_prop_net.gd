@@ -137,7 +137,7 @@ func _net_state_applied(tick: int) -> void:
 
 ## Every frame between snapshots. Without this a prop steps at the snapshot rate however
 ## smoothly the interpolator did its work — the family's own "produced correctly and
-## consumed by nothing", which cost dot-net two bugs.
+## consumed by nothing", which cost gs-net two bugs.
 func _net_interpolated(_tick: int) -> void:
 	_draw()
 

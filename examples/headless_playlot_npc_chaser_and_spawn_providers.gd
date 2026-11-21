@@ -1,6 +1,6 @@
 extends "res://examples/headless_playlot_model_props_and_tool_gun.gd"
 
-## The chaser goes through dot-npc's perception, not "the nearest player this tick".
+## The chaser goes through gs-npc's perception, not "the nearest player this tick".
 ##
 ## Every check fails on the old chaser, which called `nearest_player()` every tick and so turned back and forth between two close players and forgot one mid-stride. Driven by hand, because the decision is under test and not the walking.
 var _acc_spawned
@@ -16,7 +16,7 @@ func _test_a_chaser_commits(playlot: Playlot) -> void:
 
 	_acc_chaser = _acc_spawned.node as PlaylotEntity
 
-	_check(_acc_chaser.npc != null, "an entity has a dot-npc row")
+	_check(_acc_chaser.npc != null, "an entity has a gs-npc row")
 	_check(
 		_acc_chaser.npc.def.sight_range == 40.0,
 		"whose perception comes from the catalogue rather than from the script",
@@ -95,7 +95,7 @@ func _test_a_chaser_commits_2(playlot: Playlot) -> void:
 	_test_a_hunter_decides(playlot)
 
 
-## The same NPC with a **decision** instead of an `if`: dot-npc-ai's state machine and characteristics table.
+## The same NPC with a **decision** instead of an `if`: gs-npc-ai's state machine and characteristics table.
 ##
 ## `npc_chaser` stays in the catalogue; this one adds a reaction time, a character per NPC and a machine whose transitions are the design.
 var _ahd_spawned
@@ -111,7 +111,7 @@ func _test_a_hunter_decides(playlot: Playlot) -> void:
 
 	_ahd_hunter = _ahd_spawned.node as PlaylotEntity
 
-	_check(_ahd_hunter.npc != null, "a hunter has a dot-npc row too")
+	_check(_ahd_hunter.npc != null, "a hunter has a gs-npc row too")
 	_check(
 		_ahd_hunter.get("machine") != null,
 		"and a state machine rather than a hand-written if"
@@ -287,8 +287,8 @@ func playlot_receive(msg: Dictionary) -> void:
 	# scanned only res://addons, so pg_natural_disasters never registered and the menu had no disasters.
 	_check(PlaylotAddons.addon_roots("res://") == PackedStringArray(["res://addons"]),
 		"built in, the hooks are looked for in res://addons alone")
-	var mounted_roots := PlaylotAddons.addon_roots("res://dot_cloud/gamemann/game-playlot/0.1.30")
-	_check(mounted_roots == PackedStringArray(["res://addons", "res://dot_cloud/gamemann/game-playlot/0.1.30/addons"]),
+	var mounted_roots := PlaylotAddons.addon_roots("res://gs_cloud/gamemann/game-playlot/0.1.30")
+	_check(mounted_roots == PackedStringArray(["res://addons", "res://gs_cloud/gamemann/game-playlot/0.1.30/addons"]),
 		"delivered, the game's own addons folder under its mount is scanned too", str(mounted_roots))
 	var mounted := "user://pg_addon_scratch_mounted"
 	_write_fake_addon(mounted, "fake_with_hook", hooked)
@@ -314,8 +314,8 @@ func playlot_receive(msg: Dictionary) -> void:
 	_check(GSAddonApi.declared_uses("res://").has("natural_disasters"),
 		"requires.uses.json names natural_disasters, so web solo fetches its overlay")
 
-	# The real folder: dot_core has no hook, natural-disasters has an adapter
-	_check(playlot.addons != null and playlot.addons.skipped().has("dot_core"),
+	# The real folder: gs_core has no hook, natural-disasters has an adapter
+	_check(playlot.addons != null and playlot.addons.skipped().has("gs_core"),
 		"the game scanned the real addons folder, and the libraries in it were left alone")
 	var tornado: Object = playlot.addons.find("pg_natural_disasters/tornado")
 

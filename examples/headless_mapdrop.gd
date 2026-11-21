@@ -114,7 +114,7 @@ func _test_source_maps() -> void:
 func _test_drop_args() -> void:
 	_entered += 1
 	var got := PlaylotMapDrop.drop_args(PackedStringArray([
-		"--pg-map", "pg_flatgrass", "--config", "/etc", "--dot_map.search", "/tmp", "--pg-x=1", "--offline", "/maps/a"]))
+		"--pg-map", "pg_flatgrass", "--config", "/etc", "--gs_map.search", "/tmp", "--pg-x=1", "--offline", "/maps/a"]))
 	_check(got == PackedStringArray(["--offline", "/maps/a"]), "config options and their values are not drops", str(got))
 	var flag := PlaylotMapDrop.drop_args(PackedStringArray(["--pg-fast", "--map-path=/x"]))
 	_check(flag == PackedStringArray(["--map-path=/x"]), "an option followed by an option keeps the second", str(flag))
@@ -128,7 +128,7 @@ func _test_intake() -> void:
 	add_child(holder)
 	var intake := PlaylotMapDrop.attach(holder, _into(), func(_id: StringName) -> String: return "",
 			func(r: Dictionary) -> void: results.append(r))
-	if not _check(intake != null, "the intake is attached on dot-map API 26"):
+	if not _check(intake != null, "the intake is attached on gs-map API 26"):
 		holder.free()
 		return
 	_check(results.is_empty(), "a start with no paths handles nothing")

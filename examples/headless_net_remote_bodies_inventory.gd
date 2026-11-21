@@ -35,7 +35,7 @@ func _test_somebody_else_is_drawn() -> void:
 
 	var shown := PlaylotClient.present_frame(_client_net, _client_game, 0.0, mine)
 
-	# Your own player is drawn at the clock's render alpha (dot-player-controller's
+	# Your own player is drawn at the clock's render alpha (gs-player-controller's
 	# `render_clock`), so a clock slip does not stall or double the eye.
 	_check(
 		mine.controller != null and mine.controller.get(&"render_clock") == _client_net.clock,
@@ -214,7 +214,7 @@ func _test_inventory_wire() -> void:
 	_check(
 		doc_sub == PlaylotEvents.InvTell.DOC and bool(doc_got.get("ok", false))
 			and int(doc_got["through"]) == 17 and str(entry.get("item", "")) == "crate",
-		"a whole bag round-trips as the JSON dot-inventory writes, with what it already includes"
+		"a whole bag round-trips as the JSON gs-inventory writes, with what it already includes"
 	)
 
 	var huge_entries := {}
@@ -513,7 +513,7 @@ func _test_inventory_refused_2() -> void:
 	_done()
 
 
-## dot-net drops a client request past its per-peer message rate and tells nobody. An op in
+## gs-net drops a client request past its per-peer message rate and tells nobody. An op in
 ## that request would sit in the client's bag, predicted and never answered, for ever.
 func _test_inventory_lost() -> void:
 	_section("an op the transport dropped is rolled back, wherever in the stream it was lost")
@@ -648,7 +648,7 @@ func _test_inventory_from_the_server() -> void:
 
 func _test_inventory_from_the_server_2() -> void:
 
-	# A purchase into a bag with no ROOM. dot-inventory validated an ADD for the item, the
+	# A purchase into a bag with no ROOM. gs-inventory validated an ADD for the item, the
 	# container and the weight and not for room, so asking only it charged first; it asks
 	# room now, and this is the check that says so from here.
 	var filled := _ifts_inv.give(_ifts_bag, &"beach_ball", _free_cells(_server_bag()))
@@ -656,7 +656,7 @@ func _test_inventory_from_the_server_2() -> void:
 	var validated := _server_bag().validate(GSInvOp.add(&"crate", 1, BACKPACK))
 	_check(
 		not validated.ok and validated.code() == GSError.CODE_QUOTA,
-		"and dot-inventory's own validate says there is no room for a crate"
+		"and gs-inventory's own validate says there is no room for a crate"
 	)
 	var paid := _ifts_charged.size()
 	_client_bridge.ask_buy(&"crate")

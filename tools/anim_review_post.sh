@@ -7,7 +7,7 @@
 # Create the review first: nightly review new "PLAYLOT animation review" --key <key>.
 # Runs nightly as core (NIGHTLY, default the board's path), so the files are
 # staged in a world-readable temp dir first.
-# Game-local until dot-game's shared visual QA lands (nightly dot-game-visual-qa-1);
+# Game-local until gs-game's shared visual QA lands (nightly gs-game-visual-qa-1);
 # then this becomes a wrapper around it.
 set -euo pipefail
 

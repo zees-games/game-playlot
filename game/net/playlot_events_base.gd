@@ -5,7 +5,7 @@ extends RefCounted
 ## Encoders and decoders in pairs, exact inverses; the headless net suite round-trips each.
 ##
 ## A prop is announced (catalogue id, net id), not spawned by a factory: props are named by path
-## in the catalogue so a dot-cloud pack can deliver them.
+## in the catalogue so a gs-cloud pack can deliver them.
 
 enum Kind {
 	## Tick rate, who you are, the map, the server tick.
@@ -490,7 +490,7 @@ const CHAT_KEY_BYTES := 48
 const CHAT_KIND_BITS := 4
 
 
-## Whether every [enum GSChatMessage.Kind] fits in [constant CHAT_KIND_BITS]. dot-chat owns
+## Whether every [enum GSChatMessage.Kind] fits in [constant CHAT_KIND_BITS]. gs-chat owns
 ## that enum, so it can grow under this game; headless_net reads this.
 static func chat_kinds_fit() -> bool:
 	return GSChatMessage.KIND_NAMES.size() <= (1 << CHAT_KIND_BITS)
@@ -759,7 +759,7 @@ static func read_loadout(reader: GSNetReader) -> Dictionary:
 		var slot := reader.read_string(LOADOUT_SLOT_BYTES)
 		var item := reader.read_string(LOADOUT_SLOT_BYTES)
 
-		# Read past the end returns zeros rather than failing — dot-timer found that with
+		# Read past the end returns zeros rather than failing — gs-timer found that with
 		# a truncated replay that parsed as a valid replay of nothing — so the loop stops
 		# on the reader rather than on the count.
 		if not reader.ok():

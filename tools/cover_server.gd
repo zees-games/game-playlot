@@ -41,7 +41,7 @@ func _boot(dir: String) -> void:
 	platform.directory = "%s/identity" % dir
 	add_child(platform)
 	var _identity: GSResult = await platform.setup()
-	var _p: GSResult = await server.modules.load_module("res://addons/dot_platform/dot_platform_module.gd")
+	var _p: GSResult = await server.modules.load_module("res://addons/gs_platform/gs_platform_module.gd")
 	(load("res://game/playlot_module.gd") as GDScript).set("punishments_path", "%s/punishments.json" % dir)
 	var loaded: GSResult = await server.modules.load_module("res://game/playlot_module.gd")
 	print("cover_server: module loaded=%s port=%d" % [loaded.ok, port])

@@ -3,9 +3,9 @@ extends "playlot_entity.gd"
 ## Walks toward the player it has committed to, and gives up when they get far enough.
 ##
 ## Extends a PATH rather than a class for the reason in `npc_wanderer.gd`: it is the
-## shape an entity delivered in a dot-cloud pack must have.
+## shape an entity delivered in a gs-cloud pack must have.
 ##
-## [b]It commits, and that is dot-npc's doing rather than this file's.[/b] The first
+## [b]It commits, and that is gs-npc's doing rather than this file's.[/b] The first
 ## version asked for the nearest player every tick, which at 128 Hz is the classic broken
 ## NPC: two players standing a metre apart made it turn back and forth for ever, and one
 ## who stepped behind a pillar made it forget instantly and walk away mid-swing.

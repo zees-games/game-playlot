@@ -2,7 +2,7 @@ extends Node
 
 ## A sandbox for friends, and the one place a host migration would be a catastrophe.
 ##
-## [b]This game's answer to dot-peer-to-peer turns on one fact nobody else's does: the
+## [b]This game's answer to gs-peer-to-peer turns on one fact nobody else's does: the
 ## world IS the host's physics state.[/b] Every prop somebody spawned, every contraption
 ## they froze in place, the whole evening's building, lives in one process's rigid bodies —
 ## so electing a new host hands everybody a world with nothing in it. Not a stutter, not a
@@ -80,7 +80,7 @@ func host(display_name: String) -> GSResult:
 			"this build cannot host a sandbox",
 			GSP2PSession.unavailable_reason()
 		)
-	# Awaited: dot-peer-to-peer's session awaits its signaller since 37d47c1, because an
+	# Awaited: gs-peer-to-peer's session awaits its signaller since 37d47c1, because an
 	# HTTP rendezvous answers a frame later at best. A caller of this awaits it too.
 	var res: GSResult = await session.host(display_name)
 	if res.ok:

@@ -2,10 +2,10 @@ extends Node
 
 ## What a sandbox NPC's brain asks the world: the time, where somebody is, who is near.
 ##
-## [b]A director without a spawner.[/b] dot-npc-ai's brain is written to be bound to a
+## [b]A director without a spawner.[/b] gs-npc-ai's brain is written to be bound to a
 ## `GSNpcSpawner` and asks it four things by name — `now`, `candidate_position`,
 ## `npcs_near`, `path_toward` — never by type. The sandbox's NPCs are props first (budgeted,
-## undoable, punt-able) and are deliberately not spawned by dot-npc, so this answers the
+## undoable, punt-able) and are deliberately not spawned by gs-npc, so this answers the
 ## same four questions from the Playlot instead. The squads, the sounds and the server's
 ## NPC skill hang off it as metadata, where the brain looks for them.
 
@@ -28,7 +28,7 @@ func candidate_position(id: StringName, fallback: Vector3 = Vector3.ZERO) -> Vec
 	return game.call("candidate_position", id, fallback) if game != null else fallback
 
 
-## The armed NPCs within [param radius] of [param point], as dot-npc instances.
+## The armed NPCs within [param radius] of [param point], as gs-npc instances.
 func npcs_near(point: Vector3, radius: float) -> Array:
 	var out: Array = []
 

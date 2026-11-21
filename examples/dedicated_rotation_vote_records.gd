@@ -144,7 +144,7 @@ func _test_vote() -> void:
 	_check(
 		vote.director != null and vote.director.source != null
 			and vote.director.source.is_usable(),
-		"with a source over dot-map's own catalogue",
+		"with a source over gs-map's own catalogue",
 		"one engine, two sources — game-hungario votes over games and this votes over "
 		+ "maps, and neither file names the other"
 	)
@@ -166,7 +166,7 @@ func _test_vote() -> void:
 	)
 
 	# Rocking the vote at the start of the map, inside `rtv_delay_sec`, so this is refused — which is the check: a refusal that
-	# ARRIVES is a rule that ran, and dot-vote shipped a version where rocking the vote
+	# ARRIVES is a rule that ran, and gs-vote shipped a version where rocking the vote
 	# was refused for ever on the deployment that depends on it.
 	var rocked := vote.director.rock_the_vote(&"u1")
 	_check(
@@ -195,7 +195,7 @@ func _test_vote() -> void:
 		"the vote's clock is advanced once a tick, by the module, and not also by itself"
 	)
 
-	# dot-vote's commands, none of which existed here.
+	# gs-vote's commands, none of which existed here.
 	var absent := PackedStringArray()
 	for name in [
 		"rtv", "unrtv", "nominate", "vote", "timeleft", "nextmap",
@@ -203,7 +203,7 @@ func _test_vote() -> void:
 	]:
 		if server.console.find_command(name) == null:
 			absent.append(name)
-	_check(absent.is_empty(), "dot-vote's commands are on the console", ", ".join(absent))
+	_check(absent.is_empty(), "gs-vote's commands are on the console", ", ".join(absent))
 
 	# One rock-the-vote. `pg_rtv` went to the map session's tally while the wire's `rtv`
 	# went to the ballot. What the ballot says to this player is asked first — a refusal,
@@ -273,7 +273,7 @@ func _test_vote() -> void:
 	_section_done()
 
 
-## dot-moderation's live tools, as an operator types them.
+## gs-moderation's live tools, as an operator types them.
 ##
 ## The course is timed, so the timer's rule is the one asserted first: noclip abandons a
 ## run and taints any run begun under it. Then the arena's half — god and slay mean
@@ -487,7 +487,7 @@ func _test_loading_cover() -> void:
 	_section_done()
 
 
-## [b]A record belongs to the account, not to the connection.[/b] dot-server's userid is a
+## [b]A record belongs to the account, not to the connection.[/b] gs-server's userid is a
 ## server-local counter: the same account reconnecting is a new number, and a restarted
 ## server hands the old numbers to strangers. Timer records were keyed by `u<userid>`, so a
 ## returning runner was a second row with no Best, and a new player could inherit an old
@@ -535,7 +535,7 @@ func _test_records_follow_the_account() -> void:
 	_check(game.record_key(&"u8801") == &"acct:alice", "and is filed under its account uid, not the userid")
 	_check(player.timer == manager.call("timer_for", &"acct:alice"), "the timer manager knows it by the account")
 
-	var run: Object = load("res://addons/dot_timer/core/dot_timer_run.gd").call(
+	var run: Object = load("res://addons/gs_timer/core/gs_timer_run.gd").call(
 		"make", player.timer.get("track"), player.timer.get("run").get("style_id"), 0.01)
 	run.call("begin", 0.0)
 	for _i in range(6000):
@@ -595,7 +595,7 @@ func _test_records_follow_the_account() -> void:
 	await settle.call()
 
 	# Rows written before the change are retired, not ranked and not deleted.
-	var old: Object = load("res://addons/dot_timer/core/dot_timer_record.gd").new()
+	var old: Object = load("res://addons/gs_timer/core/gs_timer_record.gd").new()
 	old.set("map_id", map_id)
 	old.set("track", 0)
 	old.set("style_id", &"normal")

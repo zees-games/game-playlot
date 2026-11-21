@@ -41,7 +41,7 @@ func _ready() -> void:
 	add_child(world)
 
 	weapons = PlaylotWeapons.built_in()
-	# zee-dot-weapons after the toys, so the menu's first weapons are still this game's own.
+	# zee-gs-weapons after the toys, so the menu's first weapons are still this game's own.
 	weapons.append_array(PlaylotZee.defs())
 
 	_build_styles()
@@ -225,7 +225,7 @@ func _simulate_players(step: float) -> void:
 
 
 ## One authoritative tick driven from outside, at a tick number the driver chose. The net bridge calls this instead of
-## [method _physics_process] because the tick has to happen between dot-net applying inputs and building the snapshot; a game
+## [method _physics_process] because the tick has to happen between gs-net applying inputs and building the snapshot; a game
 ## running its own loop would send state from the wrong instant.
 func tick_once(tick: int) -> void:
 	_tick = tick
@@ -368,7 +368,7 @@ static func _half_height_of(prop: GSPropInstance) -> float:
 	return PlaylotProp.extent_of(prop.def).y * 0.5 * scale
 
 
-## Keeps a riding player's movement state on the seat they are in. The rider's NODE is carried by dot-vehicle, but everything
+## Keeps a riding player's movement state on the seat they are in. The rider's NODE is carried by gs-vehicle, but everything
 ## reads [code]controller.state.position[/code] (timer, NPC list, HUD, [PlaylotPlayerNet]): without this a passenger is drawn
 ## elsewhere at the spot they got in. Run AFTER the vehicles tick and before the timers are fed, as the players' own rule.
 func _carry_riders() -> void:
@@ -541,7 +541,7 @@ func _expire_debris() -> void:
 			var _gone := props.remove(instance_id, GSPropSpawner.REASON_CLEANUP)
 
 
-## Turns each driver's movement keys into what their vehicle is being asked for. The mapping is here, not in dot-vehicle, which has no
+## Turns each driver's movement keys into what their vehicle is being asked for. The mapping is here, not in gs-vehicle, which has no
 ## input at all: a [GSVehicleCommand] is built from a keyboard, pad, touch layout or bot. Reuses [GSFpsCommand] rather than a second
 ## wire format: a client already sends one per tick, sanitised, replayed by the predictor and quantised.
 func _drive_vehicles() -> void:
@@ -557,11 +557,11 @@ func _drive_vehicles() -> void:
 		var vehicle := vehicles.vehicle_of_rider(id)
 
 		if vehicle == null or vehicle.driver() != id:
-						# A passenger's keys do nothing, and the refusal is dot-vehicle's anyway: `set_command` checks the driver on the server
+						# A passenger's keys do nothing, and the refusal is gs-vehicle's anyway: `set_command` checks the driver on the server
 						# every command, because a client can be edited and driving from the back seat is the hole that would give.
 			continue
 
-				# S brakes while the car still rolls forward and reverses once stopped (dot-vehicle's `brake_then_reverse`); reverse thrust alone
+				# S brakes while the car still rolls forward and reverses once stopped (gs-vehicle's `brake_then_reverse`); reverse thrust alone
 				# took about three times the brake's distance. Here and not in `drive_command`, which has no vehicle to read a speed from.
 		var cmd := drive_command(player.pending_command())
 		vehicles.set_command(vehicle.instance_id, id, cmd.brake_then_reverse(vehicle.forward_speed()))

@@ -8,9 +8,9 @@ const PlaylotZee := preload("playlot_zee.gd")
 
 ## The Workshop in solo play: what a player subscribed to, offered on the Q menu.
 ##
-## [b]One adapter, because only the weapon half has an addon behind it.[/b] dot-weapon's
+## [b]One adapter, because only the weapon half has an addon behind it.[/b] gs-weapon's
 ## [GSWeaponCatalogue] follows the content index itself, so weapons come from its
-## [method GSWeaponCatalogue.listings]. dot-props and dot-npc have no `follow_content` yet, so the
+## [method GSWeaponCatalogue.listings]. gs-props and gs-npc have no `follow_content` yet, so the
 ## prop, npc and entity entries are read off [GSContentIndex] here and turned into the
 ## [GSPropDef]s the sandbox already spawns. [b]Follow-up for the addons:[/b] when
 ## [GSPropCatalogue] and [GSNpcCatalogue] grow `follow_content`, the `_prop_def` half of this file
@@ -43,7 +43,7 @@ signal changed
 
 var index: GSContentIndex = null
 
-## The pack weapons, read through dot-weapon. No code weapons: the game's own stay in `weapons`.
+## The pack weapons, read through gs-weapon. No code weapons: the game's own stay in `weapons`.
 var weapon_catalogue: GSWeaponCatalogue = null
 
 ## The pack trails (kind `trail`), worn rather than spawned. See [code]playlot_trails.gd[/code].

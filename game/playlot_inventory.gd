@@ -2,7 +2,7 @@ extends Node
 
 const PlaylotSpawnables := preload("playlot_spawnables.gd")
 
-## What a player is carrying, over dot-inventory.
+## What a player is carrying, over gs-inventory.
 ##
 ## [b]This is not the spawn menu and it deliberately does not replace it.[/b] The Q menu
 ## is a catalogue — everything this server can make, whether or not you have one — and
@@ -50,7 +50,7 @@ const BACKPACK_WEIGHT := 400.0
 ## player's id, so the server's own changes spent the player's budget: thirty beach balls into
 ## a sixty-cell bag and the thirty-first was refused as "too many inventory operations". A
 ## separate actor alone only moves the cap onto the server's own changes, so this actor is
-## also in every server manager's `unlimited_actors` — which dot-inventory grew for exactly
+## also in every server manager's `unlimited_actors` — which gs-inventory grew for exactly
 ## this, after it was found here.
 const SERVER_ACTOR := &"server"
 
@@ -116,7 +116,7 @@ static func build_catalogue(spawnables: GSPropCatalogue) -> GSInvCatalogue:
 		# item that stacks is one whose state cannot be told apart from its neighbour's.
 		item.kind = GSInvItem.Kind.UNIQUE
 		item.stack_max = 1
-		# The prop's own mass, which dot-props already carries and which this family found
+		# The prop's own mass, which gs-props already carries and which this family found
 		# was being read by exactly one thing -- a catalogue saying 900 kg over a scene
 		# saved at 20 kg gave a prop a physics gun refused for being too heavy. Carrying
 		# weight is the second reader it has ever had.
@@ -227,7 +227,7 @@ func give(player_id: StringName, item_id: StringName, count: int = 1) -> GSResul
 ##
 ## `GSInvManager.validate` of the same ADD, which asks the item, the container, the weight
 ## and — since 2026-09-25 — the ROOM. It did not ask room before, so a purchase into a full
-## bag passed, was charged for, and was then refused, with dot-inventory logging an ERROR that
+## bag passed, was charged for, and was then refused, with gs-inventory logging an ERROR that
 ## said it "failed after it had been validated"; this used to ask first-fit itself. Kept as a
 ## method because "may this be given" is the shop's question, and the answer should not
 ## depend on the caller knowing which container a purchase goes into.
@@ -264,7 +264,7 @@ func carries(player_id: StringName, item_id: StringName) -> int:
 
 ## What somebody is carrying, filtered and sorted the way they asked.
 ##
-## [b]Locally, always.[/b] dot-browser's rule and dot-inventory's: the server owns what is
+## [b]Locally, always.[/b] gs-browser's rule and gs-inventory's: the server owns what is
 ## in the bag and the client owns how it is shown. A filter sent to a server makes it
 ## responsible for a preference and costs a round trip per keystroke.
 func query(player_id: StringName, text: String = "", tag: StringName = &"") -> Array[Dictionary]:

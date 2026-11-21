@@ -1,6 +1,6 @@
 extends SceneTree
 
-## The third-person camera (dot-player-controller's orbit rig on dot-core's boom) flown round
+## The third-person camera (gs-player-controller's orbit rig on gs-core's boom) flown round
 ## the walls of every built-in map, armed; `mp_solidplayers` both ways with two players
 ## walked into each other; `mp_forceview` through the view rules the client asks. Headless:
 ##

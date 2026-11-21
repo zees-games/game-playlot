@@ -1,8 +1,8 @@
 extends RefCounted
 
-## Playlot's per-map settings: dot-game's [GSGameMapConfig] over the cvars a map may change.
+## Playlot's per-map settings: gs-game's [GSGameMapConfig] over the cvars a map may change.
 ##
-## `cfg/game/game-playlot/dot_map/map/<name>.yml` (a glob such as `pgc_%.yml` covers a class of maps), overridable from `cfg/server/...`. Only the keys in [constant KEYS] are accepted. All are server-side or replicated, so a client needs no hook of its own.
+## `cfg/game/game-playlot/gs_map/map/<name>.yml` (a glob such as `pgc_%.yml` covers a class of maps), overridable from `cfg/server/...`. Only the keys in [constant KEYS] are accepted. All are server-side or replicated, so a client needs no hook of its own.
 
 const GAME_ID := "game-playlot"
 

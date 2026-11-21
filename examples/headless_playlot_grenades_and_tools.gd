@@ -335,7 +335,7 @@ func _test_aw_grenades() -> void:
 	_check(flash != null and told.size() == 1 and told[0][0] == &"bot" and float(told[0][1]) > 0.0,
 		"a flash blinds a player through the blinded signal", str(told))
 	# A flash beside a chaser blinds its senses on its own clock: it stops perceiving the player, then does again.
-	if GSAddonApi.build_level("dot_npc") >= 6:
+	if GSAddonApi.build_level("gs_npc") >= 6:
 		_g_bot.teleport(Vector3(50, 1.0, 50), 0.0)
 		var spawned := playlot.props.spawn(&"npc_chaser", &"bot", Vector3(53, 1.2, 47))
 		var chaser: PlaylotEntity = spawned.node as PlaylotEntity if spawned != null else null

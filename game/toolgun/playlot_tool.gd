@@ -8,7 +8,7 @@ extends RefCounted
 ## mode keeps no state of its own beyond a pending first click, so swapping is free.
 ##
 ## [b]A mode never decides who may touch what.[/b] The gun has already asked the host's
-## ownership question before a mode sees a hit — the same division dot-props' tools make.
+## ownership question before a mode sees a hit — the same division gs-props' tools make.
 ##
 ## Settings are a schema the menu draws controls from and a dictionary the client sends.
 ## The server takes only keys the schema names and clamps every number to it, because

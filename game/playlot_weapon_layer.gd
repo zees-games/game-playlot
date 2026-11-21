@@ -1,6 +1,6 @@
 extends Node
 
-## Zee guns lying in the world: dot-weapon's drop layer under the `sv_weapon_drop*` rules, built on
+## Zee guns lying in the world: gs-weapon's drop layer under the `sv_weapon_drop*` rules, built on
 ## the server (simulates, hands a gun to an unarmed player) and on a client (draws what it is told).
 
 const PlaylotZee := preload("playlot_zee.gd")
@@ -141,7 +141,7 @@ class _Defs extends RefCounted:
 		return def if def != null else PlaylotZee.pack_def(id)
 
 
-## Walk-over pickup is the sandbox's behaviour; dot-weapon's default is the use key only.
+## Walk-over pickup is the sandbox's behaviour; gs-weapon's default is the use key only.
 static func _walk_over_rules() -> GSWeaponDropRules:
 	var r := GSWeaponDropRules.new()
 	r.auto_pickup = true

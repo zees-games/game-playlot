@@ -19,7 +19,7 @@ func _ready() -> void:
 	# timer would be fed from a signal fired inside somebody else's loop and a bot
 	# could not be driven at all. Owning the loop here makes the order explicit —
 	# sample, move, then time the tick with the position the move produced — and it
-	# is the same shape a dot-net bridge and a dedicated server use, so nothing has
+	# is the same shape a gs-net bridge and a dedicated server use, so nothing has
 	# to be rearranged when one arrives.
 	controller.drive = GSFpsController.Drive.EXTERNAL
 	controller.tunables = _tunables()
@@ -27,7 +27,7 @@ func _ready() -> void:
 	# metadata both ends build from one map document, so a client predicts it too.
 	controller.surfaces = PlaylotMaterials.player_surfaces()
 	# Every player, both ends: an admin's noclip is a modifier whose index travels on the
-	# wire. See dot-player-controller's GSFpsAdminModifiers.
+	# wire. See gs-player-controller's GSFpsAdminModifiers.
 	controller.admin_abilities = true
 
 	# body_ref left unset, so it defaults to the parent — this node, which is the
@@ -166,7 +166,7 @@ func _on_simulated(_tick: int, state: GSFpsState) -> void:
 
 
 ## A trampoline or a bounce pad under the feet throws them, after the move, on every end that
-## simulates this player (a predicting client's replays included): dot-props' `launch_for` is a
+## simulates this player (a predicting client's replays included): gs-props' `launch_for` is a
 ## pure function of where the toys stand, so the client is thrown on the tick the server is.
 ## AIR at once, as a jump leaves the ground, or the motor's ground snap holds them down.
 func _launch_from_toy(state: GSFpsState) -> void:
@@ -258,7 +258,7 @@ func set_held(value: bool) -> void:
 ## Copies where the vehicle has carried this player into the movement state.
 ##
 ## [b]Without this a passenger is drawn on every other machine at the spot where they got
-## in.[/b] The NODE is carried by dot-vehicle, which reparents it into the seat — but the
+## in.[/b] The NODE is carried by gs-vehicle, which reparents it into the seat — but the
 ## timer, the NPC candidate list, the HUD and above all [PlaylotPlayerNet] all read
 ## [code]controller.state.position[/code], and nothing was writing it. The failure is
 ## invisible in one process, because in one process the node is the thing being looked at.
@@ -287,7 +287,7 @@ func pending_command() -> GSFpsCommand:
 ## hides the column (see [GSFxBeacon]).
 ##
 ## [b]Not hidden while dead, unlike the reference game's.[/b] Nothing on this node knows
-## the arena killed it: a dead player here is a body standing where it fell until dot-match's
+## the arena killed it: a dead player here is a body standing where it fell until gs-match's
 ## respawn teleports it, and a marker on that body marks where the player is.
 ##
 ## Placed at the SIMULATED position, the one the client's camera follows: the render state

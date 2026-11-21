@@ -5,7 +5,7 @@ extends "playlot_spawn_menu_cards.gd"
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 
-	# One palette for the whole menu from dot-ui's theme, rounder than the default: every
+	# One palette for the whole menu from gs-ui's theme, rounder than the default: every
 	# widget below inherits it, and the few that need more (cards, tabs, the panel) take
 	# their boxes from PlaylotMenuStyle so a changed accent changes all of them.
 	_palette = GSUiTheme.dark()
@@ -29,7 +29,7 @@ func _ready() -> void:
 	# `set_anchors_and_offsets_preset`, not `set_anchors_preset`: the second sets the
 	# anchors and leaves the offsets alone, so a Control built in code keeps the zero
 	# size it was created with and the whole menu lays out inside nothing while being,
-	# by every property, correctly configured. dot-ui had five of these.
+	# by every property, correctly configured. gs-ui had five of these.
 	_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_panel.offset_left = 96.0
 	_panel.offset_top = 56.0

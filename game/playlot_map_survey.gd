@@ -116,7 +116,7 @@ static func survey_solids(
 	return s._run(ways_out, spawns, declared)
 
 
-## The ways out a run timer's zone set declares: every box END zone, and every box RESPAWN zone as a pit too. [param zones] is a dot-timer `GSTimerZoneSet` or null, read by duck
+## The ways out a run timer's zone set declares: every box END zone, and every box RESPAWN zone as a pit too. [param zones] is a gs-timer `GSTimerZoneSet` or null, read by duck
 ## typing because the timer is an optional addon here and a script naming its classes does not compile without it (see `addons/pg_timer`).
 static func ways_out_of(zones: Object) -> Array:
 	var out: Array = []

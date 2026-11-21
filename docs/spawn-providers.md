@@ -4,7 +4,7 @@ How an optional pack puts weapons, NPCs and bots in the Q menu without the playl
 
 ## The contract
 
-A pack ships `res://addons/<pack>/spawn_provider.gd` (a dot-cloud pack mounted under `res://addons/` counts), or registers any object in `GSRegistry` under a name starting `playlot.spawn_provider` (or the former `playground.spawn_provider`; the rest of the name is the pack). The object is duck-typed: no `class_name`, no base class, `RefCounted` or `Node` (a Node is added under the game). It needs one method:
+A pack ships `res://addons/<pack>/spawn_provider.gd` (a gs-cloud pack mounted under `res://addons/` counts), or registers any object in `GSRegistry` under a name starting `playlot.spawn_provider` (or the former `playground.spawn_provider`; the rest of the name is the pack). The object is duck-typed: no `class_name`, no base class, `RefCounted` or `Node` (a Node is added under the game). It needs one method:
 
 ```gdscript
 func spawn_entries() -> Array[Dictionary]
@@ -30,7 +30,7 @@ The menu never spawns. It asks (`ARM_ADDON_ITEM`, the same request the Addons ta
 
 - **`weapon`, string `spawn`** (the weapon id; empty means the entry's `id`): must be in the game's weapon catalogue (`Playlot.weapon_def`), else refused. It is given with `Playlot.pick_up_weapon`, the event a floor pickup raises, so a server's bridge charges and arms it exactly as a pickup, and offline the client equips it. There is no second way to hold a weapon.
 - **`weapon`, Dictionary `spawn`** (`{weapon_id}` or `{weapon}`: what the real weapon packs hand out, with the definition behind the provider's static `weapon_defs()`): when the provider is registered, both ends add a `PlaylotWeaponDef` named `pk_<pack>_<weapon>` to `Playlot.weapons` (`meta.zee`, `meta.pack_def`, as a Workshop weapon is, kept in `PlaylotZee` apart from the Workshop's so a sync never drops it), then the entry goes through the same pickup path. A provider with no `weapon_defs()` is listed and refused.
-- **`npc` / `bot`, string `spawn`**: a catalogue prop id (for example `npc_soldier`) is spawned through the prop spawner as the player, so the NPC limit, the cost budget, the spawn interval, entitlements and creative mode apply. A `res://...tscn` path is instantiated under the world instead; it is not in the catalogue, so its only limit is 16 alive per player (`PlaylotAddons.MAX_SCENE_SPAWNS`). A scene NPC that wants dot-bot behaviour wires it itself.
+- **`npc` / `bot`, string `spawn`**: a catalogue prop id (for example `npc_soldier`) is spawned through the prop spawner as the player, so the NPC limit, the cost budget, the spawn interval, entitlements and creative mode apply. A `res://...tscn` path is instantiated under the world instead; it is not in the catalogue, so its only limit is 16 alive per player (`PlaylotAddons.MAX_SCENE_SPAWNS`). A scene NPC that wants gs-bot behaviour wires it itself.
 - **Callable `spawn`** (or `spawn_fn`, which wins when `spawn` is a stats Dictionary kept for other consumers; a Dictionary with no `spawn_fn` is listed but refused): called on the server with `{game, world, player_id, at, kind, cfg_hint, authoritative}` and may return a `GSResult`. The pack is then responsible for its own limits; use `game.props.spawn` to inherit them.
 
 Props and the rest of the kinds are not built yet: a `prop` entry works today only as a Callable.
@@ -41,11 +41,11 @@ Props and the rest of the kinds are not built yet: a `prop` entry works today on
 
 ## Hurting a pack monster
 
-A pack monster's body has no `take_damage`: its health is the pack runtime's `GSNpcSpawner` (dot-npc). Every game damage path asks the collider for `take_damage` first, so until `PlaylotAddons.hurt_monster` existed a rifle shot, a grenade and a barrel's blast all treated a dinosaur as a wall. `hurt_monster` finds the monster whose body (or a node under it) was hit, takes off the limb at the point (`zhm_limb_hit`), calls `GSNpcSpawner.damage` (which runs the brain's flinch, the `died` signal and the removal) and tells the shooter through `confirm_hit`. It is called from `Playlot.player_shots_fired`, `npc_shots_fired`, `PlaylotProjectiles.hurt` (grenade and rocket splash) and `blast_monsters` (a barrel going up). The physics gun moves props and deals no damage, so it has no path here. `headless_packs_real` covers all six species.
+A pack monster's body has no `take_damage`: its health is the pack runtime's `GSNpcSpawner` (gs-npc). Every game damage path asks the collider for `take_damage` first, so until `PlaylotAddons.hurt_monster` existed a rifle shot, a grenade and a barrel's blast all treated a dinosaur as a wall. `hurt_monster` finds the monster whose body (or a node under it) was hit, takes off the limb at the point (`zhm_limb_hit`), calls `GSNpcSpawner.damage` (which runs the brain's flinch, the `died` signal and the removal) and tells the shooter through `confirm_hit`. It is called from `Playlot.player_shots_fired`, `npc_shots_fired`, `PlaylotProjectiles.hurt` (grenade and rocket splash) and `blast_monsters` (a barrel going up). The physics gun moves props and deals no damage, so it has no path here. `headless_packs_real` covers all six species.
 
 ## Not yet
 
-- Entries are listed once at start; a pack mounted later by dot-cloud shows after the next boot.
+- Entries are listed once at start; a pack mounted later by gs-cloud shows after the next boot.
 - The Q menu has no phone layout yet, so neither do these tabs.
 
 The test fixtures are `examples/fixtures/spawn_pack/` (valid, with bad entries), `spawn_pack_broken/` and `spawn_pack_none/`, used by the "spawn providers" section of `examples/headless_playlot.gd` with a scratch root, so the real `addons/` is untouched. `tools/screenshot_menus.sh` renders `menu_provider_weapons.png` and `menu_provider_npcs.png`.

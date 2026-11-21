@@ -134,10 +134,10 @@ func _test_roster_sides_and_classes() -> void:
 
 	_check(_stack().roster.has_player("ada"), "and lands in the session roster")
 	_check(_stack().teams.has_player("ada"), "and on a side")
-	_check(_stack().team_index_of("ada") > 0, "with a real team number for dot-spectate")
+	_check(_stack().team_index_of("ada") > 0, "with a real team number for gs-spectate")
 	_check(
 		_stack().team_index_of("nobody") == 0,
-		"and 0 for a stranger, which is what dot-spectate reads as 'no team'"
+		"and 0 for a stranger, which is what gs-spectate reads as 'no team'"
 	)
 
 	var def := _stack().classes.def_of("ada")
@@ -255,7 +255,7 @@ func _test_character() -> void:
 
 	_check(
 		player.character is GSPlayerCharVisual,
-		"which is dot-player-char's own abstract node — the one that had no "
+		"which is gs-player-char's own abstract node — the one that had no "
 		+ "implementation in any project in this family"
 	)
 	_check(player.character.rig != null, "with a rig")
@@ -312,7 +312,7 @@ func _test_character() -> void:
 
 # --- Harness ---------------------------------------------------------------
 
-## Stands in for a `GSHealth` without naming dot-combat, which this section does not need.
+## Stands in for a `GSHealth` without naming gs-combat, which this section does not need.
 class StubHealth extends Object:
 	var max_health: float = 1.0
 	var max_armour: float = 0.0

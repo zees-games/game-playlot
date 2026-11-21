@@ -3,13 +3,13 @@ extends Node
 const Playlot := preload("playlot.gd")
 const PlaylotUserFiles := preload("playlot_user_files.gd")
 
-## Per-player statistics, and what they are worth: dot-stats and dot-achievements.
+## Per-player statistics, and what they are worth: gs-stats and gs-achievements.
 ##
 ## [b]This game already had boards and had nothing to put on them but times.[/b]
 ## `GSLeaderboardManager` is in `Playlot` and holds three orderings; what was missing
 ## is the layer under it — the *counts*. How many props somebody has spawned, how many runs
-## they have finished, how far they have fallen. dot-stats declares those once and reports
-## them to the backbone as coalesced deltas; dot-achievements is rules over the same
+## they have finished, how far they have fallen. gs-stats declares those once and reports
+## them to the backbone as coalesced deltas; gs-achievements is rules over the same
 ## readings, which is the whole point of `GSAchievementStatsLink`.
 ##
 ## [b]Neither addon is given a new source of truth.[/b] A second count of anything is a
@@ -17,7 +17,7 @@ const PlaylotUserFiles := preload("playlot_user_files.gd")
 ## one nobody is looking at. Every stat here is recorded from a signal the game already
 ## fires.
 ##
-## [b]The player key is the scoped pseudonymous one, never an account id.[/b] dot-stats
+## [b]The player key is the scoped pseudonymous one, never an account id.[/b] gs-stats
 ## refuses an account id as a player key before it leaves the server, and a board is
 ## exactly the same kind of record.
 
@@ -25,7 +25,7 @@ const CHANNEL := "playlot.progress"
 
 const PROGRESS_DIR := "user://playlot_achievements"
 
-## The published skill figure the site orders by (dot-stats' GSStatsRank).
+## The published skill figure the site orders by (gs-stats' GSStatsRank).
 const RANK_SCORE := &"rank_score"
 
 
@@ -42,7 +42,7 @@ var rank: GSStatsRank = null
 
 var game: Playlot = null
 
-## Kills and hits by body zone, through dot-stats' event feed.
+## Kills and hits by body zone, through gs-stats' event feed.
 var feed: GSStatsEventFeed = null
 
 ## The backbone, when an operator has configured one. Null on a LAN server.
@@ -55,7 +55,7 @@ var progress_dir: String = PROGRESS_DIR
 
 ## Every number this game reports about a player, declared once.
 ##
-## [b]Declared, not discovered.[/b] dot-stats' whole shape is that a game says what it
+## [b]Declared, not discovered.[/b] gs-stats' whole shape is that a game says what it
 ## counts at boot and then reports deltas against it — so a typo'd stat id is refused when
 ## the schema is built rather than silently accumulating under a name nothing reads.
 static func stats_schema() -> GSStatsSchema:
@@ -122,7 +122,7 @@ static func catalogue() -> GSAchievementCatalogue:
 	made.append(quick)
 
 	# A LOWEST, so the other end of the merge table is exercised rather than only
-	# described — `GSAchievementRule.Merge` is dot-stats' four kinds again, and the two
+	# described — `GSAchievementRule.Merge` is gs-stats' four kinds again, and the two
 	# would otherwise disagree about what a new reading does to an old one.
 	var swift := GSAchievement.make(
 		&"under_20", "Swift",
@@ -288,8 +288,8 @@ func _on_run_filed(
 
 ## One reading, under the key this player is filed as.
 ##
-## [b]The tracker's key, never the account id.[/b] dot-stats refuses one before it leaves
-## the server, and a stat is exactly the kind of record dot-user's per-scope ids exist for.
+## [b]The tracker's key, never the account id.[/b] gs-stats refuses one before it leaves
+## the server, and a stat is exactly the kind of record gs-user's per-scope ids exist for.
 func _record(player_id: StringName, stat: StringName, value: float) -> void:
 	var key: String = str(key_for.call(player_id)) if key_for.is_valid() \
 		else String(player_id)
@@ -336,7 +336,7 @@ func report_kill(killer: StringName, victim: StringName) -> void:
 ## How a world player id becomes a stats key.
 ##
 ## `func(id: StringName) -> String`. Unset means the player id itself, which is right for
-## a LAN server and wrong for one with dot-platform — where the scoped pseudonymous key is
+## a LAN server and wrong for one with gs-platform — where the scoped pseudonymous key is
 ## what a stat has to be filed under.
 var key_for: Callable = Callable()
 

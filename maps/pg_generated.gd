@@ -28,7 +28,7 @@ const PlaylotWorldGen := preload("../game/playlot_worldgen.gd")
 ## scene is added, so that a map change with a chosen seed produces the chosen map.
 var seed_value: int = 0
 
-## Anything with `seed_for(name)`. dot-randomness' manager, duck-typed.
+## Anything with `seed_for(name)`. gs-randomness' manager, duck-typed.
 var seed_source: Object = null
 
 ## The document that was generated, for a console command and for the suite.
@@ -41,7 +41,7 @@ var prop_points: Array[Vector3] = []
 ## Whether anything has been built yet.
 ##
 ## [b]This map does not build itself in `_ready`, which every other one does.[/b] A
-## generated map needs a seed, and dot-map's loader instantiates a scene and adds it --
+## generated map needs a seed, and gs-map's loader instantiates a scene and adds it --
 ## there is no moment between those two where anything could hand one over. So `_ready`
 ## does nothing and [Playlot] calls [method configure] from its `map_changed` handler,
 ## before it spawns anybody.

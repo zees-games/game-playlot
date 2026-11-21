@@ -35,7 +35,7 @@ func _on_prop_spawned(prop: GSPropInstance) -> void:
 
 ## Puts a spawned body on the layer that matches what it is. `sandbox_3d` is the one preset with `held_prop` and `frozen_prop`: a
 ## carried prop must not collide with its carrier (it shoves them down a corridor) and a frozen one is scenery everything is solid against.
-## Spawn time only: dot-props has no signal for freezing or grabbing, so `PlaylotProp` calls `reclassify` when it changes state.
+## Spawn time only: gs-props has no signal for freezing or grabbing, so `PlaylotProp` calls `reclassify` when it changes state.
 func _classify_spawned(prop: GSPropInstance) -> void:
 	if player_stack == null or prop.node == null:
 		return
@@ -55,7 +55,7 @@ static func layer_for(def: GSPropDef, frozen: bool) -> StringName:
 			return &"frozen_prop" if frozen else &"prop"
 
 
-## Re-reads a prop's layer after it was frozen, unfrozen, grabbed or dropped. Public because dot-props has no signal for those
+## Re-reads a prop's layer after it was frozen, unfrozen, grabbed or dropped. Public because gs-props has no signal for those
 ## states, so the code that changes the state is the code that has to say so.
 func reclassify_prop(node: Node, frozen: bool, held: bool) -> void:
 	if player_stack == null or node == null:
@@ -72,7 +72,7 @@ func reclassify_prop(node: Node, frozen: bool, held: bool) -> void:
 
 
 ## Turns a spawned body into a scripted entity by attaching the script its definition names: the whole "an entity has a script" mechanism.
-## The script comes from `meta`, loaded by PATH because a mounted dot-cloud pack's `class_name` globals are not registered in the host.
+## The script comes from `meta`, loaded by PATH because a mounted gs-cloud pack's `class_name` globals are not registered in the host.
 ## [method Node._ready] has already run by now, hence `_entity_ready`. A failure removes the prop: a script-less body is a crate, which looks like an NPC with nothing to do.
 func _configure_entity(prop: GSPropInstance) -> void:
 	var script := PlaylotSpawnables.load_script(prop.def)
@@ -171,9 +171,9 @@ func _on_prop_removed(prop: GSPropInstance, _reason: StringName) -> void:
 
 	# A vehicle first, because it may still have people in it. `remove` evacuates them —
 	# forcing the exit, because a car being deleted is exactly the case where there may
-	# be nowhere to stand — and leaves the node alone, since dot-props owns it.
+	# be nowhere to stand — and leaves the node alone, since gs-props owns it.
 	if PlaylotSpawnables.kind_of(prop.def) == PlaylotSpawnables.Kind.VEHICLE:
-		# Looked up by NODE, not by the prop's instance id. dot-props and dot-vehicle both
+		# Looked up by NODE, not by the prop's instance id. gs-props and gs-vehicle both
 		# key their tables on "an instance id" and there is nothing making the two the
 		# same number; the node is what both of them actually agree about.
 		var riding_vehicle := vehicles.vehicle_for_node(prop.node) if vehicles != null else null

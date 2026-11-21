@@ -1,6 +1,6 @@
 extends Node
 
-const _Perf := preload("res://addons/dot_game/runtime/dot_game_profiler.gd")
+const _Perf := preload("res://addons/gs_game/runtime/gs_game_profiler.gd")
 const PlaylotNetBridge := preload("playlot_net_bridge.gd")
 const PlaylotNetLink := preload("playlot_net_link.gd")
 
@@ -28,14 +28,14 @@ const CHANNEL := "playlot.link"
 ## that ships both ends together.
 const NODE_NAME := &"Playground"
 
-## Everything here rides [constant GSTransport.Channel.STATE], which dot-server reserves
+## Everything here rides [constant GSTransport.Channel.STATE], which gs-server reserves
 ## for exactly this and uses for nothing itself. Sharing chat's channel would make a burst
 ## of snapshots delay a chat line, and vice versa.
 const CHANNEL_STATE := 1
 
 ## Voice, and only voice.
 ##
-## [constant GSTransport.Channel.EVENT] is what dot-server reserves for chat and events,
+## [constant GSTransport.Channel.EVENT] is what gs-server reserves for chat and events,
 ## and this game's chat has moved onto [GSChatRouter] and rides `event` on the state
 ## channel with everything else — so this one is free. Voice gets it to itself for the
 ## reason the state channel exists at all: a hundred and twenty-eight snapshots a second

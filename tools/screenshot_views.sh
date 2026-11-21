@@ -8,7 +8,7 @@
 # rendering context; --headless gives a null renderer and saves a frame of nothing.
 set -euo pipefail
 # A short frame sequence beside each still (GSShotSeq), so Nightly -> Review can play and scrub it.
-export GS_SHOT_FRAMES=${GS_SHOT_FRAMES:-${DOT_SHOT_FRAMES:-8}} GS_SHOT_SECS=${GS_SHOT_SECS:-${DOT_SHOT_SECS:-1}}
+export GS_SHOT_FRAMES=${GS_SHOT_FRAMES:-8} GS_SHOT_SECS=${GS_SHOT_SECS:-1}
 cd "$(dirname "$0")/.."
 mkdir -p screenshots
 exec xvfb-run -a godot --path . --resolution 1600x900 --script tools/screenshot_views.gd

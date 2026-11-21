@@ -58,7 +58,7 @@ func _sync_hud() -> void:
 		hud.set_tool(_tool_name(), selected_prop)
 
 
-## The phone's controls over the HUD (dot-mobile's overlay, shown on a touch device only). Fire and alt are the click's two buttons; Q is the
+## The phone's controls over the HUD (gs-mobile's overlay, shown on a touch device only). Fire and alt are the click's two buttons; Q is the
 ## spawn-menu key fed the same press and release, so hold-to-open and tap-to-pin are the keyboard's own; the
 ## tool arrows step the weapon wheel's actions, TAB holds the scoreboard and CHAT opens the chat box.
 func _build_touch() -> void:
@@ -113,7 +113,7 @@ func _touch_ignores(position: Vector2) -> bool:
 	return button != null and button.is_visible_in_tree() and button.get_global_rect().has_point(position)
 
 
-## A finger on the look or move half goes to the touch sampler; with a menu open it is the menu's. With dot-mobile's
+## A finger on the look or move half goes to the touch sampler; with a menu open it is the menu's. With gs-mobile's
 ## overlay up it forwards every touch itself, so nothing is handed over twice.
 func _on_screen_touch(event: InputEvent) -> void:
 	if _menu_is_open() or (_touch != null and _touch.takes(event)):

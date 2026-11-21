@@ -16,7 +16,7 @@ func _ready() -> void:
 	if config == null:
 		config = PlaylotConfig.new()
 
-	# zee-dot-weapons' art is this game's copy of it, wherever this game is mounted.
+	# zee-gs-weapons' art is this game's copy of it, wherever this game is mounted.
 	PlaylotZee.use_this_games_art()
 
 	# The NPCs' clip sets, on a worker while the map below loads, not on the main thread under the cover.
@@ -198,7 +198,7 @@ func _build_netcode() -> GSResult:
 	net_config.enable_lag_compensation = false
 	net_config.max_entities_per_snapshot = 0
 	net_config.world_extent = 512.0
-	# Both default off, else every snapshot replays the whole input lead. By name: a pack runs on its shell's dot-net.
+	# Both default off, else every snapshot replays the whole input lead. By name: a pack runs on its shell's gs-net.
 	if &"reconcile_once_per_frame" in net_config:
 		net_config.set(&"reconcile_once_per_frame", true)
 	if &"skip_matching_replays" in net_config:
@@ -239,7 +239,7 @@ func _build_netcode() -> GSResult:
 	bridge.hello_received.connect(_on_hello)
 	bridge.roster_changed.connect(_on_roster_changed)
 	bridge.weapon_changed.connect(_on_weapon_changed)
-	# dot-server's `chat_received` is NOT connected: [GSChatRouter] routes every line, and both would draw it twice.
+	# gs-server's `chat_received` is NOT connected: [GSChatRouter] routes every line, and both would draw it twice.
 	bridge.chat_received.connect(_on_chat_wire)
 	bridge.builds_received.connect(func(list: Array) -> void:
 		if menu != null:
@@ -265,7 +265,7 @@ func _build_netcode() -> GSResult:
 	# Stock tunables until there is a player to ask; _adopt swaps them in when JOIN arrives.
 	_sampler = PlaylotTouch.make_sampler(GSFpsTunables.new(), _touch_ignores)
 
-	# Nothing may be sent before the peer says it can receive: dot-server's signon ends before
+	# Nothing may be sent before the peer says it can receive: gs-server's signon ends before
 	# this scene exists, so earlier sends hit a missing node and the client never joins.
 	if link.has_method("is_playing") and bool(link.call("is_playing")):
 		bridge.ask_ready()
@@ -274,7 +274,7 @@ func _build_netcode() -> GSResult:
 		link.connect("spawned", bridge.ask_ready, CONNECT_ONE_SHOT)
 		link.connect("spawned", workbench_remote.ask, CONNECT_ONE_SHOT)
 
-	# Nothing in dot-net writes an RTT sample; without one the clock believes the link is instant.
+	# Nothing in gs-net writes an RTT sample; without one the clock believes the link is instant.
 	if link.has_method("ping_ms"):
 		bridge.rtt_source = func() -> float:
 			return float(maxi(0, int(link.call("ping_ms"))))

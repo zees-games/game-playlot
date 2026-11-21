@@ -13,7 +13,7 @@ const PlaylotCharacter := preload("playlot_character.gd")
 ## - anything that changes where a player ends up runs *inside* the simulation, after
 ##   the move ([member post_move_fn], the toys, a prop underfoot), so a predicting
 ##   client's replay of a tick gets what the server's tick got;
-## - a style is dot-player-controller's [code]GSFpsStyle[/code]; a run timer, when a
+## - a style is gs-player-controller's [code]GSFpsStyle[/code]; a run timer, when a
 ##   server added one, hears [signal style_changed] and puts its ranking half beside it.
 
 const CHANNEL := "playlot.player"
@@ -48,7 +48,7 @@ var tps: GSTpsController = null
 ## Which of the two is driving. Built only on a player that can have a camera.
 var controller_switch: GSPlayerControllerSwitch = null
 
-## The dot-player component root the two controllers bind through.
+## The gs-player component root the two controllers bind through.
 var player_node: GSPlayer = null
 
 ## The body other people see. Null until [method build_character] is called.
@@ -62,7 +62,7 @@ var death: GSPlayerDeath = null
 var anim: GSPlayerAnimDriver = null
 
 ## The camera's motion cues on the local player: the landing dip and nod, the strafe lean and
-## the widening past a run, from dot-player-controller's [GSFpsViewMotion] applied where the
+## the widening past a run, from gs-player-controller's [GSFpsViewMotion] applied where the
 ## camera is written ([method present_camera]). Null on everybody else.
 ##
 ## [b]Not a [GSFpsView], and one stood here doing nothing until 2026-10-11.[/b] The client
@@ -83,7 +83,7 @@ var sampler: GSFpsSampler = null
 ## See [method class_base_tunables].
 var _class_base: GSFpsTunables = null
 
-## This player's run timer, when a server added dot-timer: a `GSTimer` owned by
+## This player's run timer, when a server added gs-timer: a `GSTimer` owned by
 ## `addons/pg_timer`'s manager, untyped because the addon may be absent. Null otherwise.
 var timer: Object = null
 
@@ -91,7 +91,7 @@ var timer: Object = null
 var carry: GSPropCarry = null
 var carry_enabled_fn: Callable = Callable()
 
-## The map's toys (dot-props' [GSPropBodyBox]), for the trampolines and pads that throw this
+## The map's toys (gs-props' [GSPropBodyBox]), for the trampolines and pads that throw this
 ## player and the roundabout that carries them. Set by the game on every map, both ends.
 var toys: GSPropBodyBox = null
 
@@ -108,11 +108,11 @@ var carried_metres: float = 0.0
 ## The movement half of the style in force.
 var movement_style: GSFpsStyle = null
 
-## The tools, when the game has dot-props.
+## The tools, when the game has gs-props.
 var phys_gun: GSPhysGun = null
 var grav_gun: GSGravGun = null
 
-## The zee-dot-weapons rig in this player's hands, or null. Put here and taken away by
+## The zee-gs-weapons rig in this player's hands, or null. Put here and taken away by
 ## PlaylotZee, never built by the player: most players hold a physics gun.
 var zee_rig: Node = null
 
@@ -187,7 +187,7 @@ var tick_rate: int = 128:
 			controller.tick_rate = value
 
 
-## This player's swimming mode (dot-player-controller's GSFpsSwimMode). Its water is the
+## This player's swimming mode (gs-player-controller's GSFpsSwimMode). Its water is the
 ## map's, set by [method set_water].
 var swim: GSFpsSwimMode = GSFpsSwimMode.new()
 
@@ -197,7 +197,7 @@ var swim: GSFpsSwimMode = GSFpsSwimMode.new()
 
 ## Gives this player a visible body and the locomotion state machine that drives it.
 ##
-## [b]dot-player-char's visual half had no implementation in any game in this family.[/b]
+## [b]gs-player-char's visual half had no implementation in any game in this family.[/b]
 ## Five projects installed the addon, four built a catalogue, and `GSPlayerCharVisual` —
 ## the abstract node the whole addon exists to fill — was subclassed nowhere. It survived
 ## because every game was first-person and nobody sees their own body; the third-person
@@ -482,7 +482,7 @@ func set_style(movement: GSFpsStyle) -> GSResult:
 	return applied
 
 
-## Stops the run in progress, if there is a run timer. [param reason] is one of dot-timer's
+## Stops the run in progress, if there is a run timer. [param reason] is one of gs-timer's
 ## stop reasons (`&"teleport"`, `&"noclip"`, ...), as a StringName.
 func stop_run(reason: StringName) -> void:
 	if timer != null:
@@ -671,7 +671,7 @@ func aim_direction() -> Vector3:
 	return GSFpsMotor.aim_for(controller.state.yaw, controller.state.pitch)
 
 
-## The duck-typed lookup dot-weapon's player bridge asks a carrier for.
+## The duck-typed lookup gs-weapon's player bridge asks a carrier for.
 ##
 ## [b]Without it every shot leaves the body's origin pointing north.[/b]
 ## `GSWeaponPlayerBridge` takes a shot's origin and aim from a controller it finds through

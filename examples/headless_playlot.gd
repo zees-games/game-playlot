@@ -9,7 +9,7 @@ const PlaylotClientPrewarm := preload("res://game/client/playlot_client_prewarm.
 ## total above is the other half — see docs/testing.md.
 const SECTIONS := 46
 
-## What `_test_the_run_timer` and `_test_leaderboards` add when dot-timer is linked.
+## What `_test_the_run_timer` and `_test_leaderboards` add when gs-timer is linked.
 const TIMER_SECTIONS := 2
 const TIMER_CHECKS := 14
 
@@ -33,13 +33,13 @@ func _run() -> void:
 	await _test_boots()
 	await _test_tick_rate_comes_from_the_engine()
 	await _test_styles()
-	# The two that need dot-timer, run only when linked; skipped, they add to neither total.
+	# The two that need gs-timer, run only when linked; skipped, they add to neither total.
 	if _timer_linked():
 		await _test_the_run_timer()
 		await _test_leaderboards()
 	else:
 		print("")
-		print("  SKIP  the run timer and its leaderboards: res://addons/dot_timer is not linked")
+		print("  SKIP  the run timer and its leaderboards: res://addons/gs_timer is not linked")
 	await _test_props()
 	await _test_map_change()
 	await _test_map_time_limit()
@@ -371,11 +371,11 @@ func _test_the_maps_are_surveyed() -> void:
 		map._build()
 
 		# The map brings its light with it (`PlaylotGeometry.light`): exactly one sun and
-		# one environment, or the second is silently ignored by the renderer. dot-lighting's
+		# one environment, or the second is silently ignored by the renderer. gs-lighting's
 		# shadowless `Fill` (painted()) is not a second sun.
 		var suns := map.get_children().filter(func(n: Node) -> bool: return n is DirectionalLight3D and n.name != "Fill").size()
 		var skies := map.get_children().filter(func(n: Node) -> bool: return n is WorldEnvironment).size()
-		_check(suns == 1 and skies == 1, "%s: carries one sun and one sky (its dot-lighting document)" % id,
+		_check(suns == 1 and skies == 1, "%s: carries one sun and one sky (its gs-lighting document)" % id,
 			"%d suns, %d environments" % [suns, skies])
 
 		# A hand-built map here declares no zones (a run timer's, when a server has one,

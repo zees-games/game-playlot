@@ -512,7 +512,7 @@ func _test_workbench() -> void:
 
 ## No token file: an account resolved by the resolver gets in only when listed, and the game's flags still apply.
 func _test_workbench_identity() -> void:
-	_section("the workbench admits a dot-auth account")
+	_section("the workbench admits a gs-auth account")
 	var wb := _new_workbench({"enabled": true, "port": 0, "admin_uids": ["boss", "nocvar"], "token_file": "user://wb_identity.token"})
 	var res := wb.start(_game.profiles.runtime)
 	var resolver := func(token: String) -> Variant:

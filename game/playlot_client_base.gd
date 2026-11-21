@@ -33,8 +33,8 @@ const PlaylotWorkbenchSets := preload("playlot_workbench_sets.gd")
 
 const CHANNEL := "playlot.client"
 
-## Where dot-server's client publishes its [GSClientLink] before a game scene loads.
-const LINK_SERVICE := &"dot_client_link"
+## Where gs-server's client publishes its [GSClientLink] before a game scene loads.
+const LINK_SERVICE := &"gs_client_link"
 
 ## Ids the tools are addressed by, here and in [PlaylotSpawnMenu].
 const TOOL_PHYS := &"phys"
@@ -73,7 +73,7 @@ var last_undo_cue: Dictionary = {}
 
 var playlot: Playlot = null
 ## [member playlot] under its name from before the Playlot rename, read only: what a delivered
-## client is found by from outside (dot-server-deploy's client check reads it with [code]get[/code]).
+## client is found by from outside (gs-server-deploy's client check reads it with [code]get[/code]).
 var playground: Playlot:
 	get:
 		return playlot
@@ -83,7 +83,7 @@ var net: GSNetManager = null
 var bridge: PlaylotNetBridge = null
 var player: PlaylotPlayer = null
 var hud: PlaylotHud = null
-## Takes maps dropped on the window or the executable (a GSMapDropIntake); null on a dot-map older than API 26.
+## Takes maps dropped on the window or the executable (a GSMapDropIntake); null on a gs-map older than API 26.
 var map_drop: Node = null
 
 ## The client half of chat: the channels, the history, the unread counts and the gap
@@ -104,7 +104,7 @@ var camera: Camera3D = null
 ## player and the camera are all in. See [method _build_gate].
 var gate: GSLoadGate = null
 
-## dot-game's platform layer: builds the gate, answers link and offline, flushes the browser's
+## gs-game's platform layer: builds the gate, answers link and offline, flushes the browser's
 ## filesystem, and says when input is blocked. Not its settings, console, pointer or board.
 var platform: GSGameClient = null
 ## Whether an offline client fetches the world's art slices and the locked pack; a suite sets it false so it needs no network.
@@ -116,7 +116,7 @@ signal leave_requested()
 
 var screens: GSScreenStack = null
 
-## The escape menu: dot-menu's, with the settings behind it, help, the server list and
+## The escape menu: gs-menu's, with the settings behind it, help, the server list and
 ## Leave. See [method _build_pause]. Also holds the Tab scoreboard.
 var game_menu: GSMenu = null
 
@@ -285,14 +285,14 @@ func _covered() -> bool:
 
 const VIEW_NAMES := {&"fp": "first person", &"tp": "third person", &"selfie": "selfie"}
 
-const VIEW_ARMS_SCRIPT := "res://addons/dot_player_char/nodes/dot_player_view_arms.gd"
+const VIEW_ARMS_SCRIPT := "res://addons/gs_player_char/nodes/gs_player_view_arms.gd"
 
 ## The camera of the `selfie` view, left standing where the player was.
 var selfie_camera: Camera3D = null
 ## Yaw-only pivot at the eye; the downed first-person arms hang under it, not the pitching camera.
 var arms_pivot: Node3D = null
 var view_arms: Node = null
-## Where the arms hold the zee weapon in hand (dot-player-char API 8); null with nothing held.
+## Where the arms hold the zee weapon in hand (gs-player-char API 8); null with nothing held.
 var held_grip: GSViewGrip = null
 var _arms_down := false
 ## Where the avatar's firing hand rests in first person, in the camera's metres. The avatar's, not the
@@ -305,9 +305,9 @@ var hand_seat_offset := Vector3.ZERO
 var _seated_for: StringName = &""
 
 
-## The downed player's own arms (dot-player-char API 7); nothing on an older build.
+## The downed player's own arms (gs-player-char API 7); nothing on an older build.
 func _build_view_arms() -> void:
-	if GSAddonApi.build_level("dot_player_char") < 7 or not ResourceLoader.exists(VIEW_ARMS_SCRIPT):
+	if GSAddonApi.build_level("gs_player_char") < 7 or not ResourceLoader.exists(VIEW_ARMS_SCRIPT):
 		return
 	arms_pivot = Node3D.new()
 	arms_pivot.name = "ArmsYaw"
@@ -360,7 +360,7 @@ func _on_combat(state: Dictionary) -> void:
 		hud.notice("You were killed.")
 
 
-## Where the dead lie: dot-player-char's ragdolls under the server's rules. Connected only:
+## Where the dead lie: gs-player-char's ragdolls under the server's rules. Connected only:
 ## a solo sandbox has no arena and nobody dies.
 var ragdolls: GSPlayerRagdolls = null
 
@@ -450,13 +450,13 @@ func _on_progress(state: Dictionary) -> void:
 
 
 ## Something other than the cover has the keyboard or the screen: the chat box, the console,
-## or dot-menu's menu.
+## or gs-menu's menu.
 func _input_busy() -> bool:
 	return (presentation != null and presentation.swallows_input()) \
 		or (game_menu != null and game_menu.any_open())
 
 
-## Movement stops while the cover, the chat box, the console or dot-menu's menu is up. Only
+## Movement stops while the cover, the chat box, the console or gs-menu's menu is up. Only
 ## when none is is it given back, so the console closing while the chat box is still open
 ## does not walk the player. Also called when a sampler is built, which starts unsuspended.
 func _suspend_input(blocked: bool) -> void:
@@ -465,7 +465,7 @@ func _suspend_input(blocked: bool) -> void:
 		sampler.suspended = blocked
 
 
-## dot-team's block rules followed from the server, and the F9 tuning panel where this process hosts the game.
+## gs-team's block rules followed from the server, and the F9 tuning panel where this process hosts the game.
 func _add_noblock_and_workbench() -> void:
 	if link != null:
 		GSLog.result(CHANNEL, "noblock", platform.add_noblock(playlot, Callable(playlot, "team_of_side")))
@@ -505,7 +505,7 @@ func _start_remote_workbench() -> void:
 	platform.add_workbench(wb)
 
 
-## The HUD in the menu's theme and at the player's HUD size, live (dot-menu's `follow_hud`,
+## The HUD in the menu's theme and at the player's HUD size, live (gs-menu's `follow_hud`,
 ## by name for a client shell older than it): Christian's first play test asked for a darker
 ## HUD a player can restyle in the menu. Whichever of the HUD and the menu comes second calls it.
 func _follow_hud() -> void:
@@ -513,13 +513,13 @@ func _follow_hud() -> void:
 		return
 	if game_menu.has_method(&"follow_hud"):
 		game_menu.call(&"follow_hud", hud, PlaylotHud.piece_theme())
-	# dot-timer's block is not a dot-ui piece: it takes the palette on every theme change.
+	# gs-timer's block is not a gs-ui piece: it takes the palette on every theme change.
 	hud.apply_theme(game_menu.palette())
 	if not game_menu.theme_changed.is_connected(hud.apply_theme):
 		game_menu.theme_changed.connect(hud.apply_theme)
 
 
-## This game's rows on dot-menu's General page: the sandbox's own, and the camera motion.
+## This game's rows on gs-menu's General page: the sandbox's own, and the camera motion.
 ## Static so `tools/screenshot_menus` draws the page the client builds rather than a copy.
 static func add_general_rows(game_menu: GSMenu) -> void:
 	var settings := game_menu.settings
@@ -718,7 +718,7 @@ var _wet: Dictionary = {}
 ## What B says outside the arena (the server's `closed_fn` says the same).
 const LOADOUT_ARENA_ONLY := "Loadouts are in the arena."
 
-## dot-menu's loadout menu, or null on a host whose dot-menu predates it (API 6).
+## gs-menu's loadout menu, or null on a host whose gs-menu predates it (API 6).
 var loadout_menu: Object = null
 
 ## Whether the server's arena is on (`pg_arena_on`, replicated). Never offline: the arena is a

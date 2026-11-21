@@ -164,7 +164,7 @@ func _boot() -> void:
 	# Off: nobody is at the keyboard, and the exit probe's copy of this suite inherits
 	# whatever stdin this one has — a reader thread blocked on a terminal is a process that
 	# never exits.
-	# Kept after dot-server 5f46687, which no longer reads a pipe unless `stdin_console_pipes`
+	# Kept after gs-server 5f46687, which no longer reads a pipe unless `stdin_console_pipes`
 	# is on: a terminal is still read, and a suite takes no commands from either.
 	config.stdin_console_enabled = false
 
@@ -225,7 +225,7 @@ func _boot() -> void:
 	# [b]The identity half, before the modules.[/b] [GSPlatformModule] refuses to load
 	# without a [GSPlatformHub] in the registry, and building the hub is awaited work —
 	# which is why it is here, in the application, rather than inside a module's
-	# `_module_load`, which dot-server's module host does not await.
+	# `_module_load`, which gs-server's module host does not await.
 	platform = PlaylotPlatform.new()
 	platform.name = "Identity"
 	platform.directory = "%s/identity" % SERVER_DIR
@@ -235,7 +235,7 @@ func _boot() -> void:
 	_check(identity.ok, "profiles and avatars are up", str(identity.error))
 
 	var platform_module: GSResult = await server.modules.load_module(
-		"res://addons/dot_platform/dot_platform_module.gd"
+		"res://addons/gs_platform/gs_platform_module.gd"
 	)
 	_check(platform_module.ok, "the platform module loads", str(platform_module.error))
 
@@ -301,7 +301,7 @@ func _test_map_commands() -> void:
 	)
 
 	# The map menu's server half (M): the owner's flag changes the map now, anybody else
-	# gets a nomination and a rock-the-vote. Contexts as dot-server makes them for a chat line.
+	# gets a nomination and a rock-the-vote. Contexts as gs-server makes them for a chat line.
 	var menu_half: Object = _module().get("vote").get("commands").get("map_menu")
 	_check(menu_half != null and server.console.find_command("mapmenu") != null
 		and server.console.find_cvar("sv_map_menu_flag").get_string() == "generic"
@@ -324,7 +324,7 @@ func _test_map_commands() -> void:
 	_check(bool(menu_changed["ok"]) and game.maps.current.id == target, "staff choosing one changes the map on the spot",
 		"%s: %s" % [target, menu_changed.get("text", "")])
 
-	# The plain name, which is dot-map's now. It used to be dot-server's and it changed the
+	# The plain name, which is gs-map's now. It used to be gs-server's and it changed the
 	# GAME -- so on this server, one game and several maps, `map` did the one thing an
 	# operator typing it did not mean.
 	var plain := _run_command("map")
@@ -364,11 +364,11 @@ func _test_map_commands() -> void:
 	)
 	_check(
 		server.console.find_command("game") != null,
-		"while `game` is what changes the game, which is what dot-server's `map` used to do"
+		"while `game` is what changes the game, which is what gs-server's `map` used to do"
 	)
 	_check(
 		server.console.find_command("mapinfo") != null,
-		"and `mapinfo` answers what `nextmap` and `timeleft` would, without taking dot-vote's names"
+		"and `mapinfo` answers what `nextmap` and `timeleft` would, without taking gs-vote's names"
 	)
 
 	var next := _run_command("pg_nextmap")
@@ -421,7 +421,7 @@ func _test_services() -> void:
 		+ "replayed to a stranger who was not standing there"
 	)
 
-	# [b]THE join.[/b] dot-chat consults a `dot_mute_source` and dot-moderation publishes
+	# [b]THE join.[/b] gs-chat consults a `gs_mute_source` and gs-moderation publishes
 	# one, and neither imports the other — so the only thing that makes a gag work is that
 	# something is registered under that name.
 	_check(
@@ -430,7 +430,7 @@ func _test_services() -> void:
 	)
 	_check(
 		GSRegistry.has(GSModerationManager.BAN_SERVICE),
-		"and a ban source, which dot-server's admission check consults"
+		"and a ban source, which gs-server's admission check consults"
 	)
 
 	# [b]Voice is the whole server here, and the near channel is text's.[/b] The other two
@@ -459,13 +459,13 @@ func _test_services() -> void:
 		var _on := voice_cvar.set_value("1")
 	_check(not off_enabled and services.voice.enabled, "and turns the router off and on")
 
-	# dot-server's own chat is cancelled rather than run beside the router.
+	# gs-server's own chat is cancelled rather than run beside the router.
 	var legacy := server.events.fire("player_chat", {
 		"userid": 1, "name": "Nobody", "text": "hello", "team_only": false,
 	})
 	_check(
 		legacy.cancelled,
-		"dot-server's own chat broadcast is cancelled, so there is exactly one path"
+		"gs-server's own chat broadcast is cancelled, so there is exactly one path"
 	)
 
 	# The wire, both directions. Every encoder against its decoder, because the two have
@@ -493,7 +493,7 @@ func _test_services() -> void:
 		"and who said it, which is the one meta field this wire carries"
 	)
 
-	# Every value of the enum, because dot-moderation's bug was exactly one value with no
+	# Every value of the enum, because gs-moderation's bug was exactly one value with no
 	# case — and the two ends of a serialisation are as capable of never meeting as the
 	# two ends of a wire.
 	var kinds_ok := true

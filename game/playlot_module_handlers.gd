@@ -1,7 +1,7 @@
 extends "playlot_module_cmds.gd"
 
 ## The server's tick, which is the whole game's. Driven from here, not the game's loop: it has to run between
-## dot-net applying inputs and building the snapshot. `Playlot.external_tick` stands the game's loop down.
+## gs-net applying inputs and building the snapshot. `Playlot.external_tick` stands the game's loop down.
 func _physics_process(_delta: float) -> void:
 	if not loaded or bridge == null:
 		return
@@ -14,7 +14,7 @@ func _physics_process(_delta: float) -> void:
 	bridge.server_tick(_tick)
 	GSFrameCost.add(&"mod.bridge_server_tick", _t_bridge_server_tick)
 
-	# [b]After the world has ticked, and that is the ordering that matters.[/b] dot-combat
+	# [b]After the world has ticked, and that is the ordering that matters.[/b] gs-combat
 	# rewinds to resolve a shot and the waves read where everybody is, and both have to
 	# work on positions the movement has just produced — a list built before the tick is a
 	# list of where everybody WAS, which is the one-tick lag this family has documented
@@ -274,7 +274,7 @@ func _on_run_filed(
 	})
 
 
-## Disconnects a peer whose message schema this server cannot play with, with dot-net's
+## Disconnects a peer whose message schema this server cannot play with, with gs-net's
 ## sentence as the reason. See `peer_schema_refused` above.
 func _refuse_peer(peer_id: int, error: GSError) -> void:
 	var session: GSClientSession = server.session_of(peer_id) if server != null else null
@@ -301,7 +301,7 @@ func _resolve_shot(player_id: StringName, shot: GSShot) -> void:
 	var _resolved := arena.combat.resolve_shot(shot)
 
 
-## The NPC level of detail and sense workers follow the `npc_lod*` cvars (dot-game's GSGameNpcLod; all off by default). This module is a GSModule, so it holds the attachment itself.
+## The NPC level of detail and sense workers follow the `npc_lod*` cvars (gs-game's GSGameNpcLod; all off by default). This module is a GSModule, so it holds the attachment itself.
 var _npc_lod: GSGameNpcLod = null
 
 

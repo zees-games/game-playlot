@@ -6,4 +6,4 @@
 - **A wardrobe.** [client](client.md#people-are-drawn-as-people)
 - **The thrower's own grenade is not predicted.** [sandbox](sandbox.md#grenades-and-rockets)
 - **The PROP event carries no frozen state**, so a mirror frozen later is not reclassified on a client. [netcode](netcode.md#a-prop-mirror-is-on-the-props-layer)
-- **Replay playback.** dot-timer records and stores replays; drawing a ghost is a game's own decision. Deliberate for now.
+- **Replay playback.** gs-timer records and stores replays; drawing a ghost is a game's own decision. Deliberate for now.

@@ -1,6 +1,6 @@
 extends RefCounted
 
-## What the playlot's Workbench lists, and under which heading. One call for the three hosts: the offline client, an online client's remote panel and the server. Every set is scoped with dot-workbench's [GSWorkbenchScope] to what
+## What the playlot's Workbench lists, and under which heading. One call for the three hosts: the offline client, an online client's remote panel and the server. Every set is scoped with gs-workbench's [GSWorkbenchScope] to what
 ## is loaded. The arena mode's settings show only while `pg_arena` is on. Each loaded weapon pack's profiles get a heading of their own. Every heading says which side it edits.
 
 const GAME := "game-playlot"
@@ -16,8 +16,8 @@ const CONFIG := {
 ## Addon cvar sets a server lists when the addon bound them: [kind, cvar prefix, heading, owner, side].
 const CVAR_SETS := [
 	["grenades", "sv_grenade", "Grenades (sv_grenade_*)", "fc_weapons", GSWorkbenchScope.SIDE_SERVER],
-	["ragdolls", "sv_ragdoll", "Ragdolls (sv_ragdoll*)", "dot-player-char", GSWorkbenchScope.SIDE_REPLICATED],
-	["toys", "sv_toys", "Map toys (sv_toys*)", "dot-props", GSWorkbenchScope.SIDE_REPLICATED],
+	["ragdolls", "sv_ragdoll", "Ragdolls (sv_ragdoll*)", "gs-player-char", GSWorkbenchScope.SIDE_REPLICATED],
+	["toys", "sv_toys", "Map toys (sv_toys*)", "gs-props", GSWorkbenchScope.SIDE_REPLICATED],
 ]
 ## Meta on the workbench node: {pack: true} for the packs that already have a view.
 const VIEWS_META := &"pg_weapon_views"
@@ -40,7 +40,7 @@ static func add_sets(wb: GSGameWorkbench, game: Object, arena_on: Callable) -> v
 	var fl_binder: Object = game.get(&"flashlight_binder")
 	if fl_binder != null:
 		for set: GSProfileSet in fl_binder.call(&"profile_sets"):
-			wb.add_set(GSWorkbenchScope.tag(set, {"owner": "dot-flashlight", "side": GSWorkbenchScope.SIDE_SERVER}), "Flashlight")
+			wb.add_set(GSWorkbenchScope.tag(set, {"owner": "gs-flashlight", "side": GSWorkbenchScope.SIDE_SERVER}), "Flashlight")
 	follow_weapon_packs(wb, profiles)
 
 

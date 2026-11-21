@@ -2,8 +2,8 @@ extends Node
 
 ## The identity half, in one node: who somebody is, what they are called, what they wear.
 ##
-## dot-auth says who a connection belongs to, dot-user turns that into a profile that
-## follows them between servers, dot-user-avatar says what they may wear, and
+## gs-auth says who a connection belongs to, gs-user turns that into a profile that
+## follows them between servers, gs-user-avatar says what they may wear, and
 ## [GSPlatformHub] joins the three into one admission. This builds all of them with this
 ## sandbox's settings and then gets out of the way: the admission itself is
 ## [GSPlatformModule]'s, which the dedicated example loads beside [PlaylotModule].
@@ -12,10 +12,10 @@ extends Node
 ## for an evening has no accounts, and that is the most common deployment there is — so
 ## [PlaylotModule] duck-types against the platform module rather than naming it.
 ##
-## [b]The reason it is here at all is dot-stats.[/b] A statistic has to be filed under a
-## key, and dot-stats refuses an account id as one before it leaves the server: the scoped
-## pseudonymous id dot-user derives is what a board and an achievement are keyed by, and
-## without dot-platform there is nowhere to get one. A sandbox with no identity stack files
+## [b]The reason it is here at all is gs-stats.[/b] A statistic has to be filed under a
+## key, and gs-stats refuses an account id as one before it leaves the server: the scoped
+## pseudonymous id gs-user derives is what a board and an achievement are keyed by, and
+## without gs-platform there is nowhere to get one. A sandbox with no identity stack files
 ## everything under the session id, which lasts exactly as long as the session — honest,
 ## and the reason this exists.
 
@@ -33,7 +33,7 @@ var directory: String = DEFAULT_DIR
 
 ## The pseudonym scope.
 ##
-## [b]The field that decides whether operators can correlate their players.[/b] dot-user
+## [b]The field that decides whether operators can correlate their players.[/b] gs-user
 ## derives a per-scope id from the account and this string, so two servers with different
 ## scopes see two unrelated ids for one person. Per-server deliberately: a community that
 ## wants one identity across its servers sets them all the same, and that is a decision
@@ -47,7 +47,7 @@ var service_scope: StringName = &""
 ##
 ## [b]Awaited, and it has to be.[/b] A store may be a directory that does not exist yet.
 ## Called from an application's own setup rather than from a module's `_module_load`,
-## because dot-server's module host does not await that and a module whose load suspends
+## because gs-server's module host does not await that and a module whose load suspends
 ## returns null to it.
 func setup() -> GSResult:
 	# The default folder had the old Playlot name until 2026-11-17; adopt it once.
@@ -116,7 +116,7 @@ func _build_avatars() -> GSResult:
 	avatars.service_scope = service_scope
 	avatars.load_layered_config = false
 	avatars.config_file = ""
-	# [b]The server holds the schema and no art at all.[/b] That is dot-user-avatar's one
+	# [b]The server holds the schema and no art at all.[/b] That is gs-user-avatar's one
 	# idea: whether an avatar is legal is a question about a document and an entitlement
 	# set, and a dedicated server answers it without ever loading a mesh.
 	avatars.schema = avatar_schema()
@@ -140,8 +140,8 @@ func _build_hub() -> GSResult:
 	hub.config_file = ""
 
 	var config := GSPlatformConfig.new()
-	# [b]Neither is required.[/b] dot-platform's own module documents that admission
-	# completes shortly *after* dot-server has already admitted the player, because there
+	# [b]Neither is required.[/b] gs-platform's own module documents that admission
+	# completes shortly *after* gs-server has already admitted the player, because there
 	# is no cancellable stage between authentication and content — so `require_profile` is
 	# a promise it cannot keep yet. A sandbox is also the last place to hold somebody at
 	# the door.
@@ -230,9 +230,9 @@ static func guest_auth_config() -> GSAuthConfig:
 
 ## The scoped pseudonymous key a session is filed under, or the session id.
 ##
-## [b]The one function everything that files a number should go through.[/b] dot-stats
+## [b]The one function everything that files a number should go through.[/b] gs-stats
 ## refuses an account id as a player key before it leaves the server, and this is where a
-## deployment with dot-platform gets the right one — and where a deployment without it gets
+## deployment with gs-platform gets the right one — and where a deployment without it gets
 ## an honest fallback rather than an account id by accident.
 static func key_for_session(server: GSServer, session: GSClientSession) -> String:
 	if server == null or session == null:

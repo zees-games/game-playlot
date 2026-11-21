@@ -141,7 +141,7 @@ var _trw_srt: GSProfileRuntime
 func _test_the_remote_workbench() -> void:
 	_section("[a flagged admin edits the server's profiles, and nobody else can]")
 	if not GSGameWorkbench.available():
-		print("  dot-workbench is not linked: skipped")
+		print("  gs-workbench is not linked: skipped")
 		_passed += 16
 		_done()
 		return
@@ -422,7 +422,7 @@ func _test_event_wire_2() -> void:
 		"chat: who said it, which is the one meta field this wire carries"
 	)
 
-	# Every value of the enum, because dot-moderation's bug was exactly one value with no
+	# Every value of the enum, because gs-moderation's bug was exactly one value with no
 	# case in the parser.
 	var kinds_ok := true
 
@@ -543,7 +543,7 @@ func _test_event_wire_3() -> void:
 
 func _test_event_wire_4() -> void:
 
-	# And a truncated chat line. [b]dot-timer found the general shape[/b]: a
+	# And a truncated chat line. [b]gs-timer found the general shape[/b]: a
 	# `StreamPeerBuffer` reads past its end by returning zeros rather than failing, so a
 	# replay truncated inside its header parsed as a valid replay of nothing.
 	var short_chat := PlaylotEvents.read_chat(
@@ -590,7 +590,7 @@ func _make_game(server: bool, scope: StringName, parent: Node) -> Playlot:
 	config.map_seconds = 0.0
 	config.initial_map = &"pg_flatgrass"
 	config.authoritative = server
-	# No spawn cooldown. It is a real server rule and dot-props tests it; here it only
+	# No spawn cooldown. It is a real server rule and gs-props tests it; here it only
 	# couples these checks to how much simulated time the steps between them happen to
 	# add up to, which is a flaky test rather than a strict one.
 	config.prop_spawn_interval = 0.0
@@ -698,8 +698,8 @@ func _build_2() -> bool:
 		false, &"client", CLIENT_PEER, _b_client_side, _client_game.tick_rate
 	)
 	# This suite stamps every command itself (`_tick + INPUT_LEAD`), so the client must not ask for
-	# dot-net's input-lead report: steered by reports about commands it never stamped, the clock
-	# ran away. Set by constant map, so it parses against a dot-net without the report.
+	# gs-net's input-lead report: steered by reports about commands it never stamped, the clock
+	# ran away. Set by constant map, so it parses against a gs-net without the report.
 	var lead_bit := int((GSNetMessageRegistry as Script).get_script_constant_map().get("FEATURE_INPUT_LEAD", 0))
 	_client_net.messages.features &= ~lead_bit
 
@@ -736,7 +736,7 @@ func _build_2() -> bool:
 
 	_server_bridge.link.loopback = _on_server_send
 	_client_bridge.link.loopback = _on_client_send
-	# What a real client wires to GSClientLink.ping_ms(). Nothing in dot-net writes an
+	# What a real client wires to GSClientLink.ping_ms(). Nothing in gs-net writes an
 	# RTT sample, and a client that feeds none has a clock that believes the link is
 	# instant — so every command it stamps arrives after its tick has passed.
 	_client_bridge.rtt_source = func() -> float:

@@ -1,19 +1,19 @@
 # The simulation and its joins
 
-This game is the only place dot-player-controller, dot-map, dot-props, dot-npc and dot-leaderboard run together (and dot-timer, when a server links it: [timer.md](timer.md)), and every bug that cost days here was in a seam between them: a bridge reconciling on top of another bridge, a message keyed on the wrong id, a value computed and consumed by nothing. This file is those seams.
+This game is the only place gs-player-controller, gs-map, gs-props, gs-npc and gs-leaderboard run together (and gs-timer, when a server links it: [timer.md](timer.md)), and every bug that cost days here was in a seam between them: a bridge reconciling on top of another bridge, a message keyed on the wrong id, a value computed and consumed by nothing. This file is those seams.
 
 ## The game owns the tick loop
 
 `GSFpsController.Drive.EXTERNAL`, not `LOCAL`, even in single player. In `LOCAL` the controller accumulates frame time and ticks itself, so a run timer would be fed from a signal fired inside somebody else's loop, and a bot could not be driven at all. `Playlot._simulate_tick` owns it, which makes the order explicit:
 
 1. `props.advance`, `maps.advance`, then the vehicles are driven and ticked
-2. the NPC candidate list is rebuilt once, then the NPC world and every entity tick (see [sandbox.md](sandbox.md#perception-is-dot-npcs-being-a-prop-is-still-dot-props))
+2. the NPC candidate list is rebuilt once, then the NPC world and every entity tick (see [sandbox.md](sandbox.md#perception-is-gs-npcs-being-a-prop-is-still-gs-props))
 3. every player: sample (if local), then `controller.simulate_tick` (`PlaylotPlayer.simulate`)
 4. pickup, projectiles, debris, doors, liquids, pane impacts
 5. `Playlot._carry_riders` copies each rider's seat position into `controller.state.position` (a run timer, the NPC list, the HUD and `PlaylotPlayerNet` all read it, and nothing else writes it while seated)
 6. the run timer, if a server has one (`Playlot.run_timer.tick`), with the position the move **just produced**
 
-**A run timer must come after the move.** The timer works out whether the player crossed a line during this tick from where they were and where they now are; ticking it first shifts every run by exactly one tick, and by a different amount at each tick rate, which is the tick-rate dependence dot-timer's sub-tick fractions exist to remove. It is also the shape a dot-net bridge and a dedicated server use.
+**A run timer must come after the move.** The timer works out whether the player crossed a line during this tick from where they were and where they now are; ticking it first shifts every run by exactly one tick, and by a different amount at each tick rate, which is the tick-rate dependence gs-timer's sub-tick fractions exist to remove. It is also the shape a gs-net bridge and a dedicated server use.
 
 **Entities tick before players**, at the fixed rate. Not `_process`, which makes an NPC's speed a function of the frame rate; not after the players, which leaves a chaser visibly a tick behind its target.
 
@@ -45,7 +45,7 @@ Facing a direction is `atan2(-dx, -dz)`: `GSFpsMotor._view_basis` builds forward
 
 ## A map change happens with everything in flight
 
-`_on_map_changing` runs before anything is torn down: it tells the run timer (which stops every run), makes every tool let go, and clears the props, all of which stand on geometry about to be freed. dot-map then loads the new scene before freeing the old, so a failure leaves the server on a working map. The module also clears dot-moderation's `return` history on every map change (`[modtools-return-1]`): every entry is a point on the map just freed.
+`_on_map_changing` runs before anything is torn down: it tells the run timer (which stops every run), makes every tool let go, and clears the props, all of which stand on geometry about to be freed. gs-map then loads the new scene before freeing the old, so a failure leaves the server on a working map. The module also clears gs-moderation's `return` history on every map change (`[modtools-return-1]`): every entry is a point on the map just freed.
 
 A generated or document map needs configuring before anybody spawns: `_on_map_changed` calls `configure()` / `configure_doc()` first, then map props, then spawns.
 
@@ -70,22 +70,22 @@ A generated or document map needs configuring before anybody spawns: `_on_map_ch
 ## The tick rate comes from `server.cfg`, and every link is silent
 
 ```
-server.cfg: sv_tickrate 100 -> dot-server _apply_tickrate() -> Engine.physics_ticks_per_second
+server.cfg: sv_tickrate 100 -> gs-server _apply_tickrate() -> Engine.physics_ticks_per_second
   -> Playlot._resolve_tick_rate() -> Playlot.tick_rate
-  -> (with dot-timer linked) the run timer's manager -> every record it files
+  -> (with gs-timer linked) the run timer's manager -> every record it files
 ```
 
-A timer counting 128 a second on a server stepping 100 reports every run 28% long, and nothing about the run looks unusual. `dedicated`'s `_test_tickrate_reaches_the_timer` walks the chain with the server at 100 precisely because the project default is 128 (the timer's links only when dot-timer is linked). `sv_tickrate` goes in **`server.cfg`, not `autoexec.cfg`**: it is startup-only, and dot-server execs the first before the listener and the second after. There is deliberately **no `pg_tickrate` cvar**: a second cvar for the same number can disagree with the first.
+A timer counting 128 a second on a server stepping 100 reports every run 28% long, and nothing about the run looks unusual. `dedicated`'s `_test_tickrate_reaches_the_timer` walks the chain with the server at 100 precisely because the project default is 128 (the timer's links only when gs-timer is linked). `sv_tickrate` goes in **`server.cfg`, not `autoexec.cfg`**: it is startup-only, and gs-server execs the first before the listener and the second after. There is deliberately **no `pg_tickrate` cvar**: a second cvar for the same number can disagree with the first.
 
 ## The server module
 
-`game/playlot_module.gd` is the only file that names dot-server. It extends `GSModule`, **not `GSGameModule`, deliberately for now**: `GSGameModule`'s `game`, `bridge`, `net` and `services` are untyped fields a subclass cannot redeclare and this module reads them typed throughout; its `_build_extras` builds services, the arena, the waves, the mod tools, the vote and progress in an order each depends on; and it keeps its own `_joined` table and spawn path rather than a `GSGameRoster`. That is a conversion of its own. Consequences: the module wires things `GSGameModule` would do itself (identity and dot-platform, hibernation; see [services.md](services.md)).
+`game/playlot_module.gd` is the only file that names gs-server. It extends `GSModule`, **not `GSGameModule`, deliberately for now**: `GSGameModule`'s `game`, `bridge`, `net` and `services` are untyped fields a subclass cannot redeclare and this module reads them typed throughout; its `_build_extras` builds services, the arena, the waves, the mod tools, the vote and progress in an order each depends on; and it keeps its own `_joined` table and spawn path rather than a `GSGameRoster`. That is a conversion of its own. Consequences: the module wires things `GSGameModule` would do itself (identity and gs-platform, hibernation; see [services.md](services.md)).
 
 | Commands | |
 | --- | --- |
 | `pg_restart` `pg_style` | back to the spawn; the movement style |
-| `pg_timer` `pg_track` `pg_top` `pg_cp` `pg_tp` `pg_cp_clear` | the run and practice checkpoints: `addons/pg_timer`'s, only when a server links dot-timer ([timer.md](timer.md)) |
-| `pg_map` `pg_nextmap` `pg_rtv` `pg_extend` | maps (with `pg_vote`, renameable from maps.yml's `commands: names:`, see `bind_map_commands`; a name must be lowercase letters, digits and underscores, so `!`-forms are dropped by dot-core) |
+| `pg_timer` `pg_track` `pg_top` `pg_cp` `pg_tp` `pg_cp_clear` | the run and practice checkpoints: `addons/pg_timer`'s, only when a server links gs-timer ([timer.md](timer.md)) |
+| `pg_map` `pg_nextmap` `pg_rtv` `pg_extend` | maps (with `pg_vote`, renameable from maps.yml's `commands: names:`, see `bind_map_commands`; a name must be lowercase letters, digits and underscores, so `!`-forms are dropped by gs-core) |
 | `pg_prop` `pg_undo` `pg_props_clear` `pg_limits` | props |
 | `pg_save` `pg_load` `pg_builds` `pg_build_delete` | saved builds |
 | `pg_status` | everything at once |

@@ -12,9 +12,9 @@ const PlaylotMaterials := preload("../game/playlot_materials.gd")
 ## room for a hundred props between them.
 ##
 ## [b]Nothing here is timed.[/b] The game ships no run timer, and this map is the proof that
-## nothing in it needs one; a server that adds dot-timer times the maps that carry zones.
+## nothing in it needs one; a server that adds gs-timer times the maps that carry zones.
 ## Grass rather than the grey grid, because a sandbox's default is the map people see first
-## and a field reads as somewhere to play: the grass is dot-physics' `grass`, so it also
+## and a field reads as somewhere to play: the grass is gs-physics' `grass`, so it also
 ## sounds and grips like grass.
 
 ## The floor plate, and the walls round it.
@@ -121,7 +121,7 @@ func _build_movement_corner() -> void:
 	)
 
 
-## The sandbox's toys (dot-props'): balls and barrels round the spawn, a bowling lane north of
+## The sandbox's toys (gs-props'): balls and barrels round the spawn, a bowling lane north of
 ## it, and a park to the south-west with a roundabout, a see-saw, a swing, trampolines, a
 ## fountain, lamps on a switch, a bell and a horn. Everything clear of the movement corner. Indices matter: the switch names the lamps by theirs.
 func map_toys() -> Array:

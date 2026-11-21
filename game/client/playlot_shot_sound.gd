@@ -1,6 +1,6 @@
 extends Node
 
-## One dot-audio layered shot (zee's [ZeeShotLayers]) for every rig this client arms, handed to each rig's
+## One gs-audio layered shot (zee's [ZeeShotLayers]) for every rig this client arms, handed to each rig's
 ## [ZeeShotFx] as its `shot_sound`. Left to itself every ZeeShotFx builds its own on its first shot: a manager,
 ## an enclosure, a player and 13 stock shots, ~30 ms and ~30 nodes on the first shot of every weapon picked.
 

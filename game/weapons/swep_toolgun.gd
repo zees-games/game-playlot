@@ -18,11 +18,11 @@ extends "playlot_weapon.gd"
 ## [method set_mode]. On a server they arrive as a request and are clamped to each mode's
 ## schema before they are used.
 
-# [b]`game/toolgun/`, never `game/tools/`.[/b] dot-server-deploy's pack for this game excludes
+# [b]`game/toolgun/`, never `game/tools/`.[/b] gs-server-deploy's pack for this game excludes
 # directories named `tools` at ANY depth (it means the repository's dev scripts), and under
 # that name every mode below was left out of every delivered build: a tool gun with no modes,
 # then (once Playlot preloaded one) a game that would not load. Found 2026-10-07 by
-# dot-server-deploy's examples/playlot_client.tscn.
+# gs-server-deploy's examples/playlot_client.tscn.
 const ToolResize := preload("../toolgun/tool_resize.gd")
 const ToolColour := preload("../toolgun/tool_colour.gd")
 const ToolRemover := preload("../toolgun/tool_remover.gd")
@@ -180,7 +180,7 @@ func may_touch(prop: GSPropInstance) -> bool:
 	if prop.owner_id == wielder:
 		return true
 
-	# Creative mode: the owner protected it in dot-props, and the tool gun asks too.
+	# Creative mode: the owner protected it in gs-props, and the tool gun asks too.
 	if game != null and game.props != null and not game.props.may_act_for(prop, wielder):
 		return false
 

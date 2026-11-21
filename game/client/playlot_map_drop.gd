@@ -1,13 +1,13 @@
 extends RefCounted
 
 ## Maps dropped on PLAYLOT's window or executable: map documents (`.json`), and folders and zips of them, copied into
-## `user://maps` by dot-map's GSMapDropIntake (API 26) and added to the solo game's maps. A Garry's Mod map (a `.bsp`, a
+## `user://maps` by gs-map's GSMapDropIntake (API 26) and added to the solo game's maps. A Garry's Mod map (a `.bsp`, a
 ## Workshop `.gma`, or a folder holding one) is claimed too: one PLAYLOT has a conversion of is that map (gm_fork is pgc_fork,
 ## entry `source_map` set), any other is refused with what to drop instead. Anything else is refused out loud.
 
 const CHANNEL := "playlot.map_drop"
 const NEEDS_LEVEL := 26
-const INTAKE_SCRIPT := "res://addons/dot_map/core/dot_map_drop_intake.gd"
+const INTAKE_SCRIPT := "res://addons/gs_map/core/gs_map_drop_intake.gd"
 const DATA_MAP_SCRIPT := "res://maps/pg_data.gd"
 ## The map document kinds taken: the name from before the Playlot rename (what maps are written
 ## with) and the new one. Kept in step with maps/pg_data.gd's KINDS, which is loaded by path here.
@@ -20,10 +20,10 @@ const TAKES := "a PLAYLOT map .json, or a folder or .zip of them"
 
 ## Adds the intake under [param parent], watching its window, and hands it the command line (a drop on the executable).
 ## [param on_result] gets each drop's result dictionary. [param converted] is `func(source: String) -> Dictionary`, the
-## `{id, title}` of the map converted from a Source map, or empty. Null, with a warning, on a dot-map older than API 26.
+## `{id, title}` of the map converted from a Source map, or empty. Null, with a warning, on a gs-map older than API 26.
 static func attach(parent: Node, into: String, taken: Callable, on_result: Callable, converted: Callable = Callable()) -> Node:
-	if GSAddonApi.build_level("dot_map") < NEEDS_LEVEL or not ResourceLoader.exists(INTAKE_SCRIPT):
-		GSLog.warn(CHANNEL, "dropped maps are off: this build's dot-map is older than API %d" % NEEDS_LEVEL)
+	if GSAddonApi.build_level("gs_map") < NEEDS_LEVEL or not ResourceLoader.exists(INTAKE_SCRIPT):
+		GSLog.warn(CHANNEL, "dropped maps are off: this build's gs-map is older than API %d" % NEEDS_LEVEL)
 		return null
 	var intake: Node = load(INTAKE_SCRIPT).new()
 	intake.name = "MapDrop"
@@ -43,7 +43,7 @@ static func cmdline() -> PackedStringArray:
 	return all
 
 
-## [param args] without this game's config options and their values: dot-core reads `--pg-<key> <value>`,
+## [param args] without this game's config options and their values: gs-core reads `--pg-<key> <value>`,
 ## `--<addon>.<key> <value>` and `--config <dir>`, and a value that happens to be a folder is not a dropped map.
 static func drop_args(args: PackedStringArray) -> PackedStringArray:
 	var out := PackedStringArray()

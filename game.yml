@@ -1,6 +1,6 @@
 # This game's descriptor: what a server runs when it installs this repository's pack.
 #
-# It travels INSIDE the pack (dot-ci's package.sh --pack keeps it at the root), so a
+# It travels INSIDE the pack (gs-ci's package.sh --pack keeps it at the root), so a
 # server started with `TMC_GAMES=<owner>/<repo>` needs nothing but the content origin:
 # `./server install-games` fetches the pack, verifies it, and writes this file to
 # content/<repo>/game.yml, where an operator can then edit cvars and player counts.
@@ -10,11 +10,11 @@
 # neither of which this file can know. What is written here for them is a placeholder.
 #
 # Paths are relative to the pack's mount point, which is also this repository's root.
-# Keep scene, client_scene and module in step with dot-server-deploy/content/playlot/game.yml,
+# Keep scene, client_scene and module in step with gs-server-deploy/content/playlot/game.yml,
 # which describes the same game for a deployment that publishes it itself;
-# dot-server-deploy's examples/install_descriptor suite fails when the two disagree.
+# gs-server-deploy's examples/install_descriptor suite fails when the two disagree.
 
-content_id: gamemann/game-playground  # legacy id: the published pack id; changes only with a new dot-cloud registration
+content_id: gamemann/game-playlot  # legacy id: the published pack id; changes only with a new gs-cloud registration
 version: 0.0.0
 kind: pack
 
@@ -32,7 +32,7 @@ cvars:
 
 metadata:
   # The client builds a custom map itself from its document, so a map pack the server names
-  # (dot-server-deploy's cfg/content.yml) has to be on every player's machine too: `client`
+  # (gs-server-deploy's cfg/content.yml) has to be on every player's machine too: `client`
   # asks a host to fetch each one before the game loads and send it to every player as a
   # dependency. This game names no map pack itself; it ships its built-in maps, and the
   # custom ones are playlot-maps, which a server owner gets by default and can remove.
@@ -44,4 +44,4 @@ metadata:
 # The stock maps pack the game suggests, not requires: a server offers it by default (suggested_maps: none turns that off)
 # and the Workshop mounts it for solo play unless the player opts out (--no-suggested, --suggested=none).
 suggested:
-  - maps=gamemann/game-playground-maps  # legacy id: the published maps pack id (the repository is playlot-maps)
+  - maps=gamemann/playlot-maps  # legacy id: the published maps pack id (the repository is playlot-maps)

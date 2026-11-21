@@ -21,7 +21,7 @@ const PlaylotPlayer := preload("playlot_player.gd")
 ##
 ## - the channels, the rules and the voice format, as statics a CLIENT reads too;
 ## - where a person is standing, off the controller's state rather than the node;
-## - **the bridge is who is in the game**, not dot-server's session list. A peer is only
+## - **the bridge is who is in the game**, not gs-server's session list. A peer is only
 ##   sent a line once it has said it can receive ([method _chat_peers]), a line is
 ##   attributed to the bridge's player id ([method _key_of]), and a punishment falls back
 ##   to a `local:` subject when there is no session — which is what lets `headless_net`
@@ -35,7 +35,7 @@ const PlaylotPlayer := preload("playlot_player.gd")
 ##   and the module clears their return history on every map change. A second set built
 ##   here would bind the same command names to the same console.
 ##
-## [b]dot-server's own chat is cancelled, not run beside this.[/b] [GSChatRouter] has the
+## [b]gs-server's own chat is cancelled, not run beside this.[/b] [GSChatRouter] has the
 ## rules now, and [PlaylotModule] cancels `player_chat` so there is exactly one path.
 ## Two would be two sets of rules to keep in step, and the one that skipped the filter
 ## would be the one that leaked admin chat.
@@ -217,7 +217,7 @@ static func voice_config() -> GSVoiceConfig:
 
 ## Who a peer is, for a punishment: the durable account uid.
 ##
-## [b]Deliberately not the same answer [method _key_of] gives dot-chat.[/b] A punishment is
+## [b]Deliberately not the same answer [method _key_of] gives gs-chat.[/b] A punishment is
 ## against a person who will come back, so it is keyed by something that survives a
 ## reconnect. With no session (no server, or a peer the bridge seated directly) it falls
 ## back to a `local:` subject for the bridge's player id, where the base would answer "".
@@ -243,7 +243,7 @@ func _key_of(peer_id: int) -> String:
 
 ## The peers a line may go to: the ones the bridge knows can receive.
 ##
-## [b]Not dot-server's playing sessions.[/b] A peer is playing from the moment signon
+## [b]Not gs-server's playing sessions.[/b] A peer is playing from the moment signon
 ## finishes, and its client builds the node a CHAT event lands on after that; a line sent
 ## in between is one "Node not found" and is lost. The bridge's ready set is the one that
 ## waits for the client to say so.
@@ -291,7 +291,7 @@ func _peer_can_receive(_peer_id: int) -> bool:
 	return false
 
 
-## Where somebody is standing, as dot-chat and dot-voice both ask for it.
+## Where somebody is standing, as gs-chat and gs-voice both ask for it.
 ##
 ## [b]The controller's state, not the node.[/b] A player riding a vehicle is reparented
 ## into the seat, and the node's global position is then the seat's — which is right for a

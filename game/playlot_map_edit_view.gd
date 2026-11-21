@@ -1,13 +1,13 @@
 extends RefCounted
 
-## The staff view of the map's spawn points and links, over dot-game's `GSGameMapEditOverlay`.
+## The staff view of the map's spawn points and links, over gs-game's `GSGameMapEditOverlay`.
 ##
 ## Markers show while it is on, and the pick key opens the point you look at in a form whose buttons send the
 ## same commands a typed one does, to the editor in this process. It exists only where the process holds the
 ## editor and may use it (offline play); a client on a server has neither the points nor the right.
 
 const PlaylotMapEdit := preload("playlot_map_edit.gd")
-const POINT_DEF := "res://addons/dot_spawn/core/dot_spawn_point_def.gd"
+const POINT_DEF := "res://addons/gs_spawn/core/gs_spawn_point_def.gd"
 
 var overlay: GSGameMapEditOverlay = null
 var _client: Node = null

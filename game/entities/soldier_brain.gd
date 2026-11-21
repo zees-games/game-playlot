@@ -1,6 +1,6 @@
-extends "res://addons/dot_npc_ai/runtime/dot_npc_ai_brain.gd"
+extends "res://addons/gs_npc_ai/runtime/gs_npc_ai_brain.gd"
 
-## How an armed sandbox NPC decides: dot-npc-ai's tactical layer, with whatever it is holding.
+## How an armed sandbox NPC decides: gs-npc-ai's tactical layer, with whatever it is holding.
 ##
 ## [codeblock]
 ## selector (reactive)

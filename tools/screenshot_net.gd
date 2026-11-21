@@ -174,8 +174,8 @@ func _run() -> void:
 		_report_walk()
 	# Stalls and extrapolations are frames the interpolator had nothing newer than its render
 	# time to blend toward and guessed instead, out of `samples`. Near zero on this loopback.
-	# Until 2026-09-24 it was most frames — 1,684 stalls in six seconds — because dot-net
-	# subtracted a buffer counted in SNAPSHOTS from a tick number (dot-net's docs/history.md, #18).
+	# Until 2026-09-24 it was most frames — 1,684 stalls in six seconds — because gs-net
+	# subtracted a buffer counted in SNAPSHOTS from a tick number (gs-net's docs/history.md, #18).
 	print("interpolator: ", _client_net.interpolator.describe())
 	get_tree().quit()
 
@@ -231,10 +231,10 @@ func _build() -> void:
 	_server_net = _make_manager(true, &"server", 1, server_side, _server_game.tick_rate)
 	_client_net = _make_manager(false, &"client", CLIENT_PEER, client_side, _client_game.tick_rate)
 	# This tool stamps every command itself (`_tick + INPUT_LEAD`), not from the client's
-	# clock, so the client must not ask for dot-net's input-lead report: steered by reports
+	# clock, so the client must not ask for gs-net's input-lead report: steered by reports
 	# about commands it never stamped, the clock runs away from them and the other player is
 	# drawn in uneven steps, which is the thing this tool is for looking at (headless_net,
-	# c903760). By the constant map, so this parses against a dot-net from before the report.
+	# c903760). By the constant map, so this parses against a gs-net from before the report.
 	var lead_bit := int((GSNetMessageRegistry as Script).get_script_constant_map().get("FEATURE_INPUT_LEAD", 0))
 	_client_net.messages.features &= ~lead_bit
 

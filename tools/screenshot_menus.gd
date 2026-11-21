@@ -71,11 +71,11 @@ func _sample_board() -> Dictionary:
 func _follow_zee_pack(menu: PlaylotSpawnMenu) -> void:
 	# A subscribed weapon pack, as the solo client wires it: the real zee provides.json in a
 	# GSContentIndex, followed by the workshop adapter, so the tab is the one a player sees.
-	var zee_dir := ProjectSettings.globalize_path("res://").path_join("../zee-dot-weapons").simplify_path()
+	var zee_dir := ProjectSettings.globalize_path("res://").path_join("../zee-gs-weapons").simplify_path()
 	var zee_provides: Variant = JSON.parse_string(FileAccess.get_file_as_string(zee_dir.path_join("provides.json")))
 	var index := GSContentIndex.new()
 	var _zee := index.add_pack({
-		"content_id": "gamemann/zee-dot-weapons", "version": "1.0.0", "prefix": zee_dir,
+		"content_id": "gamemann/zee-gs-weapons", "version": "1.0.0", "prefix": zee_dir,
 		"session": "solo", "source": "subscription", "provides": zee_provides,
 	})
 	_workshop = PlaylotWorkshop.new()
@@ -122,8 +122,8 @@ func _build() -> void:
 
 	_follow_zee_pack(menu)
 
-	# The Escape menu the client builds (dot-menu's), over this game's own settings document,
-	# and its Tab board with a roster shaped like the one dot-server sends.
+	# The Escape menu the client builds (gs-menu's), over this game's own settings document,
+	# and its Tab board with a roster shaped like the one gs-server sends.
 	_game_menu = GSMenu.new()
 	_game_menu.name = "GameMenu"
 	_game_menu.settings = _presentation.settings
@@ -149,7 +149,7 @@ func _build() -> void:
 	_game_menu.scoreboard.source = _sample_board
 
 	_shots = _shot_list()
-	# A pack tab shot needs a pack: zee-dot-weapons is a sibling checkout, absent in a worktree.
+	# A pack tab shot needs a pack: zee-gs-weapons is a sibling checkout, absent in a worktree.
 	# Without it the menu has no such tab, so the shot is dropped instead of indexing past the bar.
 	if _menu.describe().get("pack_tabs", []).is_empty():
 		_shots = _shots.filter(func(s: Dictionary) -> bool:
@@ -302,7 +302,7 @@ func _process(_delta: float) -> bool:
 		if not opened.ok:
 			# Said out loud rather than saved as a grey rectangle. A picture of an empty
 			# viewport is indistinguishable from a renderer that is not working, which is
-			# exactly how dot-ui's unopened pause menu looked.
+			# exactly how gs-ui's unopened pause menu looked.
 			push_error("could not open '%s': %s" % [shot["id"], opened.error.message])
 			_at += 1
 			return false

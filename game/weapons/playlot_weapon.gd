@@ -12,9 +12,9 @@ const PlaylotWeaponDef := preload("playlot_weapon_def.gd")
 ## `GSPropTool` is: it carries the spawner, the wielder, the reach, a `target()` that
 ## resolves a ray to a prop, and a `may_act_on()` that answers the ownership question
 ## the host decides rather than the tool. A physics gun and a gravity gun are the two
-## dot-props ships; these are the game's own, and they are the same kind of object.
+## gs-props ships; these are the game's own, and they are the same kind of object.
 ##
-## [b]A tool is not a node and does not own a camera[/b] — dot-props' rule, kept. It is
+## [b]A tool is not a node and does not own a camera[/b] — gs-props' rule, kept. It is
 ## handed an origin and a direction, so the same weapon works for a player with a
 ## first-person camera, a bot, a replay being played back and a headless test, none of
 ## which have a viewport.

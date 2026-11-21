@@ -1,6 +1,6 @@
 extends RefCounted
 
-## The Q menu's NPCs and pack weapons, derived from dot-core profiles, and the live edit of them.
+## The Q menu's NPCs and pack weapons, derived from gs-core profiles, and the live edit of them.
 ##
 ## Profiles add to or override the built-in catalogue, never replace it: an NPC profile named
 ## like a catalogue entry changes the keys it states; a new id needs `extra.base: <entry id>`

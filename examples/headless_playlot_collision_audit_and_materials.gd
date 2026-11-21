@@ -1,7 +1,7 @@
 extends "res://examples/headless_playlot_drawn_worlds.gd"
 
-## dot-core's [GSCollisionAudit] over every map as built: visible geometry with no shape under it, which a player walks through.
-## The strict pass: each mesh sits on its own body. What is passable on purpose carries `dot_no_collision` with the reason where the map builds it.
+## gs-core's [GSCollisionAudit] over every map as built: visible geometry with no shape under it, which a player walks through.
+## The strict pass: each mesh sits on its own body. What is passable on purpose carries `gs_no_collision` with the reason where the map builds it.
 ## Props and map toys are not in a map node. The audit is structural and needs no tree.
 func _test_nothing_drawn_is_walked_through() -> void:
 	print("")
@@ -95,7 +95,7 @@ func _toy_index(id: String) -> int:
 	return -1
 
 
-## dot-props' toys on the sandbox, through the game's own paths: a walk pushes a ball, a shot sends
+## gs-props' toys on the sandbox, through the game's own paths: a walk pushes a ball, a shot sends
 ## one off, the use key kicks, a trampoline throws a player, a roundabout carries one, a blast throws a
 ## barrel, sv_toys 0 takes them away and a map change takes them with it.
 var _t_box: GSPropBodyBox
@@ -227,7 +227,7 @@ func _test_toys_2() -> void:
 	_done()
 
 
-## Every map with toys, built: each toy one dot-props has, none inside the map's geometry or
+## Every map with toys, built: each toy one gs-props has, none inside the map's geometry or
 ## another toy's footprint, and two seconds of physics later every loose one still where the
 ## map put it (not through a floor, not flung off an overlap the solver pushed apart).
 func _test_every_maps_toys_stand_clear() -> void:
@@ -275,7 +275,7 @@ func _test_every_maps_toys_stand_clear() -> void:
 		for toy in box.toys:
 			if toy.body != null and toy.body.global_position.distance_to(toy.rest.origin) > 0.6:
 				bad.append("%s: %s %d strayed %s to %s" % [id, toy.def["id"], toy.index, toy.rest.origin.snapped(Vector3.ONE * 0.1), toy.body.global_position.snapped(Vector3.ONE * 0.1)])
-	_check(with_toys >= 1 and bad.is_empty(), "every map's toys are dot-props', stand clear and stay put",
+	_check(with_toys >= 1 and bad.is_empty(), "every map's toys are gs-props', stand clear and stay put",
 		"%d maps with toys; %s" % [with_toys, "; ".join(bad.slice(0, 8))])
 	var _back: GSResult = await playlot.change_map(&"pg_flatgrass")
 	_done()
@@ -337,7 +337,7 @@ func _test_map_materials() -> void:
 		stack.append_array(n.get_children())
 		if n is StaticBody3D and PlaylotMaterials.material_of(n) == &"ice":
 			ice_box = n
-	_check(ice_box != null and ice_box.get_meta(&"dot_fps_surface") == &"ice"
+	_check(ice_box != null and ice_box.get_meta(&"gs_fps_surface") == &"ice"
 		and ice_box.physics_material_override != null and ice_box.physics_material_override.friction < 0.1,
 		"an ice box is ice to a player's feet and to the solver")
 	_check(not playlot.liquids.is_empty() and playlot.liquids.any(func(l: Dictionary) -> bool: return l["material"] == &"water")

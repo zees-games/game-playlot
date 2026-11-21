@@ -46,7 +46,7 @@ func _test_identity() -> void:
 		"until they hold it"
 	)
 
-		# The key a statistic is filed under, and the reason dot-platform is here: dot-stats refuses an
+		# The key a statistic is filed under, and the reason gs-platform is here: gs-stats refuses an
 		# account id as a player key before it leaves the server, so the one function that decides gives
 		# a scoped id with an identity stack and something honest without.
 	var key := PlaylotPlatform.key_for_session(server, null)
@@ -89,7 +89,7 @@ func _test_blind_and_beacon() -> void:
 	var _lift := await _run_command_later("blind Quin off")
 	_check(not player.blinded, "`blind Quin off` lifts it")
 
-	# A blind is a spell. dot-moderation lifts it through the same handler when the time
+	# A blind is a spell. gs-moderation lifts it through the same handler when the time
 	# is up, so what is checked is the flag, not the timer.
 	var _spell := await _run_command_later("blind Quin 0.2")
 	_check(player.blinded, "`blind Quin 0.2` blinds them for a fifth of a second")
@@ -146,7 +146,7 @@ func _run_as(session: GSClientSession, line: String) -> PackedStringArray:
 	return PackedStringArray(captured)
 
 
-## dot-team's block rules through dot-game's GSGameNoblock: strangers block by default, `!noblock` lets the caller's pairs pass, `!block` takes it back, and the cvars decide.
+## gs-team's block rules through gs-game's GSGameNoblock: strangers block by default, `!noblock` lets the caller's pairs pass, `!block` takes it back, and the cvars decide.
 func _test_noblock() -> void:
 	print("")
 	print("[noblock]")
@@ -193,7 +193,7 @@ func _test_creative() -> void:
 
 	var said := _run_as(session, "creative")
 	_check(builder.creative and _said(said, "on"), "`!creative` switches it on for the caller", " | ".join(said))
-	_check(game.props.is_protected(&"u79"), "and protects their props in dot-props")
+	_check(game.props.is_protected(&"u79"), "and protects their props in gs-props")
 
 	var crate := game.props.spawn(&"crate", &"u79", Vector3(0.0, 40.0, 0.0))
 	var tool := GSPropTool.new()
@@ -421,16 +421,16 @@ func _test_welcome_waits_for_ready() -> void:
 		str(kinds)
 	)
 
-	_check(bridge.net.peers().has(peer), "and dot-net now replicates to them")
+	_check(bridge.net.peers().has(peer), "and gs-net now replicates to them")
 
 	bridge.net.send_fn = old_send
 	server.client_disconnected.emit(session, "closed")
 	_check(not game.players.has(&"u79"), "and they leave cleanly")
 	# The module takes them off the ready set BEFORE the bridge removes the player; asking that
-	# same set whether to tell dot-net left every disconnected peer in `net.peers()`.
+	# same set whether to tell gs-net left every disconnected peer in `net.peers()`.
 	_check(
 		not bridge.net.peers().has(peer),
-		"and dot-net stops replicating to them",
+		"and gs-net stops replicating to them",
 		str(bridge.net.peers())
 	)
 	_section_done()
@@ -621,7 +621,7 @@ func _test_no_message_preloads_itself() -> void:
 func _extends_message(source: String) -> bool:
 	for line in source.split("\n"):
 		if line.begins_with("extends "):
-			return line.contains("GSNetMessage") or line.contains("dot_net_message.gd")
+			return line.contains("GSNetMessage") or line.contains("gs_net_message.gd")
 	return false
 
 

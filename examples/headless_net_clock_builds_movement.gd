@@ -241,7 +241,7 @@ func _test_edit_over_the_wire() -> void:
 
 ## A map document's props over the wire: the server puts them down, a client draws the server's and spawns none of its own, and changing back takes them away on both ends.
 ##
-## "None of its own" is held by dot-props; Playlot's guard stays to avoid a false per-map log line.
+## "None of its own" is held by gs-props; Playlot's guard stays to avoid a false per-map log line.
 func _test_map_props_over_the_wire() -> void:
 	_section("a map's own props over the wire")
 
@@ -387,7 +387,7 @@ func _toy_of(game: Playlot, id: String) -> GSPropBody:
 	return null
 
 
-## dot-props' toys on the lobby, over the wire: an entity per toy on both ends paired by index
+## gs-props' toys on the lobby, over the wire: an entity per toy on both ends paired by index
 ## (TOYS), posed from the server's state on the client, with a kicked ball, switch lamps, a
 ## roundabout's carry and a map change and back re-pairing them.
 func _test_map_toys_over_the_wire() -> void:
@@ -595,7 +595,7 @@ func _test_avatars_over_the_wire() -> void:
 	var wanted_skin := Color(GSHumanoidLook.SITE_SKINS[PlaylotAvatars.LETTERS[face]][0])
 	_check(person != null and person.look != null and person.look.skin.is_equal_approx(wanted_skin),
 		"and draws the member's face on the figure", str(person.look.to_dict()) if person != null and person.look != null else "no person")
-	if person != null and GSAddonApi.build_level("dot_player_char") >= 11:
+	if person != null and GSAddonApi.build_level("gs_player_char") >= 11:
 		var clip: AnimationPlayer = person.get("_anim")
 		Engine.time_scale = 0.05
 		mine.character.move_person({"speed": 3.0})
@@ -687,7 +687,7 @@ func _test_handshake() -> void:
 	)
 
 	_check(_client_net.stats.rtt_percentile(0.5) > 0.0,
-		"the client fed the clock an RTT sample, which nothing in dot-net does for it")
+		"the client fed the clock an RTT sample, which nothing in gs-net does for it")
 	_done()
 
 
@@ -705,7 +705,7 @@ func _test_prediction() -> void:
 	_check(server_at.distance_to(after) < 1.0,
 		"and the server agrees with it", "%.3f m apart" % server_at.distance_to(after))
 
-	# The measure that caught a bridge reconciling on top of dot-net's own
+	# The measure that caught a bridge reconciling on top of gs-net's own
 	# reconciliation, and a _net_state_applied that moved the node before reconcile
 	# measured the error. Both read as a predictor that snapped every packet.
 	var rate: float = _client_net.predictor.correction_rate()

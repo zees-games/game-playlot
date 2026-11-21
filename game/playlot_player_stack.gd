@@ -16,14 +16,14 @@ const PlaylotPlayer := preload("playlot_player.gd")
 ## playlot actually has:
 ##
 ## [codeblock]
-## dot-physics  the SANDBOX layout and profile — held props, frozen props, a solver
+## gs-physics  the SANDBOX layout and profile — held props, frozen props, a solver
 ##              that holds a stack, and an aggressive sleep threshold so two hundred
 ##              settled crates cost nothing
-## dot-player   the roster, with a long reconnect window: a build takes hours
-## dot-team     one playing side and a spectator side — free-for-all is ONE team
-## dot-player-class  one class; what a player carries is dot-inventory's here
-## dot-spawn    the map's start, as a site the richer selector can reason about
-## dot-team's spectate half
+## gs-player   the roster, with a long reconnect window: a build takes hours
+## gs-team     one playing side and a spectator side — free-for-all is ONE team
+## gs-player-class  one class; what a player carries is gs-inventory's here
+## gs-spawn    the map's start, as a site the richer selector can reason about
+## gs-team's spectate half
 ## [/codeblock]
 ##
 ## [b]Why one team and not none.[/b] Free-for-all modelled as "no teams" makes every
@@ -144,7 +144,7 @@ func _build_physics() -> GSResult:
 	physics.profile.tick_rate = game.tick_rate
 
 	physics.layout = GSPhysicsLayout.sandbox_3d()
-	# The map's toys (dot-props'): a loose one (a ball, a barrel) on `toy`, which the world,
+	# The map's toys (gs-props'): a loose one (a ball, a barrel) on `toy`, which the world,
 	# the props, vehicles, grenades and the other toys stop and a person never does: they walk
 	# through it and push it (`Playlot._advance_toys`), because a character motor slides
 	# along a rigid body and never moves it. A toy somebody stands on (a see-saw, a roundabout)
@@ -233,7 +233,7 @@ func _build_classes() -> void:
 	classes.authoritative = game.authoritative
 	classes.register_service = false
 
-	# One class. What a player is carrying is dot-inventory's question here, and what
+	# One class. What a player is carrying is gs-inventory's question here, and what
 	# they can build is the Q menu's; neither is a class, and modelling either as one
 	# would put a sandbox's whole content model in a layer that cannot see it.
 	classes.catalogue = GSPlayerClassCatalogue.single(100.0)
@@ -375,7 +375,7 @@ func _on_player_removed(id: StringName) -> void:
 func _on_map_ready(_map: GSMapDef) -> void:
 	# [b]The level onto the layout's `world` layer.[/b] Built geometry arrives as
 	# `StaticBody3D`s on Godot's default layer 1 masking layer 1 — so a projectile or a
-	# prop could not hit the map, and the layer names dot-physics writes into the
+	# prop could not hit the map, and the layer names gs-physics writes into the
 	# inspector described a layout nothing in the world actually followed.
 	var classified := classify_tree(game.current_map_node(), &"world")
 
@@ -465,13 +465,13 @@ func refresh_spawn_rules() -> void:
 
 
 
-## The dot-spectate team number for [param key], derived from the side they are on.
+## The gs-spectate team number for [param key], derived from the side they are on.
 ##
-## [b]An index, not a hash, and zero means "no side".[/b] dot-spectate keys teams by
+## [b]An index, not a hash, and zero means "no side".[/b] gs-spectate keys teams by
 ## [code]int[/code] and treats 0 as no team at all — two entities with no team are never
 ## team-mates, so a free-for-all cannot accidentally become a truce. The playing sides
 ## are numbered from 1 in the order the set declares them, which is the same rule
-## `GSTeamRoster._match_team_id` uses to push an assignment down into dot-match.
+## `GSTeamRoster._match_team_id` uses to push an assignment down into gs-match.
 ##
 ## Somebody unassigned, spectating, or not in the roster at all gets 0. That is the part
 ## a hardcoded `return 1` got wrong: a spectator read as a team-mate of everybody.
@@ -490,7 +490,7 @@ func team_index_of(key: String) -> int:
 
 ## Puts [param node] on the layout's [param layer_id] layer, with that layer's mask.
 ##
-## [b]The half of dot-physics that was never used.[/b] The layout was assigned and its
+## [b]The half of gs-physics that was never used.[/b] The layout was assigned and its
 ## layer names were written into ProjectSettings for the inspector to show — and every
 ## body in this game stayed on Godot's default layer 1 with mask 1, so the inspector
 ## labelled layers nothing followed. Naming a layer is only half of a layout.

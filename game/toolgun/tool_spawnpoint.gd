@@ -2,7 +2,7 @@ extends "playlot_tool.gd"
 
 ## Places and removes authored spawn points and navigation links by pointing at the map.
 ##
-## A thin mode over dot-game's map-edit commands: it builds no point itself and sends the
+## A thin mode over gs-game's map-edit commands: it builds no point itself and sends the
 ## same `spawn_add`, `spawn_remove`, `nav_link_mark`, `nav_link_add` and `mapdata_save` an
 ## admin types, so validation, logging and the audit record are the commands'. Only a player
 ## the game's `map_edit_allowed_fn` names may use it.

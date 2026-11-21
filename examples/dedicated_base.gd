@@ -28,7 +28,7 @@ var _stats_errors: PackedStringArray = []
 const SECTIONS := 32
 const CHECKS := 301
 
-## What the run timer's checks add when `res://addons/dot_timer` is linked (and
+## What the run timer's checks add when `res://addons/gs_timer` is linked (and
 ## `addons/pg_timer` turns it on): the records section and the timer's halves of the
 ## tick-rate, command and live-tool sections. A server without the timer is the default.
 const TIMER_SECTIONS := 1
@@ -57,9 +57,9 @@ func _module() -> GSModule:
 	return server.modules.get_module("playground")
 
 
-## Whether dot-timer is linked into this checkout, which is what turns `addons/pg_timer` on.
+## Whether gs-timer is linked into this checkout, which is what turns `addons/pg_timer` on.
 static func _timer_linked() -> bool:
-	return FileAccess.file_exists("res://addons/dot_timer/plugin.cfg")
+	return FileAccess.file_exists("res://addons/gs_timer/plugin.cfg")
 
 
 ## The last line of every section. See [constant SECTIONS].
@@ -93,7 +93,7 @@ func _test_query() -> void:
 		provider.call("_contribute", snapshot)
 
 	# Through `get()`, because this module has no `class_name` — the shape a module
-	# delivered in a dot-cloud pack must have. Same reason `_module()` is typed GSModule.
+	# delivered in a gs-cloud pack must have. Same reason `_module()` is typed GSModule.
 	var joined: Dictionary = module.get("_joined")
 	var arena: Object = module.get("arena")
 
@@ -147,14 +147,14 @@ func _test_stats_report() -> void:
 	script.source_code = "extends Node\nfunc post_integration(_a = null, _b = null, _c = null): return null\n"
 	var _reloaded := script.reload()
 	client.set_script(script)
-	GSRegistry.register(&"dot_backbone_client", client)
+	GSRegistry.register(&"gs_backbone_client", client)
 	var _r0 := cv.set_value("0")
 	var _r1 := cv.set_value("1")
 	_check(progress.stats.report_to_backbone, "on with a backbone client makes the tracker report")
 	_check(progress.stats.get_node_or_null(GSGameStatsReport.TIMER_NAME) != null, "and adds the flush timer")
 	var _r2 := cv.set_value("0")
 	_check(not progress.stats.report_to_backbone, "off stops it again")
-	GSRegistry.unregister_instance(&"dot_backbone_client", client)
+	GSRegistry.unregister_instance(&"gs_backbone_client", client)
 	client.free()
 	_section_done()
 
@@ -218,12 +218,12 @@ func _test_tickrate_reaches_the_timer() -> void:
 		_check(int(manager.get("tick_rate")) == 100, "the timer counts at 100",
 			"%d" % int(manager.get("tick_rate")))
 		_check(bool(manager.call("tick_rate_matches_engine")), "and nothing disagrees")
-		var run: Object = load("res://addons/dot_timer/core/dot_timer_run.gd").call(
+		var run: Object = load("res://addons/gs_timer/core/gs_timer_run.gd").call(
 			"make", 0, &"normal", 1.0 / float(manager.get("tick_rate")))
 		run.call("begin", 0.0)
 		run.set("ticks", 250)
 		run.call("finish", 0.0)
-		var record: Object = load("res://addons/dot_timer/core/dot_timer_record.gd").call(
+		var record: Object = load("res://addons/gs_timer/core/gs_timer_record.gd").call(
 			"from_run", run, &"m", &"p", "P")
 		_check(int(record.get("tick_rate")) == 100, "and a record is stamped with it")
 		_check(absf(float(record.get("time")) - 2.5) < 0.001, "so its time means what it says",
@@ -246,7 +246,7 @@ func _test_timer_commands() -> void:
 	_check(_said(styles, "normal"), "with the normal style among them", str(styles))
 
 	# The run timer's commands are `addons/pg_timer`'s, registered only when a server links
-	# dot-timer; without it they are absent rather than answering "no timer" for ever.
+	# gs-timer; without it they are absent rather than answering "no timer" for ever.
 	if not _timer_linked():
 		for command in ["pg_top", "pg_track", "pg_cp", "pg_tp", "pg_cp_clear"]:
 			_check(server.console.find_command(command) == null,
@@ -364,7 +364,7 @@ func _test_moderation() -> void:
 	_section_done()
 
 
-## B, the arena's loadout: dot-loadout's command over the arena's manager, closed outside the
+## B, the arena's loadout: gs-loadout's command over the arena's manager, closed outside the
 ## arena (the lead's call), `pg_arena_on` replicated so a client's B knows, and a choice made
 ## inside spawn protection in the hands at once.
 func _test_arena_loadout() -> void:
@@ -624,7 +624,7 @@ func _test_progress() -> void:
 		"and not the second"
 	)
 
-	# A LOWEST merge, the other end of dot-stats' four kinds.
+	# A LOWEST merge, the other end of gs-stats' four kinds.
 	progress.achievements.record("pg-test", &"fastest_run", 40.0)
 	progress.achievements.record("pg-test", &"fastest_run", 18.0)
 	progress.achievements.record("pg-test", &"fastest_run", 55.0)
@@ -648,7 +648,7 @@ func _check_hit_zones_and_rank(progress: PlaylotProgress) -> void:
 	_module().get("arena").damage_landed.emit(&"pg-test", &"pg-victim", zoned)
 	_check(
 		progress.stats.session_values(&"pg-test").get_cell(GSStatsHitzones.HITS, "zone:neck") >= 1.0,
-		"a hit with a hit_group is filed by body zone through the dot-stats hitzone hook"
+		"a hit with a hit_group is filed by body zone through the gs-stats hitzone hook"
 	)
 
 	var held := GSStatsValues.new()

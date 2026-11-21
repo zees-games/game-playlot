@@ -1,7 +1,7 @@
 # Converted map judge rubric
 
 A fresh judge reads this before it looks at any frame of a converted Playlot map (a Source BSP brought over by
-dot-map-convert). It answers one question: **would a player who loads this map in a modern shooter or sandbox
+gs-map-convert). It answers one question: **would a player who loads this map in a modern shooter or sandbox
 (CS:S, Garry's Mod, CS2) notice something wrong?** The default answer is **no, not ready**. `production_ready: true` must be
 earned by the frames. A metric that passes, an author's note or "it is better than before" earns nothing.
 
@@ -36,7 +36,7 @@ justification is wrong.
 
 ## verdict.json
 
-The same shape as dot-game's visual judge (docs/visual-judge-rubric.md there), with frames instead of cameras:
+The same shape as gs-game's visual judge (docs/visual-judge-rubric.md there), with frames instead of cameras:
 
 ```json
 {

@@ -168,7 +168,7 @@ func release() -> void:
 
 ## Every `res://addons`-shaped folder to scan for hooks and providers: the host's, then the game's own
 ## when [param game_root] (PlaylotPaths.root()) is elsewhere. A delivered pack mounts at
-## res://dot_cloud/<id>/<version>/, so its own adapters (pg_natural_disasters, pg_timer) sit under that
+## res://gs_cloud/<id>/<version>/, so its own adapters (pg_natural_disasters, pg_timer) sit under that
 ## prefix; scanning res://addons alone left the web-solo Disasters menu empty. Built in, one folder.
 static func addon_roots(game_root: String) -> PackedStringArray:
 	var out := PackedStringArray([ADDONS_ROOT])
@@ -455,7 +455,7 @@ func _runtime_npcs(world: Node) -> Dictionary:
 
 
 ## Damage to a pack monster. A monster's body has no `take_damage` (its health is the pack
-## spawner's, dot-npc's), so every shot and blast that asks for that method used to treat it as a wall.
+## spawner's, gs-npc's), so every shot and blast that asks for that method used to treat it as a wall.
 ## [param collider] is what the ray or shape hit: the body, or a node under it. Hurts the limb at
 ## [param point], then the monster, and tells the shooter ([method confirm_hit]). True when [param collider]
 ## was a monster, dead or alive: the caller has nothing more to do with it.
@@ -574,7 +574,7 @@ static func pack_weapon_id(pack: String, weapon: String) -> StringName:
 	return StringName("pk_%s_%s" % [pack, weapon])
 
 
-## A weapon row whose `spawn` is data (a Dictionary) is a dot-weapon definition behind the
+## A weapon row whose `spawn` is data (a Dictionary) is a gs-weapon definition behind the
 ## provider's static `weapon_defs()`. Adds it to the host's weapon list as a rig-held weapon
 ## (`meta.zee` + `meta.pack_def`, the shape the Workshop's weapons have), so the pickup path, the
 ## bridge and the rigs find it the way they find any other. Both ends scan, so both know it.

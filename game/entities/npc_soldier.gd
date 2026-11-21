@@ -1,6 +1,6 @@
 extends "playlot_entity.gd"
 
-## An NPC that carries a weapon and fights with it: dot-npc-ai's tactical brain on a body,
+## An NPC that carries a weapon and fights with it: gs-npc-ai's tactical brain on a body,
 ## with a real zee weapon in its hands.
 ##
 ## [b]The weapon is a zee rig, the same one a player holds.[/b] Fire rate, magazine,

@@ -1,16 +1,16 @@
 extends Node
 
-## The playlot's side of dot-timer: run timing, courses, records and practice checkpoints,
+## The playlot's side of gs-timer: run timing, courses, records and practice checkpoints,
 ## for a server that added the timer.
 ##
 ## [b]The timer does not ship with the game.[/b] A sandbox has no use for one until somebody
 ## builds a course, so the playlot runs without it and this hook does nothing unless
-## `res://addons/dot_timer` is there: a server owner links or copies dot-timer's addon in (or a
+## `res://addons/gs_timer` is there: a server owner links or copies gs-timer's addon in (or a
 ## subscriber delivers it), and on the next start the courses' zones are timed again. The
 ## playlot itself knows only the duck-typed surface it calls on [member Playlot.run_timer]
 ## (`tick`, `add_player`, `on_map_changed`, `start_for`, ...), all of which is this file.
 ##
-## [b]Every dot-timer script is loaded by path and every call goes through [method Object.call].[/b]
+## [b]Every gs-timer script is loaded by path and every call goes through [method Object.call].[/b]
 ## A script that named `GSTimerManager` would not compile in a checkout without the addon, and
 ## the game's parse pass checks this file too. That is the whole reason it reads like
 ## reflection.
@@ -22,18 +22,18 @@ extends Node
 
 const CHANNEL := "pg.timer"
 
-const ROOT := "res://addons/dot_timer"
+const ROOT := "res://addons/gs_timer"
 const PLUGIN := ROOT + "/plugin.cfg"
-const MANAGER := ROOT + "/runtime/dot_timer_manager.gd"
-const CONFIG := ROOT + "/core/dot_timer_config.gd"
-const STYLE := ROOT + "/core/dot_timer_style.gd"
-const ZONE := ROOT + "/core/dot_timer_zone.gd"
-const ZONE_SET := ROOT + "/core/dot_timer_zone_set.gd"
-const TRACK := ROOT + "/core/dot_timer_track.gd"
-const RULES := ROOT + "/core/dot_timer_rules.gd"
-const RUN := ROOT + "/core/dot_timer_run.gd"
-const REPLAY := ROOT + "/replay/dot_timer_replay.gd"
-const HUD := ROOT + "/ui/dot_timer_hud.gd"
+const MANAGER := ROOT + "/runtime/gs_timer_manager.gd"
+const CONFIG := ROOT + "/core/gs_timer_config.gd"
+const STYLE := ROOT + "/core/gs_timer_style.gd"
+const ZONE := ROOT + "/core/gs_timer_zone.gd"
+const ZONE_SET := ROOT + "/core/gs_timer_zone_set.gd"
+const TRACK := ROOT + "/core/gs_timer_track.gd"
+const RULES := ROOT + "/core/gs_timer_rules.gd"
+const RUN := ROOT + "/core/gs_timer_run.gd"
+const REPLAY := ROOT + "/replay/gs_timer_replay.gd"
+const HUD := ROOT + "/ui/gs_timer_hud.gd"
 
 ## The GSTimerManager, or null when the addon is absent.
 var manager: Node = null
@@ -65,7 +65,7 @@ var _hud_player: StringName = &""
 
 func playlot_register(menu) -> void:
 	if not FileAccess.file_exists(PLUGIN):
-		GSLog.info(CHANNEL, "dot-timer is not installed; no run timer", {"looked_for": ROOT})
+		GSLog.info(CHANNEL, "gs-timer is not installed; no run timer", {"looked_for": ROOT})
 		return
 
 	game = menu.host
@@ -172,7 +172,7 @@ func remove_player(id: StringName) -> void:
 	_assisted.erase(id)
 
 
-## dot-timer has no idea a vehicle exists. Getting in stops a run on a foot track; on a
+## gs-timer has no idea a vehicle exists. Getting in stops a run on a foot track; on a
 ## DRIVEN track (the map says which) the car is the point, so it is getting out that stops it.
 func on_seated(player: Node) -> void:
 	if player.timer != null and not _driven(player.timer.get("track")):
@@ -190,8 +190,8 @@ func on_map_changing() -> void:
 
 
 ## A map that carries its own zones hands them over (`timer_zones()`, duck-typed, so a
-## delivered course map can still be written against dot-timer); one that ships a JSON file
-## has already had it read by dot-map into `maps.zones_json`.
+## delivered course map can still be written against gs-timer); one that ships a JSON file
+## has already had it read by gs-map into `maps.zones_json`.
 func on_map_changed(map: GSMapDef, loaded: Node) -> void:
 	var zones: Object = null
 
@@ -317,7 +317,7 @@ func describe() -> Dictionary:
 # --- On the tick ------------------------------------------------------------------
 
 ## After the move, on every end that simulates the player (a prediction replay included).
-## The timer decides and the game acts: dot-timer never moves a player.
+## The timer decides and the game acts: gs-timer never moves a player.
 func _post_move(player: Node, state: GSFpsState) -> void:
 	var timer: Object = player.timer
 	if timer == null:
@@ -325,7 +325,7 @@ func _post_move(player: Node, state: GSFpsState) -> void:
 	var controller: GSFpsController = player.controller
 
 	# An admin's help makes a run assisted every tick it is on, so a run begun with it on
-	# carries it too; `taint` is dot-timer's mark and the run is never filed.
+	# carries it too; `taint` is gs-timer's mark and the run is never filed.
 	var helped := (
 		GSFpsAdminModifiers.is_noclipped(controller)
 		or not is_equal_approx(GSFpsAdminModifiers.speed_of(controller), 1.0)
@@ -368,7 +368,7 @@ func _post_move(player: Node, state: GSFpsState) -> void:
 
 
 ## The EFFECT zone of [param kind] at [param point], or null; the last found wins, as the
-## timer's own effects resolve. Not track-filtered, as dot-timer's effects are not.
+## timer's own effects resolve. Not track-filtered, as gs-timer's effects are not.
 func _zone_at(timer: Object, point: Vector3, kind: int) -> Object:
 	var index: Object = timer.get("index")
 	if index == null:

@@ -89,7 +89,7 @@ func _brush_documents() -> void:
 const WORLD_FIXTURE := "res://examples/fixtures/world_map"
 
 
-## A document naming a converted world pack (dot-map's mesh fixture, copied): a drawing map lays the pack over its boxes,
+## A document naming a converted world pack (gs-map's mesh fixture, copied): a drawing map lays the pack over its boxes,
 ## hides every opaque box and brush mesh and keeps their collision, and leaves glass and water drawn. A server draws nothing;
 ## a pack that is missing or made at another scale leaves the boxes drawn; a bad `world` refuses the document.
 func _test_drawn_worlds() -> void:

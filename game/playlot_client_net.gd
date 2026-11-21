@@ -124,7 +124,7 @@ func _net_physics(delta: float) -> void:
 		return
 
 	# Each pass is its own tick: `advance` has already moved the clock by all of them, so `input_tick()` is the LAST one on every pass; subtract the passes still to come.
-	# Arithmetic here, not a new dot-net call, so a pack runs on any client shell.
+	# Arithmetic here, not a new gs-net call, so a pack runs on any client shell.
 	for i in range(ticks):
 		if net.clock.is_synced():
 			var tick := net.clock.input_tick() - (ticks - 1 - i)
@@ -156,7 +156,7 @@ func _build_view() -> void:
 	_arm_toy_view(tool)
 
 	# Somebody walking into the first-person camera is hidden at the lens. The third-person
-	# camera is dot-player-controller's rig, which has a fade of its own (`_build_view_switch`).
+	# camera is gs-player-controller's rig, which has a fade of its own (`_build_view_switch`).
 	var fade := GSCameraFade.new()
 	fade.name = "Fade"
 	fade.bodies_fn = _other_players
@@ -233,7 +233,7 @@ func _on_mouse_button(event: InputEventMouseButton) -> void:
 				_wheel_cycle(event)
 
 
-## The wheel on dot-menu's previous and next weapon actions (so a rebind works) and the pad
+## The wheel on gs-menu's previous and next weapon actions (so a rebind works) and the pad
 ## shoulders. A held prop keeps the wheel for push and pull; a wheel event is never a key, so
 ## one tick cannot cycle on both paths.
 func _wheel_cycle(event: InputEvent) -> bool:
@@ -308,7 +308,7 @@ func _set_tool(id: StringName) -> void:
 	_disarm_zee()
 
 	if PlaylotZee.is_zee(playlot.weapon_def(id)):
-		# A real gun: dot-weapon's machinery, drawn here and decided by the server when
+		# A real gun: gs-weapon's machinery, drawn here and decided by the server when
 		# there is one. Asked for above like any weapon, so the shop still charges.
 		if not _arm_zee(playlot.weapon_def(id)):
 			tool = TOOL_PHYS
@@ -561,7 +561,7 @@ func _on_tool_mode_chosen(mode: StringName, settings: Dictionary) -> void:
 
 
 ## What M lists solo: every map in the catalogue, the kind as the mode and the tier under it.
-## Connected the server's own list is drawn instead (dot-vote's map menu).
+## Connected the server's own list is drawn instead (gs-vote's map menu).
 func map_menu_rows() -> Array:
 	var out: Array = []
 	if playlot == null or playlot.maps == null or playlot.maps.catalogue == null:
@@ -574,8 +574,8 @@ func map_menu_rows() -> Array:
 
 
 ## B: the arena's loadout, which weapon an arena spawn puts in your hands. Connected the server
-## answers (dot-loadout's `/loadout`); enabled only while the arena is on, and guarded on the
-## host's dot-menu and dot-loadout levels. Escape's Mods action: the player's own look override.
+## answers (gs-loadout's `/loadout`); enabled only while the arena is on, and guarded on the
+## host's gs-menu and gs-loadout levels. Escape's Mods action: the player's own look override.
 func _use_mods_menu() -> void:
 	if platform == null or not platform.user_tier_on or game_menu == null or not game_menu.has_method(&"use_mods"):
 		return
@@ -596,7 +596,7 @@ func _use_mods_menu() -> void:
 
 
 func _use_loadout_menu() -> void:
-	if GSAddonApi.build_level("dot_menu") < 6 or GSAddonApi.build_level("dot_loadout") < 2:
+	if GSAddonApi.build_level("gs_menu") < 6 or GSAddonApi.build_level("gs_loadout") < 2:
 		return
 	if game_menu == null or not game_menu.has_method(&"use_loadout"):
 		return
@@ -607,7 +607,7 @@ func _use_loadout_menu() -> void:
 	if loadout_menu != null:
 		loadout_menu.set(&"title", "Arena loadout")
 		# Connected, the menu asks the server's `/loadout locked`; there is no solo loadout here.
-		if GSAddonApi.build_level("dot_game") >= 40:
+		if GSAddonApi.build_level("gs_game") >= 40:
 			platform.add_loadout_store(loadout_menu, func() -> Object: return null, func() -> String: return "")
 		# Remembered on this device and sent again on the next join, never under a suite's or a
 		# render's scratch settings.
@@ -686,7 +686,7 @@ func _arm_zee(def: PlaylotWeaponDef) -> bool:
 	camera.add_child(zee_view)
 	if own_hands:
 		# The viewmodel_fov lens scales the weapon 2.5x and pushes it past the arms' reach.
-		zee_view.remove_from_group(&"dot_view_model")
+		zee_view.remove_from_group(&"gs_view_model")
 		(zee_view as ZeeViewModel).hands_fov = 0.0
 		# Before this client's frame, which then moves it to the avatar's hand (its lens resets the position each frame).
 		zee_view.process_priority = -1

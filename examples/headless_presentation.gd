@@ -150,7 +150,7 @@ func _test_escape_menu() -> void:
 	# `&"Pause"` and `push(&"pause")` answered "no such screen" -- reported, not fatal, so
 	# this game's pause menu never opened at all. Every check below passed anyway: a
 	# REGISTERED screen is sized and focusable whether or not it is on screen. A rendered
-	# frame in dot-ui is what found it, and this is the assertion that would have.
+	# frame in gs-ui is what found it, and this is the assertion that would have.
 	_check(stack.top_id() == &"pause", "the menu OPENS, rather than registering under its node name")
 	_check(pause.visible, "so it is actually on screen")
 
@@ -187,7 +187,7 @@ func _test_escape_menu() -> void:
 	p.queue_free()
 	_done()
 
-## The ammo counter, hit marker and damage numbers are dot-ui's glance pieces, fed this game's numbers.
+## The ammo counter, hit marker and damage numbers are gs-ui's glance pieces, fed this game's numbers.
 func _test_glance_pieces() -> void:
 	_section("What is in hand, and what a shot did")
 	var p := _make()
@@ -299,22 +299,22 @@ func _check_camera_motion(p: PlaylotPresentation) -> void:
 	holder.queue_free()
 
 
-## A pack naming these classes does not parse on a shell whose dot-ui predates them, so the
-## requires.json dot-ci derives must ask for dot-ui 4, and nothing may lower it.
-## The floor file exists to name the game addons solo play fetches; it must not lower dot-ui.
+## A pack naming these classes does not parse on a shell whose gs-ui predates them, so the
+## requires.json gs-ci derives must ask for gs-ui 4, and nothing may lower it.
+## The floor file exists to name the game addons solo play fetches; it must not lower gs-ui.
 func _check_ui_floor() -> void:
 	var asks := GSAddonApi.derive()
 	var floor_path := "res://" + GSAddonApi.FLOOR_FILE
 	var floors := {}
 	if FileAccess.file_exists(floor_path):
 		var parsed := GSAddonApi.parse(FileAccess.get_file_as_string(floor_path), GSAddonApi.FLOOR_FILE)
-		floors = {"dot_ui": 0}
+		floors = {"gs_ui": 0}
 		if parsed.ok:
 			floors = parsed.value
 	_check(
-		int(GSAddonApi.apply_floors(asks, floors).get("dot_ui", 0)) >= 4,
-		"the pack asks a shell for dot-ui level 4, the glance pieces",
-		str(asks.get("dot_ui"))
+		int(GSAddonApi.apply_floors(asks, floors).get("gs_ui", 0)) >= 4,
+		"the pack asks a shell for gs-ui level 4, the glance pieces",
+		str(asks.get("gs_ui"))
 	)
 
 

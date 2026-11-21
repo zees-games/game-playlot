@@ -3,7 +3,7 @@ extends "playlot_module_build.gd"
 const PlaylotAvatarLibrary := preload("playlot_avatar_library.gd")
 ## Binds a [Playlot] to a [GSServer]: the console commands an operator and an admin type.
 ##
-## The only file in the project that names dot-server; a game wanting a dedicated server writes
+## The only file in the project that names gs-server; a game wanting a dedicated server writes
 ## this one file. Zone commands: stand on one corner, run the command, stand on the other, run it again.
 ##
 ## [codeblock]
@@ -17,7 +17,7 @@ func _module_version() -> String:
 
 
 ## The custom maps delivered beside this game: every pack its descriptor names, read for a `maps/` directory
-## where it is mounted. Duck-typed, so a dot-server without the field offers the built-in maps.
+## where it is mounted. Duck-typed, so a gs-server without the field offers the built-in maps.
 func _add_delivered_maps() -> void:
 	var games: Object = server.get("games") if server != null else null
 	if games == null:
@@ -88,11 +88,11 @@ func _module_load() -> GSResult:
 
 	hook_post("client_spawn", _on_client_spawn)
 
-	# dot-server's own chat is cancelled here, not listened to: [GSChatRouter] has the rules, and both
+	# gs-server's own chat is cancelled here, not listened to: [GSChatRouter] has the rules, and both
 	# running would leak admin chat. Only a pre-hook can cancel; handle_message broadcasts on return.
 	hook_pre("player_chat", _on_player_chat)
 
-	# dot-chat makes the join and leave notices now, so dot-server's would be a second one
+	# gs-chat makes the join and leave notices now, so gs-server's would be a second one
 	# on a second path.
 	if server.chat != null:
 		server.chat.announce_joins = false
@@ -122,7 +122,7 @@ func _register_commands() -> void:
 		"List the styles, or switch to one", ""
 	).with_chat()
 	# The run timer's commands (pg_timer, pg_track, pg_top, pg_cp, pg_tp, pg_cp_clear) belong to
-	# `addons/pg_timer`, which registers them only when dot-timer is present.
+	# `addons/pg_timer`, which registers them only when gs-timer is present.
 	if game.run_timer != null and game.run_timer.has_method("bind_commands"):
 		game.run_timer.call("bind_commands", add_command, _target)
 
@@ -148,7 +148,7 @@ func _register_map_commands() -> void:
 	# `.with_chat()` makes a command typable from chat whatever `sv_chat_commands` says; these survive an
 	# operator turning it off, and the map commands below rely on the flag.
 
-	# Maps: `map`, `maps` and `mapinfo` come from dot-map. `install_with` rather than `install`, because
+	# Maps: `map`, `maps` and `mapinfo` come from gs-map. `install_with` rather than `install`, because
 	# `Playlot.change_map` resets the props, NPCs and run timer before it touches the session.
 	# `allow_chat_change` is on: a map change destroys no ranked run here.
 	var _rotation := game.load_rotation()
@@ -178,7 +178,7 @@ func _register_map_commands() -> void:
 
 ## The cvars the addons' rule sets bind, and the Workbench sets over them.
 func _register_addon_cvars() -> void:
-	# The tick rate is dot-server's `sv_tickrate`, not duplicated: a second cvar could disagree with the engine's.
+	# The tick rate is gs-server's `sv_tickrate`, not duplicated: a second cvar could disagree with the engine's.
 	add_cvar(
 		"pg_map_seconds",
 		str(int(game.maps.time_limit.duration)),
@@ -191,13 +191,13 @@ func _register_addon_cvars() -> void:
 
 	# Thrown grenades: fc_weapons' sv_grenade_* set (bounce, friction, flash, smoke and fire times).
 	var _grenades := game.grenade_rules.bind_cvars(add_cvar, GSConVar.FLAG_ARCHIVE | GSConVar.FLAG_NOTIFY)
-	# Dead bodies: dot-player-char's sv_ragdoll* set. The server only picks each death's
+	# Dead bodies: gs-player-char's sv_ragdoll* set. The server only picks each death's
 	# reaction from them; REPLICATED, because the clients draw the bodies.
 	var _ragdolls := game.ragdoll_rules.bind_cvars(
 		add_cvar, GSConVar.FLAG_ARCHIVE | GSConVar.FLAG_NOTIFY | GSConVar.FLAG_REPLICATED
 	)
 	var _drops = game.weapon_layer.bind_cvars(add_cvar)
-	# The map's toys: dot-props' sv_toys* set. REPLICATED, because a client hides the toys the
+	# The map's toys: gs-props' sv_toys* set. REPLICATED, because a client hides the toys the
 	# server took away and draws the rest.
 	var _toys := game.toy_rules.bind_cvars(
 		add_cvar, GSConVar.FLAG_ARCHIVE | GSConVar.FLAG_NOTIFY | GSConVar.FLAG_REPLICATED
@@ -207,12 +207,12 @@ func _register_addon_cvars() -> void:
 		add_cvar, GSConVar.FLAG_ARCHIVE | GSConVar.FLAG_NOTIFY | GSConVar.FLAG_REPLICATED
 	)
 
-	# dot-player-controller's mp_forceview (view mode) and mp_solidplayers (players block each other),
+	# gs-player-controller's mp_forceview (view mode) and mp_solidplayers (players block each other),
 	# REPLICATED: the client places its camera under the first and predicts its player under the second.
 	var _views := game.view_rules.bind_cvars(
 		add_cvar, GSConVar.FLAG_ARCHIVE | GSConVar.FLAG_NOTIFY | GSConVar.FLAG_REPLICATED
 	)
-	# sv_mobile_*, sv_aim_assist*, sv_autofire*: dot-mobile's touch controls.
+	# sv_mobile_*, sv_aim_assist*, sv_autofire*: gs-mobile's touch controls.
 	var _mobile := game.mobile_rules.bind_cvars(
 		add_cvar, GSConVar.FLAG_ARCHIVE | GSConVar.FLAG_NOTIFY | GSConVar.FLAG_REPLICATED
 	)
@@ -275,7 +275,7 @@ func _register_addon_commands() -> void:
 		"pg_achievements [player] — what somebody has earned", ""
 	).with_chat()
 	# MUTE rather than BAN: quieting somebody and removing them are different powers, and
-	# dot-server's own flags are what distinguish them.
+	# gs-server's own flags are what distinguish them.
 	add_command(
 		"pg_gag", _cmd_gag, "pg_gag <who> <seconds> [reason]", GSAdminFlags.MUTE
 	).with_chat()

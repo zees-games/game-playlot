@@ -25,7 +25,7 @@ func _test_prop_removal() -> void:
 
 ## A vehicle spawned, driven and ridden with a real socket between the two ends.
 ##
-## The only run of [GSVehicleNetSync] across a wire: a spec dot-net refuses, a wheel angle arriving as a body rotation, an unread seat mask, an unsent driver input, a rider drawn at the wrong spot.
+## The only run of [GSVehicleNetSync] across a wire: a spec gs-net refuses, a wheel angle arriving as a body rotation, an unread seat mask, an unsent driver input, a rider drawn at the wrong spot.
 var _votw_driver: PlaylotPlayer
 var _votw_spawned: GSPropInstance
 var _votw_vehicle: GSVehicleInstance
@@ -456,7 +456,7 @@ func _find_vehicle_node(game: Playlot) -> PlaylotVehicle:
 
 ## A line typed on the client, through the real services layer, and back to the client.
 ##
-## The path rather than the codec: SAY over the link, the bridge's `say_requested`, [PlaylotServices] with a real dot-chat router and moderation manager, the CHAT event and `chat_received`, then a gag. Armed: without `_subject_for_peer` the gagged line is delivered; without `_send_chat` the line carries no id.
+## The path rather than the codec: SAY over the link, the bridge's `say_requested`, [PlaylotServices] with a real gs-chat router and moderation manager, the CHAT event and `chat_received`, then a gag. Armed: without `_subject_for_peer` the gagged line is delivered; without `_send_chat` the line carries no id.
 var _cete_store: String
 var _cete_services: PlaylotServices
 var _cete_heard: Array[Dictionary]
@@ -574,12 +574,12 @@ func _test_chat_end_to_end_2() -> void:
 func _test_timer() -> void:
 	_section("the timer")
 
-	# A run timer is `addons/pg_timer` over dot-timer, there only when a server links it;
+	# A run timer is `addons/pg_timer` over gs-timer, there only when a server links it;
 	# without it nobody has one, on either end.
-	var linked := FileAccess.file_exists("res://addons/dot_timer/plugin.cfg")
+	var linked := FileAccess.file_exists("res://addons/gs_timer/plugin.cfg")
 	var player := _client_player()
 	_check(player != null and (player.timer != null) == linked,
-		"the client player has a timer exactly when dot-timer is linked")
+		"the client player has a timer exactly when gs-timer is linked")
 
 	# A client runs its own timer over its own copy of the zones and reaches the same
 	# answer a tick earlier than any packet could, so both must count at one rate.

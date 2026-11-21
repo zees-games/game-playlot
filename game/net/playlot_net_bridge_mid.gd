@@ -114,7 +114,7 @@ func _on_player_removed(id: StringName) -> void:
 
 ## Every prop the spawner creates becomes a replicated entity, announced reliably AND replicated by
 ## snapshot: the snapshot moves it, the event says what it is. Props are named by PATH in the
-## catalogue so a dot-cloud pack can deliver them (a mounted pack's `class_name`s are not registered).
+## catalogue so a gs-cloud pack can deliver them (a mounted pack's `class_name`s are not registered).
 func _on_prop_spawned(prop: GSPropInstance) -> void:
 	if net == null or not net.is_server or prop == null or prop.node == null:
 		return
@@ -389,7 +389,7 @@ func _on_map_ready(map: GSMapDef) -> void:
 	_broadcast(PlaylotEvents.Kind.MAP, PlaylotEvents.write_map(map.id))
 	_register_toys()
 	# Re-announced after a map change: a client rebuilt its world and needs to be told
-	# who is in it again. dot-map's own sync replaces the world and nothing else.
+	# who is in it again. gs-map's own sync replaces the world and nothing else.
 	for session_id in _behaviours.keys():
 		_broadcast(PlaylotEvents.Kind.JOIN, _join_body(int(session_id)))
 
@@ -602,10 +602,10 @@ func _adopt_tick_rate(rate: int) -> void:
 
 	net.config.tick_rate = game.tick_rate
 	net.clock.tick_rate = game.tick_rate
-		# dot-net API 7 has GSNetClock.adopt_tick_rate(), which also raises the engine's step cap to a
+		# gs-net API 7 has GSNetClock.adopt_tick_rate(), which also raises the engine's step cap to a
 		# quarter second of ticks (8 steps are 62.5 ms at 128 Hz). A shell built before it gets the same
 		# rule here; remove this branch when the oldest shell is API 7.
-	if GSAddonApi.build_level("dot_net") >= 7:
+	if GSAddonApi.build_level("gs_net") >= 7:
 		GSNetClock.adopt_tick_rate(game.tick_rate)
 	else:
 		Engine.max_physics_steps_per_frame = maxi(Engine.max_physics_steps_per_frame, ceili(0.25 * float(game.tick_rate)))

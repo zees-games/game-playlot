@@ -1,11 +1,11 @@
 extends RefCounted
 
 ## Workshop trails in solo play: the `trail` entries of subscribed packs, loaded into one
-## dot-trail registry and worn by the local player as a ribbon.
+## gs-trail registry and worn by the local player as a ribbon.
 ##
-## [b]dot-trail is the host's, not this game's.[/b] The shell carries the addon and a pack cannot
+## [b]gs-trail is the host's, not this game's.[/b] The shell carries the addon and a pack cannot
 ## ship its classes, so they are reached by name ([method script_named]) the way the shell's trail
-## link does. A host without dot-trail lists no pack trails and logs why, instead of failing to parse.
+## link does. A host without gs-trail lists no pack trails and logs why, instead of failing to parse.
 ##
 ## [b]A trail pack is data.[/b] Its `provides.json` names one `trail` entry per trail with
 ## `def: trails.json`; the directory that file sits in is loaded with `GSTrailStore.load_dir`,
@@ -33,7 +33,7 @@ static func script_named(class_id: String) -> Script:
 	return null
 
 
-## Whether the host carries the dot-trail classes this needs.
+## Whether the host carries the gs-trail classes this needs.
 static func available() -> bool:
 	for class_id in CLASSES:
 		if script_named(class_id) == null:
@@ -52,7 +52,7 @@ func load_from(index: GSContentIndex) -> Array[GSContentEntry]:
 	if entries.is_empty():
 		return out
 	if not available():
-		GSLog.warn(CHANNEL, "pack trails need dot-trail in the host; not listed", {"entries": entries.size()})
+		GSLog.warn(CHANNEL, "pack trails need gs-trail in the host; not listed", {"entries": entries.size()})
 		return out
 	var fresh: RefCounted = script_named("GSTrailRegistry").new()
 	var store: RefCounted = script_named("GSTrailStore").new(fresh)

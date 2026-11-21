@@ -239,11 +239,11 @@ func _test_boots() -> void:
 	_section("booting")
 
 	_check(playlot.maps != null, "the map session exists")
-	# The run timer is an optional addon (`addons/pg_timer` adapts dot-timer when a server
+	# The run timer is an optional addon (`addons/pg_timer` adapts gs-timer when a server
 	# links it), so what is asserted is that the two agree: no addon, no timer.
 	_check(
 		(playlot.run_timer != null) == _timer_linked(),
-		"a run timer exists exactly when dot-timer is linked",
+		"a run timer exists exactly when gs-timer is linked",
 		"linked: %s, attached: %s" % [_timer_linked(), playlot.run_timer != null]
 	)
 	_check(playlot.props != null, "the prop spawner exists")
@@ -310,15 +310,15 @@ func _test_boots() -> void:
 	_done()
 
 
-## Whether this checkout has dot-timer linked in, which is what turns `addons/pg_timer` on.
+## Whether this checkout has gs-timer linked in, which is what turns `addons/pg_timer` on.
 static func _timer_linked() -> bool:
-	return FileAccess.file_exists("res://addons/dot_timer/plugin.cfg")
+	return FileAccess.file_exists("res://addons/gs_timer/plugin.cfg")
 
 
 func _test_tick_rate_comes_from_the_engine() -> void:
 	_section("the tick rate comes from the engine, which is what a server sets")
 
-	# The chain: `sv_tickrate` in server.cfg, dot-server writes `Engine.physics_ticks_per_second`,
+	# The chain: `sv_tickrate` in server.cfg, gs-server writes `Engine.physics_ticks_per_second`,
 	# the playlot reads it, and a run timer adopts it; a wrong chain fails quietly, hence the test.
 	_check(
 		playlot.tick_rate == Engine.physics_ticks_per_second,
@@ -385,8 +385,8 @@ func _test_styles() -> void:
 	_done()
 
 
-## `addons/pg_timer`, the adapter that turns dot-timer on when a server links it: run only
-## when `res://addons/dot_timer` is there. It proves the hook attaches, the manager runs on the
+## `addons/pg_timer`, the adapter that turns gs-timer on when a server links it: run only
+## when `res://addons/gs_timer` is there. It proves the hook attaches, the manager runs on the
 ## engine's rate, and a run from START to END is filed through `Playlot.run_filed`.
 func _test_the_run_timer() -> void:
 	_section("the run timer, from addons/pg_timer")
@@ -422,8 +422,8 @@ func _test_the_run_timer() -> void:
 
 	# A course drawn here, by path, the way a map document's zones arrive: a START round
 	# the spawn and an END 20 m ahead of where the player faces.
-	var zone_script: GDScript = load("res://addons/dot_timer/core/dot_timer_zone.gd")
-	var set_script: GDScript = load("res://addons/dot_timer/core/dot_timer_zone_set.gd")
+	var zone_script: GDScript = load("res://addons/gs_timer/core/gs_timer_zone.gd")
+	var set_script: GDScript = load("res://addons/gs_timer/core/gs_timer_zone_set.gd")
 	var kinds: Dictionary = zone_script.get_script_constant_map()["Kind"]
 	playlot.spawn_player(&"bot")
 	await get_tree().physics_frame
@@ -551,7 +551,7 @@ func _test_props() -> void:
 
 	# The physics gun. Grabbed directly rather than through a ray, because what is
 	# under test here is the join — the gun, the spawner and the world — and not
-	# Godot's raycast, which dot-props covers.
+	# Godot's raycast, which gs-props covers.
 	player.phys_gun.held = crate
 	crate.held_by = &"bot"
 	player.phys_gun.hold_distance = 4.0
@@ -690,7 +690,7 @@ func _test_map_time_limit() -> void:
 	playlot.maps.time_warning.connect(func(_left: float) -> void: warned[0] += 1)
 
 	# Advanced through the game's own loop, so this exercises the wiring rather than
-	# the time limit in isolation — which dot-map's own suite covers.
+	# the time limit in isolation — which gs-map's own suite covers.
 	for _i in range(70):
 		playlot.maps.advance(1.0)
 

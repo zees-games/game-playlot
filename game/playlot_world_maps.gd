@@ -3,7 +3,7 @@ extends "playlot_setup_props.gd"
 ## Split out of playlot_world.gd; static, so the server browser reads it without a game.
 
 ## The client shell's solo host, which mounts map packs for a game played with no server.
-const SOLO_SERVICE := &"dot_solo"
+const SOLO_SERVICE := &"gs_solo"
 ## A converted map's Garry's Mod name (`meta.source_map`), its alias for `pg_map` and for a dropped .bsp.
 const PlaylotMapSources := preload("client/playlot_map_sources.gd")
 
@@ -36,7 +36,7 @@ static func map_catalogue() -> GSMapCatalogue:
 		map.author = "playlot"
 		catalogue.add(map)
 
-	# Custom maps from playlot-maps, where a checkout links them in (dot-bootstrap's
+	# Custom maps from playlot-maps, where a checkout links them in (gs-bootstrap's
 	# `maps/custom`). A delivered server and client add the same documents from the mounted
 	# pack instead, with [method add_map_directory].
 	var _linked := add_map_docs(catalogue, PlaylotPaths.rebase(CUSTOM_MAPS_DIR))
@@ -47,7 +47,7 @@ static func map_catalogue() -> GSMapCatalogue:
 
 
 ## The `<pack>/<subdir>` directories of the map packs the client shell mounted for solo play (its `client/solo.json`, or the one
-## map pack of a "Play map" link), from the host it publishes as `dot_solo`. Looked up by name and duck-typed: a delivered game
+## map pack of a "Play map" link), from the host it publishes as `gs_solo`. Looked up by name and duck-typed: a delivered game
 ## may not name a host's class. Empty everywhere else (a server, a networked client, a run from the repository, a suite).
 static func solo_map_dirs(subdir: String) -> PackedStringArray:
 	var host: Object = GSRegistry.get_service(SOLO_SERVICE)

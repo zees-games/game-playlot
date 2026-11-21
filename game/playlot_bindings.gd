@@ -1,6 +1,6 @@
 extends RefCounted
 
-## Every key this game reads, as one dot-menu [GSMenuBindings] table: the action, the setting
+## Every key this game reads, as one gs-menu [GSMenuBindings] table: the action, the setting
 ## that stores it, the words a player sees, the default, and the card it goes on.
 ##
 ## [b]A table, because four things read it and they must never disagree:[/b] the client
@@ -32,10 +32,10 @@ const WEAPONS := &"pg_weapons"
 const AIM := &"pg_aim"
 ## A zee gun's quick melee, which was its right button until the button aimed: the middle one.
 const BASH := &"pg_bash"
-## M is dot-menu's map menu (`dot_menu_maps`): the map list solo, the server's (a change or a
+## M is gs-menu's map menu (`gs_menu_maps`): the map list solo, the server's (a change or a
 ## vote) online. Kept on `bind_map`, the setting it was stored under, so a key a player moved
 ## stays moved.
-const MAP := &"dot_menu_maps"
+const MAP := &"gs_menu_maps"
 const VOICE_GAG := &"voice_gag"
 const VOICE_MUTE := &"voice_mute"
 const VIEW := &"pg_view"
@@ -65,7 +65,7 @@ static func make() -> GSMenuBindings:
 	keys.add(PHYS_GUN, &"bind_phys_gun", "Physics gun", "1", "Tools")
 	keys.add(GRAV_GUN, &"bind_grav_gun", "Gravity gun", "2", "Tools")
 	keys.add(WEAPONS, &"bind_weapons", "Next weapon", "3", "Tools")
-	# The wheel cycles tools (dot-menu API 10); a held prop keeps it for push and pull.
+	# The wheel cycles tools (gs-menu API 10); a held prop keeps it for push and pull.
 	keys.add_wheel_weapons(GSMenuBindings.WEAPON_PREVIOUS_ACTION, GSMenuBindings.WEAPON_NEXT_ACTION, "Tools")
 	keys.add(VEHICLE, &"bind_vehicle", "Use what you look at, or get in or out of a vehicle", "F", "Tools")
 	keys.add(DROP_WEAPON, &"bind_drop_weapon", "Throw the gun in your hands", "O", "Tools")
@@ -84,13 +84,13 @@ static func make() -> GSMenuBindings:
 	# (declared in `PlaylotPresentation.schema`, per ACCOUNT, applied there as well).
 	keys.add(CHAT, &"chat_open_key", "Chat", "Y", "General", GSSettingsDef.Scope.ACCOUNT)
 	keys.add(CHAT_NEAR, &"chat_near_key", "Chat with nearby players", "U", "General", GSSettingsDef.Scope.ACCOUNT)
-	# dot-voice's talk action (GSVoiceManager.TALK_ACTION).
+	# gs-voice's talk action (GSVoiceManager.TALK_ACTION).
 	keys.add_voice("General", "K")
-	# Look at a player and press (dot-game's GSGameClient): H is help.
+	# Look at a player and press (gs-game's GSGameClient): H is help.
 	keys.add(VOICE_GAG, &"bind_voice_gag", "Look at a player: stop (or resume) hearing them", "J", "General")
 	keys.add(VOICE_MUTE, &"bind_voice_mute", "Look at a player: mute (or unmute) their voice and chat", "L", "General")
 	keys.add_help("General")
-	# B is the arena's loadout (dot-menu's `dot_menu_loadout`), where the host has it (API 6).
-	if GSAddonApi.build_level("dot_menu") >= 6 and keys.has_method(&"add_loadout"):
+	# B is the arena's loadout (gs-menu's `gs_menu_loadout`), where the host has it (API 6).
+	if GSAddonApi.build_level("gs_menu") >= 6 and keys.has_method(&"add_loadout"):
 		var _l: Variant = keys.call(&"add_loadout", "General")
 	return keys

@@ -14,11 +14,11 @@ extends RefCounted
 ## pg_limit_roles "admin: npcs=40 props=600; vip: props=300 balloons=60"
 ## [/codeblock]
 ##
-## and a player gets the most generous value among the roles they hold — their dot-server
+## and a player gets the most generous value among the roles they hold — their gs-server
 ## admin groups by name, plus `admin` for anybody with an admin flag and `root` for the
 ## root flag. A value of 0 is "no limit". The defaults are the `pg_max_<group>` cvars.
 ##
-## dot-props counts and refuses ([member GSPropLimits.group_limits],
+## gs-props counts and refuses ([member GSPropLimits.group_limits],
 ## [member GSPropSpawner.limit_resolver]); this file only answers "how many for this
 ## player". Constraints are not props, so the tool gun asks [method limit_for] itself.
 
@@ -50,7 +50,7 @@ const DEFAULTS := {
 	CONSTRAINTS: 100,
 }
 
-## Keys a role may set as well as the groups: dot-props' cost budget and frozen count.
+## Keys a role may set as well as the groups: gs-props' cost budget and frozen count.
 const EXTRA_KEYS := [&"budget", &"frozen"]
 
 ## Group -> default per-player limit. 0 is no limit.
@@ -60,7 +60,7 @@ var defaults: Dictionary = DEFAULTS.duplicate()
 var roles: Dictionary = {}
 
 ## `func(player_id: StringName) -> PackedStringArray`: the roles a player holds. Set by the
-## server module from dot-server's admin groups; unset — offline, a listen server, a suite —
+## server module from gs-server's admin groups; unset — offline, a listen server, a suite —
 ## every player is just a player.
 var roles_fn: Callable = Callable()
 
@@ -173,7 +173,7 @@ func known_keys() -> PackedStringArray:
 	return out
 
 
-## Copies the defaults onto dot-props' limits, so a cvar change reaches the spawner.
+## Copies the defaults onto gs-props' limits, so a cvar change reaches the spawner.
 func apply_to(prop_limits: GSPropLimits) -> void:
 	if prop_limits == null:
 		return

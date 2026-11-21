@@ -10,7 +10,7 @@ const PlaylotServices := preload("playlot_services.gd")
 const PlaylotVote := preload("playlot_vote.gd")
 const PlaylotUserFiles := preload("playlot_user_files.gd")
 
-## Settings, randomness, audio, effects and a console. This is the only game that holds dot-randomness as well:
+## Settings, randomness, audio, effects and a console. This is the only game that holds gs-randomness as well:
 ## the generated map, props and wave composition come from one seed. The manager is here rather than in
 ## `Playlot` because it owns the session's seed, and `Playlot` must run without it.
 
@@ -41,13 +41,13 @@ var settings: GSSettingsManager = null
 var rng: GSRandomManager = null
 var audio: GSAudioManager = null
 
-## Everybody's footsteps by the box's material and a bed per map: dot-audio's stock (Kenney's
-## footsteps and generated beds, CC0; the addon's stock/CREDITS.md). A box's `dot_fps_surface`
+## Everybody's footsteps by the box's material and a bed per map: gs-audio's stock (Kenney's
+## footsteps and generated beds, CC0; the addon's stock/CREDITS.md). A box's `gs_fps_surface`
 ## meta, which the movement already reads, is what a step on it sounds like.
 var steps: GSAudioFootsteps = null
 var ambience: GSAudioAmbience = null
 
-## Quiet moods under the map (dot-audio's stock set); the old bed plays only when none loaded.
+## Quiet moods under the map (gs-audio's stock set); the old bed plays only when none loaded.
 var ambient: GSAmbienceDirector = null
 const BreakFx := preload("playlot_break_fx.gd")
 
@@ -144,7 +144,7 @@ static func schema() -> GSSettingsSchema:
 	s.add(GSSettingsDef.boolean(&"prop_sounds", true, &"sandbox").with_description(
 		"Whether other people's props make a noise when they land."
 	))
-	# The window, the frame rate, the theme and the counter: dot-menu's stock settings, applied by the client's
+	# The window, the frame rate, the theme and the counter: gs-menu's stock settings, applied by the client's
 	# GSMenuApplier and GSMenu. GROUP_CONTROLS adds `invert_mouse` (sensitivity is declared above), which the
 	# applier inverts the sampler's look with.
 	GSMenuStock.declare(s, [GSMenuStock.GROUP_VIDEO, GSMenuStock.GROUP_INTERFACE, GSMenuStock.GROUP_CONTROLS] as Array[StringName])
@@ -343,7 +343,7 @@ static func _add_service_cues(c: GSAudioCatalogue) -> void:
 
 ## Falling bodies and map toys, split out of [method sound_catalogue].
 static func _add_body_sounds(c: GSAudioCatalogue) -> void:
-	# A body landing: dot-player-char's stock death sounds (Kenney, CC0), shipped in the addon.
+	# A body landing: gs-player-char's stock death sounds (Kenney, CC0), shipped in the addon.
 	for row: Dictionary in GSPlayerDeathSounds.rows():
 		var fall := GSAudioDef.new()
 		fall.id = row["id"]
@@ -361,7 +361,7 @@ static func _add_body_sounds(c: GSAudioCatalogue) -> void:
 		fall.cooldown_ms = int(row["cooldown_ms"])
 		c.add(fall)
 
-	# The map's toys: dot-props' stock toy sounds (Kenney, CC0, and a horn made for it), shipped
+	# The map's toys: gs-props' stock toy sounds (Kenney, CC0, and a horn made for it), shipped
 	# in the addon, each carrying as far as its row says.
 	for row: Dictionary in GSPropBodySounds.rows():
 		var toy := GSAudioDef.new()
@@ -428,7 +428,7 @@ static func sound_recipes() -> Dictionary:
 		PlaylotVote.CUE_WARNING: GSAudioSynth.Voice.BLIP,
 		PlaylotVote.CUE_COUNT: GSAudioSynth.Voice.STEP,
 		BEACON_SOUND: GSAudioSynth.Voice.BLIP,
-		# Stand-ins only for a build without dot-props' toy files.
+		# Stand-ins only for a build without gs-props' toy files.
 		GSPropBodySounds.BOUNCE: GSAudioSynth.Voice.IMPACT,
 		GSPropBodySounds.THUMP: GSAudioSynth.Voice.IMPACT,
 		GSPropBodySounds.KNOCK: GSAudioSynth.Voice.IMPACT,
@@ -442,7 +442,7 @@ static func sound_recipes() -> Dictionary:
 		GSPropBodySounds.WATER: GSAudioSynth.Voice.STEP,
 		GSPropBodySounds.BOING: GSAudioSynth.Voice.SPAWN,
 		GSPropBodySounds.HORN: GSAudioSynth.Voice.BLIP,
-		# Stand-ins only for a build without dot-player-char's files.
+		# Stand-ins only for a build without gs-player-char's files.
 		GSPlayerDeathReactions.SOUND_THUD: GSAudioSynth.Voice.IMPACT,
 		GSPlayerDeathReactions.SOUND_FACE_PLANT: GSAudioSynth.Voice.IMPACT,
 		GSPlayerDeathReactions.SOUND_SLUMP: GSAudioSynth.Voice.STEP,
@@ -495,4 +495,4 @@ static func fx_catalogue() -> GSFxCatalogue:
 
 
 ## Pushes the player's `gore` and `fx_quality` into the decals; env and command line
-## (`DOT_FX_DECAL_*`, `--decal-*`) layer under them through the config's own loader.
+## (`GS_FX_DECAL_*`, `--decal-*`) layer under them through the config's own loader.

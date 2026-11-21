@@ -91,7 +91,7 @@ func _test_vehicles_2() -> void:
 	_check(travelled.length() > 4.0, "it drives", "%.2f m" % travelled.length())
 	_check(
 		_v_vehicle.forward_speed() > 0.5,
-		"FORWARDS, which is the one dot-vehicle says a car gets wrong",
+		"FORWARDS, which is the one gs-vehicle says a car gets wrong",
 		"%.2f m/s along its own -Z" % _v_vehicle.forward_speed()
 	)
 	_check(
@@ -101,7 +101,7 @@ func _test_vehicles_2() -> void:
 	)
 
 	# Steering. Both directions, because a check that only measured "it turned" would
-	# pass for a car that turns the wrong way — which is exactly the bug dot-vehicle
+	# pass for a car that turns the wrong way — which is exactly the bug gs-vehicle
 	# found in itself.
 	var right := GSFpsCommand.new()
 	right.move = Vector2(1.0, 1.0)
@@ -136,7 +136,7 @@ func _test_vehicles_2() -> void:
 		"%.2f m" % _v_passenger.controller.state.position.distance_to(passenger_before)
 	)
 
-	# Getting out, the half dot-vehicle says the bugs are in. Asserted on the SPEED first: a refusal
+	# Getting out, the half gs-vehicle says the bugs are in. Asserted on the SPEED first: a refusal
 	# test against a stationary car passes without testing anything. Put back on a clean patch
 	# pointed down the plate first, since the steering up to here leaves the end speed uncontrolled.
 	(_v_vehicle.node as Node3D).global_transform = Transform3D(Basis.IDENTITY, _v_at)
@@ -184,7 +184,7 @@ func _test_vehicles_3() -> void:
 
 	# How far it takes to stop, which "the brake stops it" never said: the brake once went to
 	# Godot's wheels in newtons where it reads an impulse per step, stopping the buggy within a
-	# couple of metres. Forces since dot-vehicle 4f4afaf.
+	# couple of metres. Forces since gs-vehicle 4f4afaf.
 	var foot := await _stopping(_v_vehicle, _v_at, &"bot", GSFpsCommand.BUTTON_CROUCH)
 	var hand := await _stopping(_v_vehicle, _v_at, &"bot", GSFpsCommand.BUTTON_JUMP)
 	print("  ..    the buggy from 50 km/h: brake (crouch) %.2f m, handbrake (jump) %.2f m" % [foot, hand])
@@ -192,7 +192,7 @@ func _test_vehicles_3() -> void:
 		"%.2f m" % foot)
 	_check(hand > 6.8 and hand < 16.0, "and so does the handbrake", "%.2f m" % hand)
 	# S: the brake while the buggy still rolls forward, reverse once it has stopped
-	# (dot-vehicle's `brake_then_reverse`). On reverse thrust alone it was the engine's 35 %
+	# (gs-vehicle's `brake_then_reverse`). On reverse thrust alone it was the engine's 35 %
 	# against a brake several times that.
 	var back := await _stopping(_v_vehicle, _v_at, &"bot", BACK_KEY)
 	var reverse := GSFpsCommand.new()

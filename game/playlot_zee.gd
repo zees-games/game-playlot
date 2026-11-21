@@ -4,11 +4,11 @@ const PlaylotPaths := preload("playlot_paths.gd")
 const PlaylotWeaponDef := preload("weapons/playlot_weapon_def.gd")
 const PlaylotZeeSelf := preload("playlot_zee.gd")
 
-## zee-dot-weapons in the sandbox: twenty-seven real weapons beside the three toys.
+## zee-gs-weapons in the sandbox: twenty-seven real weapons beside the three toys.
 ##
 ## [b]A second kind of weapon, not a SWEP with a gun painted on.[/b] `PlaylotWeapon` is a
 ## prop tool: two edge-triggered buttons and a float delta, run where the input is. A zee
-## weapon is dot-weapon's: a held-button command per integer tick, its own cadence, reload
+## weapon is gs-weapon's: a held-button command per integer tick, its own cadence, reload
 ## and ammunition, and an outcome full of shots that the game resolves. Wrapping one in the
 ## other would throw away the cadence and run the shot on the client, which is a client
 ## deciding what it hit. So the menu, the shop and the loadout see one list of
@@ -22,7 +22,7 @@ const PlaylotZeeSelf := preload("playlot_zee.gd")
 ## [b]A shot hurts only when the arena is on.[/b] A sandbox is not a deathmatch, and a
 ## weapon pack is not a reason to make it one: with `pg_arena 0` a shot shoves the prop it
 ## hits — something to do with a gun in a sandbox — and touches nobody. The arena's
-## dot-combat resolves the same shot when it is on, through [member PlaylotNetBridge.shot_fn].
+## gs-combat resolves the same shot when it is on, through [member PlaylotNetBridge.shot_fn].
 
 const CHANNEL := "playlot.zee"
 
@@ -33,7 +33,7 @@ const ID_PREFIX := "zee_"
 ## about the way a gravity gun's punt does; a sniper's 90 throws a beach ball across the plate.
 const IMPULSE_PER_DAMAGE := 0.9
 
-## The menu's categories, from dot-weapon's slots.
+## The menu's categories, from gs-weapon's slots.
 const SLOT_CATEGORIES := {
 	1: &"melee",
 	2: &"sidearms",
@@ -158,7 +158,7 @@ static func set_pack_defs(defs: Array) -> void:
 
 
 ## The catalogue a rig holding [param def] is built over: the pack's own, plus Workshop weapons it
-## does not already have (code wins an id, as in dot-weapon). A copy rather than an addition to
+## does not already have (code wins an id, as in gs-weapon). A copy rather than an addition to
 ## [method catalogue], so a solo subscription never leaks into a table a server also reads.
 static func catalogue_for(def: PlaylotWeaponDef) -> GSWeaponCatalogue:
 	if def == null or not def.meta.has("pack_def") or catalogue().has(zee_id(def)):

@@ -46,7 +46,7 @@ var net: GSNetManager = null
 var profile_link: GSNetProfileLink = null
 ## The admin web page and API over the same profiles; closed unless `workbench.enabled` in cfg/server.yml.
 var workbench: GSGameWorkbench = null
-## dot-team's block rules (`!block`, `!noblock`); null when dot-team is not in the build.
+## gs-team's block rules (`!block`, `!noblock`); null when gs-team is not in the build.
 var noblock: GSGameNoblock = null
 var bridge: PlaylotNetBridge = null
 
@@ -55,18 +55,18 @@ var bridge: PlaylotNetBridge = null
 var services: PlaylotServices = null
 
 ## Where the services write punishments, unless a host says otherwise before this loads.
-## Static because dot-server constructs the module from a path, so a host has no instance to set.
+## Static because gs-server constructs the module from a path, so a host has no instance to set.
 static var punishments_path: String = PlaylotServices.PUNISHMENTS_PATH
 
 ## Health, weapons that hurt, and a round. Off unless an operator turns it on.
 var arena: PlaylotArena = null
 
-## dot-moderation's live tools, with this game's verbs (`PlaylotModTools`), and their
+## gs-moderation's live tools, with this game's verbs (`PlaylotModTools`), and their
 ## commands. Built in the module rather than the services layer because health lives in
 ## the arena layer, which is the module's.
 var mod_tools: GSModTools = null
 var mod_commands: GSModToolCommands = null
-## The admin map-edit commands (`spawn_add`, `nav_link_add`, `mapdata_save` ...), which the spawn-point tool also drives. Null without dot-spawn.
+## The admin map-edit commands (`spawn_add`, `nav_link_add`, `mapdata_save` ...), which the spawn-point tool also drives. Null without gs-spawn.
 var map_edit: GSGameMapEdit = null
 
 ## NPCs the server releases, paced by a director. Also off by default.
@@ -140,11 +140,11 @@ class PlaylotQueryProvider extends GSQueryProvider:
 			snapshot.game[key] = values[key]
 
 
-## The running map's per-map cvars (dot-game's [GSGameMapConfig]); the previous map's values return on each change and on unload.
+## The running map's per-map cvars (gs-game's [GSGameMapConfig]); the previous map's values return on each change and on unload.
 var map_config: GSGameMapConfig = null
 
 
-## Who is still behind their loading cover, from dot-game's roster used for that alone (this module is
+## Who is still behind their loading cover, from gs-game's roster used for that alone (this module is
 ## not on GSGameModule). Loading runs from the spawn event until the cover lifts, again per map change.
 ## The arena asks it by player key (`u<userid>`); a bot is never seated, so never loading.
 var loading: GSGameRoster = null
@@ -159,7 +159,7 @@ var _loaded_platform := false
 var _board_feed: GSGameStatsFeed = null
 
 
-## Somebody said something through dot-server's own chat path. Cancelled, not watched, so [GSChatRouter]'s rules are the only path.
+## Somebody said something through gs-server's own chat path. Cancelled, not watched, so [GSChatRouter]'s rules are the only path.
 func _on_player_chat(event: GSEvent) -> void:
 	event.cancel("routed by the sandbox's chat", _module_name())
 
@@ -177,7 +177,7 @@ func _on_say_requested(peer_id: int, channel_id: StringName, text: String) -> vo
 	var said: GSResult = services.chat.submit(peer_id, channel_id, text)
 
 	if not said.ok and said.error != null:
-		# Back to the sender and nowhere else: dot-chat is deliberate that a rate-limited
+		# Back to the sender and nowhere else: gs-chat is deliberate that a rate-limited
 		# or gagged player must not be able to measure the difference from outside.
 		services.chat.notice(peer_id, said.error.message, channel_id)
 
@@ -191,8 +191,8 @@ func _on_chat_accepted(message: GSChatMessage, _to: PackedInt32Array) -> void:
 		_last_spoke = message.sender_name
 
 
-## An unclaimed `!command` from chat, routed into dot-server's own console with the player's permissions.
-## Not a second command table: dot-server already decides, audits and answers.
+## An unclaimed `!command` from chat, routed into gs-server's own console with the player's permissions.
+## Not a second command table: gs-server already decides, audits and answers.
 func _on_chat_command(peer_id: int, command: String, args: PackedStringArray) -> void:
 	var session := server.session_of(peer_id)
 
@@ -342,7 +342,7 @@ static func _new_stats_feed() -> GSGameStatsFeed:
 	return feed
 
 
-## dot-game's stable per-server key (guests too), not the platform key alone.
+## gs-game's stable per-server key (guests too), not the platform key alone.
 func _stats_key(session: GSClientSession) -> String:
 	return String(_stats_feed.key_for(session))
 
@@ -375,7 +375,7 @@ func _session_may_edit_map(player_id: StringName) -> bool:
 	return PlaylotMapEdit.session_may_edit(session, map_edit.map_edit_flag if map_edit != null else GSAdminFlags.CONFIG)
 
 
-## A world player id back to a dot-server session id, or zero.
+## A world player id back to a gs-server session id, or zero.
 func _session_of(player_id: StringName) -> int:
 	var text := String(player_id)
 	return text.substr(1).to_int() if text.begins_with("u") else 0
@@ -750,10 +750,10 @@ func _cmd_props_clear(ctx: GSCmdContext) -> void:
 	ctx.reply("Removed %d of %s's props." % [count, ctx.args[0]])
 
 
-const LOADOUT_COMMAND_SCRIPT := "res://addons/dot_loadout/integrations/dot_loadout_command.gd"
+const LOADOUT_COMMAND_SCRIPT := "res://addons/gs_loadout/integrations/gs_loadout_command.gd"
 
-## The B menu's server half (dot-loadout's `GSLoadoutCommand` over the arena's manager), or
-## null on a host whose dot-loadout predates it (API 2).
+## The B menu's server half (gs-loadout's `GSLoadoutCommand` over the arena's manager), or
+## null on a host whose gs-loadout predates it (API 2).
 var loadout_command: Object = null
 
 ## `pg_arena_on`: whether the arena is on, REPLICATED so a client's B knows whether there is a
@@ -762,7 +762,7 @@ var loadout_command: Object = null
 var _arena_on: GSConVar = null
 
 
-## The loadout key of session [param session_id]: dot-loadout keys are at least eight long, so
+## The loadout key of session [param session_id]: gs-loadout keys are at least eight long, so
 ## the player key ("u7") is not one.
 static func loadout_key(session_id: int) -> String:
 	return "pg-player-%08d" % session_id

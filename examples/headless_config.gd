@@ -43,7 +43,7 @@ func _run() -> void:
 	_entered += 1
 	var config := PlaylotConfig.new()
 	var binder := PlaylotConfig.make_binder(config)
-	_check(GSAddonConfig.game_names("game-playlot") == PackedStringArray(["game-playground", "game-playlot"]), "the binder registers game-playground as game-playlot's former id", str(GSAddonConfig.game_names("game-playlot")))  # legacy id
+	_check(GSAddonConfig.game_names("game-playlot") == PackedStringArray(["game-playlot", "game-playlot"]), "the binder registers game-playlot as game-playlot's former id", str(GSAddonConfig.game_names("game-playlot")))  # legacy id
 	binder.strict = true
 	_check(binder.load_layers().ok, "defaults load")
 	_check(binder.diff().is_empty(), "no diff at the code defaults")
@@ -154,7 +154,7 @@ func _ambience_cvars() -> void:
 	_check(not ambient.is_empty() and odd.is_empty(), "the ambience set offers the pg_ambient* cvars", ",".join(odd))
 
 
-## The pack ships only game/, maps/ and the committed addons/pg_*: a web shell carries dot_* alone, and solo play fetches every other addon from the names in requires.floor.json. A Zee* or Aw*
+## The pack ships only game/, maps/ and the committed addons/pg_*: a web shell carries gs_* alone, and solo play fetches every other addon from the names in requires.floor.json. A Zee* or Aw*
 ## class named in a shipped script whose addon the floor leaves out is a grey screen on playlot.app ("Could not find type ZeeViewModel"), so every such addon must be named, at a sound floor.
 func _pack_floor() -> void:
 	var derived := GSAddonApi.derive("res://")
@@ -169,7 +169,7 @@ func _pack_floor() -> void:
 			floors = parsed.value
 	var unnamed := PackedStringArray()
 	for addon: String in derived:
-		if not addon.begins_with("dot_") and not addon.begins_with("pg_") and not floors.has(addon):
+		if not addon.begins_with("gs_") and not addon.begins_with("pg_") and not floors.has(addon):
 			unnamed.append(addon)
 	_check(derived.has("zee_weapons") and unnamed.is_empty(), "%s names every addon the shell does not carry" % GSAddonApi.FLOOR_FILE, ",".join(unnamed))
 	var audit := GSAddonApi.floor_audit(floors, derived, GSAddonApi.guarded("res://"))
@@ -243,7 +243,7 @@ func _templates(binder: GSGameConfigBinder) -> void:
 	for path: String in files:
 		if not FileAccess.file_exists("res://" + path) or FileAccess.get_file_as_string("res://" + path) != files[path]:
 			stale.append(path)
-	_check(stale.is_empty(), "the shipped files match the config (run addons/dot_game/qa/dot_game_cfg_templates.gd)", ",".join(stale))
+	_check(stale.is_empty(), "the shipped files match the config (run addons/gs_game/qa/gs_game_cfg_templates.gd)", ",".join(stale))
 
 
 func _npc_scales() -> void:

@@ -1,6 +1,6 @@
 extends GSGameVisualQaCapture
 
-## Playlot's visual QA capture for the people (dot-game docs/visual-qa.md): one item per site skin
+## Playlot's visual QA capture for the people (gs-game docs/visual-qa.md): one item per site skin
 ## (`person_a` .. `person_r`, the kit's eighteen, face, top and legs all that skin), each idling,
 ## walking, running a circle and jumping, seen from the front, behind-right and (first person is
 ## free here) the centre of the circle, at 60 fps. The weapons and the player's first-person view are

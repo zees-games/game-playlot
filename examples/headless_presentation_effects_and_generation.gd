@@ -36,7 +36,7 @@ func _test_ambience_is_quiet_and_obeys_settings() -> void:
 
 	var p := _make()
 	var a := p.ambient
-	_check(a != null and a.has_moods() and a.ambient.mood_names().size() == 8, "dot-audio's stock mood set loaded")
+	_check(a != null and a.has_moods() and a.ambient.mood_names().size() == 8, "gs-audio's stock mood set loaded")
 	if a == null or not a.has_moods():
 		p.queue_free()
 		_done()
@@ -351,13 +351,13 @@ func _test_sounds_and_effects() -> void:
 
 
 ## [b]Every effect scene the catalogue names exists, and the effects actually spawn.[/b]
-## `scenes/fx/` once did not exist and dot-fx refused both scenes quietly; nothing asked whether anything drew.
+## `scenes/fx/` once did not exist and gs-fx refused both scenes quietly; nothing asked whether anything drew.
 func _test_breaks_throw_pieces() -> void:
 	_section("Broken props and panes throw splinters and shards")
 
 	var p := _make()
 	var at := Vector3(0, 1, -6)
-	# dot-fx draws nothing headless unless told to.
+	# gs-fx draws nothing headless unless told to.
 	p.break_fx.break_fx.config.headless = true
 	p.break_fx.shatter(at, p.BreakFx.material_of(&"crate"))
 	_check(p.break_fx.break_fx.spawned == 1, "a crate breaking draws one burst", str(p.break_fx.break_fx.spawned))
@@ -380,7 +380,7 @@ func _test_effects_draw() -> void:
 	_check(missing.is_empty(), "every effect scene the catalogue names exists",
 		", ".join(missing))
 
-	# Looking at where the prop appears: dot-fx culls an effect behind the viewer.
+	# Looking at where the prop appears: gs-fx culls an effect behind the viewer.
 	var at := Vector3(0, 1, -6)
 	p.present(0.016, Vector3(0, 1.7, 0), Vector3.FORWARD)
 	var drawn: Array[Node] = []
@@ -419,7 +419,7 @@ func _test_effects_draw() -> void:
 		"a held prop that moves moves the same beam, rather than stacking another"
 	)
 
-	# Past its 100 ms ceiling dot-fx retires it; the next frame's call draws a new one.
+	# Past its 100 ms ceiling gs-fx retires it; the next frame's call draws a new one.
 	OS.delay_msec(130)
 	p.present(0.016, eye, aim)
 	var fresh := p.on_tool_beam(eye, aim, held)

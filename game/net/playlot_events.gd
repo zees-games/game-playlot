@@ -33,7 +33,7 @@ const INV_CELL_MAX := 254
 
 
 ## Whether every sub-kind fits its field: [enum InvAsk] and [enum InvTell] in
-## [constant INV_SUB_BITS], dot-inventory's [enum GSInvOp.Kind] (an enum that grows outside
+## [constant INV_SUB_BITS], gs-inventory's [enum GSInvOp.Kind] (an enum that grows outside
 ## this game, written clamped) in [constant INV_OP_KIND_BITS], and [enum ProjectileTell] in
 ## [constant PROJECTILE_SUB_BITS]. What headless_net reads.
 static func sub_kinds_fit() -> bool:

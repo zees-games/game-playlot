@@ -125,7 +125,7 @@ func _build_audio() -> GSResult:
 	audio.mixer = GSAudioMixer.new()
 	audio.mixer.master = settings.get_float(&"master_volume", 0.8)
 	audio.voices = 24
-	# Measured toward the family's -17 LUFS (dot-audio docs/loudness.md) with tools/loudness_pilot.gd:
+	# Measured toward the family's -17 LUFS (gs-audio docs/loudness.md) with tools/loudness_pilot.gd:
 	# +6 read -22.5 LUFS, +12 read -17.5.
 	audio.loudness_trim_db = 12.0
 	# Deterministic: the pitch of a crate landing comes out of the session's own seed, so
@@ -289,7 +289,7 @@ func _apply_chat_visibility() -> void:
 			chat_window.enabled = not _chat_relayed
 
 
-## dot-console's kit, registered with [param menu]; this game adds `quit` and `seed`, ahead of the server's console.
+## gs-console's kit, registered with [param menu]; this game adds `quit` and `seed`, ahead of the server's console.
 ## Called by [PlaylotClient] after its [GSMenu] exists, not from [method setup]: the kit makes the console a
 ## menu overlay, which is what stops the player walking while they type.
 func build_console(menu: Object = null) -> void:
@@ -500,7 +500,7 @@ func on_refused() -> void:
 
 
 ## A map-vote cue from the server. Empty is silence, and an id this catalogue does not
-## have is dot-audio's silent refusal rather than an error.
+## have is gs-audio's silent refusal rather than an error.
 func on_vote_cue(id: StringName) -> int:
 	if id == &"" or audio == null:
 		return 0
@@ -508,7 +508,7 @@ func on_vote_cue(id: StringName) -> int:
 	return audio.play(id)
 
 
-## A dead body's sound (dot-player-char's ragdolls), where it landed. Returns the voice.
+## A dead body's sound (gs-player-char's ragdolls), where it landed. Returns the voice.
 func on_body(id: StringName, at: Vector3, volume: float) -> int:
 	if audio == null:
 		return 0
@@ -516,7 +516,7 @@ func on_body(id: StringName, at: Vector3, volume: float) -> int:
 	return audio.play_at(id, at, clampf(volume, 0.3, 1.0))
 
 
-## A toy's sound (dot-props' toys): a bounce, a knock, a switch, a honk, where it happened.
+## A toy's sound (gs-props' toys): a bounce, a knock, a switch, a honk, where it happened.
 func on_toy(id: StringName, at: Vector3, strength: float) -> int:
 	if audio == null:
 		return 0

@@ -179,7 +179,7 @@ func _test_entities_run_their_scripts_3() -> void:
 	_done()
 
 
-## zee-dot-weapons: the pack in the menu, a server's rig firing from the eye, and a shot that shoves a crate.
+## zee-gs-weapons: the pack in the menu, a server's rig firing from the eye, and a shot that shoves a crate.
 ##
 ## The aim is the check that matters: without `PlaylotPlayer.component()` a shot leaves northwards from the feet and every other number is still right.
 var _zw_player: PlaylotPlayer
@@ -191,11 +191,11 @@ var _zw_moved: int
 var _zw_state
 
 func _test_zee_weapons() -> void:
-	_section("zee-dot-weapons")
+	_section("zee-gs-weapons")
 
 	var zee := PlaylotZee.defs()
 
-	# A delivered game has only what is vendored in assets/ (zee-dot-weapons tools/sync-art.sh).
+	# A delivered game has only what is vendored in assets/ (zee-gs-weapons tools/sync-art.sh).
 	var models := ZeeWeaponArtTable.validate_models()
 	_check(models.ok, "every model the weapon art table names is vendored",
 		"" if models.ok else models.error.message)
@@ -236,7 +236,7 @@ func _test_zee_weapons() -> void:
 	_check(rig != null and rig.ads_rules == playlot.ads_rules and rig.ads_move_scale() == 1.0,
 		"and takes the game's zee_ads_rules without slowing an unaimed player")
 	_check(_zw_player.component(&"GSFpsController") == _zw_player.controller,
-		"and the player answers dot-weapon's controller lookup")
+		"and the player answers gs-weapon's controller lookup")
 
 	# A crate four metres along the way the player faces.
 	_zw_eye = _zw_player.eye_position()
@@ -282,7 +282,7 @@ func _test_zee_weapons_2() -> void:
 	PlaylotZee.disarm(_zw_player)
 	_check(_zw_player.zee_rig == null, "disarmed, the rig is gone")
 
-	# [b]The pack is written at 64 Hz and this server runs 128[/b]; until dot-weapon scaled
+	# [b]The pack is written at 64 Hz and this server runs 128[/b]; until gs-weapon scaled
 	# a row by its authored_tick_rate every zee weapon here fired, reloaded and deployed
 	# twice as fast. A second on an SMG's trigger is as many shots as at 64 Hz.
 	var smg := PlaylotZee.arm(
@@ -332,7 +332,7 @@ func _test_shared_shot_sound() -> void:
 	var warmed: bool = sound.warm()
 	var warm_us := Time.get_ticks_usec() - t0
 	if not warmed:
-		_check(not ZeeShotLayers.available(), "the shared shot sound builds wherever dot-audio's stock is linked")
+		_check(not ZeeShotLayers.available(), "the shared shot sound builds wherever gs-audio's stock is linked")
 		sound.queue_free()
 		return
 	var first := ZeeShotFx.new()
@@ -532,10 +532,10 @@ func _test_workshop_3() -> void:
 		"back in solo they return")
 
 	# The real zee pack, as a fixture of its own: all 27 weapons, grouped by its categories.
-	# Found through addons/zee_weapons rather than as ../zee-dot-weapons: the link points
+	# Found through addons/zee_weapons rather than as ../zee-gs-weapons: the link points
 	# at the sibling checkout on a dev box and into .deps/ under CI, which clones no siblings.
 	var zee_link := ProjectSettings.globalize_path("res://addons/zee_weapons")
-	var zee_dir := ProjectSettings.globalize_path("res://").path_join("../zee-dot-weapons").simplify_path()
+	var zee_dir := ProjectSettings.globalize_path("res://").path_join("../zee-gs-weapons").simplify_path()
 	var addons_dir := DirAccess.open(zee_link.get_base_dir())
 	if addons_dir != null and addons_dir.is_link(zee_link):
 		var target := addons_dir.read_link(zee_link)
@@ -545,11 +545,11 @@ func _test_workshop_3() -> void:
 	if FileAccess.file_exists(zee_dir.path_join("provides.json")):
 		var zee_provides: Variant = JSON.parse_string(FileAccess.get_file_as_string(zee_dir.path_join("provides.json")))
 		var _zee := _wx_index.add_pack({
-			"content_id": "gamemann/zee-dot-weapons", "version": "1.0.0", "prefix": zee_dir,
+			"content_id": "gamemann/zee-gs-weapons", "version": "1.0.0", "prefix": zee_dir,
 			"session": "solo", "source": "subscription", "provides": zee_provides,
 		})
 		var zee_rows := _wx_shop.rows().filter(func(r: Dictionary) -> bool: return r["pack_title"] == "Zee Weapons")
-		_check(zee_rows.size() == 27, "zee-dot-weapons' own provides.json lists 27 weapons", str(zee_rows.size()))
+		_check(zee_rows.size() == 27, "zee-gs-weapons' own provides.json lists 27 weapons", str(zee_rows.size()))
 		_check(zee_rows.all(func(r: Dictionary) -> bool: return playlot.weapon_def(r["id"]) != null),
 			"each a weapon the game can arm")
 		var smg := playlot.weapon_def(&"ws_smg")
@@ -558,7 +558,7 @@ func _test_workshop_3() -> void:
 		_check(smg_rig != null and smg_rig.arsenal.catalogue.has(&"smg"), "and a pack weapon that shares a built-in id arms with the built-in's art and rules")
 		PlaylotZee.disarm(_wx_player)
 	else:
-		_check(false, "zee-dot-weapons is next to this game", zee_dir)
+		_check(false, "zee-gs-weapons is next to this game", zee_dir)
 
 	_test_workshop_trails()
 
@@ -571,7 +571,7 @@ func _test_workshop_3() -> void:
 	_done()
 
 
-## A trail pack is data (kind `trail`, `def: trails.json`). The host carries dot-trail, not this
+## A trail pack is data (kind `trail`, `def: trails.json`). The host carries gs-trail, not this
 ## game, so the rows and the equip follow what the host has; either way nothing breaks.
 func _test_workshop_trails() -> void:
 	var accepts: Variant = (JSON.parse_string(FileAccess.get_file_as_string("res://provides.json")) as Dictionary).get("accepts", {})
@@ -597,7 +597,7 @@ func _test_workshop_trails() -> void:
 	var hosted := WorkshopScript.PlaylotTrails.available()
 	var trail_rows := _wx_shop.rows().filter(func(r: Dictionary) -> bool: return r["kind"] == &"trail")
 	_check(trail_rows.size() == (1 if hosted else 0) and (not hosted or trail_rows[0].get("trail") == "spark"),
-		"its trail is a menu row exactly when the host carries dot-trail", "hosted=%s rows=%d" % [hosted, trail_rows.size()])
+		"its trail is a menu row exactly when the host carries gs-trail", "hosted=%s rows=%d" % [hosted, trail_rows.size()])
 	var worn := _wx_shop.trails.equip(_wx_player, "spark")
 	_check(worn.ok == hosted and (_wx_player.get_node_or_null("PackTrail") != null) == hosted,
 		"and the player wears it then, and is refused cleanly otherwise", "" if worn.ok else worn.error.message)
@@ -621,7 +621,7 @@ func _test_weapons() -> void:
 		# Not the weapons a linked spawn provider taught the game (`meta.provider`).
 		playlot.weapons.filter(func(d: Variant) -> bool: return not d.meta.has("provider")).size()
 			== _w_defs.size() + PlaylotZee.defs().size(),
-		"and the game offers it, with zee-dot-weapons after it"
+		"and the game offers it, with zee-gs-weapons after it"
 	)
 
 	for def in _w_defs:

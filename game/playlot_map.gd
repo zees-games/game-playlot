@@ -3,7 +3,7 @@ extends Node3D
 ## Base class for the playlot's built-in maps.
 ##
 ## [b]No map here knows about a run timer.[/b] The game ships none: a server that adds
-## dot-timer gets `addons/pg_timer`, which reads a map's zones from the JSON file dot-map
+## gs-timer gets `addons/pg_timer`, which reads a map's zones from the JSON file gs-map
 ## loaded beside it (`GSMapDef.zones_path`), or from a `timer_zones()` method a delivered
 ## map may define. A map is geometry, spawns and toys, and every built-in one plays the same
 ## with the timer present or absent.
@@ -45,7 +45,7 @@ const MOVE_GRAVITY := 20.0
 ## [param rise] metres higher than they left. 0.0 for a rise the jump cannot reach.
 ##
 ## [b]Asked of the movement, not worked out here.[/b] This was a copy of the arithmetic
-## until dot-player-controller answered it on `GSFpsTunables.jump_reach`; now it asks
+## until gs-player-controller answered it on `GSFpsTunables.jump_reach`; now it asks
 ## the tunables every player here is built with (`PlaylotPlayer.movement_tunables`,
 ## static, so a map with no player in the tree can ask). The landing height is still
 ## the point: 4.75 m flat, 4.16 m onto a 0.5 m step.
@@ -108,11 +108,11 @@ func _ready() -> void:
 	add_contact_shade()
 
 
-## dot-lighting's contact shade, loaded by path (API 4): see [method add_contact_shade].
-const CONTACT_SHADE_SCRIPT := "res://addons/dot_lighting/runtime/dot_contact_shade.gd"
+## gs-lighting's contact shade, loaded by path (API 4): see [method add_contact_shade].
+const CONTACT_SHADE_SCRIPT := "res://addons/gs_lighting/runtime/gs_contact_shade.gd"
 
 
-## Adds dot-lighting's contact shade (API 4) where this map's boxes meet: a wall's foot, a
+## Adds gs-lighting's contact shade (API 4) where this map's boxes meet: a wall's foot, a
 ## block on the floor, every step of a stair. The Compatibility renderer the client draws has
 ## no ambient occlusion, and every box stood on the floor with no shade at its foot. Called
 ## once the geometry is built ([method _ready], and the maps that build later on their own).
@@ -124,7 +124,7 @@ const CONTACT_SHADE_SCRIPT := "res://addons/dot_lighting/runtime/dot_contact_sha
 ## the server's, put down later and not under this node. By path, behind the level, so a
 ## shell older than the helper draws the map without it.
 func add_contact_shade() -> void:
-	if GSAddonApi.build_level("dot_lighting") < 4 or not ResourceLoader.exists(CONTACT_SHADE_SCRIPT):
+	if GSAddonApi.build_level("gs_lighting") < 4 or not ResourceLoader.exists(CONTACT_SHADE_SCRIPT):
 		return
 	var old := get_node_or_null(^"ContactShade")
 	if old != null:
@@ -188,7 +188,7 @@ func survey_declared() -> Array:
 	return []
 
 
-## The toys this map puts down (dot-props' placements, `{toy, at, yaw, links?, on?}`), which
+## The toys this map puts down (gs-props' placements, `{toy, at, yaw, links?, on?}`), which
 ## [Playlot] builds on both ends in this order, so the order is how a client pairs each with
 ## the server's entity. None by default: a course map has nothing to play with in a runner's
 ## way, and nothing a run could bounce off.
@@ -199,9 +199,9 @@ func map_toys() -> Array:
 ## Whether [param track] is meant to be driven rather than run.
 ##
 ## [b]Default false, which is every map that existed before there were cars.[/b]
-## A run timer (`addons/pg_timer`, when a server added dot-timer) cancels a run when a
+## A run timer (`addons/pg_timer`, when a server added gs-timer) cancels a run when a
 ## player gets into a vehicle, because a foot course driven round in a buggy is not a time
-## anybody can compare with one that was jumped — and dot-timer has no idea a vehicle
+## anybody can compare with one that was jumped — and gs-timer has no idea a vehicle
 ## exists, so nothing below this can tell the difference.
 ##
 ## A circuit inverts that: the car is the point, and getting OUT of it mid-lap is the

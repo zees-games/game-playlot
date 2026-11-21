@@ -1,6 +1,6 @@
 extends "res://examples/headless_net_remote_bodies_inventory.gd"
 
-## A peer dot-server has spawned but that has not said READY hears NOTHING on this link.
+## A peer gs-server has spawned but that has not said READY hears NOTHING on this link.
 ##
 ## A real join, in the real order: the JOIN the add produced went out as `rpc()` before the client built `Server/Playground`, so every join logged "Failed to get path from RPC". The loopback hands a broadcast over as peer 0. `pg-rpc-before-scene`.
 var _nbr_late: int
@@ -234,7 +234,7 @@ func _test_toys_over_the_wire() -> void:
 	_done()
 
 
-## A zee-dot-weapons gun is run by the SERVER, from the buttons the client holds.
+## A zee-gs-weapons gun is run by the SERVER, from the buttons the client holds.
 ##
 ## A gun the server did not run is a client deciding what it hit, so `_give_weapon` puts a deciding rig on the server's player. Armed by skipping that branch, the two firing checks fail.
 var _zotw_theirs: PlaylotPlayer
@@ -406,7 +406,7 @@ func _test_inventory_flood() -> void:
 	_done()
 
 
-## A person who reconnects is a new userid to dot-server, and the same person to their bag.
+## A person who reconnects is a new userid to gs-server, and the same person to their bag.
 var _irx_rejoin: int
 var _irx_person: StringName
 var _irx_inv: PlaylotInventory
@@ -442,7 +442,7 @@ func _test_inventory_rejoin() -> void:
 	_check(
 		stranded.ok and _client_bridge.inventory_net.in_flight_count() == 0
 			and _bag_summary(_client_bag()) == _bag_summary(_irx_inv.for_player(_irx_person)),
-		"nothing from the old connection is replayed onto the new bag, though dot-server gave the same userid",
+		"nothing from the old connection is replayed onto the new bag, though gs-server gave the same userid",
 		"%d in flight, %s vs %s" % [
 			_client_bridge.inventory_net.in_flight_count(), _bag_summary(_client_bag()),
 			_bag_summary(_irx_inv.for_player(_irx_person))
@@ -485,7 +485,7 @@ func _test_inventory_rejoin() -> void:
 func _test_inventory_rejoin_2() -> void:
 	_check(
 		_client_bridge.local_player_id == _irx_rejoin,
-		"they come back, and dot-server gives them a new userid"
+		"they come back, and gs-server gives them a new userid"
 	)
 	_check(
 		_bag_summary(_client_bag()) == _irx_held and _client_bag().doc.count_of(&"die") == 1
@@ -538,7 +538,7 @@ func _test_grenade_over_the_wire() -> void:
 	spawn.radius = 0.08
 	spawn.splash_radius = 5.2
 	spawn.splash_damage = 0.0
-	# In the server's own ticks, as dot-weapon hands a spawn over (it scales the pack's
+	# In the server's own ticks, as gs-weapon hands a spawn over (it scales the pack's
 	# 64 Hz rows to the arsenal's rate): one second.
 	spawn.fuse_ticks = _server_game.tick_rate
 	spawn.life_ticks = _server_game.tick_rate * 2

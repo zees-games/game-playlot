@@ -1,17 +1,17 @@
 extends RefCounted
 
-## A map's sun, sky and air: a dot-lighting document turned into a sun and an environment
+## A map's sun, sky and air: a gs-lighting document turned into a sun and an environment
 ## under the map's own node, so they arrive and leave with the map.
 ##
 ## [b]Every map carries a document[/b]: a built-in map takes [constant DAYLIGHT], a custom
-## map document may name its own under `lighting` (the same keys, dot-lighting's), and a
+## map document may name its own under `lighting` (the same keys, gs-lighting's), and a
 ## map that says nothing gets [constant DAYLIGHT] too. [GSLightRig] does the work; what
 ## stays here is this game's: which [GSLightProfile] a machine gets and the zenith
 ## (`sky_top`). The reasoning is in docs/maps.md, "The look".
 
 ## A clear afternoon: a warm sun high in the south-west, a blue sky, a little haze far off.
 ##
-## [b]The sun angles are in dot-lighting's source convention[/b] (a negative pitch is a sun
+## [b]The sun angles are in gs-lighting's source convention[/b] (a negative pitch is a sun
 ## in the sky). The brightness is divided by the profile's reference and square-rooted, so
 ## 380 is an energy of about 1.4 under Forward+. The ambient is the light in the shade: a
 ## pale cool grey rather than a sky blue, because at the ambient's strength a saturated
@@ -19,7 +19,7 @@ extends RefCounted
 ## the haze starts 80 m out, because the sandbox is 200 m across and its far corner should
 ## read as far, not vanish.
 ##
-## `sky_top` is this game's, not dot-lighting's (the document ignores keys it does not
+## `sky_top` is this game's, not gs-lighting's (the document ignores keys it does not
 ## know): the rig draws the zenith in the ambient colour, which here is paler than any sky.
 const DAYLIGHT := {
 	"sun": {
@@ -46,7 +46,7 @@ const DAYLIGHT := {
 const SHADOW_DISTANCE := 140.0
 
 
-## Adds [param lighting] (a dot-lighting document; empty means [constant DAYLIGHT]) under
+## Adds [param lighting] (a gs-lighting document; empty means [constant DAYLIGHT]) under
 ## [param parent] and returns the sun.
 static func build(parent: Node3D, lighting: Dictionary = {}) -> DirectionalLight3D:
 	var doc := lighting if not lighting.is_empty() else DAYLIGHT
@@ -74,9 +74,9 @@ static func _paint_sky_top(parent: Node3D, lighting: Dictionary) -> void:
 				material.ground_bottom_color = material.sky_top_color
 
 
-## What this machine draws of a map's lighting: dot-lighting's `painted()`.
+## What this machine draws of a map's lighting: gs-lighting's `painted()`.
 ##
-## [b]`painted()` is the family's profile for flat-painted worlds[/b] (dot-lighting API 3):
+## [b]`painted()` is the family's profile for flat-painted worlds[/b] (gs-lighting API 3):
 ## a longer filmic shoulder and a lower exposure, a contrast and saturation grade, ambient
 ## occlusion where Forward+ has it, and a shadowless fill from the side the sun is not on, so
 ## a ramp's two shaded faces are two shades under Compatibility, which has no occlusion. Its
@@ -86,7 +86,7 @@ static func _paint_sky_top(parent: Node3D, lighting: Dictionary) -> void:
 ##
 ## [b]The sky continues under the horizon[/b]: the sandbox and the surf maps float in the
 ## air, and from a ramp or a tower the default dark ground half is a brown void under the
-## world. [b]A browser keeps dot-lighting's `web()`, shadows off[/b]: these maps are large
+## world. [b]A browser keeps gs-lighting's `web()`, shadows off[/b]: these maps are large
 ## (the sandbox alone is 200 m with a hundred boxes and whatever the players spawn) and
 ## the shadow pass draws all of it again.
 static func profile() -> GSLightProfile:

@@ -8,19 +8,19 @@ The maps named below (`pg_lobby`, `pg_surf_intro`, `pg_bhop_intro`) and their ti
 
 One line each; the detail is in [bugs-found.md](../../../docs/bugs-found.md) or the addon's own docs.
 
-- **dot-timer: `GSTimer.effect_requested` was emitted by nothing**, so RESPAWN, SLAY and TELEPORT zones did nothing anywhere and a player who fell off a surf map fell for ever. A value consumed by two games and produced by nobody. It also quietly invalidated a passing timer-game check that had counted a bot falling through the void as "surfing".
-- **dot-timer: `note_stats` guarded on "only while the run is active"** and discarded the one call that matters, at the finish.
-- **dot-props: `GSPropDef.mass` was never put on the body.** Visible only here, where every prop is the same scene.
-- **dot-ui: `set_anchors_preset` does not set offsets**, in `GSScreenStack`, `GSCrosshair`, `GSHud` and `GSTableView`. The spawn menu, the first screen on a stack whose parent is a plain `Node`, came out 0 × 0.
+- **gs-timer: `GSTimer.effect_requested` was emitted by nothing**, so RESPAWN, SLAY and TELEPORT zones did nothing anywhere and a player who fell off a surf map fell for ever. A value consumed by two games and produced by nobody. It also quietly invalidated a passing timer-game check that had counted a bot falling through the void as "surfing".
+- **gs-timer: `note_stats` guarded on "only while the run is active"** and discarded the one call that matters, at the finish.
+- **gs-props: `GSPropDef.mass` was never put on the body.** Visible only here, where every prop is the same scene.
+- **gs-ui: `set_anchors_preset` does not set offsets**, in `GSScreenStack`, `GSCrosshair`, `GSHud` and `GSTableView`. The spawn menu, the first screen on a stack whose parent is a plain `Node`, came out 0 × 0.
 - **The prespeed clamp was dead in this game and the timer game alike**: `is_inside(START)` answers only for effect zones. Use `in_zone`.
-- **dot-npc-ai: `has_reacted()` was false for ever**, measured from `engaged_at`, which dot-npc refreshes on every pass the target is perceived. A bot that never acts on what it sees looks bad rather than broken. `GSNpcInstance.target_since` was added for it.
-- **dot-npc-ai's brain wiped a squad the game had chosen** with the definition's empty `squad` on bind.
-- **dot-inventory, four at once** (fixed there; see its docs, "What a real wire found"): the server's own changes spent the player's rate budget; `validate` passed an ADD into a full bag and `_do_add` then logged ERROR; `rollback` undid every later prediction and nothing applied a server op to a predicting manager; a MOVE re-allocated the entry's uid, so a chained op named whatever the server had since allocated that number to.
-- **dot-net: the interpolation delay was in the wrong unit** (snapshots subtracted from ticks), so every remote entity in the family was extrapolated. Found by `tools/screenshot_net.sh`'s per-frame probe.
-- **dot-player-char: a visual's rig stood at the world origin** (a `Node3D` under a plain `Node`). Unseen because the lobby's spawn is the origin.
-- **dot-player-controller: no player had ever collided with a prop.** The body copied the mask once at build, before the game set it. Fixed in the controller, which changed five other games.
-- **dot-player-controller: a starved tick handed a player with nothing held a fresh command facing north.** Fixed (`_repeat_command` in both branches).
-- **dot-vehicle: the heading snapped at the snapshot rate**, because the rotation went as four INTs and dot-net does not blend ints. Now a QUATERNION.
+- **gs-npc-ai: `has_reacted()` was false for ever**, measured from `engaged_at`, which gs-npc refreshes on every pass the target is perceived. A bot that never acts on what it sees looks bad rather than broken. `GSNpcInstance.target_since` was added for it.
+- **gs-npc-ai's brain wiped a squad the game had chosen** with the definition's empty `squad` on bind.
+- **gs-inventory, four at once** (fixed there; see its docs, "What a real wire found"): the server's own changes spent the player's rate budget; `validate` passed an ADD into a full bag and `_do_add` then logged ERROR; `rollback` undid every later prediction and nothing applied a server op to a predicting manager; a MOVE re-allocated the entry's uid, so a chained op named whatever the server had since allocated that number to.
+- **gs-net: the interpolation delay was in the wrong unit** (snapshots subtracted from ticks), so every remote entity in the family was extrapolated. Found by `tools/screenshot_net.sh`'s per-frame probe.
+- **gs-player-char: a visual's rig stood at the world origin** (a `Node3D` under a plain `Node`). Unseen because the lobby's spawn is the origin.
+- **gs-player-controller: no player had ever collided with a prop.** The body copied the mask once at build, before the game set it. Fixed in the controller, which changed five other games.
+- **gs-player-controller: a starved tick handed a player with nothing held a fresh command facing north.** Fixed (`_repeat_command` in both branches).
+- **gs-vehicle: the heading snapped at the snapshot rate**, because the rotation went as four INTs and gs-net does not blend ints. Now a QUATERNION.
 - **Scripts naming their own `class_name` leaked the whole script graph at exit** across twenty-odd addons ([gdscript-hazards.md](../../../docs/gdscript-hazards.md)). The message scripts' self-preloads were removed here first and were not the cause here; the leak count grew by one script's worth whenever a script was added, which said to find what held the graph.
 
 ## The client
@@ -29,7 +29,7 @@ One line each; the detail is in [bugs-found.md](../../../docs/bugs-found.md) or 
 
 **Two of three tabs unreachable** (`TabBar.clip_tabs` defaults on) and **every NPC icon a coloured bar** (the torso covered the head). Both found by a screenshot; every property was correct.
 
-**The client was silent while every sound check passed.** Every presentation hook was called by the presentation suite and by nothing in the game; `camera_shake()` was computed and never applied. Then: **neither effect scene existed** (dot-fx refuses a missing scene at DEBUG) and `tool_beam` was declared and never spawned.
+**The client was silent while every sound check passed.** Every presentation hook was called by the presentation suite and by nothing in the game; `camera_shake()` was computed and never applied. Then: **neither effect scene existed** (gs-fx refuses a missing scene at DEBUG) and `tool_beam` was declared and never spawned.
 
 **Escape was a toggle**, which on the web silently does nothing every other press, and a released pointer had no way back but the pause menu's Resume, because a click fired the gun.
 
@@ -39,7 +39,7 @@ One line each; the detail is in [bugs-found.md](../../../docs/bugs-found.md) or 
 
 **Edit mode's outline was a translucent fill**, which showed a red crate as pink in the one mode whose sliders include colour.
 
-**A first-person view that was built and never ran** (found 2026-10-11, looking at dot-player-controller's new landing dip in this game). `_build_view` added a `GSFpsView` after the controller had looked for one, so `controller.view` was null: no landing dip, no strafe lean, no widening, no step smoothing, and the zee recoil handed to `view.external_angles` went nowhere, for as long as the client had existed. Every check passed, because the client writes the camera itself and nothing asked what the view did. The `field_of_view` setting was applied by nothing either. Camera motion is now `GSFpsViewMotion` in `PlaylotPlayer.present_camera`, the one place the camera is written; `headless_playlot` drops, hops, strafes and flies a player through it.
+**A first-person view that was built and never ran** (found 2026-10-11, looking at gs-player-controller's new landing dip in this game). `_build_view` added a `GSFpsView` after the controller had looked for one, so `controller.view` was null: no landing dip, no strafe lean, no widening, no step smoothing, and the zee recoil handed to `view.external_angles` went nowhere, for as long as the client had existed. Every check passed, because the client writes the camera itself and nothing asked what the view did. The `field_of_view` setting was applied by nothing either. Camera motion is now `GSFpsViewMotion` in `PlaylotPlayer.present_camera`, the one place the camera is written; `headless_playlot` drops, hops, strafes and flies a player through it.
 
 ## Netcode
 
@@ -49,7 +49,7 @@ One line each; the detail is in [bugs-found.md](../../../docs/bugs-found.md) or 
 
 **Every client was playing offline.** `PlaylotClient` became networked only through its `link` export, which the shell sets only on a built-in client scene; a delivered pack's scene is instantiated with nothing set. The server had both players and nobody had the server. Found only by running the real shell twice against a local server; every suite builds the bridge by hand. **And then both players stood inside each other** on the one-point spawn.
 
-**Every join logged "Failed to get path from RPC"** once: JOIN was broadcast to every socket at `client_spawn`, before the joiner had built `Server/Playground`. Reviewing the ready set then found that **nobody had ever been welcomed** (`_welcome` ran at spawn and returned unless READY, which it never is there), **a disconnected peer was never removed from dot-net** (`remove_peer` was gated on the ready set the disconnect had just cleared), and **voice went round the gate** (one error per frame while somebody joined).
+**Every join logged "Failed to get path from RPC"** once: JOIN was broadcast to every socket at `client_spawn`, before the joiner had built `Server/Playground`. Reviewing the ready set then found that **nobody had ever been welcomed** (`_welcome` ran at spawn and returned unless READY, which it never is there), **a disconnected peer was never removed from gs-net** (`remove_peer` was gated on the ready set the disconnect had just cleared), and **voice went round the gate** (one error per frame while somebody joined).
 
 **A prop mirror was world geometry** (the scene's 1/1 layer) to a client predicting against it. **A mirror fell under the client's own physics** until its first draw, which passed "it falls because the server's physics moved it" at exactly the server's height.
 
@@ -71,7 +71,7 @@ One line each; the detail is in [bugs-found.md](../../../docs/bugs-found.md) or 
 
 **A barrel's blast reached the barrel**, still in the spawner while it exploded, and recursed until the stack ran out.
 
-**A grenade fuse flown as given went off in half the time**: the pack counts at 64 Hz and this server runs 128. `PlaylotProjectiles.accept` rescaled fuses by hand, and nothing else in the pack was: every zee weapon fired, reloaded and deployed twice as fast here. Fixed 2026-10-11 at the source: dot-weapon scales a row by its `authored_tick_rate` (the pack sets 64), spawns arrive in this server's ticks, and the hand rescale is gone, because keeping it would halve every fuse again. The zee section of `headless_playlot` counts a second of SMG fire against 64 Hz.
+**A grenade fuse flown as given went off in half the time**: the pack counts at 64 Hz and this server runs 128. `PlaylotProjectiles.accept` rescaled fuses by hand, and nothing else in the pack was: every zee weapon fired, reloaded and deployed twice as fast here. Fixed 2026-10-11 at the source: gs-weapon scales a row by its `authored_tick_rate` (the pack sets 64), spawns arrive in this server's ticks, and the hand rescale is gone, because keeping it would halve every fuse again. The zee section of `headless_playlot` counts a second of SMG fire against 64 Hz.
 
 **A player's soldiers and rebels were one squad**, so each side's fire-lane check found its own target in the lane and nobody fired. A probe printing every gate found it. **The turret counted as an NPC** because entities were grouped by script name. **A cost budget left over from an earlier section** refused a turret with a message about NPCs: the confusion per-kind limits remove.
 
@@ -87,9 +87,9 @@ One line each; the detail is in [bugs-found.md](../../../docs/bugs-found.md) or 
 
 **The drive bot jumped from the top of every ramp into the gap**: near a crest its margin called it on the crest while still on the ramp.
 
-**A rider leaving a pitched, rolled face over its far end is stopped dead** and slides off from rest; the long bank's finish pad had always caught it. Filed for dot-player-controller.
+**A rider leaving a pitched, rolled face over its far end is stopped dead** and slides off from rest; the long bank's finish pad had always caught it. Filed for gs-player-controller.
 
-**An airborne player pressing into a face past `max_slope_angle` creeps up it** (about 1 m/s vertical: air acceleration refills the wish, the clip turns it up the plane). Whether that is the genre or a bug is dot-player-controller's call (`[steep-climb-1]`); it is why "it finished" is never the check alone.
+**An airborne player pressing into a face past `max_slope_angle` creeps up it** (about 1 m/s vertical: air acceleration refills the wish, the clip turns it up the plane). Whether that is the genre or a bug is gs-player-controller's call (`[steep-climb-1]`); it is why "it finished" is never the check alone.
 
 **The maps had no scale**: flat colour made a 3 m block beside a 220 m ramp two tiles. Fixed with the world-space grid.
 
@@ -101,9 +101,9 @@ One line each; the detail is in [bugs-found.md](../../../docs/bugs-found.md) or 
 
 **The HUD's time left was the map session's clock**, which on a client nothing extends, and the deployed rtv-only server had every client counting down thirty minutes the server did not have. **`pg_status` said the same.** **The deployed sandbox was put to a ballot at twenty-eight minutes** because `pg_map_seconds: 0` stopped the map clock and not the vote's.
 
-**The server browser shipped against a server that answered nothing**: `dedicated` had `query_enabled = false`, no query host was attached and the module contributed no provider. dot-browser's own suite queries a server it built.
+**The server browser shipped against a server that answered nothing**: `dedicated` had `query_enabled = false`, no query host was attached and the module contributed no provider. gs-browser's own suite queries a server it built.
 
-**Nobody in the sandbox had an avatar**: `PlaylotPlatform` was built only by `examples/dedicated.tscn`, and a module that is not a `GSGameModule` loads no dot-platform by itself.
+**Nobody in the sandbox had an avatar**: `PlaylotPlatform` was built only by `examples/dedicated.tscn`, and a module that is not a `GSGameModule` loads no gs-platform by itself.
 
 ## The suites
 

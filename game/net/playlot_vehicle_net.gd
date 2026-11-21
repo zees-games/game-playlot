@@ -4,9 +4,9 @@ const PlaylotVehicle := preload("../playlot_vehicle.gd")
 
 ## What a vehicle replicates, through [GSVehicleNetSync].
 ##
-## [b]The first time that class has ever crossed a wire.[/b] dot-vehicle's own suite
+## [b]The first time that class has ever crossed a wire.[/b] gs-vehicle's own suite
 ## round-trips its quantisers in one process, which proves the encoders are inverses and
-## proves nothing about whether the properties it names can be declared to dot-net at
+## proves nothing about whether the properties it names can be declared to gs-net at
 ## all — the family's own "produced correctly and consumed by nothing", one layer down.
 ##
 ## [b]It extends [PlaylotPropNet] rather than sitting beside it.[/b] A vehicle IS a
@@ -15,7 +15,7 @@ const PlaylotVehicle := preload("../playlot_vehicle.gd")
 ## What is overridden is all three halves that differ: what is declared, what is copied
 ## out of the authority, and what is drawn on the mirror.
 ##
-## [b]Nothing here is predicted, and that is dot-vehicle's decision rather than this
+## [b]Nothing here is predicted, and that is gs-vehicle's decision rather than this
 ## game's shortcut.[/b] A vehicle is a rigid body with a contact solver under it, so two
 ## machines diverge in a second or two; a predicted vehicle is a corrected vehicle, and a
 ## correction on something a player is steering reads far worse than latency does. The
@@ -41,10 +41,10 @@ var net_occupancy: int = 0
 ## Declared from the addon's own table, exactly as [PlaylotPlayerNet] is.
 ##
 ## [b]The type is resolved from a STRING, and that is the whole reason the table is
-## written the way it is.[/b] `GSVehicleNetSync` never mentions a dot-net `class_name`,
+## written the way it is.[/b] `GSVehicleNetSync` never mentions a gs-net `class_name`,
 ## because a script naming a class the project does not have fails to parse and takes
-## every script that references it down with it — so a game without dot-net could still
-## use dot-vehicle. Resolving `GSNetVar.Type[spec.type]` is the game's half of that
+## every script that references it down with it — so a game without gs-net could still
+## use gs-vehicle. Resolving `GSNetVar.Type[spec.type]` is the game's half of that
 ## bargain and it can only be done here.
 func _register_net_vars() -> void:
 	for spec in GSVehicleNetSync.specs():

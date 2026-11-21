@@ -4,7 +4,7 @@ const PlaylotWeaponDef := preload("playlot_weapon_def.gd")
 
 ## One thing a player can hold, as a document rather than as a class.
 ##
-## [b]Deliberately not a [GSPropDef].[/b] dot-props' catalogue is "things you spawn
+## [b]Deliberately not a [GSPropDef].[/b] gs-props' catalogue is "things you spawn
 ## into the world", and it requires a `scene_path` because that is what a spawn needs.
 ## A weapon is never spawned — it is held, it has no body, and giving it a scene path
 ## so it would fit in a catalogue it does not belong in is exactly the sort of lie that
@@ -14,7 +14,7 @@ const PlaylotWeaponDef := preload("playlot_weapon_def.gd")
 ## division a player sees — props, entities, weapons — is three tabs; the division
 ## underneath is two systems, and they are different systems for a real reason.
 ##
-## [b]The script is a path, like an entity's.[/b] A mounted dot-cloud pack's
+## [b]The script is a path, like an entity's.[/b] A mounted gs-cloud pack's
 ## `class_name` globals are not registered in the host, so a weapon named by class
 ## could only ever ship inside the build. See [PlaylotSpawnables].
 
@@ -58,7 +58,7 @@ func validate() -> GSResult:
 	if id == &"":
 		return GSResult.fail(GSError.CODE_INVALID, "A weapon needs an id.")
 
-	# A zee-dot-weapons entry has no script: dot-weapon's machinery is behind it, named by
+	# A zee-gs-weapons entry has no script: gs-weapon's machinery is behind it, named by
 	# `meta.zee` (see PlaylotZee).
 	if script_path == "" and not meta.has("zee"):
 		return GSResult.fail(

@@ -11,7 +11,7 @@ extends RefCounted
 ##
 ## [b]What is kept[/b]: each prop's id, where it is, how it is turned, whether it is frozen, the
 ## tool gun's size and paint; the welds, ropes and no-collides between them (and welds to the
-## world, kept as a point); and dot-props' wires between them (buttons to doors).
+## world, kept as a point); and gs-props' wires between them (buttons to doors).
 ##
 ## [b]Placed whole or not at all.[/b] The player's limits are asked first, kind by kind, so a
 ## build bigger than what they are allowed is refused before anything appears; and a spawn the

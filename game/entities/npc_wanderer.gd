@@ -3,7 +3,7 @@ extends "playlot_entity.gd"
 ## Walks about, turns when it is bored or stuck, and hops if the catalogue asks it to.
 ##
 ## [b]`extends` a PATH, not a class, and that is the point of this file.[/b] It is the
-## template an entity delivered in a dot-cloud pack copies, and a mounted pack's
+## template an entity delivered in a gs-cloud pack copies, and a mounted pack's
 ## `class_name` globals are not registered in the host — measured, and written down in
 ## game-dev/docs/bugs-found.md — so every cross-file type reference inside a pack fails to
 ## compile while `extends "res://x.gd"` works. Writing the shipped entities the way a

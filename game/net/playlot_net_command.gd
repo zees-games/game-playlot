@@ -5,7 +5,7 @@ const PlaylotNetCommand := preload("playlot_net_command.gd")
 ## One tick of a player's intent, on the wire: a [GSFpsCommand] and the aim bit.
 ##
 ## [b]The only thing a client may send about itself.[/b] Clients send inputs, never
-## state — a client that could send a position could send any position, and dot-net's
+## state — a client that could send a position could send any position, and gs-net's
 ## whole security model rests on the distinction. Which prop to spawn, which tool to
 ## hold and which map to vote for are requests rather than inputs: they change what the
 ## simulation IS rather than what it does this tick, so they go reliably and rarely

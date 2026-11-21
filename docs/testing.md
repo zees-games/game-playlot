@@ -15,7 +15,7 @@ The family rules on suites (both counters, read stderr, cap every run, re-import
 `./game.sh test` parses everything and runs all five; `./game.sh test headless_net` runs one. By hand: `--import`, the `--check-only` pass, then each `examples/<suite>.tscn` under `timeout`. Every suite counts sections and a CHECKS total; each section's last line is `_section_done()`.
 
 - `headless_playlot -- --only=<method>` runs the boot and one section; the totals are not checked. **A section run alone is on whatever map the boot left**: a section that needs a map loads it (most load `pg_flatgrass`) and lands its player first.
-- **The suites run without dot-timer**, which is how the game ships. Linked, `headless_playlot` and `dedicated` add their `TIMER_SECTIONS` and `TIMER_CHECKS` and run the timer's sections; absent they print a SKIP line ([timer.md](timer.md#testing-it)). Run both ways after touching `addons/pg_timer`.
+- **The suites run without gs-timer**, which is how the game ships. Linked, `headless_playlot` and `dedicated` add their `TIMER_SECTIONS` and `TIMER_CHECKS` and run the timer's sections; absent they print a SKIP line ([timer.md](timer.md#testing-it)). Run both ways after touching `addons/pg_timer`.
 - `tools/map_props.gd` checks a custom map's props stay put ([maps.md](maps.md#map-props)).
 - Every addon's own suite still has to pass; these exercise the joins and do not re-test what the addons cover.
 - How the weapons and avatar look (first person and outside, 60 fps contact sheets and clips) is not a suite: `tools/anim_review.sh`, [anim-review.md](anim-review.md).

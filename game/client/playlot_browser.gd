@@ -5,14 +5,14 @@ const PlaylotUserFiles := preload("../playlot_user_files.gd")
 
 ## The server list: what a person sees before they are in a game.
 ##
-## [b]dot-browser is the client half of dot-server's queries, and this is the screen over
+## [b]gs-browser is the client half of gs-server's queries, and this is the screen over
 ## it.[/b] The addon does the asking — DQP over UDP on a desktop, DQP as JSON over a
 ## WebSocket in a browser, and A2S for the twenty years of tooling that speaks nothing else
 ## — behind a list model with sources, filters, sorting, favourites and history. Nothing
 ## here re-implements any of that; what this decides is which sources this game has and
 ## what a row looks like.
 ##
-## [b]Filtering is local and always will be.[/b] dot-browser is explicit that a filter is
+## [b]Filtering is local and always will be.[/b] gs-browser is explicit that a filter is
 ## applied on the client rather than sent to the server, because a server that decided
 ## which of its own properties to report is a server that reports whatever gets it listed.
 ##
@@ -25,10 +25,10 @@ const PlaylotUserFiles := preload("../playlot_user_files.gd")
 ##
 ## [b]The map filter is the one thing here that is this game's.[/b] A sandbox server on
 ## `pg_flatgrass` and one on a custom map are different places to somebody choosing where to
-## go, and dot-server reports the running map in a query — so a person who wants one map can
+## go, and gs-server reports the running map in a query — so a person who wants one map can
 ## have only servers on it, without any server having to be asked.
 
-# A screen on a player's machine, where nobody reads a log: the asking is dot-browser's, and it
+# A screen on a player's machine, where nobody reads a log: the asking is gs-browser's, and it
 # logs its own queries. The one thing said here is a site listing that was configured and could
 # not be used, which is the operator's mistake rather than the player's.
 const CHANNEL := "playlot.browser"
@@ -68,7 +68,7 @@ func _screen_id() -> StringName:
 
 func _ready() -> void:
 	# A screen, not a bare Control, so the stack owns the z-order, the input blocking and
-	# the mouse mode from one place — which is dot-ui's whole claim and the reason this
+	# the mouse mode from one place — which is gs-ui's whole claim and the reason this
 	# game does not put the cursor back by hand anywhere.
 	blocks_input = true
 	mouse_mode = GSScreen.Mouse.VISIBLE
@@ -78,7 +78,7 @@ func _ready() -> void:
 	# a rectangle follows its parent and change nothing until something resizes it, so a
 	# Control built in code keeps the zero size it was created with — and every child then
 	# lays out inside nothing while being, by every property, correctly configured. This
-	# family has shipped that twice and dot-ui had five of them.
+	# family has shipped that twice and gs-ui had five of them.
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_build()
 	_start()

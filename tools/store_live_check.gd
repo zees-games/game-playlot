@@ -1,7 +1,7 @@
 extends SceneTree
 
 ## Live proof that a purchase made on the site reaches a game's loadout: a real GSBackboneClient asks the site's STORE_READ entitlements route and the manager wrapped by GSGameStoreEntitlements.attach holds the result.
-## Dev site only; the token is a dev credential. Exit 1 when the expected item is not held. STORE_PLAYER=<scoped key> STORE_EXPECT=e2e_trail STORE_TOKEN_FILE=~/.config/dot/store-token-dev-games \
+## Dev site only; the token is a dev credential. Exit 1 when the expected item is not held. STORE_PLAYER=<scoped key> STORE_EXPECT=e2e_trail STORE_TOKEN_FILE=~/.config/gs/store-token-dev-games \
 ## STORE_URL=https://games.tmcdev.net godot --headless --path . --script tools/store_live_check.gd
 
 func _initialize() -> void:
@@ -20,7 +20,7 @@ func _initialize() -> void:
 	var client := GSBackboneClient.new()
 	client.config = cfg
 	client.auto_report = false
-	client.register_as = &"dot_backbone_client"
+	client.register_as = &"gs_backbone_client"
 	root.add_child(client)
 	var started: GSResult = client.start()
 	if not started.ok:

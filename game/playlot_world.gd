@@ -21,7 +21,7 @@ func _build_props() -> void:
 
 	props.world_ref = GSNodeRef.of_path(^"../World")
 
-		# Every prop this build ships is the same scene; what makes a plank a plank is three fields of its definition. dot-props does
+		# Every prop this build ships is the same scene; what makes a plank a plank is three fields of its definition. gs-props does
 		# not know that: it instantiates a scene and places it, because a server with real content has a scene per prop.
 	props.spawned.connect(_on_prop_spawned)
 	props.removed.connect(_on_prop_removed)
@@ -246,7 +246,7 @@ func _build_npc_world() -> void:
 	npc_world.game = self
 	add_child(npc_world)
 
-	# Metadata on the director, where dot-npc-ai's brain looks — see GSNpcAiSkill.attach.
+	# Metadata on the director, where gs-npc-ai's brain looks — see GSNpcAiSkill.attach.
 	npc_skill.attach(npc_world)
 	npc_squads.attach(npc_world)
 	npc_sounds.attach(npc_world)
@@ -344,7 +344,7 @@ func spawn_player(id: StringName) -> void:
 
 
 ## [param at], or the nearest point on a ring round it that nobody else is standing on. Every start is a single point and every
-## player was put on it: two joiners stood inside each other and each first-person camera was inside the other's head. dot-spawn's
+## player was put on it: two joiners stood inside each other and each first-person camera was inside the other's head. gs-spawn's
 ## occupancy cannot help with one site. Two rings of eight at 1.5 m fit the smallest pad (6 m); a crowd past seventeen shares the centre.
 func _clear_of_players(at: Vector3, id: StringName) -> Vector3:
 	for ring in range(SPAWN_RINGS + 1):
@@ -486,7 +486,7 @@ func _on_prop_exploded(at: Vector3, radius: float, damage: float, _force: float,
 		_breaking.clear()
 
 
-## The map's toys from its `map_toys()` (dot-props placements), on both ends, in the order the
+## The map's toys from its `map_toys()` (gs-props placements), on both ends, in the order the
 ## map lists them: that order is how a client pairs each with the server's entity. Every player
 ## is handed the box for the trampolines and the roundabout.
 func _build_toys(loaded: Node) -> void:
@@ -615,7 +615,7 @@ func _on_map_changed(map: GSMapDef, loaded: Node) -> void:
 		# file names nothing from `maps/`. Before the spawns below: a generated map's spawn comes out of the generator, and spawning
 		# before it ran puts a player at the fallback, a guess that may be inside a wall.
 	if loaded != null and loaded.has_method("configure"):
-		loaded.call("configure", map_seed(), GSRegistry.get_service(&"dot_random_source"))
+		loaded.call("configure", map_seed(), GSRegistry.get_service(&"gs_random_source"))
 
 	# A map that is a document is told which one, for the same reason and in the same place.
 	if loaded != null and loaded.has_method("configure_doc"):
@@ -671,7 +671,7 @@ func _on_map_over(_map: GSMapDef, reason: StringName) -> void:
 	var changed: GSResult = await change_map(next.id)
 
 	if not changed.ok:
-		# Still on the old map, which is what dot-map's ordering guarantees. Restart
+		# Still on the old map, which is what gs-map's ordering guarantees. Restart
 		# its clock rather than leaving a server that will never try again.
 		GSLog.warn(CHANNEL, "the map change failed; extending instead", {
 			"why": changed.error.message

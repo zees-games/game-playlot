@@ -5,7 +5,7 @@ const PlaylotConfig := preload("../game/playlot_config.gd")
 const PlaylotPlatform := preload("../game/playlot_platform.gd")
 const PlaylotPresentation := preload("../game/playlot_presentation.gd")
 
-## Playlot's side of `tools/netchaos.sh` (dot-game's GSGameNetchaosServer): the flat sandbox, the platform layer and the module.
+## Playlot's side of `tools/netchaos.sh` (gs-game's GSGameNetchaosServer): the flat sandbox, the platform layer and the module.
 
 var _game: Playlot = null
 var _platform: PlaylotPlatform = null
@@ -37,7 +37,7 @@ func _boot_world() -> void:
 	_platform.directory = "%s/identity" % data_dir
 	add_child(_platform)
 	var _identity: GSResult = await _platform.setup()
-	var _p: GSResult = await server.modules.load_module("res://addons/dot_platform/dot_platform_module.gd")
+	var _p: GSResult = await server.modules.load_module("res://addons/gs_platform/gs_platform_module.gd")
 	(load("res://game/playlot_module.gd") as GDScript).set("punishments_path", "%s/punishments.json" % data_dir)
 	var loaded: GSResult = await server.modules.load_module("res://game/playlot_module.gd")
 	if not loaded.ok:

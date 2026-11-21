@@ -8,8 +8,8 @@ const PlaylotPlayer := preload("playlot_player.gd")
 ## The playlot's HUD: a status line, the tools, the ammo, the hit marks, and a line
 ## saying what just happened.
 ##
-## [b]No clock of its own.[/b] A run timer is not shipped; when a server adds dot-timer,
-## `addons/pg_timer` puts dot-timer's own HUD block (the clock, the split, the speed) in
+## [b]No clock of its own.[/b] A run timer is not shipped; when a server adds gs-timer,
+## `addons/pg_timer` puts gs-timer's own HUD block (the clock, the split, the speed) in
 ## [member timer_hud] and adds its parts to the status line through [member status_fn].
 
 ## How long a notice stays up, in seconds.
@@ -17,9 +17,9 @@ const NOTICE_SECONDS := 4.0
 
 ## This game's accent over whichever theme the player picked in the menu: the boost pads'
 ## amber for a kill and a head, the start pads' green. The plate, the words and their outline
-## are the theme's (dark by default; the client hands this HUD to dot-menu's `follow_hud`), so
+## are the theme's (dark by default; the client hands this HUD to gs-menu's `follow_hud`), so
 ## a light or high-contrast theme can change them. Set on the HUD too, so a HUD with no menu
-## (a suite, a render) has the accent over dot-ui's defaults.
+## (a suite, a render) has the accent over gs-ui's defaults.
 static func piece_theme() -> Theme:
 	var t := Theme.new()
 	var type := GSHudPiece.THEME_TYPE
@@ -28,7 +28,7 @@ static func piece_theme() -> Theme:
 	return t
 
 
-## The theme's HUD colours onto a run timer's block (the time, the speed, the strafes), which is not a dot-ui piece and so does not read the theme the menu sets on this HUD.
+## The theme's HUD colours onto a run timer's block (the time, the speed, the strafes), which is not a gs-ui piece and so does not read the theme the menu sets on this HUD.
 ## [param palette] is the menu's; null is the default theme. Kept so a timer block added later is themed too.
 func apply_theme(palette: GSMenuPalette = null) -> void:
 	_palette = palette if palette != null else GSMenuPalette.new()
@@ -64,7 +64,7 @@ var hit_marker: GSHitMarker = null
 var key_fn: Callable = Callable()
 var damage_numbers: GSDamageNumbers = null
 
-## A run timer's HUD block (dot-timer's `GSTimerHud`), or null. See [method set_timer_hud].
+## A run timer's HUD block (gs-timer's `GSTimerHud`), or null. See [method set_timer_hud].
 var timer_hud: Control = null
 
 ## `func(player_id) -> PackedStringArray`: a run timer's parts of the status line (the
@@ -79,8 +79,8 @@ var _tools: Label = null
 var _crosshair: GSCrosshair = null
 ## Through a scoped zee gun at full aim: zee's circle and reticle (the gun is not drawn then).
 var scope: ZeeScopeOverlay = null
-## Whether the host's GSCrosshair fades while aiming (dot-ui API 5).
-var _crosshair_fades: bool = GSAddonApi.build_level("dot_ui") >= 5
+## Whether the host's GSCrosshair fades while aiming (gs-ui API 5).
+var _crosshair_fades: bool = GSAddonApi.build_level("gs_ui") >= 5
 var _notice_until: float = 0.0
 
 var playlot: Playlot = null
@@ -447,9 +447,9 @@ static func time_left_text(view: GSVoteClockView, local: String, now: float) -> 
 	return local
 
 
-## Whether the viewer is alive, pushed from the replicated COMBAT health (dot-ui API 14).
+## Whether the viewer is alive, pushed from the replicated COMBAT health (gs-ui API 14).
 func set_alive(alive: bool) -> void:
-	if _crosshair != null and GSAddonApi.build_level("dot_ui") >= 14:
+	if _crosshair != null and GSAddonApi.build_level("gs_ui") >= 14:
 		_crosshair.call(&"set_alive", alive)
 
 

@@ -127,7 +127,7 @@ func remove_player(session_id: int) -> void:
 	game.remove_player(_player_key(session_id))
 
 	if net != null and peer_id > 0:
-		# By whether dot-net has the peer, not `was_ready`: a real disconnect is already off the
+		# By whether gs-net has the peer, not `was_ready`: a real disconnect is already off the
 		# ready set, and keying on it leaked every disconnected peer's buffers for the server's life.
 		if net.peers().has(peer_id):
 			net.remove_peer(peer_id)
@@ -149,7 +149,7 @@ func server_tick(tick: int) -> void:
 	var _t_net := GSFrameCost.now()
 	if net != null:
 		net.server_tick(tick)
-	GSFrameCost.add(&"br.dotnet_tick", _t_net)
+	GSFrameCost.add(&"br.gsnet_tick", _t_net)
 	ensure_game_ticked(tick)
 
 
@@ -551,7 +551,7 @@ func _apply_join(reader: GSNetReader) -> void:
 ## Builds the client's copy of a prop and mirrors the net id it was given.
 ##
 ## [b]Adopted, never allocated.[/b] A receiving peer has to take the id it was sent —
-## dot-2d's scatter had exactly this bug and could not be mirrored at all until it grew
+## gs-2d's scatter had exactly this bug and could not be mirrored at all until it grew
 ## an `adopt()`. Registering with 0 here would give the prop a different id on every
 ## client and every snapshot for it would land on nothing.
 func _apply_prop(reader: GSNetReader) -> void:

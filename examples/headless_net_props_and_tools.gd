@@ -198,7 +198,7 @@ func _test_prop_replication() -> void:
 	var mirrored := int(_client_bridge.describe()["props"])
 	_check(mirrored == 1, "the client mirrors it", "%d props" % mirrored)
 
-	# [b]The id is ADOPTED, not allocated.[/b] dot-2d's scatter could not be mirrored at
+	# [b]The id is ADOPTED, not allocated.[/b] gs-2d's scatter could not be mirrored at
 	# all until it grew an adopt(): a peer that allocates its own index gives the same
 	# object two different ids and every snapshot for it lands on nothing.
 	var server_props := int(_server_bridge.describe()["props"])
@@ -618,7 +618,7 @@ func _test_weapon_request() -> void:
 	_section("a weapon is asked for, paid for and announced")
 
 	# A price list that records rather than a real shop: what is being tested is that
-	# the charge is REACHED, and a shop here would test dot-economy's arithmetic twice.
+	# the charge is REACHED, and a shop here would test gs-economy's arithmetic twice.
 	var charged: Array[StringName] = []
 	var refuse := [false]
 	_server_bridge.charge_fn = func(_id: StringName, thing: StringName) -> GSResult:

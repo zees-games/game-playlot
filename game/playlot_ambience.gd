@@ -1,6 +1,6 @@
 extends RefCounted
 
-## What the sandbox's ambience is: dot-audio's [GSAmbienceDirector] tables and the cvar defaults. Shared by the
+## What the sandbox's ambience is: gs-audio's [GSAmbienceDirector] tables and the cvar defaults. Shared by the
 ## simulation (which binds the `pg_ambient*` cvars) and the presentation (which plays them).
 
 const PREFIX := "pg"

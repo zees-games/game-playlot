@@ -4,7 +4,7 @@ extends "playlot_client_base.gd"
 
 
 ## Joins the chat box to the three things it needs, the sampler too: movement is POLLED, so
-## without `suspended` typing "sw" walks the player back. dot-server's `chat_received` feeds only
+## without `suspended` typing "sw" walks the player back. gs-server's `chat_received` feeds only
 ## the server's own lines; a PLAYER's line goes through this game's wire, so both would draw twice.
 func _wire_chat_window() -> void:
 	var window: GSChatWindow = presentation.chat_window if presentation != null else null
@@ -16,13 +16,13 @@ func _wire_chat_window() -> void:
 	window.opened.connect(func(_channel: StringName) -> void: platform.refresh_blocked())
 	window.closed.connect(func() -> void: platform.refresh_blocked())
 
-	var client_link := GSRegistry.get_service(&"dot_client_link")
+	var client_link := GSRegistry.get_service(&"gs_client_link")
 
 	if client_link != null and client_link.has_signal("chat_received"):
 		client_link.connect("chat_received", _on_server_chat_state)
 
 
-## dot-server's chat payload: the server's own lines (a vote between games, "Ada joined the game.",
+## gs-server's chat payload: the server's own lines (a vote between games, "Ada joined the game.",
 ## an admin's `say`) come only this way. A player's line is never drawn from here; this game
 ## routes those over its own wire.
 func _on_server_chat_state(payload: Dictionary) -> void:

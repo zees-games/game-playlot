@@ -115,7 +115,7 @@ func npc_shots_fired(entity: Node3D, outcome: GSWeaponOutcome) -> void:
 
 ## The catalogue id a weapon lies in the world as.
 ## Snapshots a second at [param rate] ticks: nearest to 32 that is whole ticks apart (60 gives 30).
-## dot-net divides with integers, so 32 at 60 Hz sent every tick.
+## gs-net divides with integers, so 32 at 60 Hz sent every tick.
 static func snapshot_rate_for(rate: int) -> int:
 	return rate / maxi(1, roundi(float(rate) / 32.0))
 
@@ -144,7 +144,7 @@ func pick_up_weapon(player_id: StringName, weapon_id: StringName) -> void:
 
 
 ## Reads maps.yml (the game's `res://maps.yml` under [member PlaylotConfig.map_rotation_file], also looked for in the `--config`
-## directory) and applies it; the server module calls it at boot and `sv_map_rotation_file` again. The merge and rules are dot-map's
+## directory) and applies it; the server module calls it at boot and `sv_map_rotation_file` again. The merge and rules are gs-map's
 ## [GSMapRotationFile]. A present but unreadable file is an ERROR and changes nothing: rotating every map beats rotating none.
 func load_rotation() -> GSResult:
 	var stem := config.map_rotation_file if config != null else ""
@@ -216,7 +216,7 @@ func rotation_commands() -> Dictionary:
 
 ## Every name a command of this game's own answers to (the first is the one help shows), from
 ## maps.yml's `commands: names:` block; the role's own name with no file. Lets `pg_rtv` and its
-## siblings be renamed the way dot-vote's roles are.
+## siblings be renamed the way gs-vote's roles are.
 func command_names(role: String) -> PackedStringArray:
 	var names: Dictionary = rotation_commands().get("names", {})
 
@@ -349,7 +349,7 @@ func add_player(id: StringName, display_name: String, p_record_key: StringName =
 	player.phys_gun.wielder = id
 
 		# A held prop, a frozen prop and a loose one are three rows in the layout: `sandbox_3d` carries `held_prop` and `frozen_prop`
-		# for this. Without dot-props' three signals a layer could only be set at spawn, and a carried crate collided with its carrier.
+		# for this. Without gs-props' three signals a layer could only be set at spawn, and a carried crate collided with its carrier.
 	player.phys_gun.grabbed.connect(
 		func(prop: GSPropInstance, who: StringName) -> void:
 			reclassify_prop(prop.node, false, true)
@@ -449,7 +449,7 @@ func remove_player(id: StringName) -> void:
 		if riding != null:
 			vehicles.ride.exit(riding, id, true)
 
-		# Their vehicles are DISOWNED rather than removed (dot-vehicle's rule, the opposite of dot-props'): a prop is something somebody
+		# Their vehicles are DISOWNED rather than removed (gs-vehicle's rule, the opposite of gs-props'): a prop is something somebody
 		# built, a vehicle something somebody parked, and deleting it deletes the car three passengers are riding in.
 	if vehicles != null:
 		vehicles.owner_left(id)
@@ -537,7 +537,7 @@ func phys_gun_release(player: PlaylotPlayer) -> void:
 	player.phys_gun.release()
 
 
-## Turns creative mode on or off for [param id]: their props protected in dot-props, out of anybody's beam, and the arena's damage
+## Turns creative mode on or off for [param id]: their props protected in gs-props, out of anybody's beam, and the arena's damage
 ## refused both ways (a player nobody can hurt who could hurt everybody would win the arena). Refused when the server does not allow it.
 func set_creative(id: StringName, on: bool) -> GSResult:
 	var player: PlaylotPlayer = players.get(id)
@@ -590,7 +590,7 @@ func toy_aimed(player: PlaylotPlayer) -> int:
 	return toys.aimed(player.eye_position(), player.aim_direction(), TOY_REACH)
 
 
-## A hit scan's hit on a toy: dot-props pushes it by the damage (a shot bell rings). True when
+## A hit scan's hit on a toy: gs-props pushes it by the damage (a shot bell rings). True when
 ## the collider was a toy's, so the caller does not also hurt or shove it. Server side.
 func shoot_toy(collider: Variant, hit: Dictionary) -> bool:
 	if toys == null or not authoritative or not (collider is Object):
@@ -627,7 +627,7 @@ func attach_run_timer(timer: Object) -> void:
 
 
 ## A time as `m:ss.mmm`, the way every run timer shows one: thousandths, always, because
-## runs are decided by them. A copy of dot-timer's format, so the HUD and the logs can say a
+## runs are decided by them. A copy of gs-timer's format, so the HUD and the logs can say a
 ## time with the timer absent.
 static func format_time(seconds: float) -> String:
 	var total := absf(seconds)
@@ -792,6 +792,6 @@ func _exit_tree() -> void:
 		profiles.release()
 
 
-## The side a player is on for dot-team's block rules. A sandbox has none, so everybody is an enemy and blocks until they ask to pass (`!noblock`).
+## The side a player is on for gs-team's block rules. A sandbox has none, so everybody is an enemy and blocks until they ask to pass (`!noblock`).
 func team_of_side(_id: Variant) -> Variant:
 	return ""

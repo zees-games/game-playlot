@@ -4,7 +4,7 @@
 # brings back from a GPU box) and one clip per animation, first person | behind-right | opponent side by side at the same
 # fps, into --clips (pulled back by tools/anim_review.sh), and drops the frames. Normally started by tools/anim_review.sh.
 #   tools/anim_review_shot.sh [--only rifle,pistol|all] [--anims fire,avatar_walk] [--no-avatar] [--out DIR] [--fps 60] [--clips DIR]
-# The ffmpeg half is the same contract as FC's; it moves to dot-game with dot-game-visual-qa-1 and this becomes a wrapper.
+# The ffmpeg half is the same contract as FC's; it moves to gs-game with gs-game-visual-qa-1 and this becomes a wrapper.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 out=screenshots/anim_review

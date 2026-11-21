@@ -5,7 +5,7 @@ const PlaylotConfig := preload("../game/playlot_config.gd")
 const PlaylotMapEdit := preload("../game/playlot_map_edit.gd")
 const PlaylotWeapons := preload("../game/playlot_weapons.gd")
 
-## The spawn-point tool gun mode: it sends dot-game's map-edit commands and decides nothing itself.
+## The spawn-point tool gun mode: it sends gs-game's map-edit commands and decides nothing itself.
 ## Run: godot --headless --path . res://examples/headless_spawntool.tscn
 
 const SECTIONS := 4

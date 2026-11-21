@@ -3,7 +3,7 @@ extends "playlot_weapon.gd"
 ## Fires whatever the spawn menu has armed. Left click lobs it, right click hurls it.
 ##
 ## Extends a PATH rather than a class, like every entity here: it is the shape a
-## weapon delivered in a dot-cloud pack must have, because a mounted pack's
+## weapon delivered in a gs-cloud pack must have, because a mounted pack's
 ## `class_name` globals are not registered in the host.
 ##
 ## [b]It fires the armed prop rather than a projectile of its own.[/b] That is the one

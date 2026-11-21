@@ -89,7 +89,7 @@ func _test_touch_buttons() -> void:
 	_done()
 
 
-## dot-mobile's overlay on a phone: it drives the sampler it was given, takes touches and the mouse emulated from them,
+## gs-mobile's overlay on a phone: it drives the sampler it was given, takes touches and the mouse emulated from them,
 ## pauses under a menu, and a button reaches the game's handler, held ones the sampler.
 func _test_touch_overlay() -> void:
 	GSPlatform.touch_override = 1
@@ -248,7 +248,7 @@ func _test_chat_drawn_once(p: PlaylotPresentation) -> void:
 		"box %d -> %d, notice '%s'" % [before, window.line_count(), notice.text]
 	)
 
-	# A join notice is a name and NO text (dot-chat's `_presence`). Drawn by its text it
+	# A join notice is a name and NO text (gs-chat's `_presence`). Drawn by its text it
 	# was an empty row in the box; drawn by name and text, a bare "Guest 435:", which read
 	# as a chat command echoed with its text stripped.
 	client._on_chat_message(
@@ -293,7 +293,7 @@ func _test_every_sound_has_a_voice() -> void:
 
 	var uncovered: Array[String] = []
 	for id in cat.ids():
-		# dot-audio's stock footsteps and beds are files the addon ships: no stand-in needed.
+		# gs-audio's stock footsteps and beds are files the addon ships: no stand-in needed.
 		if not recipes.has(id) and not GSAudioStock.ids().has(id) and not String(id).begins_with(GSAmbience.ID_PREFIX):
 			uncovered.append(String(id))
 	_check(

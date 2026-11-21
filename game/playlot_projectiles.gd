@@ -8,7 +8,7 @@ const PlaylotZee := preload("playlot_zee.gd")
 ##
 ## [b]This exists because the game used to drop them.[/b] A zee weapon's outcome carries
 ## its shots and its [GSWeaponSpawn]s. The game resolved the shots and ignored the spawns,
-## so a thrown frag left the hand, cost a grenade and never existed. dot-weapon returns a
+## so a thrown frag left the hand, cost a grenade and never existed. gs-weapon returns a
 ## spawn because a projectile is an entity with a lifetime, and something has to fly it.
 ## game-fatal-contact's `fc_projectiles.gd` is the same job against that game's analytic map.
 ## This one is written separately, as the family's rule says, because the sandbox's world
@@ -33,7 +33,7 @@ const PlaylotZee := preload("playlot_zee.gd")
 ##
 ## [b]NPCs flee it while it is live.[/b] Every few ticks each projectile is a DANGER on
 ## every sound board it was given, reaching as far as its splash plus a margin. That is
-## what dot-npc-ai's `flee_danger` acts on: soldiers and wave NPCs get out from under a
+## what gs-npc-ai's `flee_danger` acts on: soldiers and wave NPCs get out from under a
 ## grenade, and they hear the bang as a COMBAT sound.
 
 ## One projectile, mid-air, rolling, or stuck to something.
@@ -162,7 +162,7 @@ func accept(outcome: GSWeaponOutcome, owner_id: StringName, owner_body: Node = n
 		rid = (owner_body as CollisionObject3D).get_rid()
 
 	# Flown as given: a spawn's fuse and life arrive in this server's ticks, because
-	# dot-weapon scales a row written at 64 Hz (the pack's) to the arsenal's rate before
+	# gs-weapon scales a row written at 64 Hz (the pack's) to the arsenal's rate before
 	# the behaviour hands it over. Rescaling here as well would halve every fuse again.
 	for spawn: GSWeaponSpawn in outcome.spawns:
 		var _flying := launch(spawn, owner_id, rid)
@@ -466,7 +466,7 @@ func _detonate(f: Flying, at: Vector3) -> void:
 		# Map panes too (glass), which the blast's shape query does not return: they are world.
 		if game != null and game.has_method("hurt_panes_in"):
 			game.call("hurt_panes_in", at, radius, f.spawn.splash_damage, f.owner_id)
-		# And the map's toys, by dot-props' own blast: a damage-sized impulse sends a beach
+		# And the map's toys, by gs-props' own blast: a damage-sized impulse sends a beach
 		# ball off at a hundred metres a second (see [method _apply], which skips them).
 		if game != null and game.has_method("blast_toys"):
 			var _thrown: int = game.call("blast_toys", at, radius)

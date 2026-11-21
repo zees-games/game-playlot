@@ -147,9 +147,9 @@ func _draw_map_extras(map_node: Node) -> void:
 		_draw_toys(map_node.call("map_toys"))
 
 
-## `--cloud-store ORIGIN,PUBKEY`: draw a converted world's models and PBR sets from its dot-cloud slices, fetched from
+## `--cloud-store ORIGIN,PUBKEY`: draw a converted world's models and PBR sets from its gs-cloud slices, fetched from
 ## ORIGIN (a content URL or a folder of packs) and checked against the key in PUBKEY, as a web client gets them. The cache
-## is emptied first; the client registers as the dot_cloud_client service, so it must join the tree before the map does.
+## is emptied first; the client registers as the gs_cloud_client service, so it must join the tree before the map does.
 func _cloud_store(spec: String) -> bool:
 	var parts := spec.split(",")
 	var pub := FileAccess.get_file_as_string(parts[1]) if parts.size() == 2 else ""
@@ -222,7 +222,7 @@ func _draw_props(entries: Array) -> void:
 			body.call("set_tint", Color.html(str(entry["tint"])))
 
 
-## The map's toys (dot-props'), as a client draws them: frozen where the map puts them.
+## The map's toys (gs-props'), as a client draws them: frozen where the map puts them.
 func _draw_toys(placements: Array) -> void:
 	if placements.is_empty():
 		return
@@ -496,7 +496,7 @@ func _stage_arms(id: String) -> Array[Dictionary]:
 # --- --action --------------------------------------------------------------
 
 ## `--action <kind> <id>` (`--action emote dance`): a person playing an avatar action from the
-## front, early and later in the clip. The id goes through dot-user-avatar's own list.
+## front, early and later in the clip. The id goes through gs-user-avatar's own list.
 func _stage_action(id: String, kind: StringName, action: String) -> Array[Dictionary]:
 	var figure := PlaylotFigure.build(1.8, PackedInt32Array(), "actor") as GSHumanoidFigure
 	if figure == null:
@@ -527,7 +527,7 @@ func _stage_action(id: String, kind: StringName, action: String) -> Array[Dictio
 ## [b]The puff is slowed to a twentieth of real speed and restarted once spawned[/b], for
 ## game-fatal-contact's reason: it lives 420 ms and a software frame under xvfb is long enough that
 ## the frame saved at full speed is the one after it went out. The beam is a mesh and is
-## not affected. `present` is not called again, so dot-fx retires nothing while the
+## not affected. `present` is not called again, so gs-fx retires nothing while the
 ## frames are taken.
 func _stage_fx() -> Array[Dictionary]:
 	var presentation := PlaylotPresentation.new()

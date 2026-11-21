@@ -20,7 +20,7 @@ func _ready() -> void:
 func _run() -> void:
 	print("game-playlot: per-map cvars")
 	var entered := 1
-	var file := "res://cfg/game/game-playlot/dot_map/map/pgt_mapcfg.yml"
+	var file := "res://cfg/game/game-playlot/gs_map/map/pgt_mapcfg.yml"
 	var out := FileAccess.open(file, FileAccess.WRITE)
 	if out != null:
 		out.store_string("pg_destruction: 1\npg_prop_surf: 0\nnot_listed: 3\n")

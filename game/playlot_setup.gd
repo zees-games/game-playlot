@@ -31,12 +31,12 @@ const PlaylotProfiles := preload("playlot_profiles.gd")
 const PlaylotUndo := preload("playlot_undo.gd")
 
 ## The playlot: a sandbox on a flat grass plate with spawnable props and a physics gun. Any map a server adds plays here too;
-## a run timer comes only from `addons/pg_timer` (see [member run_timer]). Nothing is networked here: the bridge is dot-net's.
+## a run timer comes only from `addons/pg_timer` (see [member run_timer]). Nothing is networked here: the bridge is gs-net's.
 ## The one place every movement-half addon runs together, and the seams between them are where the bugs are: `examples/headless_playlot.tscn` runs the joins.
 
 const CHANNEL := "playlot"
 
-## The registry name a dot-server module finds this under: a module is loaded by path, and a path cannot carry an instance.
+## The registry name a gs-server module finds this under: a module is loaded by path, and a path cannot carry an instance.
 const SERVICE := &"playground"
 
 ## The map changed and everything has been rebuilt against it.
@@ -81,7 +81,7 @@ signal hit_landed(player_id: StringName, victim: int, amount: float, point: Vect
 signal weapon_picked_up(player_id: StringName, weapon_id: StringName)
 
 ## Somebody finished a timed run of [param time] seconds; [param rank] is 0 when not filed and [param reason] says why.
-## Emitted only by a run timer (see [member run_timer]); a time, not dot-timer's run object, so this compiles without it.
+## Emitted only by a run timer (see [member run_timer]); a time, not gs-timer's run object, so this compiles without it.
 signal run_filed(player_id: StringName, time: float, rank: int, reason: String)
 
 @export_group("Content")
@@ -95,7 +95,7 @@ signal run_filed(player_id: StringName, time: float, rank: int, reason: String)
 
 @export_group("Role")
 
-## Simulation ticks per second. The engine's rate wins when dot-server has set it from `sv_tickrate`
+## Simulation ticks per second. The engine's rate wins when gs-server has set it from `sv_tickrate`
 ## (see [method _resolve_tick_rate]); the export is the fallback. It stamps every filed run.
 @export_range(1, 240, 1) var tick_rate: int = 128
 
@@ -142,7 +142,7 @@ var rotation_ends_maps: bool = true
 var clock_fn: Callable = Callable()
 
 ## The run timer, or null: the game ships none. `addons/pg_timer`'s hook attaches a `GSTimerManager` through [method attach_run_timer]
-## only when `addons/dot_timer` is present. Untyped and called by name, because every script must compile without dot-timer;
+## only when `addons/gs_timer` is present. Untyped and called by name, because every script must compile without gs-timer;
 ## every call is guarded on null.
 var run_timer: Object = null
 var props: GSPropSpawner = null
@@ -162,7 +162,7 @@ const BOARDS_CONFIG_PATH := "user://playlot_boards.json"
 ## which would ask a thousand props a hundred and twenty-eight times a second whether they are an NPC.
 var entities: Array[PlaylotEntity] = []
 
-## What the entities can perceive, shared by all of them: dot-npc's [GSNpcSenses], which acquires at one threshold and drops at a weaker one.
+## What the entities can perceive, shared by all of them: gs-npc's [GSNpcSenses], which acquires at one threshold and drops at a weaker one.
 ## "Nearest player" recomputed per tick made a chaser turn back and forth between two players and forget one behind a pillar.
 ## One object for the world because its tuning is the world's; how far a thing can see belongs on its catalogue entry.
 var npc_senses: GSNpcSenses = null
@@ -172,23 +172,23 @@ var npc_senses: GSNpcSenses = null
 var npc_skill: GSNpcAiSkill = GSNpcAiSkill.new()
 
 ## How many props, NPCs, entities, vehicles, balloons, weapons and constraints one player may
-## have, and the roles that get more. dot-props asks it through
+## have, and the roles that get more. gs-props asks it through
 ## [member GSPropSpawner.limit_resolver]; the module binds `pg_max_*` and `pg_limit_roles`.
 var spawn_limits: PlaylotLimits = PlaylotLimits.new()
 
 ## Welds, ropes and no-collides between props. Built by the tool gun.
 var constraints: PlaylotConstraints = null
 
-## Standing on a moving prop carries a player with it (`config.prop_surfing`). dot-props'
+## Standing on a moving prop carries a player with it (`config.prop_surfing`). gs-props'
 ## own, under the spawner; each player asks it once a tick after its move
 ## ([method PlaylotPlayer._on_simulated]).
 var carry: GSPropCarry = null
 
-## dot-props' health and breaking, for `config.destruction`. Built on every machine; only the
+## gs-props' health and breaking, for `config.destruction`. Built on every machine; only the
 ## authoritative one hurts anything (see [method hurt_prop]).
 var prop_damage: GSPropDamage = null
 
-## Props wired to props (dot-props' GSPropIO): buttons, levers and doors. See `_machines`
+## Props wired to props (gs-props' GSPropIO): buttons, levers and doors. See `_machines`
 ## in PlaylotSpawnables, [method use_prop] and [method _on_io_input].
 var io: GSPropIO = null
 
@@ -269,7 +269,7 @@ var player_stack: PlaylotPlayerStack = null
 ## [member Playlot.entities] is the sandbox's own list of spawned `PlaylotEntity`s; the day the two concepts merge this takes the name.
 var entity_table := GSEntityTable.new()
 
-## What a dead body does, and which death reactions the server allows: dot-player-char's
+## What a dead body does, and which death reactions the server allows: gs-player-char's
 ## `sv_ragdoll*` cvars, bound by the module (REPLICATED) and followed by a client through its
 ## link, because the client draws the bodies. Decided with by [method PlaylotArena.decide_death].
 var ragdoll_rules: GSPlayerRagdollRules = GSPlayerRagdollRules.new()
@@ -277,12 +277,12 @@ var ragdoll_rules: GSPlayerRagdollRules = GSPlayerRagdollRules.new()
 ## Zee guns lying in the world (`sv_weapon_drop*`); built in `_ready`, on both ends.
 var weapon_layer: Node = null
 
-## The current map's toys (dot-props' [GSPropBodyBox]): built from `map_toys()` on both ends, simulated where [member authoritative] and
+## The current map's toys (gs-props' [GSPropBodyBox]): built from `map_toys()` on both ends, simulated where [member authoritative] and
 ## posed from snapshots on a client. A child of this node, not of the map, whose tree is classified onto `world` and would take every
 ## toy with it. Null before a map.
 var toys: GSPropBodyBox = null
 
-## dot-props' `sv_toys*` (whether a map's toys are there, how many simulate at once, how hard a
+## gs-props' `sv_toys*` (whether a map's toys are there, how many simulate at once, how hard a
 ## walk pushes one). Bound by the module (REPLICATED) and followed by a client, which draws them.
 var toy_rules: GSPropBodyRules = GSPropBodyRules.new()
 
@@ -305,12 +305,12 @@ var workshop: PlaylotWorkshop = null
 ## The map's toys are built, on both ends. What a client's bridge pairs them on.
 signal toys_built()
 
-## dot-player-controller's `mp_forceview` and `mp_solidplayers`, and the ambience cvars (`pg_ambient*`): bound by the module
+## gs-player-controller's `mp_forceview` and `mp_solidplayers`, and the ambience cvars (`pg_ambient*`): bound by the module
 ## (REPLICATED) and followed by a client through its link.
 var ambient_rules: GSAmbienceRules = PlaylotAmbience.make_rules()
 var view_rules: GSPlayerViewRules = make_view_rules()
 var body_rules: GSPlayerBodyRules = GSPlayerBodyRules.new()
-## dot-mobile's touch cvars (`sv_mobile_*`, `sv_aim_assist*`, `sv_autofire*`): bound by the module (REPLICATED), followed
+## gs-mobile's touch cvars (`sv_mobile_*`, `sv_aim_assist*`, `sv_autofire*`): bound by the module (REPLICATED), followed
 ## by the client's overlay. Nothing here has an enemy to shoot at, so the defaults stay (no auto-fire, no aim assist).
 var mobile_rules: GSMobileRules = GSMobileRules.new()
 
@@ -330,7 +330,7 @@ var flashlight_config: GSFlashlightConfig = null
 var flashlight_binder: GSGameConfigBinder = null
 var _flashlight_map: String = ""
 
-## dot-team's block rules (`!block`, `!noblock`, `mp_teamblock`), set by the server module or
+## gs-team's block rules (`!block`, `!noblock`, `mp_teamblock`), set by the server module or
 ## `GSGameClient.add_noblock`. They feed [member body_rules]'s `pair_fn`.
 var block_rules: Object = null:
 	set(value):
@@ -342,7 +342,7 @@ var block_rules: Object = null:
 
 var players: Dictionary = {}
 
-## The movement styles, by id: dot-player-controller's own set.
+## The movement styles, by id: gs-player-controller's own set.
 var movement_styles: Dictionary = {}
 
 ## The styles' ids in declared order, which is the same on every machine. What a style index
@@ -356,12 +356,12 @@ var _tick: int = 0
 var _accumulator: float = 0.0
 
 ## Whether something else drives the tick — a net bridge, whose tick has to happen
-## between dot-net applying inputs and building the snapshot. See [PlaylotNetBridge].
+## between gs-net applying inputs and building the snapshot. See [PlaylotNetBridge].
 var external_tick: bool = false
 
 
 ## Map box index -> `{node: StaticBody3D, health: float, material: StringName}` for every box
-## whose material breaks (dot-physics' `break_health`: glass). Rebuilt per map.
+## whose material breaks (gs-physics' `break_health`: glass). Rebuilt per map.
 var panes: Dictionary = {}
 
 ## Indices of the panes broken on this map, in order. What a joiner is told.
@@ -385,7 +385,7 @@ const MAP_OWNER := &"map"
 var waypoints: Array = []
 
 
-## dot-game's `GSGameMapEdit` (duck-typed) once the server module installs it; the spawn tool sends it the shared commands.
+## gs-game's `GSGameMapEdit` (duck-typed) once the server module installs it; the spawn tool sends it the shared commands.
 var map_edit: Object = null
 
 ## `func(who: StringName) -> bool`: whether `who` may edit the map's data. Unset, nobody may.
@@ -568,13 +568,13 @@ func _clock_seconds() -> float:
 
 
 ## The seed a generated map is built from. Zero means "pick one and announce it": a world nobody can name the seed of cannot be
-## shared. `pg_seed` is the cvar and the seed used is logged either way. Taken from dot-randomness when a game has one, so a
+## shared. `pg_seed` is the cvar and the seed used is logged either way. Taken from gs-randomness when a game has one, so a
 ## generated map and every other random thing in the session come from one seed.
 func map_seed() -> int:
 	if config != null and config.map_seed != 0:
 		return config.map_seed
 
-	var rng: Object = GSRegistry.get_service(&"dot_random_source")
+	var rng: Object = GSRegistry.get_service(&"gs_random_source")
 	if rng != null and rng.has_method("seed_for"):
 		return int(rng.call("seed_for", &"map"))
 
@@ -586,7 +586,7 @@ func map_seed() -> int:
 
 ## A stable seed for the next thing wanting its own randomness (a scripted entity's [member GSNpcInstance.seed], a broken prop's
 ## debris): the session's [method map_seed] and a count of what has asked, a stream per kind. Never an object id, which moves
-## whenever anything earlier allocates and made NPCs and debris move differently build to build. Always above 1: dot-npc-ai reads 0 or 1 as the preset's.
+## whenever anything earlier allocates and made NPCs and debris move differently build to build. Always above 1: gs-npc-ai reads 0 or 1 as the preset's.
 func next_seed(kind: StringName) -> int:
 	_seed_serial += 1
 	return GSRandomStream.new(map_seed()).stream_for(kind, _seed_serial).range_i_at(0, 2, 0x7FFFFFFF)

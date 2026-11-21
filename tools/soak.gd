@@ -5,7 +5,7 @@ const PlaylotConfig := preload("../game/playlot_config.gd")
 const PlaylotPlayer := preload("../game/playlot_player.gd")
 const PlaylotPresentation := preload("../game/playlot_presentation.gd")
 
-## Soak on the real sandbox: N players wander one map for M simulated minutes through dot-bot's GSBotSoak, fed by dot-spawn's GSSpawnWatch. The playlot has no bot brain (a sandbox has nothing to chase), so each stand-in holds a random heading for a second or three and jumps now and then,
+## Soak on the real sandbox: N players wander one map for M simulated minutes through gs-bot's GSBotSoak, fed by gs-spawn's GSSpawnWatch. The playlot has no bot brain (a sandbox has nothing to chase), so each stand-in holds a random heading for a second or three and jumps now and then,
 ## which is what walks them into walls, water, ramps and every prop and pane a map has. Run `./game.sh soak [map] [minutes]`; GSBotSoakConfig flags are accepted too. Writes .godot/test-logs/soak-<map>.json, prints the SOAK line, exits 1 on failure. No navigation, goals or combat here: stuck is lenient (they bump walls on purpose).
 
 const DEFAULT_MAP := &"pg_flatgrass"

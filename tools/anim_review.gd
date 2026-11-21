@@ -23,8 +23,8 @@ const OPPONENT_AT := Vector3(0.4, 1.6, -4.0)
 ## The behind-right view, in the player's frame.
 const BEHIND_AT := Vector3(1.4, 1.5, 2.0)
 const WEAPON_CLIPS: PackedStringArray = ["idle", "draw", "fire", "reload", "ads", "sprint"]
-const AVATAR_ANIMS := {"avatar_walk": [&"dot_fps_forward"], "avatar_strafe": [&"dot_fps_left"],
-	"avatar_run": [&"dot_fps_forward", &"dot_fps_sprint"], "avatar_crouch": [&"dot_fps_crouch"], "avatar_jump": [&"dot_fps_jump"]}
+const AVATAR_ANIMS := {"avatar_walk": [&"gs_fps_forward"], "avatar_strafe": [&"gs_fps_left"],
+	"avatar_run": [&"gs_fps_forward", &"gs_fps_sprint"], "avatar_crouch": [&"gs_fps_crouch"], "avatar_jump": [&"gs_fps_jump"]}
 ## Seconds recorded per clip; an avatar clip records AVATAR_SECONDS.
 const CLIP_SECONDS := {"idle": 1.0, "draw": 1.2, "fire": 1.5, "reload": 3.0, "ads": 1.5, "sprint": 1.5}
 const AVATAR_SECONDS := 1.6
@@ -188,8 +188,8 @@ func _clip(art: ZeeWeaponArt, clip: String, other: ZeeWeaponArt) -> void:
 			at[int(1.0 * _fps)] = func() -> void: _client._aiming = false
 		"sprint":
 			at[0] = func() -> void:
-				Input.action_press(&"dot_fps_forward")
-				Input.action_press(&"dot_fps_sprint")
+				Input.action_press(&"gs_fps_forward")
+				Input.action_press(&"gs_fps_sprint")
 		_:
 			if AVATAR_ANIMS.has(clip):
 				var actions: Array = AVATAR_ANIMS[clip]
@@ -197,7 +197,7 @@ func _clip(art: ZeeWeaponArt, clip: String, other: ZeeWeaponArt) -> void:
 					for action: StringName in actions:
 						Input.action_press(action)
 				if clip == "avatar_jump":
-					at[3] = func() -> void: Input.action_release(&"dot_fps_jump")
+					at[3] = func() -> void: Input.action_release(&"gs_fps_jump")
 	var dir := "%s/%s/_frames/fp_%s" % [_out, art.id, clip]
 	var _made := DirAccess.make_dir_recursive_absolute(dir)
 	# The outside views draw one frame behind their first staging: one staged draw before frame 0 is saved.

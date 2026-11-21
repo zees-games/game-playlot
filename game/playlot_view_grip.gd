@@ -6,14 +6,14 @@ extends RefCounted
 const NEEDS_LEVEL := 8
 ## Poses held with the firing hand alone.
 const ONE_HAND: Array[StringName] = [&"melee", &"thrown", &"fists"]
-## A zee pose to the dot-player-char hand pose kind (GSViewHandPoses) the fingers close in; a pose missing here
-## is held as a rifle. Older dot-player-char builds have no grip kind and keep their one shared pose.
+## A zee pose to the gs-player-char hand pose kind (GSViewHandPoses) the fingers close in; a pose missing here
+## is held as a rifle. Older gs-player-char builds have no grip kind and keep their one shared pose.
 const POSE_KINDS := {&"rifle": &"rifle", &"pistol": &"pistol", &"heavy": &"launcher", &"melee": &"knife",
 	&"thrown": &"grenade", &"fists": &"fists"}
 
 
 static func available() -> bool:
-	return GSAddonApi.build_level("dot_player_char") >= NEEDS_LEVEL
+	return GSAddonApi.build_level("gs_player_char") >= NEEDS_LEVEL
 
 
 ## The grip for a hands_reached call, reusing [param old] while the weapon and hand count hold.

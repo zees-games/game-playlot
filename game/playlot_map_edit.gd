@@ -1,17 +1,17 @@
 extends RefCounted
 
-## Builds dot-game's `GSGameMapEdit` for this game: the point set, the map-data store and where a typed command stands.
+## Builds gs-game's `GSGameMapEdit` for this game: the point set, the map-data store and where a typed command stands.
 ##
-## The point set and the store are found by path so a build without dot-spawn or dot-map has no map editing
+## The point set and the store are found by path so a build without gs-spawn or gs-map has no map editing
 ## ([method make] gives null) rather than a script that does not parse.
 
-const POINT_SET := "res://addons/dot_spawn/core/dot_spawn_point_set.gd"
-const POINT_DEF := "res://addons/dot_spawn/core/dot_spawn_point_def.gd"
-const STORE_CONFIG := "res://addons/dot_map/data/dot_map_data_config.gd"
+const POINT_SET := "res://addons/gs_spawn/core/gs_spawn_point_set.gd"
+const POINT_DEF := "res://addons/gs_spawn/core/gs_spawn_point_def.gd"
+const STORE_CONFIG := "res://addons/gs_map/data/gs_map_data_config.gd"
 const GAME_ID := "game-playlot"
 
 
-## dot-map's stores answer `fetch`; the command set asks `load`.
+## gs-map's stores answer `fetch`; the command set asks `load`.
 class StoreAdapter extends RefCounted:
 	var inner: Object = null
 
@@ -40,7 +40,7 @@ class Ctx extends RefCounted:
 		said = text
 
 
-## The editor over `game`'s map, or null when dot-spawn is not linked. [param store] defaults to dot-map's configured one.
+## The editor over `game`'s map, or null when gs-spawn is not linked. [param store] defaults to gs-map's configured one.
 static func make(game: Object, store: Object = null) -> Object:
 	if not ResourceLoader.exists(POINT_SET):
 		return null

@@ -100,7 +100,7 @@ static func panel(
 	mesh.mesh = box_mesh
 	mesh.material_override = _material(colour)
 	mesh.position = at
-	# Passable by design (this function's whole point): said so to dot-core's collision audit,
+	# Passable by design (this function's whole point): said so to gs-core's collision audit,
 	# so a panel is not one of the findings that a real missing collider would be.
 	mesh.set_meta(GSCollisionAudit.META, true)
 	parent.add_child(mesh)
@@ -216,7 +216,7 @@ static func ramp(
 	)
 
 
-## The map's sun, sky and air, from [param lighting] (a dot-lighting document; empty is
+## The map's sun, sky and air, from [param lighting] (a gs-lighting document; empty is
 ## the game's daylight). Every map calls this once from its build, so the light arrives and
 ## leaves with the map. See `playlot_lighting.gd`.
 static func light(parent: Node3D, lighting: Dictionary = {}) -> DirectionalLight3D:

@@ -234,7 +234,7 @@ func _shot_list() -> Array[Dictionary]:
 func _arrange_admin(shot: Dictionary) -> void:
 	var beaconing := bool(shot.get("beacon", false))
 
-	# Her body is drawn: dot-player-char seats the rig on the player it belongs to (b04a9ac),
+	# Her body is drawn: gs-player-char seats the rig on the player it belongs to (b04a9ac),
 	# so it stands where she does. Until then it stood at the world origin and these frames
 	# could show the marker alone. `body_standing` and `rider_seated` are about the body itself.
 	if (beaconing or shot.has("other")) and _other == null:

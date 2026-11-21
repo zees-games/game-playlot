@@ -7,7 +7,7 @@ const PlaylotWeaponDef := preload("weapons/playlot_weapon_def.gd")
 
 ## The arsenal: what a player can hold, and how a script becomes a weapon.
 ##
-## [b]Its own registry rather than a corner of the prop catalogue.[/b] dot-props'
+## [b]Its own registry rather than a corner of the prop catalogue.[/b] gs-props'
 ## catalogue is "things you spawn into the world" and requires a `scene_path`, because
 ## that is what a spawn needs. A weapon is never spawned — it is held, and it has no
 ## body — so giving one a scene path to make it fit would be a lie that turns into
@@ -16,7 +16,7 @@ const PlaylotWeaponDef := preload("weapons/playlot_weapon_def.gd")
 ##
 ## [b]A weapon is a script named by path, loaded and instantiated at equip time.[/b]
 ## That is the sandbox shape and it is also the only shape that survives delivery: a
-## mounted dot-cloud pack's `class_name` globals are not registered in the host, so a
+## mounted gs-cloud pack's `class_name` globals are not registered in the host, so a
 ## weapon named by class could ship only inside the build. See [PlaylotSpawnables]
 ## for the measurement.
 

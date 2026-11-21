@@ -69,7 +69,7 @@ func _first_map(host: Object) -> String:
 	return (await _boot(host))[0]
 
 
-## Boots a playlot with [param host] as the `dot_solo` service (none when null) and returns
+## Boots a playlot with [param host] as the `gs_solo` service (none when null) and returns
 ## [first map id, whether the pack map is in its catalogue].
 func _boot(host: Object) -> Array:
 	if host != null:

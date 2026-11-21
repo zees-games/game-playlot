@@ -3,20 +3,20 @@ extends RefCounted
 ## What a map box can be made of, and what that means here: how it looks, how props slide
 ## and bounce on it, how a player moves on it, and whether it is a liquid you are IN.
 ##
-## [b]The numbers are dot-physics' standard table, read once.[/b] Friction, bounce and
+## [b]The numbers are gs-physics' standard table, read once.[/b] Friction, bounce and
 ## density go to the solver from `GSPhysicsSurface`; the player's movement comes from the
-## same entry through dot-player-controller's `GSFpsSurface.from_physics`, so ice is one
+## same entry through gs-player-controller's `GSFpsSurface.from_physics`, so ice is one
 ## number for a crate and for a person. The only thing this file adds is the LOOK, which is
 ## this game's (a colour over the prototype grid, lit by the map's sun).
 ##
-## [b]A player's surface is found from the box's metadata[/b] (`dot_fps_surface`), which a
+## [b]A player's surface is found from the box's metadata[/b] (`gs_fps_surface`), which a
 ## client and a server both build from the same map document: a surface resolved any other
 ## way is one the prediction and the server disagree about.
 
 # No CHANNEL: nothing here logs. A map that names an unknown material is refused by the
 # document's validation, which says so.
 
-const META_SURFACE := &"dot_fps_surface"
+const META_SURFACE := &"gs_fps_surface"
 const META_MATERIAL := &"pg_material"
 
 ## What each material looks like, as a colour on the grid. Alpha under 1 is see-through.
@@ -45,7 +45,7 @@ static var _physics: GSPhysicsSurfaceSet = null
 static var _player: GSFpsSurfaceSet = null
 
 
-## dot-physics' standard surfaces, built once.
+## gs-physics' standard surfaces, built once.
 static func physics() -> GSPhysicsSurfaceSet:
 	if _physics == null:
 		_physics = GSPhysicsSurfaceSet.standard()

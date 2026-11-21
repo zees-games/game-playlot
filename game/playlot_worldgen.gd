@@ -11,7 +11,7 @@ const PlaylotGeometry := preload("playlot_geometry.gd")
 ## does in it is build, and what they build is the level.
 ##
 ## [b]The generator produces a document and this class extrudes it.[/b] Two separate
-## things on purpose, which is dot-procedural-generation's whole design:
+## things on purpose, which is gs-procedural-generation's whole design:
 ##
 ## - the document is data, so a server and a client with the same seed produce the same
 ##   world and compare a fingerprint rather than a map;
@@ -104,7 +104,7 @@ static func pipeline(width: int = 40, height: int = 40) -> GSProcGenPipeline:
 
 ## Generates a document, taking the seed from a game's randomness when it has one.
 ##
-## [param seed_source] is anything with `seed_for(name)` — dot-randomness' manager,
+## [param seed_source] is anything with `seed_for(name)` — gs-randomness' manager,
 ## duck-typed, so this file names no type from that addon and the generator still lands on
 ## the session's own seed rather than on one of its own.
 static func generate(seed_value: int, seed_source: Object = null) -> GSResult:

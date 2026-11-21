@@ -10,7 +10,7 @@ const PlaylotProp := preload("../playlot_prop.gd")
 ##
 ## [b]The division every sandbox of this kind makes.[/b] A crate is a shape with a
 ## mass and needs no code;
-## a thing that walks about does. dot-props knows nothing of the difference — it
+## a thing that walks about does. gs-props knows nothing of the difference — it
 ## instantiates a scene, places it and counts it against a budget — so the script is a
 ## field of [member GSPropDef.meta] and [Playlot] attaches it on spawn. See
 ## [PlaylotSpawnables] for why it is named by path rather than by class.
@@ -45,16 +45,16 @@ var instance: GSPropInstance = null
 ## in wall time would move at a different speed on a server under load.
 var age: float = 0.0
 
-## This entity as dot-npc sees it: what it can perceive and what it has committed to.
+## This entity as gs-npc sees it: what it can perceive and what it has committed to.
 ##
 ## [b]Built here rather than spawned by a [GSNpcSpawner], and that is deliberate.[/b]
 ## An entity in this game is a PROP first: it counts against a budget, it can be undone,
 ## it is cleaned up when its owner leaves, a physics gun can pick it up and a gravity gun
 ## can punt it across the map. An NPC you cannot pick up is the one thing a sandbox
-## player will try first, so moving these onto dot-npc's spawner would have taken all of
+## player will try first, so moving these onto gs-npc's spawner would have taken all of
 ## that away to gain a second population system this game does not need.
 ##
-## What dot-npc [i]does[/i] own here is the half that was wrong: perception. See
+## What gs-npc [i]does[/i] own here is the half that was wrong: perception. See
 ## [member Playlot.npc_senses].
 var npc: GSNpcInstance = null
 
@@ -73,7 +73,7 @@ func bind(p_game: Playlot, p_instance: GSPropInstance) -> void:
 	_entity_ready()
 
 
-## This entity's dot-npc row, built from its catalogue entry.
+## This entity's gs-npc row, built from its catalogue entry.
 ##
 ## The perception envelope comes out of `meta`, so it is a line in the catalogue an
 ## operator can edit rather than a constant in a script — the same reason
@@ -162,7 +162,7 @@ func tune(key: StringName, fallback: float) -> float:
 
 ## The player this entity has committed to, or null.
 ##
-## [b]This is the port, and it is the whole reason dot-npc is installed here.[/b] The
+## [b]This is the port, and it is the whole reason gs-npc is installed here.[/b] The
 ## chaser used to call [method nearest_player] on every tick, which is the classic broken
 ## NPC: two players a metre apart make it turn back and forth for ever, and one who steps
 ## behind a pillar makes it forget instantly and walk away mid-swing. [GSNpcSenses]
@@ -195,9 +195,9 @@ func target() -> PlaylotPlayer:
 	return found
 
 
-## A flash blinds this NPC for [param seconds] on the clock its senses read; dot-npc API 6.
+## A flash blinds this NPC for [param seconds] on the clock its senses read; gs-npc API 6.
 func blind_npc(seconds: float) -> void:
-	if npc != null and GSAddonApi.build_level("dot_npc") >= 6:
+	if npc != null and GSAddonApi.build_level("gs_npc") >= 6:
 		npc.blind_for(_senses_now(), seconds)
 
 

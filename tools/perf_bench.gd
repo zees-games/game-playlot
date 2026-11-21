@@ -4,7 +4,7 @@ const PlaylotConfig := preload("../game/playlot_config.gd")
 const PlaylotData := preload("../maps/pg_data.gd")
 const PlaylotPresentation := preload("../game/playlot_presentation.gd")
 
-## The offline sandbox benchmark: dot-game's GSGamePerfBench (flags, recording, sidecar; see it) on the playlot client. Run it windowed with `tools/perf_bench.sh --box staging02` (gamedev, from a checkout).
+## The offline sandbox benchmark: gs-game's GSGamePerfBench (flags, recording, sidecar; see it) on the playlot client. Run it windowed with `tools/perf_bench.sh --box staging02` (gamedev, from a checkout).
 ## `--bots N` NPCs (wanderers, chasers, soldiers) and `--props N` props (crates, barrels, balls) dropped in a pile in front of the player, so the run has physics, NPC brains and draw work; `--map ID` another map first (default pg_flatgrass).
 
 const NPC_IDS: Array[StringName] = [&"npc_wanderer", &"npc_chaser", &"npc_soldier"]

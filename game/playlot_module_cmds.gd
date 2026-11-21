@@ -3,7 +3,7 @@ extends "playlot_module_base.gd"
 
 
 ## `pg_max_<group>` per kind, `pg_limit_roles` for who gets more, and `pg_limits` to see anybody's.
-## A role is a dot-server admin group by name, plus `admin` and `root`. Slot count follows the
+## A role is a gs-server admin group by name, plus `admin` and `root`. Slot count follows the
 ## server's `sv_maxplayers`; a non-default `pg_max_players` is the operator's and wins.
 func _bind_slots() -> void:
 	var slots: GSConVar = server.console.find_cvar("sv_maxplayers") if server != null else null
@@ -237,7 +237,7 @@ func _build_loadout_command() -> void:
 	arena.respawned.connect(func(id: StringName) -> void:
 		var _armed: Variant = await _arm_from_loadout(PlaylotNetBridge.session_of(id)))
 
-	if GSAddonApi.build_level("dot_loadout") < 2 or not ResourceLoader.exists(LOADOUT_COMMAND_SCRIPT) \
+	if GSAddonApi.build_level("gs_loadout") < 2 or not ResourceLoader.exists(LOADOUT_COMMAND_SCRIPT) \
 			or arena.loadouts == null:
 		return
 	loadout_command = (load(LOADOUT_COMMAND_SCRIPT) as GDScript).new()
@@ -490,7 +490,7 @@ func _cmd_mute(ctx: GSCmdContext) -> void:
 	await _punish(ctx, GSPunishment.Kind.VOICE_MUTE, "muted")
 
 
-## The shared half of gag and mute: dot-moderation models both as one record, differing only in kind.
+## The shared half of gag and mute: gs-moderation models both as one record, differing only in kind.
 func _punish(ctx: GSCmdContext, kind: GSPunishment.Kind, verb: String) -> void:
 	if ctx.args.size() < 2:
 		ctx.reply("Usage: %s <who> <seconds, 0 for permanent> [reason]" % ctx.command)

@@ -112,7 +112,7 @@ func _build_screens() -> void:
 	_build_pause()
 
 
-## The escape menu: dot-menu's, with this game's settings on its pages and the server list as a
+## The escape menu: gs-menu's, with this game's settings on its pages and the server list as a
 ## sidebar action. Escape keeps its two steps (first releases the pointer, second opens the menu;
 ## see KEY_ESCAPE in `_unhandled_input`), so the menu does not open on Escape but still closes on it.
 func _build_pause() -> void:
@@ -129,14 +129,14 @@ func _build_pause() -> void:
 	game_menu.bindings = keys
 	var config := GSMenuConfig.new()
 	config.brand_name = "Zee's Playlot"
-	# By name: an older dot-menu has no such property, and assigning it would stop this function.
+	# By name: an older gs-menu has no such property, and assigning it would stop this function.
 	if &"menu_button_corner" in config:
 		config.set(&"menu_button_corner", &"top_left")
 	var _layered := config.load_layered()
 	game_menu.config = config
 	game_menu.open_on_escape = false
 	game_menu.manage_pointer = false
-	# Leave is dot-menu's: off the server when connected, a quit solo on a desktop.
+	# Leave is gs-menu's: off the server when connected, a quit solo on a desktop.
 	game_menu.leave_on_its_own = true
 	add_child(game_menu)
 	var _set := game_menu.setup()
@@ -146,9 +146,9 @@ func _build_pause() -> void:
 	platform.board_prepare_fn = _prepare_board
 	platform.adopt_menu(game_menu)
 	var _platform_up := platform.setup()
-	if GSAddonApi.build_level("dot_game") >= 38:
+	if GSAddonApi.build_level("gs_game") >= 38:
 		platform.add_store_panel(game_menu, func() -> String:
-			var auth: Object = GSRegistry.get_node_service(&"dot_auth_client")
+			var auth: Object = GSRegistry.get_node_service(&"gs_auth_client")
 			if auth == null or not is_instance_valid(auth) or not auth.has_method(&"account_key"):
 				return ""
 			return str(auth.call(&"account_key")))
@@ -202,7 +202,7 @@ func _process(_delta: float) -> void:
 	if _touch != null:
 		_touch.sync(_menu_is_open() or _input_busy())
 	if presentation != null:
-	# Once a frame, with the camera position: dot-audio and dot-fx do not tick themselves,
+	# Once a frame, with the camera position: gs-audio and gs-fx do not tick themselves,
 	# and `_process` does not run while paused.
 		var eye := camera.global_position if camera != null and camera.is_inside_tree() \
 			else Vector3.ZERO
@@ -304,7 +304,7 @@ func _exit_tree() -> void:
 	PlaylotZee.release_art()
 
 
-## Where a roster row's player stands, for dot-game's look-to-gag key (J, L).
+## Where a roster row's player stands, for gs-game's look-to-gag key (J, L).
 func _look_position(row: Dictionary) -> Variant:
 	if playlot == null:
 		return null

@@ -18,7 +18,7 @@ func _build_query_provider() -> void:
 	)
 
 
-## Tells dot-server which map is running, so A2S, DQP and the backbone report print it rather than the
+## Tells gs-server which map is running, so A2S, DQP and the backbone report print it rather than the
 ## game's content id. On every change, through the session's own signal.
 func _report_map(map: GSMapDef, _world: Node = null) -> void:
 	if map_config == null and console != null:
@@ -29,7 +29,7 @@ func _report_map(map: GSMapDef, _world: Node = null) -> void:
 		server.games.set_current_map(String(map.id) if map != null else "")
 
 
-## The loading roster and the handler for the client's cover report, a kind on dot-server's envelope
+## The loading roster and the handler for the client's cover report, a kind on gs-server's envelope
 ## (the RPC set is frozen). An older client is released by the roster's timeout.
 func _build_loading() -> void:
 	loading = GSGameRoster.new()
@@ -56,9 +56,9 @@ func _on_cover_report(peer_id: int, payload: Dictionary) -> void:
 		loading.report_cover(peer_id, covered)
 
 
-## Resolves who a session is and what they wear, through dot-platform. Does what GSGameModule does:
+## Resolves who a session is and what they wear, through gs-platform. Does what GSGameModule does:
 ## build `GSPlatformIdentity` with the avatar schema, a stock look and the site translation, then
-## load dot-platform's module (an already-loaded one is used as is).
+## load gs-platform's module (an already-loaded one is used as is).
 func _build_identity() -> GSResult:
 	if bridge != null:
 		bridge.skin_fn = _skins_for
@@ -82,7 +82,7 @@ func _build_identity() -> GSResult:
 		_identity = null
 		return ready if ready is GSResult else GSResult.fail(GSError.CODE_INTERNAL, "no result from setup()")
 
-	var loaded: GSResult = await server.modules.load_module("res://addons/dot_platform/dot_platform_module.gd")
+	var loaded: GSResult = await server.modules.load_module("res://addons/gs_platform/gs_platform_module.gd")
 	_loaded_platform = loaded.ok
 	return loaded
 
@@ -110,9 +110,9 @@ func _on_profile(event: GSEvent) -> void:
 
 
 ## The Tab board's stats columns from this game's own tracker. Not on GSGameModule, so the
-## feed and board are built here and handed to dot-server by hand; the client wires itself.
+## feed and board are built here and handed to gs-server by hand; the client wires itself.
 func _attach_stats_board() -> void:
-	if server == null or not ("scoreboard_fields" in server) or GSAddonApi.build_level("dot_game") < 38:
+	if server == null or not ("scoreboard_fields" in server) or GSAddonApi.build_level("gs_game") < 38:
 		return
 	_board_feed = GSGameStatsFeed.new()
 	_board_feed.tracker = progress.stats
@@ -280,9 +280,9 @@ func _build_netcode() -> GSResult:
 	if not ready_result.ok:
 		return ready_result.wrap("The netcode could not start")
 
-	# net_skip_idle and net_visibility, the switches dot-game's own games get from GSGameNetcode (dot-game 52; by name, so an older host still parses this).
-	if GSAddonApi.build_level("dot_game") >= 52:
-		load("res://addons/dot_game/net/dot_game_relevance.gd").call(&"bind_toggles", console, net)
+	# net_skip_idle and net_visibility, the switches gs-game's own games get from GSGameNetcode (gs-game 52; by name, so an older host still parses this).
+	if GSAddonApi.build_level("gs_game") >= 52:
+		load("res://addons/gs_game/net/gs_game_relevance.gd").call(&"bind_toggles", console, net)
 
 	bridge = PlaylotNetBridge.new()
 	bridge.name = "Bridge"
@@ -295,7 +295,7 @@ func _build_netcode() -> GSResult:
 	if not attached.ok:
 		return attached
 
-	# A bag belongs to the person, and dot-server's userid is a new number every time
+	# A bag belongs to the person, and gs-server's userid is a new number every time
 	# somebody connects. See `_bag_key_for`.
 	bridge.inventory_key_fn = _bag_key_for
 	_bind_profile_edit()
@@ -312,14 +312,14 @@ func _build_netcode() -> GSResult:
 	if workbench != null and workbench.api != null:
 		var _served := workbench.serve_remote(net)
 	# [b]A client whose game messages cannot work with this server's is dropped, in words.[/b]
-	# dot-net compares the two schema tables and refuses a pair where either lacks a type
+	# gs-net compares the two schema tables and refuses a pair where either lacks a type
 	# the other REQUIRES, but it owns no socket and can only say so; this is the socket.
-	# The same line GSGameNetcode.refuse_peer is for games built on dot-game.
+	# The same line GSGameNetcode.refuse_peer is for games built on gs-game.
 	net.peer_schema_refused.connect(_refuse_peer)
 	return net.start()
 
 
-## Admins edit profiles live: the permission is dot-server's admin flags by account uid, the server
+## Admins edit profiles live: the permission is gs-server's admin flags by account uid, the server
 ## console edits as the process itself. Before the types seal.
 func _bind_profile_edit() -> void:
 	var rt := game.profiles.runtime
@@ -350,7 +350,7 @@ func _bind_profile_edit() -> void:
 		"Edit an NPC or weapon profile live: " + GSConsoleProfileEdit.USAGE, GSAdminFlags.CVAR)
 
 
-## dot-workbench over the profiles and the config: the F9 panel off a dedicated server, the HTTP page only with `workbench.enabled` in cfg/server.yml.
+## gs-workbench over the profiles and the config: the F9 panel off a dedicated server, the HTTP page only with `workbench.enabled` in cfg/server.yml.
 func _start_workbench(rt: GSProfileRuntime) -> void:
 	workbench = GSGameWorkbench.new()
 	workbench.name = "Workbench"
@@ -387,10 +387,10 @@ func _workbench_lines() -> PackedStringArray:
 	return PackedStringArray(["workbench    off (workbench.enabled in cfg/server.yml)"])
 
 
-## dot-team's block rules through dot-game's [GSGameNoblock]: `mp_teamblock` (0) and `mp_enemyblock` (1), `!block` and `!noblock`. A sandbox has no sides, so everybody is an enemy and blocks until they ask to pass.
+## gs-team's block rules through gs-game's [GSGameNoblock]: `mp_teamblock` (0) and `mp_enemyblock` (1), `!block` and `!noblock`. A sandbox has no sides, so everybody is an enemy and blocks until they ask to pass.
 func _bind_noblock() -> GSResult:
 	if not GSGameNoblock.available():
-		GSLog.warn(CHANNEL, "dot-team is not in this build: players block each other")
+		GSLog.warn(CHANNEL, "gs-team is not in this build: players block each other")
 		return GSResult.success(null)
 	var made := GSGameNoblock.create("game-playlot", Callable(game, "team_of_side"))
 	if not made.ok:
@@ -533,7 +533,7 @@ func _build_economy_stage() -> GSResult:
 	bridge.charge_fn = shop.charge
 	# Asked before a spawn, which is charged only once it exists. See _spawn_for.
 	bridge.may_charge_fn = shop.may_have
-	# A zee weapon's shot reaches dot-combat through this and nothing else.
+	# A zee weapon's shot reaches gs-combat through this and nothing else.
 	bridge.shot_fn = _resolve_shot
 
 	spectate = PlaylotSpectate.new()
@@ -654,7 +654,7 @@ func _build_vote_stage() -> GSResult:
 	vote.change_due.connect(_on_vote_change_due)
 
 	# Both map clocks follow the server's hibernation: they wait while nobody is here and restart when
-	# somebody joins. With `sv_hibernate_when_empty 0`, dot-vote's `empty_choice` changes the map instead.
+	# somebody joins. With `sv_hibernate_when_empty 0`, gs-vote's `empty_choice` changes the map instead.
 	if vote.director != null:
 		vote.director.follow_hibernation(server)
 	if game.maps != null:
@@ -696,8 +696,8 @@ func _wire_vote_out() -> void:
 	var commanded := vote.install_commands(self)
 	GSLog.result(CHANNEL, "the vote's commands", commanded)
 
-	# The map menu (M), dot-vote's: a holder of `sv_map_menu_flag` changes the map now through the game's
-	# own change, anybody else gets a vote. Read by name: an older dot-vote has no `map_menu`.
+	# The map menu (M), gs-vote's: a holder of `sv_map_menu_flag` changes the map now through the game's
+	# own change, anybody else gets a vote. Read by name: an older gs-vote has no `map_menu`.
 	var menu_half: Variant = vote.commands.get(&"map_menu") if vote.commands != null else null
 	if menu_half is Object:
 		(menu_half as Object).set(&"change_fn", game.change_map)

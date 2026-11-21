@@ -9,7 +9,7 @@ const PlaylotZee := preload("playlot_zee.gd")
 ##
 ## [b]A prop is inert and an entity has a script.[/b] That is the sandbox's own
 ## division and it is the right one: a crate is a shape with a mass, and a thing that
-## walks about needs code. dot-props does not know the difference and does not need
+## walks about needs code. gs-props does not know the difference and does not need
 ## to — it instantiates a scene, places it, and counts it against a budget — so the
 ## difference lives in [member GSPropDef.meta] and is applied by [Playlot] on
 ## spawn.
@@ -19,7 +19,7 @@ const PlaylotZee := preload("playlot_zee.gd")
 ## [/codeblock]
 ##
 ## [b]The script is named by PATH, and that is not a style choice.[/b] A game
-## delivered through dot-cloud is a mounted `.pck`, and **a mounted pack's
+## delivered through gs-cloud is a mounted `.pck`, and **a mounted pack's
 ## `class_name` globals are not registered in the host** — measured, and written down
 ## in game-dev/docs/bugs-found.md. So every cross-file type reference inside a pack
 ## fails to compile and the pack's scripts are dead, while `preload("res://x.gd")` and
@@ -48,7 +48,7 @@ enum Kind {
 	## [b]Still a prop, and that is the decision.[/b] It counts against the same budget,
 	## it is on the same undo stack, it goes when its owner leaves, and a gravity gun can
 	## punt it — because a car you cannot punt is not a sandbox car. What being a vehicle
-	## adds is a chassis and the handover, and both are dot-vehicle's.
+	## adds is a chassis and the handover, and both are gs-vehicle's.
 	VEHICLE,
 }
 
@@ -258,7 +258,7 @@ static func _entity_rows() -> Array:
 			"b8565d", 80.0, 4,
 			{
 				"speed": 5.0,
-				# The perception envelope, read by dot-npc through
+				# The perception envelope, read by gs-npc through
 				# `PlaylotEntity._make_npc`. `sight` replaced a `give_up_range` that
 				# the chaser applied by hand: giving up is now what happens when a
 				# target leaves the envelope and the commitment grace expires, which
@@ -272,12 +272,12 @@ static func _entity_rows() -> Array:
 			"6fae7a", 30.0, 2, {"speed": 2.5, "hop": 4.5, "turn_seconds": 1.2}],
 		[&"turret_spinner", "Spinner", "npc_spinner", Vector3(1.6, 0.5, 1.6),
 			"c9a227", 200.0, 3, {"rpm": 90.0, "shove": 9.0}],
-		# The same NPC as `npc_chaser`, with a **decision** instead of an `if`: dot-npc-ai's
+		# The same NPC as `npc_chaser`, with a **decision** instead of an `if`: gs-npc-ai's
 		# state machine and the arena shooters' characteristics table. Both are in the catalogue
 		# deliberately — the cheap one is for filling a room with and the expensive one is
 		# for the arena, and keeping both is the only honest way to say what the addon
 		# actually bought. `skill` is a per-NPC character rather than a server difficulty,
-		# which is dot-npc-ai's whole claim.
+		# which is gs-npc-ai's whole claim.
 		[&"npc_hunter", "Hunter", "npc_hunter", Vector3(0.9, 1.8, 0.9),
 			"c05a9a", 85.0, 6,
 			{
@@ -325,7 +325,7 @@ static func entity_script_paths() -> PackedStringArray:
 ## The soldiers and the rebel, split out of [method _entity_rows].
 static func _armed_rows() -> Array:
 	var rows := []
-	# Armed NPCs: dot-npc-ai's tactical brain with a zee weapon in hand. What they carry is
+	# Armed NPCs: gs-npc-ai's tactical brain with a zee weapon in hand. What they carry is
 	# the player's choice on the entities tab, or `weapon` here when they made none. A
 	# soldier is on `hostile` and fights players and rebels; a rebel is on `player`, never
 	# targets one, fights soldiers and follows whoever spawned it.
@@ -396,7 +396,7 @@ const BREAKABLE := {
 
 
 ## Things that say and hear: a button, a lever and a door, wired with the tool gun's Wire
-## mode and pressed with F. dot-props' [GSPropIO] reads `outputs` and `inputs` here; what
+## mode and pressed with F. gs-props' [GSPropIO] reads `outputs` and `inputs` here; what
 ## each one does is [Playlot]'s (`_on_io_input`, `use_prop`).
 ##
 ## [b]A door is a frozen body the server swings[/b], round the hinge on its left edge, by
@@ -567,7 +567,7 @@ static func _merged(a: Dictionary, b: Dictionary) -> Dictionary:
 ## "one description, three representations" rule the maps follow: the mass a physics gun
 ## checks and the mass the chassis puts on the rigid body are the SAME number, read from
 ## the tunables, so a catalogue saying 620 kg over a chassis saying 900 is a state this
-## build cannot reach. Two hand-kept copies is exactly the shape that gave dot-props a
+## build cannot reach. Two hand-kept copies is exactly the shape that gave gs-props a
 ## prop a gun refused for being too heavy and a gravity gun threw like a beach ball.
 static func _vehicle_prop(vehicle: GSVehicleDef) -> GSPropDef:
 	var def := GSPropDef.make(vehicle.id, PlaylotVehicles.SCENE)

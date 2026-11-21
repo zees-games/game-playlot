@@ -4,13 +4,13 @@ const PlaylotConfig := preload("../game/playlot_config.gd")
 const PlaylotPlatform := preload("../game/playlot_platform.gd")
 const PlaylotPresentation := preload("../game/playlot_presentation.gd")
 
-## Client prediction bench (dot-game's GSGameClientBench): see that class for the flags.
+## Client prediction bench (gs-game's GSGameClientBench): see that class for the flags.
 ## Playlot has no server bots, so `--bots` is ignored; `--play` supplies the movement.
 
 
 func _configure() -> void:
 	client_scene = "res://game/playlot.tscn"
-	forward_action = &"dot_fps_forward"
+	forward_action = &"gs_fps_forward"
 
 
 func _prepare(label: String) -> Variant:
@@ -44,7 +44,7 @@ func _boot_server(_bots_wanted: int, data_dir: String) -> GSNetManager:
 	platform.directory = "%s/identity" % dir
 	add_child(platform)
 	var _identity: GSResult = await platform.setup()
-	var _p: GSResult = await server.modules.load_module("res://addons/dot_platform/dot_platform_module.gd")
+	var _p: GSResult = await server.modules.load_module("res://addons/gs_platform/gs_platform_module.gd")
 	(load("res://game/playlot_module.gd") as GDScript).set("punishments_path", "%s/punishments.json" % dir)
 	var loaded: GSResult = await server.modules.load_module("res://game/playlot_module.gd")
 	if not loaded.ok:

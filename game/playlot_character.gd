@@ -2,7 +2,7 @@ extends GSPlayerModelVisual
 
 ## The player's body, drawn from a definition rather than loaded from art.
 ##
-## [b]Every other project in this family installs dot-player-char and draws nothing with
+## [b]Every other project in this family installs gs-player-char and draws nothing with
 ## it.[/b] The catalogue is built, the metrics are read, and `GSPlayerCharVisual` —
 ## the abstract node the whole addon exists to fill — has no implementation anywhere. That
 ## was survivable while every game was first-person: nobody sees their own body. It stops
@@ -76,7 +76,7 @@ func build_for(
 		rig.name = "Rig"
 		add_child(rig)
 
-	# Onto the player, which is what places it. dot-player-char does this itself now — a rig
+	# Onto the player, which is what places it. gs-player-char does this itself now — a rig
 	# kept under the visual, a plain Node, inherited no transform and stood at the world
 	# origin for every player — and this is only for the one path above where this class
 	# made the rig before the visual's own `_ready` could.
@@ -134,7 +134,7 @@ func build_for(
 		)
 
 	# Where a held weapon hangs: in front of the torso's right side, not its middle. The
-	# mount named the torso until zee-dot-weapons' world model arrived, and a rifle hung at
+	# mount named the torso until zee-gs-weapons' world model arrived, and a rifle hung at
 	# the torso's centre is a rifle inside a capsule with two pixels of barrel showing.
 	var hand := Node3D.new()
 	hand.name = "RightHand"
@@ -181,10 +181,10 @@ func face_basis(basis: Basis) -> void:
 
 ## Sits the body down, or stands it up.
 ##
-## [b]A rider was drawn as a standing 1.8 m figure.[/b] dot-vehicle carries the rider's node
+## [b]A rider was drawn as a standing 1.8 m figure.[/b] gs-vehicle carries the rider's node
 ## to the seat — its origin is where the rider sits — and the body hangs off that node, so a
 ## passenger in the open buggy stood bolt upright through the seat with their legs through
-## the floor and their head two metres above it. The body is primitives, and dot-player-char's
+## the floor and their head two metres above it. The body is primitives, and gs-player-char's
 ## locomotion set has no sitting clip to play, so the pose is the parts moved: the legs laid
 ## forward at seat height, the torso on the seat, the head and the facing mark with it. The
 ## seat offset is the SEAT, not the floor, which is why the torso starts at zero here.
@@ -213,7 +213,7 @@ func move_person(motion: Dictionary) -> void:
 	if person == null:
 		return
 	var delta: float
-	if GSAddonApi.build_level("dot_player_char") >= 11:
+	if GSAddonApi.build_level("gs_player_char") >= 11:
 		# Game time, as the body moves: a wall-clock step skated the feet in slow motion.
 		delta = person.frame_delta()
 	else:
