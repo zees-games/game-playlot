@@ -19,6 +19,7 @@ version: 0.0.0
 kind: pack
 
 name: "Zee's Playlot"
+icon: branding/icon.png
 max_players: 32
 
 scene: scenes/pg_server.tscn
