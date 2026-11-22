@@ -283,7 +283,7 @@ const CFG_FILES := {
 
 ## The game's own id since the rename, and the ids it had before (oldest first).
 const GAME_ID := "game-playlot"
-const FORMER_IDS: PackedStringArray = ["game-playlot"]  # legacy id: operator cfg/rotation keys written before the rename
+const FORMER_IDS: PackedStringArray = ["game-playground"]  # legacy id: operator cfg/rotation keys written before the rename
 
 
 ## Declares the rename to gs-core (API 31), so a deployment's `cfg/game/game-playlot/` tiers and

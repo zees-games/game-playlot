@@ -43,7 +43,7 @@ func _run() -> void:
 	_entered += 1
 	var config := PlaylotConfig.new()
 	var binder := PlaylotConfig.make_binder(config)
-	_check(GSAddonConfig.game_names("game-playlot") == PackedStringArray(["game-playlot", "game-playlot"]), "the binder registers game-playlot as game-playlot's former id", str(GSAddonConfig.game_names("game-playlot")))  # legacy id
+	_check(GSAddonConfig.game_names("game-playlot") == PackedStringArray(["game-playground", "game-playlot"]), "the binder registers game-playground as game-playlot's former id", str(GSAddonConfig.game_names("game-playlot")))  # legacy id
 	binder.strict = true
 	_check(binder.load_layers().ok, "defaults load")
 	_check(binder.diff().is_empty(), "no diff at the code defaults")
