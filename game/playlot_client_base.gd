@@ -236,6 +236,8 @@ func _build_gate() -> void:
 	add_child(platform)
 	gate = platform.gate
 	gate.name = "LoadGate"
+	if gate.has_method(&"watch_content"):
+		gate.watch_content()  # dot-core 43: downloads and quota errors show a bottom-right bar, even with no cover
 	gate.hold(&"map", "Loading the map")
 	platform.input_blocked_changed.connect(_suspend_input)
 
@@ -247,7 +249,12 @@ func _wire_gate_to_maps() -> void:
 	_build_prewarm()
 	gate.release(&"map")
 	playlot.maps.changing.connect(
-		func(_from: DotMapDef, _to: DotMapDef) -> void: gate.hold(&"map", "Loading the map")
+		func(_from: DotMapDef, _to: DotMapDef) -> void:
+			# hold_shown (dot-core 43) waits a frame so the cover is drawn before the heavy unload.
+			if gate.has_method(&"hold_shown"):
+				await gate.hold_shown(&"map", "Loading the map")
+			else:
+				gate.hold(&"map", "Loading the map")
 	)
 	playlot.maps.changed.connect(
 		func(_map: DotMapDef, _loaded: Node) -> void: gate.release(&"map")
