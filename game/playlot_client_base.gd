@@ -240,6 +240,8 @@ func _build_gate() -> void:
 	add_child(platform)
 	gate = platform.gate
 	gate.name = "LoadGate"
+	if gate.has_method(&"watch_content"):
+		gate.watch_content()  # gs-core 44: downloads and quota errors show a bottom-right bar, even with no cover
 	gate.hold(&"map", "Loading the map")
 	platform.input_blocked_changed.connect(_suspend_input)
 
@@ -251,7 +253,12 @@ func _wire_gate_to_maps() -> void:
 	_build_prewarm()
 	gate.release(&"map")
 	playlot.maps.changing.connect(
-		func(_from: GSMapDef, _to: GSMapDef) -> void: gate.hold(&"map", "Loading the map")
+		func(_from: GSMapDef, _to: GSMapDef) -> void:
+			# hold_shown (gs-core 44) waits a frame so the cover is drawn before the heavy unload.
+			if gate.has_method(&"hold_shown"):
+				await gate.hold_shown(&"map", "Loading the map")
+			else:
+				gate.hold(&"map", "Loading the map")
 	)
 	playlot.maps.changed.connect(
 		func(_map: GSMapDef, _loaded: Node) -> void: gate.release(&"map")
