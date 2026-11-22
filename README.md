@@ -219,6 +219,7 @@ An optional pack can add weapons, NPCs and bots to the Q menu by shipping `addon
 
 | Asset | Author / source | License |
 | --- | --- | --- |
+| Godot Engine logo (boot splash) | Andrea Calabró, [godotengine.org](https://godotengine.org/press/) | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) |
 | Weapons | [zee-gs-weapons](https://github.com/zees-games/zee-gs-weapons), which credits its own art | See that repository |
 | Block props, menu icons | Drawn from their definitions | None needed |
 | Model props | Kenney: [Furniture Kit](https://kenney.nl/assets/furniture-kit), [Food Kit](https://kenney.nl/assets/food-kit), [Survival Kit](https://kenney.nl/assets/survival-kit), [Nature Kit](https://kenney.nl/assets/nature-kit), [Mini Market](https://kenney.nl/assets/mini-market) (also Fleur Keijsers and Guus Vermeulen), listed in `assets/props/*/props.json` | CC0 1.0 |
