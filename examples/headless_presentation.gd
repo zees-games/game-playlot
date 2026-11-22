@@ -16,8 +16,8 @@ extends "res://examples/headless_presentation_chat_and_touch.gd"
 ## Exits non-zero on any failure.
 
 
-const CHECKS := 179
-const SECTIONS := 19
+const CHECKS := 182
+const SECTIONS := 20
 
 ## The player's own settings directory as it was before this run: every file's name,
 ## modification time and digest. Checked at the end; see
@@ -62,6 +62,7 @@ func _run() -> void:
 	_test_every_sound_has_a_voice()
 	_test_ambience_is_quiet_and_obeys_settings()
 	_test_the_vote_is_heard()
+	_test_texture_quality_reaches_the_map_art()
 
 	# A settings manager writes on a debounce, and a freed one writes in `_exit_tree`:
 	# the Escape menu section's presentation is queued for freeing and only reaches the
@@ -413,4 +414,25 @@ func _test_party_over_http() -> void:
 	ada.leave()
 	for node: Node in [ada, bob, carol, stub]:
 		node.queue_free()
+	_done()
+
+
+func _test_texture_quality_reaches_the_map_art() -> void:
+	_section("The video setting's texture quality caps the map art")
+	var p := _make()
+	GSMapTextureTier.current_quality = -1
+	p.settings.set_value(&"texture_quality", 3)
+	var q: int = int(p.settings.get_value(&"texture_quality"))
+	GSMapTextureTier.follow(p.settings)
+	_check(GSMapTextureTier.current_quality == int(q), "the presentation's settings drive the tier", str(GSMapTextureTier.current_quality))
+	p.settings.set_value(&"texture_quality", 0)
+	var s := GSMapSurfaces.new()
+	var applied: Dictionary = GSMapTextureTier.apply_current(s)
+	_check(GSMapTextureTier.current_quality == 0 and s.max_texture_size == 512 and not applied.is_empty(), "low texture quality caps the map's surfaces at 512", str(s.max_texture_size))
+	p.settings.set_value(&"texture_quality", 3)
+	var u := GSMapSurfaces.new()
+	GSMapTextureTier.apply_current(u)
+	_check(u.max_texture_size == 0, "ultra leaves them unlimited", str(u.max_texture_size))
+	GSMapTextureTier.current_quality = -1
+	p.queue_free()
 	_done()
