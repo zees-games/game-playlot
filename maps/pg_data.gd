@@ -444,6 +444,7 @@ static func validate(d: Dictionary) -> GSResult:
 static func build_into(parent: Node3D, d: Dictionary) -> Array:
 	PlaylotGeometry.light(parent, d.get("lighting", {}))
 	var liquids: Array = []
+	var volume_groups := {}
 	var boxes: Array = d.get("boxes", [])
 	for i in boxes.size():
 		var b: Dictionary = boxes[i]
@@ -456,13 +457,18 @@ static func build_into(parent: Node3D, d: Dictionary) -> Array:
 		var at := _vec(b["at"])
 		var size := _vec(b["size"])
 		if material != "" and PlaylotMaterials.is_volume(material):
-			var mesh := _liquid_mesh(at, size, colour, i)
+			var vbasis := Basis.IDENTITY
 			if b.has("turn"):
 				var t: Array = b["turn"]
 				var axis := Vector3(float(t[0]), float(t[1]), float(t[2]))
 				if axis.length() > 0.0:
-					mesh.basis = Basis(axis.normalized(), deg_to_rad(float(t[3])))
-			parent.add_child(mesh)
+					vbasis = Basis(axis.normalized(), deg_to_rad(float(t[3])))
+			var cell := Vector2i(floori(at.x / VOLUME_CELL), floori(at.z / VOLUME_CELL))
+			var key := [colour, cell]
+			if not volume_groups.has(key):
+				volume_groups[key] = {"first": i, "xforms": [], "sizes": [], "colour": colour}
+			(volume_groups[key]["xforms"] as Array).append(Transform3D(vbasis, at))
+			(volume_groups[key]["sizes"] as Array).append(size)
 			if PlaylotMaterials.is_liquid(material):
 				liquids.append({"box": AABB(at - size * 0.5, size), "material": StringName(material), "index": i})
 			continue
@@ -483,19 +489,50 @@ static func build_into(parent: Node3D, d: Dictionary) -> Array:
 		body.set_meta(&"pg_box", i)
 		if material != "":
 			PlaylotMaterials.apply(body, material)
+	for group: Dictionary in volume_groups.values():
+		parent.add_child(_volume_batch(group))
 	return liquids
 
 
-## A liquid's volume, drawn and nothing else: no body, so nothing stands on it and the
-## survey (which reads static bodies) sees the bed under it.
-static func _liquid_mesh(at: Vector3, size: Vector3, colour: Color, index: int) -> MeshInstance3D:
+## Side of a cell, in metres, that same-look liquid and foliage volumes are folded within.
+const VOLUME_CELL := 64.0
+
+
+## The volumes of one look in one cell, drawn as ONE mesh and nothing else: no body, so nothing
+## stands on it and the survey (which reads static bodies) sees the bed under it. Named for the
+## group's first box (`Liquid<index>`); the `liquid_volumes` records still list every box.
+static func _volume_batch(group: Dictionary) -> MeshInstance3D:
+	var verts := PackedVector3Array()
+	var normals := PackedVector3Array()
+	var uvs := PackedVector2Array()
+	var indices := PackedInt32Array()
+	var unit := BoxMesh.new()
+	var xforms: Array = group["xforms"]
+	var sizes: Array = group["sizes"]
+	for n in xforms.size():
+		unit.size = sizes[n]
+		var arrays := unit.get_mesh_arrays()
+		var xf: Transform3D = xforms[n]
+		var base := verts.size()
+		for v: Vector3 in arrays[Mesh.ARRAY_VERTEX]:
+			verts.append(xf * v)
+		for nv: Vector3 in arrays[Mesh.ARRAY_NORMAL]:
+			normals.append(xf.basis * nv)
+		uvs.append_array(arrays[Mesh.ARRAY_TEX_UV])
+		for ix: int in arrays[Mesh.ARRAY_INDEX]:
+			indices.append(base + ix)
+	var data := []
+	data.resize(Mesh.ARRAY_MAX)
+	data[Mesh.ARRAY_VERTEX] = verts
+	data[Mesh.ARRAY_NORMAL] = normals
+	data[Mesh.ARRAY_TEX_UV] = uvs
+	data[Mesh.ARRAY_INDEX] = indices
+	var array_mesh := ArrayMesh.new()
+	array_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, data)
 	var mesh := MeshInstance3D.new()
-	mesh.name = "Liquid%d" % index
-	var box_mesh := BoxMesh.new()
-	box_mesh.size = size
-	mesh.mesh = box_mesh
-	mesh.position = at
-	mesh.material_override = PlaylotGeometry._material(colour)
+	mesh.name = "Liquid%d" % int(group["first"])
+	mesh.mesh = array_mesh
+	mesh.material_override = PlaylotGeometry._material(group["colour"])
 	mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	# Water, lava and foliage have no collider by design: a body is swum or pushed through,
 	# not stood on, and the bed under it is solid. The audit's lenient pass would pass it on

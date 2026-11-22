@@ -79,11 +79,19 @@ static func box(
 	mesh.mesh = box_mesh
 
 	mesh.material_override = _material(colour)
+	_see_through_casts_no_shadow(mesh, colour)
 
 	body.add_child(mesh)
 	parent.add_child(body)
 
 	return body
+
+
+## A see-through box (glass, water, ice) casts no shadow: the shadow passes drew it as a solid slab, one extra
+## draw per pane per shadow pass (pgc_town has 104 panes).
+static func _see_through_casts_no_shadow(mesh: MeshInstance3D, colour: Color) -> void:
+	if colour.a < 0.999:
+		mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
 
 ## A box that is drawn and nothing else: no body, no collision.
@@ -99,6 +107,7 @@ static func panel(
 	box_mesh.size = size
 	mesh.mesh = box_mesh
 	mesh.material_override = _material(colour)
+	_see_through_casts_no_shadow(mesh, colour)
 	mesh.position = at
 	# Passable by design (this function's whole point): said so to gs-core's collision audit,
 	# so a panel is not one of the findings that a real missing collider would be.
