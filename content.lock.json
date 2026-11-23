@@ -7,20 +7,17 @@
 			"id": "gamemann/game-playlot",
 			"into": "",
 			"kind": "pack",
-			"manifest_sha256": "d753ff1aee27f34c83449c44af044fe8fb1c8f2ebb1b9bdb70272d5a3adae4a1",
-			"manifest_sha256_by_origin": {
-				"https://dev.dotgames.org/content": "098afc2b99c4b6cd077ddd840763d6bcaf203545b4beef313848bc01c2c8c61a"
-			},
+			"manifest_sha256": "6c40d3c24ce6299761edb9ee6e62e4e722762e3ffa98499e49a6219d261fb8c6",
 			"optional": false,
-			"version": "0.1.19"
+			"version": "0.1.38"
 		},
 		{
 			"id": "gamemann/game-playlot",
 			"into": "",
 			"kind": "pack",
-			"manifest_sha256": "ac29ea7d34a2340935f2fe4900ec2f39be9201a10f3780bcf3d960c9a62de0c9",
+			"manifest_sha256": "6c40d3c24ce6299761edb9ee6e62e4e722762e3ffa98499e49a6219d261fb8c6",
 			"optional": false,
-			"version": "0.1.35"
+			"version": "0.1.38"
 		}
 	]
 }
