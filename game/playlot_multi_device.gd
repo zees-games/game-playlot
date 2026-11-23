@@ -10,6 +10,7 @@ extends Node3D
 ## (group `gs_view_model`). The worn kind hangs from a figure's wrist mount for everyone else and third person.
 
 const PlaylotMultitool := preload("playlot_multitool.gd")
+const PlaylotPaths := preload("playlot_paths.gd")
 const PlaylotMultiIcons := preload("playlot_multi_icons.gd")
 const PlaylotMultiEffects := preload("playlot_multi_effects.gd")
 
@@ -91,7 +92,7 @@ var _time := 0.0
 ## Builds a device. [param camera] set makes the first-person one, put under it; [param arms] worn by the
 ## avatar's own view arms (the caller feeds [method wear] each frame after their tick).
 static func make(camera: Camera3D = null, arms := false) -> Node3D:
-	var device := (load("res://game/playlot_multi_device.gd") as GDScript).new() as Node3D
+	var device := (load(PlaylotPaths.rebase("res://game/playlot_multi_device.gd")) as GDScript).new() as Node3D
 	device.name = "MultiDevice"
 	device.set(&"on_arms", arms and camera != null)
 	device.call("_build", camera)

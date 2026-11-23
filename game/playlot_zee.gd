@@ -3,6 +3,8 @@ extends RefCounted
 const PlaylotPaths := preload("playlot_paths.gd")
 const PlaylotWeaponDef := preload("weapons/playlot_weapon_def.gd")
 const PlaylotZeeSelf := preload("playlot_zee.gd")
+## Zee's art, models and sounds ([code]playlot_zee_art.gd[/code]).
+const Art := preload("playlot_zee_art.gd")
 
 ## zee-gs-weapons in the sandbox, when the player has it: twenty-seven real weapons beside the toys.
 ##
@@ -129,8 +131,8 @@ static func make(rel: String) -> Object:
 	return s.new() as Object if s != null else null
 
 
-## Whether [param s] is, or extends, zee's script [param rel].
-static func _extends(x: Variant, rel: String) -> bool:
+## Whether [param x] is, or extends, zee's script [param rel].
+static func extends_zee(x: Variant, rel: String) -> bool:
 	if not (x is Object) or not is_instance_valid(x):
 		return false
 	var want := zee_script(rel)
@@ -146,7 +148,7 @@ static func _extends(x: Variant, rel: String) -> bool:
 
 ## Whether [param x] is a live weapon rig.
 static func is_rig(x: Variant) -> bool:
-	return _extends(x, PROBE)
+	return extends_zee(x, PROBE)
 
 
 ## [param node]'s `zee_rig`, when it is a live rig; else null.
@@ -164,11 +166,11 @@ static func rig_class() -> StringName:
 
 
 static func is_world_model(x: Variant) -> bool:
-	return _extends(x, "view/zee_world_model.gd")
+	return extends_zee(x, "view/zee_world_model.gd")
 
 
 static func is_view_model(x: Variant) -> bool:
-	return _extends(x, "view/zee_view_model.gd")
+	return extends_zee(x, "view/zee_view_model.gd")
 
 
 # --- Catalogue -------------------------------------------------------------------
@@ -241,7 +243,7 @@ static func _art_for(def: GSWeaponDef, provider: Object, asked: Dictionary = {})
 			asked[key] = _provider_answers(provider)
 		answers = asked[key]
 	var art: Variant = (answers.get("arts", {}) as Dictionary).get(def.id)
-	if _extends(art, "art/zee_weapon_art.gd"):
+	if extends_zee(art, "art/zee_weapon_art.gd"):
 		return art
 	var rows: Variant = answers.get("rows", {})
 	var copy: Variant = call_static("content/zee_pack_source.gd", &"_base_for", [def])
@@ -258,7 +260,7 @@ static func _provider_answers(provider: Object) -> Dictionary:
 	var arts := {}
 	if provider.has_method(&"weapon_art"):
 		for art: Variant in provider.call(&"weapon_art"):
-			if _extends(art, "art/zee_weapon_art.gd"):
+			if extends_zee(art, "art/zee_weapon_art.gd"):
 				var id: StringName = (art as Object).get(&"id")
 				if not arts.has(id):
 					arts[id] = art
@@ -359,7 +361,7 @@ static func zee_id(def: PlaylotWeaponDef) -> StringName:
 ## [param role] is the rig's ([constant ROLE_SERVER] draws nothing, [constant ROLE_LOCAL] draws
 ## into [param view_model]). [param authority] is false only on a connected client, whose rig
 ## animates the hands and decides nothing — the server's rig is the one whose shots land.
-## [param ads_rules] is the game's zee ads rules ([method load_ads_rules]; null keeps the art's own).
+## [param ads_rules] is the game's zee ads rules (`Art.load_ads_rules()`; null keeps the art's own).
 static func arm(
 	player: Node3D,
 	def: PlaylotWeaponDef,
@@ -712,130 +714,6 @@ static func shove_props(
 
 
 # --- Views -----------------------------------------------------------------------
-
-## What everybody else sees in [param player]'s hands: [param def]'s gun, or nothing.
-##
-## Zee's world model on the character's `right_hand` mount, built on a CLIENT from the
-## server's WEAPON event, so a remote player's gun is drawn, kicks when
-## [PlaylotPlayerNet]'s fire counter moves, and goes when they put it away. Idempotent:
-## the same weapon twice keeps the model it has. Nothing without zee.
-static func show_held(player: Node, def: PlaylotWeaponDef) -> void:
-	if player == null:
-		return
-
-	var held: Variant = player.get("zee_world")
-	var model: Variant = held if is_world_model(held) else null
-
-	if not is_zee(def) or not available():
-		if model != null:
-			(model as Node).queue_free()
-		player.set("zee_world", null)
-		return
-
-	var id := zee_id(def)
-	if model != null and model.equipped() == id:
-		return
-
-	var art: Variant = art_for(id)
-	if art == null:
-		return
-
-	if model == null:
-		model = new_world_model()
-		if model == null:
-			return
-		if not model.attach_to(player.get("character")):
-			(model as Node).free()
-			return
-		player.set("zee_world", model)
-
-	var _equipped: Variant = model.equip(art)
-
-
-## A fresh world model (a [Node3D]), or null.
-static func new_world_model() -> Node3D:
-	var model := make("view/zee_world_model.gd") as Node3D
-	if model != null:
-		model.name = "ZeeHeld"
-	return model
-
-
-## A fresh first-person view model (a [Node3D]), or null.
-static func new_view_model() -> Node3D:
-	return make("view/zee_view_model.gd") as Node3D
-
-
-## Zee's scope overlay (a [Control]), or null.
-static func new_scope_overlay() -> Control:
-	return make("view/zee_scope_overlay.gd") as Control
-
-
-## Zee's art for weapon [param id], or null.
-static func art_for(id: StringName) -> Resource:
-	var table: Variant = call_static("art/zee_weapon_art_table.gd", &"table", [], {})
-	var art: Variant = (table as Dictionary).get(id) if table is Dictionary else null
-	return art as Resource if _extends(art, "art/zee_weapon_art.gd") else null
-
-
-## Zee's whole weapon table (id -> art), or {}.
-static func weapon_table() -> Dictionary:
-	var table: Variant = call_static("content/zee_weapon_pack.gd", &"table", [], {})
-	return table if table is Dictionary else {}
-
-
-## The game's ads rules (zee's `load_config()`), or null.
-static func load_ads_rules() -> Resource:
-	var rules: Variant = call_static("content/zee_ads_rules.gd", &"load_config")
-	return rules as Resource if rules is Resource else null
-
-
-## Zee's shot effects to warm under the loading cover, or [].
-static func shot_fx_warm() -> Array:
-	var warm: Variant = call_static("view/zee_shot_fx.gd", &"warm", [], [])
-	return warm if warm is Array else []
-
-
-## Points zee's art at this game's copy of it: `res://assets/` built in, the mount in a pack.
-static func use_this_games_art() -> void:
-	var _set: Variant = call_static("art/zee_model_cache.gd", &"set_asset_root", [PlaylotPaths.root()])
-
-
-## Puts zee's art back where a built-in game keeps it, for whatever the shell loads next.
-static func release_art() -> void:
-	var _set: Variant = call_static("art/zee_model_cache.gd", &"set_asset_root", ["res://"])
-
-
-# --- Sound -----------------------------------------------------------------------
-
-const SHOT_LAYERS := "view/zee_shot_layers.gd"
-const WEAPON_SOUND := "view/zee_weapon_sound.gd"
-
-
-## Whether zee's layered shot player can run (zee and gs-audio both here).
-static func shot_layers_available() -> bool:
-	return call_static(SHOT_LAYERS, &"available", [], false) == true
-
-
-## A fresh layered shot player (a [Node]), or null.
-static func new_shot_layers() -> Node:
-	return make(SHOT_LAYERS) as Node
-
-
-## gs-audio's shot class for zee's sound class [param weapon_class], or empty.
-static func layer_shot_class(weapon_class: StringName) -> StringName:
-	return StringName(str(call_static(SHOT_LAYERS, &"shot_class", [weapon_class], &"")))
-
-
-## Zee's sound class for [param id] and [param kind], or empty.
-static func sound_class_for(id: StringName, kind: Variant) -> StringName:
-	return StringName(str(call_static(WEAPON_SOUND, &"class_for", [id, kind], &"")))
-
-
-## Zee's sound for [param id] and [param kind], or null.
-static func sound_stream_for(id: StringName, kind: Variant) -> AudioStream:
-	var stream: Variant = call_static(WEAPON_SOUND, &"stream_for", [id, kind])
-	return stream as AudioStream if stream is AudioStream else null
-
 
 # --- Net -------------------------------------------------------------------------
 

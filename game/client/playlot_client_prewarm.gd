@@ -311,7 +311,7 @@ func _items_for(phase: Phase) -> Array:
 			var out: Array = []
 			for def in PlaylotZee.defs():
 				if PlaylotZee.is_zee(def):
-					var art := PlaylotZee.art_for(PlaylotZee.zee_id(def))
+					var art := PlaylotZee.Art.art_for(PlaylotZee.zee_id(def))
 					if art != null:
 						out.append(art)
 			return out
@@ -404,7 +404,7 @@ func _warm_one_inner(phase: Phase, item: Variant) -> void:
 		Phase.PROPS:
 			_warm_prop(item as GSPropDef)
 		Phase.SHOT_FX:
-			_hand(PlaylotZee.shot_fx_warm())
+			_hand(PlaylotZee.Art.shot_fx_warm())
 			if shot_sound != null and is_instance_valid(shot_sound):
 				var _layers_ready: bool = shot_sound.call(&"warm")
 		Phase.MUZZLE:
@@ -456,7 +456,7 @@ func _warm_weapon(art: Resource) -> void:
 	if art == null:
 		return
 	if _spare_view == null:
-		_spare_view = PlaylotZee.new_view_model()
+		_spare_view = PlaylotZee.Art.new_view_model()
 		if _spare_view == null:
 			return
 		_spare_view.name = "PrewarmView"

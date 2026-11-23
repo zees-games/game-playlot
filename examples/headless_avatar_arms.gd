@@ -196,7 +196,7 @@ func _test_remote() -> void:
 	var changed: PackedStringArray = []
 	var missing: PackedStringArray = []
 	for def in _weapons():
-		PlaylotZee.show_held(remote, def)
+		PlaylotZee.Art.show_held(remote, def)
 		await get_tree().process_frame
 		var world := remote.zee_world as ZeeWorldModel
 		if _bare(def):

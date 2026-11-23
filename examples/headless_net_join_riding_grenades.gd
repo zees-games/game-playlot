@@ -326,7 +326,7 @@ func _test_zee_over_the_wire_2() -> void:
 
 	# Somebody arriving now was never sent the WEAPON event: READY replays what everybody
 	# holds. Armed: without the `_tool_of` loop in `_admit` this fails.
-	PlaylotZee.show_held(_zotw_mirror, null)
+	PlaylotZee.Art.show_held(_zotw_mirror, null)
 	await get_tree().process_frame
 	_client_bridge.ask_ready()
 	_exchange()

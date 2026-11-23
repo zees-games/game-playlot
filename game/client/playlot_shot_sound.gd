@@ -23,10 +23,10 @@ var _heard := false
 func warm() -> bool:
 	if _layers != null:
 		return bool(_layers.call(&"is_ready"))
-	if not _usable or not PlaylotZee.shot_layers_available():
+	if not _usable or not PlaylotZee.Art.shot_layers_available():
 		_usable = false
 		return false
-	_layers = PlaylotZee.new_shot_layers()
+	_layers = PlaylotZee.Art.new_shot_layers()
 	if _layers == null:
 		_usable = false
 		return false
@@ -51,8 +51,8 @@ func attach(fx: Object) -> void:
 ## `ZeeShotFx.shot_sound`, bound to its fx: false for a class with no stock shot, or with layered shots off on the
 ## fx, leaves the fx's own sound.
 func _play(id: StringName, kind: StringName, at: Vector3, _indoors: bool, fx: Object) -> bool:
-	var weapon_class := PlaylotZee.sound_class_for(id, kind)
-	if PlaylotZee.layer_shot_class(weapon_class) == &"" or not is_inside_tree():
+	var weapon_class := PlaylotZee.Art.sound_class_for(id, kind)
+	if PlaylotZee.Art.layer_shot_class(weapon_class) == &"" or not is_inside_tree():
 		return false
 	if fx == null or not is_instance_valid(fx) or not bool(fx.get(&"layered_shots")) or not warm():
 		return false
@@ -61,7 +61,7 @@ func _play(id: StringName, kind: StringName, at: Vector3, _indoors: bool, fx: Ob
 		return false
 	_heard = true
 	played += 1
-	fx.emit_signal(&"heard", PlaylotZee.sound_stream_for(id, kind))
+	fx.emit_signal(&"heard", PlaylotZee.Art.sound_stream_for(id, kind))
 	return true
 
 

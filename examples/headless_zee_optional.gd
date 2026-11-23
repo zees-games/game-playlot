@@ -70,7 +70,7 @@ func _present() -> Array:
 	_check(PlaylotZee.is_rig(rig) and PlaylotZee.arsenal_of(rig) != null, "a server rig arms with it")
 	var command := PlaylotZee.command_for(0, 0.0, 0.0, PlaylotZee.slot_of(rig))
 	_check(PlaylotZee.simulate(rig, command, 1) != null, "and ticks through the facade")
-	var view := PlaylotZee.new_view_model()
+	var view := PlaylotZee.Art.new_view_model()
 	_check(PlaylotZee.rig_class() != &"" and view is Node3D, "the view model is zee's")
 	if view != null:
 		view.free()
@@ -104,10 +104,10 @@ func _absent(present_specs: Array) -> void:
 	_check(PlaylotZee.arsenal_of(null) == null and PlaylotZee.current_def(null) == null, "nor holds anything")
 	body.free()
 
-	_check(PlaylotZee.new_view_model() == null and PlaylotZee.new_world_model() == null, "no view or world model")
-	_check(PlaylotZee.new_scope_overlay() == null and PlaylotZee.load_ads_rules() == null, "no scope and no ads rules")
-	_check(PlaylotZee.weapon_table().is_empty() and PlaylotZee.art_for(&"smg") == null, "no art")
-	_check(PlaylotZee.shot_fx_warm().is_empty() and PlaylotZee.rig_class() == &"", "nothing to prewarm")
+	_check(PlaylotZee.Art.new_view_model() == null and PlaylotZee.Art.new_world_model() == null, "no view or world model")
+	_check(PlaylotZee.Art.new_scope_overlay() == null and PlaylotZee.Art.load_ads_rules() == null, "no scope and no ads rules")
+	_check(PlaylotZee.Art.weapon_table().is_empty() and PlaylotZee.Art.art_for(&"smg") == null, "no art")
+	_check(PlaylotZee.Art.shot_fx_warm().is_empty() and PlaylotZee.rig_class() == &"", "nothing to prewarm")
 
 	var hud := PlaylotHud.new()
 	add_child(hud)

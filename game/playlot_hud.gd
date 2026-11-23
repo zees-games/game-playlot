@@ -156,7 +156,7 @@ func _ready() -> void:
 	# A crosshair, because every tool here is aimed. Under it and the pieces: the scope is the
 	# view, the HUD reads over it.
 	# Zee's scope, when the zee_weapons addon is installed; without it there is no scoped gun.
-	scope = PlaylotZee.new_scope_overlay()
+	scope = PlaylotZee.Art.new_scope_overlay()
 	if scope != null:
 		scope.name = "Scope"
 		add_child(scope)

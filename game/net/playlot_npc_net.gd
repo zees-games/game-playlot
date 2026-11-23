@@ -93,12 +93,12 @@ func _show_weapon() -> void:
 		_hands.position = Vector3(0.35, 0.25, -0.35)
 
 	# Without the zee_weapons addon there is no art and no model: the NPC is seen unarmed.
-	var art := PlaylotZee.art_for(PlaylotZee.zee_id(PlaylotZee.find_def(StringName(net_weapon))))
+	var art := PlaylotZee.Art.art_for(PlaylotZee.zee_id(PlaylotZee.find_def(StringName(net_weapon))))
 
 	if art == null:
 		return
 
-	_model = PlaylotZee.new_world_model()
+	_model = PlaylotZee.Art.new_world_model()
 
 	if _model == null:
 		return

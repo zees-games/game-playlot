@@ -96,7 +96,7 @@ const WALK_RUN := 90
 
 
 ## `--zee=<id>`: the other player is handed that zee weapon and holds fire, so the frames
-## show the gun a client draws in somebody else's hands (`PlaylotZee.show_held`).
+## show the gun a client draws in somebody else's hands (`PlaylotZee.Art.show_held`).
 var _zee: StringName = &""
 
 ## `--hold`: the other player carries a crate on the physics gun, holding fire on the SERVER's

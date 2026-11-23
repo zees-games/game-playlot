@@ -305,7 +305,7 @@ func _exit_tree() -> void:
 		presentation.profile_link.release()
 		presentation.profile_link = null
 	# A static outlives the game: the next one the shell loads must not look for its art here.
-	PlaylotZee.release_art()
+	PlaylotZee.Art.release_art()
 
 
 ## Where a roster row's player stands, for gs-game's look-to-gag key (J, L).

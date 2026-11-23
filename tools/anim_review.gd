@@ -250,7 +250,7 @@ func _stage_views() -> void:
 		if not me.character.is_body_visible():
 			me.character.set_shown(true)
 		if me.zee_world == null and _client.playlot != null:
-			PlaylotZee.show_held(me, _client.playlot.weapon_def(_client.tool))
+			PlaylotZee.Art.show_held(me, _client.playlot.weapon_def(_client.tool))
 		_tag(me.character, BODY_LAYER)
 		if me.zee_world != null and is_instance_valid(me.zee_world):
 			for mesh in me.zee_world.find_children("*", "GeometryInstance3D", true, false):

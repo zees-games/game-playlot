@@ -124,7 +124,7 @@ var zee_rig: Node = null
 var zee_quiet: float = 0.0
 
 ## The zee weapon everybody else sees in this player's hands (zee's world model), or null.
-## Built on a client from the server's WEAPON event by [method PlaylotZee.show_held].
+## Built on a client from the server's WEAPON event by [method PlaylotZee.Art.show_held].
 var zee_world: Node3D = null
 
 ## The weapon [method _hold_kind_now] last looked up, and the arms it is held with.
@@ -335,7 +335,7 @@ func _hold_kind_now() -> int:
 	var id: StringName = model.equipped()
 	if id != _hold_id:
 		_hold_id = id
-		var art := PlaylotZee.art_for(id)
+		var art := PlaylotZee.Art.art_for(id)
 		var pose: StringName = art.get(&"pose") if art != null else &""
 		if pose == &"" or not bool(art.call(&"has_model")) or pose == PlaylotZee.POSE_THROWN:
 			_hold_kind = GSHumanoidFigure.Hold.NONE

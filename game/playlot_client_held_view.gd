@@ -17,7 +17,7 @@ func _arm_zee(def: PlaylotWeaponDef) -> bool:
 		return false
 
 	# Without the zee_weapons addon there are no zee hands; the caller falls back.
-	zee_view = PlaylotZee.new_view_model()
+	zee_view = PlaylotZee.Art.new_view_model()
 	if zee_view == null:
 		return false
 	zee_view.name = "ZeeHands"
@@ -48,7 +48,7 @@ func _arm_zee(def: PlaylotWeaponDef) -> bool:
 	# Connected, the server's WEAPON event draws it (`PlaylotNetBridge`); offline nobody
 	# sends one, and the gun still belongs in the hands a third-person camera shows.
 	if bridge == null:
-		PlaylotZee.show_held(player, def)
+		PlaylotZee.Art.show_held(player, def)
 
 	return true
 
@@ -70,7 +70,7 @@ func _disarm_zee() -> void:
 	if player != null and is_instance_valid(player):
 		PlaylotZee.disarm(player)
 		if bridge == null:
-			PlaylotZee.show_held(player, null)
+			PlaylotZee.Art.show_held(player, null)
 
 	if zee_view != null and is_instance_valid(zee_view):
 		# queue_free is deferred: the dying model would emit once more and re-seat the arms.

@@ -17,7 +17,7 @@ func _ready() -> void:
 		config = PlaylotConfig.new()
 
 	# zee-gs-weapons' art is this game's copy of it, wherever this game is mounted.
-	PlaylotZee.use_this_games_art()
+	PlaylotZee.Art.use_this_games_art()
 
 	# The NPCs' clip sets, on a worker while the map below loads, not on the main thread under the cover.
 	var _clips := PlaylotClientPrewarm.prefetch(config)

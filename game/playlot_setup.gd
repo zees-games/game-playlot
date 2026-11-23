@@ -288,7 +288,7 @@ var toy_rules: GSPropBodyRules = GSPropBodyRules.new()
 
 ## Aim-down-sights numbers (`zee_ads_rules`, REPLICATED): the server's cfg over the shipped defaults, handed to every Zee rig.
 ## Bound by the module and followed by a client. Null without zee-gs-weapons ([PlaylotZee]).
-var ads_rules: Resource = PlaylotZee.load_ads_rules()
+var ads_rules: Resource = PlaylotZee.Art.load_ads_rules()
 ## `sv_grenade_*`, kept across maps so a cvar bound once survives the projectile layer's rebuild.
 var grenade_rules := AwGrenadeRules.new()
 

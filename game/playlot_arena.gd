@@ -704,7 +704,7 @@ func _on_killed(entity_id: int, damage: GSDamage) -> void:
 ## not a weapon's: a downed player bleeding out crumples where they lay.
 func decide_death(victim: StringName, damage: GSDamage, named: StringName = &"") -> GSPlayerDeath:
 	if _weapon_defs.is_empty():
-		_weapon_defs = PlaylotZee.weapon_table()
+		_weapon_defs = PlaylotZee.Art.weapon_table()
 	var player: PlaylotPlayer = game.players.get(victim, null)
 	var direction := damage.direction if damage != null else Vector3.ZERO
 	if direction.length_squared() < 0.0001 and damage != null and player != null:

@@ -485,7 +485,7 @@ func _apply_weapon(reader: GSNetReader) -> void:
 	var held := PlaylotEvents.read_weapon(reader)
 	if not bool(held["ok"]):
 		return
-	PlaylotZee.show_held(
+	PlaylotZee.Art.show_held(
 		game.players.get(_player_key(int(held["player_id"]))),
 		game.weapon_def(held["weapon_id"] as StringName)
 	)

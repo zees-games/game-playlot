@@ -307,7 +307,7 @@ func _arrange_edit() -> void:
 ## The `hud_hits` frame's weapon: a zee SMG in the hands under the first-person camera, as
 ## `PlaylotClient._arm_zee` builds it, with a magazine a third gone.
 func _arm_for_hits() -> void:
-	PlaylotZee.use_this_games_art()
+	PlaylotZee.Art.use_this_games_art()
 	var camera := _player.get_node("Camera") as Camera3D
 	var hands := ZeeViewModel.new()
 	hands.name = "ZeeViewModel"
