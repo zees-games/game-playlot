@@ -237,6 +237,17 @@ func _spawn_mode() -> void:
 	_check(device.call(&"pick_text") == "Crate", "the bracelet's screen carries the picked item")
 	device.queue_free()
 
+	await _spawn_mode_rules()
+
+	_client._secondary_down()
+	_check(_client.screens.is_open(menu.screen_id()), "right click in spawn mode opens the Q menu to pick again")
+	_client.screens.pop(menu.screen_id())
+	_client._menu_pinned = false
+	_client._set_tool(&"phys")
+	_completed += 1
+
+## The spawn mode's placing rules: aimed rest on a surface, the held repeat, no spawning inside oneself, the budget.
+func _spawn_mode_rules() -> void:
 	var weapon = _client.weapon
 	var spawner: GSPropSpawner = weapon.spawner
 	var floor_body := StaticBody3D.new()
@@ -294,12 +305,6 @@ func _spawn_mode() -> void:
 	spawner.clear_player(weapon.wielder, GSPropSpawner.REASON_ADMIN)
 	floor_body.queue_free()
 
-	_client._secondary_down()
-	_check(_client.screens.is_open(menu.screen_id()), "right click in spawn mode opens the Q menu to pick again")
-	_client.screens.pop(menu.screen_id())
-	_client._menu_pinned = false
-	_client._set_tool(&"phys")
-	_completed += 1
 
 ## The band sits at the wrist: the family's hand bone is at the knuckles, so the band is within 12 cm
 ## (scaled to the person) of it, in the hand-side third of the forearm, and nearer it than the elbow.

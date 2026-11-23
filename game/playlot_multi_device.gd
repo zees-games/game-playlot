@@ -390,34 +390,7 @@ func _build(camera: Camera3D) -> void:
 	var skin := SurfaceTool.new()
 	skin.begin(Mesh.PRIMITIVE_TRIANGLES)
 
-	# The band: eight chunky slabs round the wrist, a gap between each so it reads as segments.
-	var segments := 8
-	for i in segments:
-		var angle := TAU * float(i) / float(segments)
-		var around := Basis(Vector3.FORWARD, angle)
-		var at := around * Vector3(0.0, BAND_RADIUS, 0.0)
-		var slab := Transform3D(around, at)
-		_box(body, slab, Vector3(0.036, 0.016, 0.062))
-		# A thin lit line inset in each slab's outer face, and a lit ring each side.
-		_box(glow, Transform3D(around, around * Vector3(0.0, BAND_RADIUS + 0.0085, 0.0)), Vector3(0.026, 0.003, 0.008))
-	for z in [-0.034, 0.034]:
-		_ring(body, Vector3(0.0, 0.0, z), BAND_RADIUS + 0.004, 0.008, 16)
-	# The top plate: a raised block with a lit rim and a lit emblem bar, where the hologram comes from.
-	_box(body, Transform3D(Basis(), Vector3(0.0, BAND_RADIUS + 0.018, 0.0)), Vector3(0.09, 0.02, 0.118))
-	_box(body, Transform3D(Basis(), Vector3(0.0, BAND_RADIUS + 0.03, 0.0)), Vector3(0.076, 0.006, 0.104))
-	var rim_y := BAND_RADIUS + 0.0335
-	_box(glow, Transform3D(Basis(), Vector3(0.0, rim_y, -0.05)), Vector3(0.076, 0.002, 0.003))
-	_box(glow, Transform3D(Basis(), Vector3(0.0, rim_y, 0.05)), Vector3(0.076, 0.002, 0.003))
-	_box(glow, Transform3D(Basis(), Vector3(-0.0375, rim_y, 0.0)), Vector3(0.003, 0.002, 0.1))
-	_box(glow, Transform3D(Basis(), Vector3(0.0375, rim_y, 0.0)), Vector3(0.003, 0.002, 0.1))
-	# The palm emitter: a body cylinder along -Z with a lit ring on its mouth. On the arms the real palm carries it.
-	if not on_arms:
-		_cylinder_z(body, Vector3(0.0, 0.0, EMITTER_Z + 0.012), 0.022, 0.034, 14)
-		_cylinder_z(glow, Vector3(0.0, 0.0, EMITTER_Z - 0.003), 0.016, 0.005, 14)
-	if first_person and not on_arms:
-		# A sleeve back toward the camera and a hand block, so the band sits on an arm.
-		_cylinder_z(sleeve, Vector3(0.0, 0.0, 0.2), 0.041, 0.28, 14)
-		_box(skin, Transform3D(Basis(), Vector3(0.0, 0.0, -0.09)), Vector3(0.07, 0.042, 0.1))
+	_band_geometry(body, glow, sleeve, skin)
 
 	var body_mesh := MeshInstance3D.new()
 	body_mesh.name = "Body"
@@ -469,6 +442,38 @@ func _build(camera: Camera3D) -> void:
 	_build_screen()
 	_build_hologram()
 	_paint()
+
+
+## The band's slabs, plate, emitter and (off the arms) sleeve and hand, merged into the four surfaces.
+func _band_geometry(body: SurfaceTool, glow: SurfaceTool, sleeve: SurfaceTool, skin: SurfaceTool) -> void:
+	# The band: eight chunky slabs round the wrist, a gap between each so it reads as segments.
+	var segments := 8
+	for i in segments:
+		var angle := TAU * float(i) / float(segments)
+		var around := Basis(Vector3.FORWARD, angle)
+		var at := around * Vector3(0.0, BAND_RADIUS, 0.0)
+		var slab := Transform3D(around, at)
+		_box(body, slab, Vector3(0.036, 0.016, 0.062))
+		# A thin lit line inset in each slab's outer face, and a lit ring each side.
+		_box(glow, Transform3D(around, around * Vector3(0.0, BAND_RADIUS + 0.0085, 0.0)), Vector3(0.026, 0.003, 0.008))
+	for z in [-0.034, 0.034]:
+		_ring(body, Vector3(0.0, 0.0, z), BAND_RADIUS + 0.004, 0.008, 16)
+	# The top plate: a raised block with a lit rim and a lit emblem bar, where the hologram comes from.
+	_box(body, Transform3D(Basis(), Vector3(0.0, BAND_RADIUS + 0.018, 0.0)), Vector3(0.09, 0.02, 0.118))
+	_box(body, Transform3D(Basis(), Vector3(0.0, BAND_RADIUS + 0.03, 0.0)), Vector3(0.076, 0.006, 0.104))
+	var rim_y := BAND_RADIUS + 0.0335
+	_box(glow, Transform3D(Basis(), Vector3(0.0, rim_y, -0.05)), Vector3(0.076, 0.002, 0.003))
+	_box(glow, Transform3D(Basis(), Vector3(0.0, rim_y, 0.05)), Vector3(0.076, 0.002, 0.003))
+	_box(glow, Transform3D(Basis(), Vector3(-0.0375, rim_y, 0.0)), Vector3(0.003, 0.002, 0.1))
+	_box(glow, Transform3D(Basis(), Vector3(0.0375, rim_y, 0.0)), Vector3(0.003, 0.002, 0.1))
+	# The palm emitter: a body cylinder along -Z with a lit ring on its mouth. On the arms the real palm carries it.
+	if not on_arms:
+		_cylinder_z(body, Vector3(0.0, 0.0, EMITTER_Z + 0.012), 0.022, 0.034, 14)
+		_cylinder_z(glow, Vector3(0.0, 0.0, EMITTER_Z - 0.003), 0.016, 0.005, 14)
+	if first_person and not on_arms:
+		# A sleeve back toward the camera and a hand block, so the band sits on an arm.
+		_cylinder_z(sleeve, Vector3(0.0, 0.0, 0.2), 0.041, 0.28, 14)
+		_box(skin, Transform3D(Basis(), Vector3(0.0, 0.0, -0.09)), Vector3(0.07, 0.042, 0.1))
 
 
 ## A lit-fabric part (the sleeve, the hand) of the first-person arm.

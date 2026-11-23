@@ -389,40 +389,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 	var key := event as InputEventKey
 
-	# Every key below is a row of [PlaylotBindings], matched by its action so a key moved
-	# on the Controls page moves what it does here. Escape alone is a keycode: no row has it.
-	if key.is_action(PlaylotBindings.ROTATE):
-		# Held, not toggled, and read on both edges: a rotate that stayed on after
-		# the key came up would turn the prop every time the player looked around.
-		_rotating = key.pressed
-		return
-
-	if key.is_action(PlaylotBindings.SPAWN_MENU):
-		_on_menu_key(key)
-		return
-
-	if key.is_action(PlaylotBindings.PROFILES):
-		if key.pressed and not key.is_echo():
-			_toggle_profiles()
-		return
-
-	if key.is_action(PlaylotBindings.MAP_EDIT):
-		if key.pressed and not key.is_echo():
-			_toggle_map_edit()
-		return
-
-	if key.is_action(PlaylotBindings.MAP_EDIT_PICK):
-		if key.pressed and not key.is_echo():
-			_pick_map_edit()
-		return
-
-	# The Tab board, held: shown while the key is down, released when it comes up.
-	if key.is_action(PlaylotBindings.SCOREBOARD) and not key.is_echo():
-		if game_menu != null:
-			if key.pressed:
-				game_menu.scoreboard.open()
-			else:
-				game_menu.scoreboard.close()
+	if _on_toggle_key(key):
 		return
 
 	if key.is_action(PlaylotBindings.DROP_WEAPON) and key.pressed and not key.is_echo() and _zee_rig() != null:
@@ -451,6 +418,46 @@ func _unhandled_input(event: InputEvent) -> void:
 			# a browser refuses pointer lock just after Escape.
 			if not _menu_is_open() and game_menu != null:
 				game_menu.open()
+
+
+## The keys that flip one thing (rotate, spawn menu, profiles, map edit, the Tab board). True when the key was one of them.
+func _on_toggle_key(key: InputEventKey) -> bool:
+	# Every key below is a row of [PlaylotBindings], matched by its action so a key moved
+	# on the Controls page moves what it does here. Escape alone is a keycode: no row has it.
+	if key.is_action(PlaylotBindings.ROTATE):
+		# Held, not toggled, and read on both edges: a rotate that stayed on after
+		# the key came up would turn the prop every time the player looked around.
+		_rotating = key.pressed
+		return true
+
+	if key.is_action(PlaylotBindings.SPAWN_MENU):
+		_on_menu_key(key)
+		return true
+
+	if key.is_action(PlaylotBindings.PROFILES):
+		if key.pressed and not key.is_echo():
+			_toggle_profiles()
+		return true
+
+	if key.is_action(PlaylotBindings.MAP_EDIT):
+		if key.pressed and not key.is_echo():
+			_toggle_map_edit()
+		return true
+
+	if key.is_action(PlaylotBindings.MAP_EDIT_PICK):
+		if key.pressed and not key.is_echo():
+			_pick_map_edit()
+		return true
+
+	# The Tab board, held: shown while the key is down, released when it comes up.
+	if key.is_action(PlaylotBindings.SCOREBOARD) and not key.is_echo():
+		if game_menu != null:
+			if key.pressed:
+				game_menu.scoreboard.open()
+			else:
+				game_menu.scoreboard.close()
+		return true
+	return false
 
 
 ## The keys read on press only (spawn, undo, vehicle, tools, view): the tail of [method _unhandled_input].

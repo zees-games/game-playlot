@@ -150,23 +150,7 @@ func _avatar(a: int) -> void:
 	print("%s device: %s" % [tag, device.call(&"describe") if device != null else "MISSING"])
 	await _grab("%s_1_rest" % tag)
 
-	var actions: Dictionary = _client.player.sampler.actions
-	Input.action_press(actions["forward"])
-	await _wait(0.3)
-	await _roll(6, 0.11)
-	await _sheet("%s_2_walk" % tag)
-	Input.action_press(actions["sprint"])
-	await _wait(0.4)
-	await _roll(6, 0.09)
-	await _sheet("%s_3_sprint" % tag)
-	Input.action_release(actions["sprint"])
-	Input.action_press(actions["jump"])
-	await _wait(0.05)
-	Input.action_release(actions["jump"])
-	await _roll(9, 0.1)
-	await _sheet("%s_4_jump_land" % tag)
-	Input.action_release(actions["forward"])
-	await _wait(0.6)
+	await _avatar_walk(tag)
 
 	# R held: raise, a mode change's flash, then release to lower.
 	_client._unhandled_input(_key(KEY_R, true))
@@ -188,6 +172,45 @@ func _avatar(a: int) -> void:
 	await _wait(0.4)
 	await _sheet("%s_6_holo_modes" % tag)
 
+	await _avatar_beams(tag)
+
+	# viewmodel_fov: the arms and the bracelet on them scale together, narrow, Playlot's default and wide.
+	_client._unhandled_input(_key(KEY_R, true))
+	for fov in [40.0, 54.0, 75.0]:
+		get_tree().call_group(&"gs_view_model", &"set_hands_fov_at_4_3", fov)
+		await _wait(0.5)
+		await _grab()
+	get_tree().call_group(&"gs_view_model", &"set_hands_fov_at_4_3", 54.0)
+	_client._unhandled_input(_key(KEY_R, false))
+	await _wait(0.5)
+	await _sheet("%s_9_viewmodel_fov" % tag)
+
+	await _avatar_third_person(tag)
+
+
+## Walk, sprint and jump-land, each a contact sheet.
+func _avatar_walk(tag: String) -> void:
+	var actions: Dictionary = _client.player.sampler.actions
+	Input.action_press(actions["forward"])
+	await _wait(0.3)
+	await _roll(6, 0.11)
+	await _sheet("%s_2_walk" % tag)
+	Input.action_press(actions["sprint"])
+	await _wait(0.4)
+	await _roll(6, 0.09)
+	await _sheet("%s_3_sprint" % tag)
+	Input.action_release(actions["sprint"])
+	Input.action_press(actions["jump"])
+	await _wait(0.05)
+	Input.action_release(actions["jump"])
+	await _roll(9, 0.1)
+	await _sheet("%s_4_jump_land" % tag)
+	Input.action_release(actions["forward"])
+	await _wait(0.6)
+
+
+## Every mode's burst, then the gravity gun's carry.
+func _avatar_beams(tag: String) -> void:
 	# Every mode's own burst from the palm, looking a little down at the floor so the aim point is in view:
 	# one frame early in the burst, one at its end (the physics gun's held beam, the others gone).
 	_client.player.controller.state.pitch = -14.0
@@ -217,17 +240,9 @@ func _avatar(a: int) -> void:
 	_client.playlot.props.clear_player(_client.player_id, GSPropSpawner.REASON_CLEANUP)
 	await _wait(0.2)
 
-	# viewmodel_fov: the arms and the bracelet on them scale together, narrow, Playlot's default and wide.
-	_client._unhandled_input(_key(KEY_R, true))
-	for fov in [40.0, 54.0, 75.0]:
-		get_tree().call_group(&"gs_view_model", &"set_hands_fov_at_4_3", fov)
-		await _wait(0.5)
-		await _grab()
-	get_tree().call_group(&"gs_view_model", &"set_hands_fov_at_4_3", 54.0)
-	_client._unhandled_input(_key(KEY_R, false))
-	await _wait(0.5)
-	await _sheet("%s_9_viewmodel_fov" % tag)
 
+## The third-person camera with the device raised, then back to first person.
+func _avatar_third_person(tag: String) -> void:
 	_client._set_tool(&"phys")
 	_client._unhandled_input(_key(KEY_F5, true))
 	await _wait(1.0)

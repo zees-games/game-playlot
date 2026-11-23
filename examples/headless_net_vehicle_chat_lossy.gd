@@ -1,4 +1,4 @@
-extends "res://examples/headless_net_props_and_tools.gd"
+extends "res://examples/headless_net_multitool_wire.gd"
 
 func _test_prop_removal() -> void:
 	_section("undo")

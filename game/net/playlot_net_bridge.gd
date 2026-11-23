@@ -251,37 +251,11 @@ func _drive_tools(session_id: int, behaviour: PlaylotPlayerNet) -> void:
 	# the menu, after the spawn, and taken back out if the purse refuses.
 	var toy: PlaylotWeapon = _toy_of.get(session_id)
 	if toy != null:
-		var reload_pressed := (buttons & GSFpsCommand.BUTTON_USER_2) != 0 \
-			and (before & GSFpsCommand.BUTTON_USER_2) == 0
-		if primary_pressed:
-			_toy_result(session_id, player.player_id, toy, toy.primary(space, origin, aim))
-		elif primary:
-			# Held: the spawn mode repeats at `pg_multi_spawn_repeat`; each one kicks the device too.
-			var again := toy.held(space, origin, aim, delta)
-			if again != null:
-				player.multi_fire = (player.multi_fire + 1) & 0xF
-				_toy_result(session_id, player.player_id, toy, again)
-		if secondary_pressed:
-			_toy_result(session_id, player.player_id, toy, toy.secondary(space, origin, aim))
-		if reload_pressed:
-			_toy_result(session_id, player.player_id, toy, toy.reload(space, origin, aim))
-		toy.tick(space, origin, aim, delta)
+		_drive_toy(session_id, player, toy, buttons, before, space, origin, aim, delta)
 		return
 
 	if tool_id == &"grav":
-		var carried_before := player.grav_gun.carried
-		if primary_pressed:
-			player.grav_gun.punt(space, origin, aim, may_touch)
-		if secondary_pressed:
-			player.grav_gun.pull(space, origin, aim, may_touch)
-		elif secondary:
-			player.grav_gun.carry(origin, aim, delta)
-		elif not secondary and player.grav_gun.is_carrying():
-			player.grav_gun.drop()
-		# A carry is told like a physics-gun hold (`HELD`), so every client draws its beam from the palm.
-		if player.grav_gun.carried != carried_before:
-			var now := player.grav_gun.carried
-			_on_held_changed(player.grav_gun.wielder, now if now != null else carried_before, now != null)
+		_drive_grav_gun(player, buttons, before, space, origin, aim, delta, may_touch)
 		return
 
 	if primary_pressed:
@@ -298,6 +272,56 @@ func _drive_tools(session_id: int, behaviour: PlaylotPlayerNet) -> void:
 
 	if secondary_pressed:
 		player.phys_gun.freeze_held()
+
+
+## One tick of a toy's buttons: pressed edges for primary, secondary and reload, a tick every tick.
+func _drive_toy(
+	session_id: int, player: PlaylotPlayer, toy: PlaylotWeapon, buttons: int, before: int,
+	space: PhysicsDirectSpaceState3D, origin: Vector3, aim: Vector3, delta: float
+) -> void:
+	var primary := (buttons & GSFpsCommand.BUTTON_USER_0) != 0
+	var primary_pressed := primary and (before & GSFpsCommand.BUTTON_USER_0) == 0
+	var secondary_pressed := (buttons & GSFpsCommand.BUTTON_USER_1) != 0 \
+		and (before & GSFpsCommand.BUTTON_USER_1) == 0
+	var reload_pressed := (buttons & GSFpsCommand.BUTTON_USER_2) != 0 \
+		and (before & GSFpsCommand.BUTTON_USER_2) == 0
+	if primary_pressed:
+		_toy_result(session_id, player.player_id, toy, toy.primary(space, origin, aim))
+	elif primary:
+		# Held: the spawn mode repeats at `pg_multi_spawn_repeat`; each one kicks the device too.
+		var again := toy.held(space, origin, aim, delta)
+		if again != null:
+			player.multi_fire = (player.multi_fire + 1) & 0xF
+			_toy_result(session_id, player.player_id, toy, again)
+	if secondary_pressed:
+		_toy_result(session_id, player.player_id, toy, toy.secondary(space, origin, aim))
+	if reload_pressed:
+		_toy_result(session_id, player.player_id, toy, toy.reload(space, origin, aim))
+	toy.tick(space, origin, aim, delta)
+
+
+## One tick of the gravity gun: punt, pull, carry or drop.
+func _drive_grav_gun(
+	player: PlaylotPlayer, buttons: int, before: int, space: PhysicsDirectSpaceState3D,
+	origin: Vector3, aim: Vector3, delta: float, may_touch: bool
+) -> void:
+	var primary_pressed := (buttons & GSFpsCommand.BUTTON_USER_0) != 0 \
+		and (before & GSFpsCommand.BUTTON_USER_0) == 0
+	var secondary := (buttons & GSFpsCommand.BUTTON_USER_1) != 0
+	var secondary_pressed := secondary and (before & GSFpsCommand.BUTTON_USER_1) == 0
+	var carried_before := player.grav_gun.carried
+	if primary_pressed:
+		player.grav_gun.punt(space, origin, aim, may_touch)
+	if secondary_pressed:
+		player.grav_gun.pull(space, origin, aim, may_touch)
+	elif secondary:
+		player.grav_gun.carry(origin, aim, delta)
+	elif not secondary and player.grav_gun.is_carrying():
+		player.grav_gun.drop()
+	# A carry is told like a physics-gun hold (`HELD`), so every client draws its beam from the palm.
+	if player.grav_gun.carried != carried_before:
+		var now := player.grav_gun.carried
+		_on_held_changed(player.grav_gun.wielder, now if now != null else carried_before, now != null)
 
 
 # --- The client tick -------------------------------------------------------
