@@ -1,5 +1,7 @@
 extends RefCounted
 
+const CHANNEL := "playlot.toolgun"
+
 ## One mode of the tool gun: what left click, right click and reload do, and its settings.
 ##
 ## [b]A mode is a script, named by path, for the reason a weapon and an entity are[/b] — a
@@ -14,8 +16,8 @@ extends RefCounted
 ## The server takes only keys the schema names and clamps every number to it, because
 ## settings arrive from a client and a resize step of a million is a crashed server.
 
-# No CHANNEL: a mode reports through the GSResult it returns, which the gun shows the
-# player. What a mode changes in the world is logged where the world changes.
+# A mode reports through the GSResult it returns, which the gun shows the player; CHANNEL
+# is only for a setting the server refuses.
 
 ## Stable id: what the client sends and the menu files it under.
 var id: StringName = &""
@@ -61,7 +63,7 @@ func apply_settings(incoming: Dictionary) -> void:
 					var wanted := float(value)
 
 					if wanted < float(field["min"]) or wanted > float(field["max"]):
-						push_warning("tool setting %s: %s is outside %s..%s; refused, keeping %s" % [key, wanted, field["min"], field["max"], settings.get(key)])
+						GSLog.warn(CHANNEL, "tool setting refused: outside its range", {"setting": key, "wanted": wanted, "min": field["min"], "max": field["max"], "kept": settings.get(key)})
 					else:
 						settings[key] = wanted
 			"bool":

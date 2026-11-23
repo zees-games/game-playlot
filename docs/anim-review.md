@@ -1,8 +1,6 @@
 # Animation review
 
-PLAYLOT's visual QA loop for the zee weapons and the avatar, adopted from Fatal Contact's. It is
-game-local until gs-game's shared version lands (nightly gs-game-visual-qa-1); then these tools
-become thin wrappers around it.
+PLAYLOT's visual QA loop for the zee weapons and the avatar, adopted from Fatal Contact's. It is game-local until gs-game's shared version lands (nightly gs-game-visual-qa-1); then these tools become thin wrappers around it.
 
 ## Run it
 
@@ -11,9 +9,7 @@ become thin wrappers around it.
     tools/anim_review.sh --anims avatar_walk              # the avatar only
     tools/anim_review.sh --fps 30                         # at least 15
 
-`anim_review.sh` sends the capture to a GPU box through `gpu.sh shot --route`. If no box takes it,
-the capture is queued here behind `heavy`. `tools/anim_review_shot.sh` is the half that runs on the
-box: Godot under xvfb with `--fixed-fps`, then ffmpeg.
+`anim_review.sh` sends the capture to a GPU box through `gpu.sh shot --route`. If no box takes it, the capture is queued here behind `heavy`. `tools/anim_review_shot.sh` is the half that runs on the box: Godot under xvfb with `--fixed-fps`, then ffmpeg.
 
 Output goes to `screenshots/anim_review/<weapon>/`:
 
@@ -54,6 +50,4 @@ Each clip is posted with its verdict and metrics; the report's reason goes in as
 
 ## Arguments
 
-The harness takes `--key=value` arguments only. The map drop intake (GSMapDropIntake) treats any
-bare argument that names an existing folder, such as the output folder, as a map dropped on the
-window.
+The harness takes `--key=value` arguments only. The map drop intake (GSMapDropIntake) treats any bare argument that names an existing folder, such as the output folder, as a map dropped on the window.

@@ -294,9 +294,9 @@ func _finish() -> void:
 func _print_profile() -> void:
 	var keys := profile.keys()
 	keys.sort_custom(func(a: String, b: String) -> bool: return int(profile[a]) > int(profile[b]))
-	print("prewarm profile: phases ms=%s cover_frames=%d" % [phase_ms, cover_frames])
+	print("prewarm profile: phases ms=%s cover_frames=%d" % [phase_ms, cover_frames])  # check-logging: allow print
 	for key: String in keys:
-		print("prewarm profile: %8.1f ms  %s" % [int(profile[key]) / 1000.0, key])
+		print("prewarm profile: %8.1f ms  %s" % [int(profile[key]) / 1000.0, key])  # check-logging: allow print
 
 
 func _items_for(phase: Phase) -> Array:
@@ -309,10 +309,15 @@ func _items_for(phase: Phase) -> Array:
 			return [null] if _shot_effects() else []
 		Phase.WEAPONS:
 			var out: Array = []
+			var slots := {}
 			for def in PlaylotZee.defs():
 				if PlaylotZee.is_zee(def):
+					var slot: Variant = def.meta.get("slot", &"")
+					if slots.has(slot):
+						continue
 					var art := PlaylotZee.Art.art_for(PlaylotZee.zee_id(def))
 					if art != null:
+						slots[slot] = true
 						out.append(art)
 			return out
 		Phase.FX:

@@ -9,8 +9,6 @@ extends RefCounted
 ## the app has off, a wearable the app hid and an app id that was never set are each a failed [GSResult] that names the
 ## setting, never a shorter list.
 
-const CHANNEL := "playlot.avatar.library"
-
 ## The action kinds the library hands out.
 const KINDS: Array[StringName] = [GSAvatarAppRules.EMOTE, GSAvatarAppRules.POSE, GSAvatarAppRules.GESTURE]
 

@@ -1,12 +1,8 @@
 # Converted map judge rubric
 
-A fresh judge reads this before it looks at any frame of a converted Playlot map (a Source BSP brought over by
-gs-map-convert). It answers one question: **would a player who loads this map in a modern shooter or sandbox
-(CS:S, Garry's Mod, CS2) notice something wrong?** The default answer is **no, not ready**. `production_ready: true` must be
-earned by the frames. A metric that passes, an author's note or "it is better than before" earns nothing.
+A fresh judge reads this before it looks at any frame of a converted Playlot map (a Source BSP brought over by gs-map-convert). It answers one question: **would a player who loads this map in a modern shooter or sandbox (CS:S, Garry's Mod, CS2) notice something wrong?** The default answer is **no, not ready**. `production_ready: true` must be earned by the frames. A metric that passes, an author's note or "it is better than before" earns nothing.
 
-The frames are GPU renders (Forward+ on Vulkan) of the map as a client draws it: overviews from above, then eye-level
-views (about 1.7 m up) at the spawn and around the map. Judge what is in the frames, not what the map is meant to be.
+The frames are GPU renders (Forward+ on Vulkan) of the map as a client draws it: overviews from above, then eye-level views (about 1.7 m up) at the spawn and around the map. Judge what is in the frames, not what the map is meant to be.
 
 ## Categories (each gets a line in `categories_clean` or a defect)
 
@@ -28,11 +24,7 @@ views (about 1.7 m up) at the spawn and around the map. Judge what is in the fra
   floating over the playable area.
 - **completeness**: no missing walls, roofs, or whole buildings, no see-through faces where geometry should be.
 
-Severity: `blocker` means it cannot ship (a hole a player falls through, a giant blob in a main street, half the
-map black), `major` means a player notices (a 10x fence, a row of grey boxes along a road, a floating house),
-`minor` means polish. `production_ready` is true only when there are **no blocker or major defects in any frame**.
-The justification must say why each category is clean, citing frames. A verdict that is true with a thin
-justification is wrong.
+Severity: `blocker` means it cannot ship (a hole a player falls through, a giant blob in a main street, half the map black), `major` means a player notices (a 10x fence, a row of grey boxes along a road, a floating house), `minor` means polish. `production_ready` is true only when there are **no blocker or major defects in any frame**. The justification must say why each category is clean, citing frames. A verdict that is true with a thin justification is wrong.
 
 ## verdict.json
 
