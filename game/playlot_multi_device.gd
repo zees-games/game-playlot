@@ -17,13 +17,18 @@ const FP_LOW_ROT := Vector3(-6.0, 10.0, -8.0)
 const FP_UP_POS := Vector3(0.03, -0.12, -0.36)
 const FP_UP_ROT := Vector3(28.0, -48.0, -22.0)
 const RAISE_SPEED := 9.0
+## The device on a person's wrist is drawn this much larger than the first-person one: the people are chibi, with thick wrists, and read from metres away.
+const WORN_SCALE := 2.4
 
 const BAND_RADIUS := 0.05
 const EMITTER_Z := -0.15
 const SCREEN_WIDTH := 0.07
 const SCREEN_LENGTH := 0.094
-const ROW_HEIGHT := 0.026
-const ROW_WIDTH := 0.17
+const ROW_HEIGHT := 0.034
+const ROW_WIDTH := 0.2
+## The hologram's rows lie on a cylinder this wide, fanned this many radians apart.
+const HOLO_RADIUS := 0.16
+const HOLO_STEP := 0.2
 
 const GLOW_NAME := &"Glow"
 
@@ -240,6 +245,8 @@ func _paint() -> void:
 func _build(camera: Camera3D) -> void:
 	first_person = camera != null
 	_camera = camera
+	if not first_person:
+		scale = Vector3.ONE * WORN_SCALE
 	if first_person:
 		add_to_group(&"gs_view_model")
 
@@ -251,6 +258,10 @@ func _build(camera: Camera3D) -> void:
 	body.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var glow := SurfaceTool.new()
 	glow.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var sleeve := SurfaceTool.new()
+	sleeve.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var skin := SurfaceTool.new()
+	skin.begin(Mesh.PRIMITIVE_TRIANGLES)
 
 	# The band: eight chunky slabs round the wrist, a gap between each so it reads as segments.
 	var segments := 8
@@ -278,20 +289,24 @@ func _build(camera: Camera3D) -> void:
 	_cylinder_z(glow, Vector3(0.0, 0.0, EMITTER_Z - 0.003), 0.016, 0.005, 14)
 	if first_person:
 		# A sleeve back toward the camera and a hand block, so the band sits on an arm.
-		_cylinder_z(body, Vector3(0.0, 0.0, 0.3), 0.043, 0.5, 14)
-		_box(body, Transform3D(Basis(), Vector3(0.0, 0.0, -0.085)), Vector3(0.075, 0.05, 0.1))
+		_cylinder_z(sleeve, Vector3(0.0, 0.0, 0.2), 0.041, 0.28, 14)
+		_box(skin, Transform3D(Basis(), Vector3(0.0, 0.0, -0.09)), Vector3(0.07, 0.042, 0.1))
 
 	var body_mesh := MeshInstance3D.new()
 	body_mesh.name = "Body"
 	body_mesh.mesh = body.commit()
 	var plating := StandardMaterial3D.new()
-	plating.albedo_color = Color(0.13, 0.14, 0.17)
-	plating.metallic = 0.6
-	plating.roughness = 0.42
+	plating.albedo_color = Color(0.34, 0.37, 0.44)
+	plating.metallic = 0.35
+	plating.roughness = 0.45
 	plating.cull_mode = BaseMaterial3D.CULL_DISABLED
 	body_mesh.material_override = plating
 	body_mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_arm.add_child(body_mesh)
+
+	if first_person:
+		_arm.add_child(_part("Sleeve", sleeve, Color(0.74, 0.8, 0.9), 0.85))
+		_arm.add_child(_part("Hand", skin, Color(0.93, 0.76, 0.64), 0.7))
 
 	var glow_mesh := MeshInstance3D.new()
 	glow_mesh.name = String(GLOW_NAME)
@@ -312,6 +327,20 @@ func _build(camera: Camera3D) -> void:
 	_build_screen()
 	_build_hologram()
 	_paint()
+
+
+## A lit-fabric part (the sleeve, the hand) of the first-person arm.
+func _part(part_name: String, st: SurfaceTool, colour: Color, roughness: float) -> MeshInstance3D:
+	var node := MeshInstance3D.new()
+	node.name = part_name
+	node.mesh = st.commit()
+	var m := StandardMaterial3D.new()
+	m.albedo_color = colour
+	m.roughness = roughness
+	m.cull_mode = BaseMaterial3D.CULL_DISABLED
+	node.material_override = m
+	node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	return node
 
 
 ## The display on the top plate: one quad showing the mode's icon, and the mode's name small beneath it.
@@ -343,7 +372,7 @@ func _build_screen() -> void:
 func _build_hologram() -> void:
 	_holo = Node3D.new()
 	_holo.name = "Hologram"
-	_holo.position = Vector3(0.0, BAND_RADIUS + 0.1, 0.0)
+	_holo.position = Vector3(0.0, BAND_RADIUS + 0.16, -0.02)
 	_holo.visible = false
 	_arm.add_child(_holo)
 
@@ -361,12 +390,14 @@ func _build_hologram() -> void:
 		m.emission_enabled = true
 		m.no_depth_test = true
 		row.material_override = m
-		row.position = Vector3(0.0, (float(count - 1) * 0.5 - float(i)) * ROW_HEIGHT, 0.0)
+		var a := (float(count - 1) * 0.5 - float(i)) * HOLO_STEP
+		row.position = Vector3(0.0, sin(a) * HOLO_RADIUS, (1.0 - cos(a)) * HOLO_RADIUS)
+		row.rotation.x = a
 		row.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		_holo.add_child(row)
 		var label := Label3D.new()
-		label.pixel_size = 0.0007
-		label.font_size = 26
+		label.pixel_size = 0.0008
+		label.font_size = 28
 		label.outline_size = 0
 		label.shaded = false
 		label.no_depth_test = true

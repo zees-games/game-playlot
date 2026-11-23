@@ -1,12 +1,12 @@
 extends "res://examples/headless_net_downed_ammo_flashlight.gd"
 
-const CHECKS := 441
+const CHECKS := 452
 
 ## Sections entered against sections that ran to their last line, and against this. A
 ## runtime error inside a section aborts that function and nothing says so; a section that
 ## bailed out early after a failed guard is counted as not finished on purpose. The CHECKS
 ## total above is the other half — see docs/testing.md.
-const SECTIONS := 53
+const SECTIONS := 54
 
 func _ready() -> void:
 	GSLog.set_level(GSLog.Level.ERROR)
@@ -55,6 +55,7 @@ func _connected_sequence_one() -> void:
 	# Both halves share one physics space, so a test that advances the world moves every later
 	# reading. This one spawns no body; before the vehicle test it made that flake.
 	await _test_weapon_request()
+	await _test_multitool_wire()
 	# Adds a second body to the shared physics space, and takes it back out.
 	await _test_blind_and_beacon()
 	# Adds a body to the shared world and takes it back out.

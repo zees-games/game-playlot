@@ -1,5 +1,7 @@
 extends "res://examples/headless_net_clock_builds_movement.gd"
 
+const PlaylotMultitool := preload("../game/playlot_multitool.gd")
+
 var _lip_mine: PlaylotPlayer
 var _lip_identity
 var _lip_server_from: Vector3
@@ -675,6 +677,74 @@ func _test_weapon_request() -> void:
 
 	refuse[0] = false
 	_server_bridge.charge_fn = Callable()
+	_done()
+
+
+## The multi-tool's mode over the wire: a mode the build does not have is refused out loud, a real one is the tool or weapon switch, and the switch lets go of what the old mode held.
+func _test_multitool_wire() -> void:
+	_section("the multi-tool: a mode is asked for, refused when unknown, and lets go of the prop")
+
+	var player := _server_player()
+	_check(player != null, "there is a player to arm")
+	if player == null:
+		return
+
+	player.teleport(Vector3(-40.0, 0.0, -40.0), player.controller.state.yaw)
+	await _steps(8)
+	var at := player.eye_position() + player.aim_direction() * 2.5
+	var crate := _server_game.props.spawn(&"crate", &"u%d" % SESSION, at)
+	_check(crate != null, "a crate is put in front of them")
+	if crate == null:
+		return
+	await _exchange_steps(4)
+
+	_client_bridge.ask_multi_mode(&"phys")
+	_exchange()
+	await _steps(2)
+	_check(player.multi_mode == PlaylotMultitool.index_of(&"phys"),
+		"asking for the physics mode sets the replicated mode", str(player.multi_mode))
+
+	var grab := GSFpsCommand.new()
+	grab.set_button(GSFpsCommand.BUTTON_USER_0, true)
+	_aim_at(grab, player, (crate.node as Node3D).global_position)
+	await _steps(12, grab)
+	_check(player.phys_gun.held != null, "the physics mode grabs the crate")
+
+	# An id that is not a mode: refused with a notice, nothing changes, the prop stays held.
+	var notices: Array[String] = []
+	var on_notice := func(_pid: int, text: String) -> void: notices.append(text)
+	_client_bridge.notice_received.connect(on_notice)
+	var mode_before := player.multi_mode
+	_client_bridge.ask_multi_mode(&"no_such_mode_at_all")
+	_exchange()
+	await _steps(4, grab)
+	_exchange()
+	await _steps(2, grab)
+	_client_bridge.notice_received.disconnect(on_notice)
+	_check(notices.size() > 0, "a mode that does not exist is answered with a notice", str(notices))
+	_check(player.multi_mode == mode_before, "and the mode is unchanged", str(player.multi_mode))
+	_check(player.phys_gun.held != null, "and the held prop is not let go by a refused ask")
+
+	# A real switch lets go.
+	_client_bridge.ask_multi_mode(&"grav")
+	_exchange()
+	await _steps(4, grab)
+	_check(player.phys_gun.held == null, "switching to the gravity mode lets go of the held prop")
+	_check(player.multi_mode == PlaylotMultitool.index_of(&"grav"),
+		"and the replicated mode follows", str(player.multi_mode))
+
+	var raised := GSFpsCommand.new()
+	_client_bridge.ask_multi_raise(true)
+	_exchange()
+	await _steps(2, raised)
+	_check(player.multi_raised, "raising the arm is replicated to the server's player")
+	_client_bridge.ask_multi_raise(false)
+	_exchange()
+	await _steps(2, raised)
+	_check(not player.multi_raised, "and lowering it too")
+
+	_server_game.props.remove(crate.instance_id, GSPropSpawner.REASON_ADMIN)
+	await _exchange_steps(4)
 	_done()
 
 

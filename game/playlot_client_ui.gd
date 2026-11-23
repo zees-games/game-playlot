@@ -476,7 +476,7 @@ func _present_tool_beam(eye: Vector3, forward: Vector3) -> void:
 	var body := held.node as Node3D if held != null else null
 	if body != null and body.is_inside_tree():
 		if toy_view != null and is_instance_valid(toy_view):
-			var _from := presentation.on_tool_beam_from(toy_view.call(&"muzzle_position"), body.global_position, 1)
+			var _from := presentation.on_tool_beam_from(toy_view.call(&"muzzle_position"), body.global_position)
 		else:
 			presentation.on_tool_beam(eye, forward, body.global_position)
 

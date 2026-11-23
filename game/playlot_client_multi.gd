@@ -295,9 +295,8 @@ func _multi_mount(who: PlaylotPlayer, modes: Array[StringName], mine: bool) -> v
 		var figure := who.character.figure()
 		if figure == null:
 			return
-		var mount := figure.attachment(&"hand")
+		var mount := PlaylotMultiMount.mount(figure, String(who.name))
 		if mount == null:
-			GSLog.warn(CHANNEL, "multi-tool: no hand mount on the figure of %s" % who.name)
 			return
 		device = PlaylotMultiDevice.make(null)
 		device.call(&"set_modes", modes)

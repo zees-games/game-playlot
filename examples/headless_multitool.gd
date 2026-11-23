@@ -5,13 +5,15 @@ const PlaylotMultiDevice := preload("../game/playlot_multi_device.gd")
 const PlaylotMultiIcons := preload("../game/playlot_multi_icons.gd")
 const PlaylotConfig := preload("../game/playlot_config.gd")
 const PlaylotClient := preload("../game/playlot_client.gd")
+const PlaylotMultiMount := preload("../game/playlot_multi_mount.gd")
+const PlaylotFigure := preload("../game/playlot_figure.gd")
 
 ## The multi-tool: its modes, the R tap and hold, the number keys that mean modes only while R is
 ## held, the bracelet's palm emitter and screen.
 ## Run: godot --headless --path . res://examples/headless_multitool.tscn
 
-const SECTIONS := 5
-const CHECKS := 33
+const SECTIONS := 6
+const CHECKS := 50
 
 var _entered := 0
 var _completed := 0
@@ -31,6 +33,7 @@ func _run() -> void:
 	await _tap_and_hold()
 	await _numbers()
 	await _switching()
+	await _mounts()
 	_report_sections(_entered, _completed, SECTIONS, CHECKS)
 
 
@@ -169,4 +172,56 @@ func _switching() -> void:
 	_client._set_tool(&"phys")
 	# A bad id from the player's own hand is refused by the client's tool list as well.
 	_check(not PlaylotMultitool.has_mode(&"nope"), "an unknown mode id is not offered")
+	_completed += 1
+
+
+## A skeleton with only the named bones, to read the wrist lookup against rigs this build does not ship.
+func _rig(names: Array) -> Skeleton3D:
+	var skeleton := Skeleton3D.new()
+	for n in names:
+		skeleton.add_bone(String(n))
+	return skeleton
+
+
+func _mounts() -> void:
+	_entered += 1
+	print("  ", "the wrist, on every rig")
+	var rigs := {
+		"mixamo": ["mixamorig_Hips", "mixamorig_LeftArm", "mixamorig_LeftForeArm", "mixamorig_LeftHand", "mixamorig_LeftHandIndex1", "mixamorig_RightHand"],
+		"unreal": ["pelvis", "upperarm_l", "lowerarm_l", "hand_l", "index_01_l", "hand_r"],
+		"blender": ["Hips", "UpperArm.L", "LowerArm.L", "Hand.L", "Hand.R"],
+		"forearm only": ["Hips", "Shoulder_Left", "Forearm_Left", "Chest"],
+	}
+	var expect := {"mixamo": "mixamorig_LeftHand", "unreal": "hand_l", "blender": "Hand.L", "forearm only": "Forearm_Left"}
+	for key in rigs:
+		var skeleton := _rig(rigs[key])
+		_check(PlaylotMultiMount.wrist_bone(skeleton) == expect[key],
+			"the left wrist of a %s rig is %s" % [key, expect[key]], PlaylotMultiMount.wrist_bone(skeleton))
+		skeleton.free()
+	var bare := _rig(["Hips", "Spine", "RightHand"])
+	_check(PlaylotMultiMount.wrist_bone(bare) == "", "a rig with no left arm has no wrist")
+	bare.free()
+	_check(PlaylotMultiMount.wrist_bone(null) == "", "no skeleton, no wrist")
+
+	# Two real people: the stock look and another from the library of skins.
+	for skins in [PackedInt32Array([0, 0, 0]), PackedInt32Array([5, 9, 12])]:
+		var tag := "skins %s" % [skins]
+		var figure := PlaylotFigure.build(1.8, skins, "mount")
+		_check(figure != null, "%s: the person is built" % tag)
+		if figure == null:
+			continue
+		add_child(figure)
+		var mount := PlaylotMultiMount.mount(figure, tag)
+		_check(mount != null and mount.is_inside_tree(), "%s: the bracelet has a mount" % tag)
+		if mount != null:
+			var device := PlaylotMultiDevice.make(null)
+			mount.add_child(device)
+			var up := mount.global_basis * Vector3.UP
+			_check(up.dot(Vector3.UP) > 0.5, "%s: the mount stands upright at rest" % tag, str(up))
+			_check(device.muzzle_position().distance_to(figure.global_position + Vector3.UP * 1.0) < 1.5,
+				"%s: the muzzle is on the body, not at the origin or off in space" % tag, str(device.muzzle_position()))
+			var near := figure.call(&"skeleton") != null
+			_check(near, "%s: the person has a skeleton to follow" % tag)
+		figure.queue_free()
+	_check(PlaylotMultiMount.mount(null, "nobody") == null, "no figure gives no mount, and says so")
 	_completed += 1
