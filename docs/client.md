@@ -75,6 +75,10 @@ The landing is kicked when the drawn eye reaches the floor, not on the `landed` 
 
 **Still unwired:** `on_prop_landed` (nothing reports a landing), `on_bought` and `on_wave_incoming` (the shop and waves are server-side and no event carries either), `wave_flash` (triggered by nothing) and `GSFxManager.flash_colour` (needs a HUD overlay as well as an event). Tool sounds are offline only.
 
+## The multi-tool selector
+
+`playlot_client_multi.gd` owns R: a tap keeps the old reload-or-unfreeze, a hold opens the mode selector (see [sandbox.md](sandbox.md#the-multi-tool)). While R is held it swallows the number keys and the mouse. The first-person bracelet follows `viewmodel_fov` through the `gs_view_model` group and sways from the player's motion state; other players' devices (and your own in third person) are mounted on the figure's hand attachment, and a figure with none logs a warning.
+
 ## The HUD
 
 `PlaylotHud`: a run timer's block top left when a server has one (`set_timer_hud`, placed by `addons/pg_timer`), the notice, status and tool lines under it, a crosshair, and three of gs-ui's glance pieces (API level 4), coloured by `PlaylotHud.piece_theme()` (the timer's translucent black plate, the boost pads' amber for a kill or a head, the start pads' green, the timer's red for a low magazine):

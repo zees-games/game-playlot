@@ -5,6 +5,7 @@ const Playlot := preload("../playlot.gd")
 const PlaylotEvent := preload("playlot_event.gd")
 const PlaylotEvents := preload("playlot_events.gd")
 const PlaylotInventoryNet := preload("playlot_inventory_net.gd")
+const PlaylotMultitool := preload("../playlot_multitool.gd")
 const PlaylotNetCommand := preload("playlot_net_command.gd")
 const PlaylotNetLink := preload("playlot_net_link.gd")
 const PlaylotPlayer := preload("../playlot_player.gd")
@@ -555,6 +556,18 @@ func ask_arm(prop_id: StringName) -> void:
 ## Switch the flashlight. The server owns on/off and answers in the player's replicated state.
 func ask_flashlight() -> void:
 	_ask(PlaylotEvents.Ask.ARM_PROP, PlaylotEvents.write_arm(PlaylotEvents.ARM_FLASHLIGHT, &""))
+
+
+## Switch the multi-tool to a mode. The server validates it. Client side.
+func ask_multi_mode(mode: StringName) -> void:
+	_ask(PlaylotEvents.Ask.ARM_PROP, PlaylotEvents.write_arm(PlaylotEvents.ARM_MULTI_MODE, mode))
+
+
+## The multi-tool's arm goes up or down (the selector). Client side.
+func ask_multi_raise(raised: bool) -> void:
+	_ask(PlaylotEvents.Ask.ARM_PROP, PlaylotEvents.write_arm(
+		PlaylotEvents.ARM_MULTI_RAISE, &"", "1" if raised else "0"
+	))
 
 
 func ask_drop_weapon() -> void:

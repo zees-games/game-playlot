@@ -444,6 +444,10 @@ const ARM_ADDON_ITEM := 6
 const ARM_DROP_WEAPON := 7
 ## Switch my flashlight.
 const ARM_FLASHLIGHT := 8
+## The multi-tool's mode: id is the mode (`PlaylotMultitool.MODES`). The server refuses an unknown one.
+const ARM_MULTI_MODE := 9
+## The multi-tool's arm is raised (R held, the selector open): payload `1` or `0`.
+const ARM_MULTI_RAISE := 10
 
 ## The most a tool's settings may take on the wire. A tool has a handful of numbers.
 const TOOL_SETTINGS_BYTES := 512

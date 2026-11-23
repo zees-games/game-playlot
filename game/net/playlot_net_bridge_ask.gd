@@ -118,6 +118,7 @@ func _give_weapon(session_id: int, id: StringName, weapon_id: StringName) -> voi
 			_toy_of[session_id] = toy
 			_tool_of[session_id] = weapon_id
 
+	_sync_multi(session_id, id)
 	_broadcast(PlaylotEvents.Kind.WEAPON, PlaylotEvents.write_weapon(session_id, weapon_id))
 
 
@@ -298,3 +299,20 @@ func describe() -> Dictionary:
 		"link": link.describe() if link != null else {},
 		"inventory": inventory_net.describe() if inventory_net != null else {},
 	}
+
+
+## The multi-tool's mode, asked for by a client. An id that is not a mode is refused out loud and
+## changes nothing; a mode is the existing tool or weapon switch, which lets go of whatever the old
+## mode held and tells everyone.
+func _set_multi_mode(peer_id: int, session_id: int, id: StringName, mode: StringName) -> void:
+	if not PlaylotMultitool.has_mode(mode):
+		GSLog.warn(CHANNEL, "a multi-tool mode that does not exist was asked for", {
+			"player": String(id), "mode": String(mode),
+		})
+		_tell(peer_id, PlaylotEvents.Kind.NOTICE,
+			PlaylotEvents.write_notice(session_id, "The multi-tool has no mode '%s'." % String(mode)))
+		return
+	if mode == &"phys" or mode == &"grav":
+		_select_tool(session_id, id, mode)
+	else:
+		_give_weapon(session_id, id, mode)

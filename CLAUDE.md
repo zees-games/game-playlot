@@ -14,7 +14,7 @@ Read the family [CLAUDE.md](../../CLAUDE.md) first, and each addon's own `CLAUDE
 | --- | --- |
 | [docs/README.md](docs/README.md) | the index |
 | [docs/simulation.md](docs/simulation.md) | the tick loop, the player, styles, `post_move_fn`, teleports and spawns, tunables, the tick rate, the module and its commands |
-| [docs/sandbox.md](docs/sandbox.md) | props, entities, NPCs, weapons, zee, projectiles, the Q menu, tools, the tool gun, limits, machines, breaking, pickup, creative, prop surfing, builds |
+| [docs/sandbox.md](docs/sandbox.md) | props, entities, NPCs, weapons, zee, projectiles, the Q menu, tools, the multi-tool, the tool gun, limits, machines, breaking, pickup, creative, prop surfing, builds |
 | [docs/maps.md](docs/maps.md) | a map, the survey, custom map documents, materials, liquids, panes, `pg_generated` |
 | [docs/timer.md](docs/timer.md) | anything about the run timer: it does not ship, `addons/pg_timer` adapts gs-timer when a server links it |
 | [docs/vehicles.md](docs/vehicles.md) | vehicles, seats, timed driving, driving over the wire |

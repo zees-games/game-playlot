@@ -446,12 +446,16 @@ func _punt() -> void:
 ## gun is local; connected the server holds every prop (`Kind.HELD`) and a beam is drawn per holder.
 ## Static so `tools/screenshot_net.gd` draws exactly this. Returns how many.
 static func present_beams(p_bridge: PlaylotNetBridge, p_presentation: PlaylotPresentation,
-		mine: Node, eye: Vector3, forward: Vector3) -> int:
+		mine: Node, eye: Vector3, forward: Vector3, mine_device: Node3D = null) -> int:
 	var drawn := 0
 	for each: Dictionary in p_bridge.holders():
 		var who: Node = each["player"]
 		var to: Vector3 = (each["prop"] as Node3D).global_position
-		if who == mine:
+		# Every beam leaves the palm emitter of the tool that fires it, when that is on screen.
+		var device := mine_device if who == mine else who.get(&"multi_device") as Node3D
+		if device != null and is_instance_valid(device) and device.visible:
+			var _from := p_presentation.on_tool_beam_from(device.call(&"muzzle_position"), to, 1 if who == mine else who.get_instance_id())
+		elif who == mine:
 			var _mine := p_presentation.on_tool_beam(eye, forward, to, 1)
 		else:
 			var their_eye: Vector3 = who.call("eye_position")
@@ -462,7 +466,7 @@ static func present_beams(p_bridge: PlaylotNetBridge, p_presentation: PlaylotPre
 
 func _present_tool_beam(eye: Vector3, forward: Vector3) -> void:
 	if bridge != null and presentation != null:
-		var _drawn := present_beams(bridge, presentation, player, eye, forward)
+		var _drawn := present_beams(bridge, presentation, player, eye, forward, toy_view as Node3D)
 		return
 
 	if not _holding or tool != TOOL_PHYS or player == null or presentation == null:
@@ -471,7 +475,10 @@ func _present_tool_beam(eye: Vector3, forward: Vector3) -> void:
 	var held: GSPropInstance = player.phys_gun.held
 	var body := held.node as Node3D if held != null else null
 	if body != null and body.is_inside_tree():
-		presentation.on_tool_beam(eye, forward, body.global_position)
+		if toy_view != null and is_instance_valid(toy_view):
+			var _from := presentation.on_tool_beam_from(toy_view.call(&"muzzle_position"), body.global_position, 1)
+		else:
+			presentation.on_tool_beam(eye, forward, body.global_position)
 
 
 func _spawn() -> void:

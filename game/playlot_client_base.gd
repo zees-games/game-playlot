@@ -22,6 +22,8 @@ const PlaylotWeapons := preload("playlot_weapons.gd")
 const PlaylotZee := preload("playlot_zee.gd")
 const PlaylotWeaponDef := preload("weapons/playlot_weapon_def.gd")
 const PlaylotTouch := preload("client/playlot_touch.gd")
+const PlaylotMultitool := preload("playlot_multitool.gd")
+const PlaylotMultiDevice := preload("playlot_multi_device.gd")
 const PlaylotMapDrop := preload("client/playlot_map_drop.gd")
 const PlaylotClientPrewarm := preload("client/playlot_client_prewarm.gd")
 const PlaylotShotSound := preload("client/playlot_shot_sound.gd")
@@ -529,7 +531,9 @@ static func add_general_rows(game_menu: GSMenu) -> void:
 	if general != null:
 		general.section("Playlot") \
 			.add(GSMenuRow.toggle(&"hold_to_open_menu", "Hold the spawn-menu key", "Off: pressing it opens the spawn menu and pressing it again closes it.")) \
-			.add(GSMenuRow.toggle(&"prop_sounds", "Prop sounds", "Crates, barrels and everything else you knock about."))
+			.add(GSMenuRow.toggle(&"prop_sounds", "Prop sounds", "Crates, barrels and everything else you knock about.")) \
+			.add(GSMenuRow.slider(&"multitool_hold_seconds", "Multi-tool hold time", "How long to hold R before the mode selector opens.")
+				.formatted(func(v: float) -> String: return "Instant" if v <= 0.0 else "%.2f s" % v))
 		# Camera motion beside the sandbox's own rows: the dip, the lean and the widening, each a
 		# slider to Off for a player whom motion makes sick. The words are the settings' own.
 		var motion := general.section("Camera motion")

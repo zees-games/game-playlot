@@ -169,6 +169,18 @@ var downed: bool = false
 var flashlight: bool = false
 var flashlight_ready: bool = false
 
+## The multi-tool (`PlaylotMultitool`): the arm is raised for the selector; the mode's index, -1 when a zee gun
+## or nothing is in hand; and a counter that moves on each primary press so every client kicks the device.
+## Server-owned and replicated (`PlaylotPlayerNet.net_multi`).
+var multi_raised: bool = false
+var multi_mode: int = -1
+var multi_fire: int = 0
+
+## The multi-tool device drawn on the avatar's hand, for everyone else and for third person.
+## Client side; built by `PlaylotClientMulti`.
+var multi_device: Node3D = null
+var multi_mount_fire: int = 0
+
 ## The marker [member beacon] draws, while it does. Client side; built and freed by
 ## [method present_beacon], and never built on a server, which calls nothing that draws.
 var beacon_marker: GSFxBeacon = null
@@ -307,6 +319,9 @@ func face_body() -> void:
 ## sides and the gun hung off a hand at the hip (the third-person sheets of tools/anim_review.sh).
 ## Looked up once per weapon, as FC does.
 func _hold_kind_now() -> int:
+	# The selector's raised arm: the gun hold, so the avatar shows the bracelet lifted to be read.
+	if multi_raised and multi_mode >= 0:
+		return GSHumanoidFigure.Hold.GUN
 	var model := zee_world as ZeeWorldModel if zee_world != null and is_instance_valid(zee_world) else null
 	if model == null or not model.visible:
 		return GSHumanoidFigure.Hold.NONE

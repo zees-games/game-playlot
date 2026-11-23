@@ -453,6 +453,13 @@ func _drop_toy(session_id: int) -> void:
 	_toy_of.erase(session_id)
 
 
+## The replicated multi-tool state follows `_tool_of`: a mode of the tool is its index, a zee gun is none.
+func _sync_multi(session_id: int, id: StringName) -> void:
+	var player: PlaylotPlayer = game.players.get(id)
+	if player != null:
+		player.multi_mode = PlaylotMultitool.index_of(_tool_of.get(session_id, &""))
+
+
 func _select_tool(session_id: int, id: StringName, tool_id: StringName) -> void:
 	if not game.players.has(id):
 		return
@@ -470,6 +477,7 @@ func _select_tool(session_id: int, id: StringName, tool_id: StringName) -> void:
 	_drop_toy(session_id)
 
 	_tool_of[session_id] = tool_id
+	_sync_multi(session_id, id)
 	_broadcast(PlaylotEvents.Kind.WEAPON, PlaylotEvents.write_weapon(session_id, tool_id))
 
 

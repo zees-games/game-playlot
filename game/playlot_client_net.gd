@@ -298,10 +298,13 @@ func _set_tool(id: StringName) -> void:
 	# saying which tool it holds is a request, not a fact. A weapon is asked for too: `pg_shop`
 	# prices every weapon and `_give_weapon` is the only thing that charges for one.
 	if bridge != null:
-		if id == TOOL_PHYS or id == TOOL_GRAV:
-			bridge.ask_tool(id)
+		if PlaylotMultitool.has_mode(id):
+			# One request for every mode: the server routes it (and rejects an id it does not know).
+			if id != TOOL_PHYS and id != TOOL_GRAV:
+				# What it throws first, so the toy the server builds is already loaded.
+				bridge.ask_arm(selected_prop)
+			bridge.ask_multi_mode(id)
 		else:
-			# What it throws first, so the toy the server builds is already loaded.
 			bridge.ask_arm(selected_prop)
 			bridge.ask_weapon(id)
 
@@ -368,7 +371,7 @@ func _cycle_weapon() -> void:
 
 func _primary_down() -> void:
 	if toy_view != null and is_instance_valid(toy_view):
-		(toy_view as GSToolView).kick()
+		toy_view.call(&"kick")
 	if bridge != null:
 		_net_buttons |= GSFpsCommand.BUTTON_USER_0
 		return
@@ -753,9 +756,11 @@ func _arm_toy_view(id: StringName) -> void:
 	toy_view = null
 	if zee_view != null or camera == null or id == &"":
 		return
-	var def := playlot.weapon_def(id) if playlot != null else null
-	var colour := def.colour if def != null else (Color(0.55, 0.4, 0.9) if id == TOOL_GRAV else Color(0.9, 0.55, 0.2))
-	toy_view = GSToolView.make(colour, id == &"impulse", camera)
+	# Every sandbox tool is a mode of the one bracelet: the mode's glow, the same device.
+	var device := PlaylotMultiDevice.make(camera)
+	device.call(&"set_modes", PlaylotMultitool.available(playlot))
+	device.call(&"set_mode", id)
+	toy_view = device
 
 
 func _set_reload(down: bool) -> void:

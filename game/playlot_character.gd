@@ -293,6 +293,11 @@ func set_hold(kind: int) -> void:
 		figure.set_hold(kind)
 
 
+## The figure the body is drawn with, null before it is built. For what hangs off a hand.
+func figure() -> GSHumanoidFigure:
+	return _figure()
+
+
 func _figure() -> GSHumanoidFigure:
 	if _parts == null or not is_instance_valid(_parts):
 		return null

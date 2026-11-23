@@ -60,7 +60,7 @@ static func make() -> GSMenuBindings:
 	keys.add(SPAWN, &"bind_spawn", "Spawn what is armed", "E", "Building")
 	keys.add(UNDO, &"bind_undo", "Undo your last spawn", "Z", "Building")
 	keys.add(ROTATE, &"bind_rotate", "Turn the held prop with the mouse (hold)", "Shift", "Building")
-	keys.add(RELOAD, &"bind_reload", "Reload a gun; with none, unfreeze everything yours", "R", "Building")
+	keys.add(RELOAD, &"bind_reload", "Tap: reload a gun, or unfreeze everything yours. Hold: the multi-tool mode selector", "R", "Building")
 
 	keys.add(PHYS_GUN, &"bind_phys_gun", "Physics gun", "1", "Tools")
 	keys.add(GRAV_GUN, &"bind_grav_gun", "Gravity gun", "2", "Tools")

@@ -210,6 +210,9 @@ func _drive_tools(session_id: int, behaviour: PlaylotPlayerNet) -> void:
 	var primary := (buttons & GSFpsCommand.BUTTON_USER_0) != 0
 	var secondary := (buttons & GSFpsCommand.BUTTON_USER_1) != 0
 	var primary_pressed := primary and (before & GSFpsCommand.BUTTON_USER_0) == 0
+	if primary_pressed:
+		# The device's kick, for everyone: a counter that changes, not a message per shot.
+		player.multi_fire = (player.multi_fire + 1) & 0xF
 	var secondary_pressed := secondary and (before & GSFpsCommand.BUTTON_USER_1) == 0
 
 	var space := player.get_world_3d().direct_space_state if player.is_inside_tree() else null
@@ -379,6 +382,12 @@ func _on_arm(peer_id: int, session_id: int, id: StringName, arm: Dictionary) -> 
 				_spawn_for(id, Playlot.pickup_id_of(weapon_id))
 		PlaylotEvents.ARM_DROP_WEAPON:
 			var _gun = game.weapon_layer.throw_for(id)
+		PlaylotEvents.ARM_MULTI_MODE:
+			_set_multi_mode(peer_id, session_id, id, arm["id"] as StringName)
+		PlaylotEvents.ARM_MULTI_RAISE:
+			var raising: PlaylotPlayer = game.players.get(id)
+			if raising != null:
+				raising.multi_raised = str(arm["payload"]) == "1"
 		PlaylotEvents.ARM_FLASHLIGHT:
 			var _switched := game.toggle_flashlight(id)
 		PlaylotEvents.ARM_BUILDS:

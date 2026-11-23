@@ -422,7 +422,15 @@ func on_tool_beam(eye: Vector3, aim: Vector3, to: Vector3, key: int = 0) -> Node
 	if fx == null:
 		return null
 
-	var from := facing(eye, aim).translated_local(BEAM_OFFSET).origin
+	return on_tool_beam_from(facing(eye, aim).translated_local(BEAM_OFFSET).origin, to, key)
+
+
+## The same beam leaving [param from] exactly: the multi-tool's palm emitter, which is where
+## every effect of the tool starts.
+func on_tool_beam_from(from: Vector3, to: Vector3, key: int = 0) -> Node3D:
+	if fx == null:
+		return null
+
 	var at := beam_between(from, to)
 	var held: Variant = _beams.get(key)
 

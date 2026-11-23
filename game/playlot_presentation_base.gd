@@ -103,6 +103,10 @@ static func schema() -> GSSettingsSchema:
 		"Hold the spawn-menu key for the spawn menu, or press it to pin it open."
 	).with_scope(GSSettingsDef.Scope.ACCOUNT))
 
+	s.add(GSSettingsDef.number(&"multitool_hold_seconds", 0.25, 0.0, 2.0, &"controls").with_description(
+		"How long to hold R before the multi-tool's mode selector opens. Off (0) opens it at once."
+	))
+
 	s.add(GSSettingsDef.integer(&"field_of_view", 100, 70, 130, &"video").with_scope(
 		GSSettingsDef.Scope.SERVER_CLAMPED
 	))

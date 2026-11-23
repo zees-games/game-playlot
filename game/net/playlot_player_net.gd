@@ -1,6 +1,7 @@
 extends GSNetBehaviour
 
 const PlaylotNetBridge := preload("playlot_net_bridge.gd")
+const PlaylotMultitool := preload("../playlot_multitool.gd")
 const PlaylotNetCommand := preload("playlot_net_command.gd")
 const PlaylotPlayer := preload("../playlot_player.gd")
 const PlaylotZee := preload("../playlot_zee.gd")
@@ -45,6 +46,8 @@ var net_creative: bool = false
 var net_flashlight: bool = false
 ## `PlaylotPlayer.downed`. Everybody's: the figure crawls on every client.
 var net_downed: bool = false
+## `PlaylotMultitool.pack` of the player's multi-tool state. Everybody's: the device shows on the wrist for the others.
+var net_multi: int = 0
 
 # --- A zee weapon, from `ZeeWeaponNet.all_specs()` ---
 #
@@ -118,6 +121,7 @@ func _register_net_vars() -> void:
 	# Last, so the fields before it keep their places in the schema.
 	replicate(&"net_downed", GSNetVar.Type.BOOL).server_driven()
 	replicate(&"net_flashlight", GSNetVar.Type.BOOL).server_driven()
+	replicate(&"net_multi", GSNetVar.Type.UINT).bits(11).server_driven()
 
 
 func _net_apply_input(input: GSNetInput, _tick: int) -> void:
@@ -164,6 +168,7 @@ func pull() -> void:
 		net_creative = player.creative
 		net_downed = player.downed
 		net_flashlight = player.flashlight
+		net_multi = PlaylotMultitool.pack(player.multi_raised, player.multi_mode, player.multi_fire)
 		# A rig that has gone leaves the last values: the counter stops, so nothing fires.
 		if player.zee_rig != null:
 			ZeeWeaponNet.pull(player.zee_rig, self)
@@ -182,6 +187,10 @@ func _net_state_applied(tick: int) -> void:
 	player.creative = net_creative
 	player.downed = net_downed
 	player.flashlight = net_flashlight
+	var multi := PlaylotMultitool.unpack(net_multi)
+	player.multi_raised = bool(multi["raised"])
+	player.multi_mode = int(multi["mode_index"])
+	player.multi_fire = int(multi["fire"])
 	_apply_weapon()
 	_correct_drawn()
 	# NOT the node, on a predicted entity: receive_snapshot calls this before the

@@ -355,6 +355,11 @@ func _unhandled_input(event: InputEvent) -> void:
 	if player == null:
 		return
 
+	# The multi-tool's selector, before anything that moves the world: held R owns the keys and the mouse.
+	if not _menu_is_open() and _multi_input(event):
+		get_viewport().set_input_as_handled()
+		return
+
 	if event is InputEventScreenTouch or event is InputEventScreenDrag:
 		_on_screen_touch(event)
 		return
@@ -423,11 +428,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if key.is_action(PlaylotBindings.DROP_WEAPON) and key.pressed and not key.is_echo() and _zee_rig() != null:
 		bridge.ask_drop_weapon()
 		return
-	# R reloads a gun (the tool gun's R is its third button), else unfreezes; read on both edges.
-	if key.is_action(PlaylotBindings.RELOAD) and (_zee_rig() != null or tool == TOOLGUN):
-		_set_reload(key.pressed)
-		return
-
+	# R (reload, unfreeze, the multi-tool selector) is read by `_multi_input` before this.
 	# Aim and quick melee moved onto keys, held like the trigger, with a zee gun in hand.
 	if _zee_rig() != null and key.is_action(PlaylotBindings.AIM):
 		_aiming = key.pressed
@@ -465,8 +466,6 @@ func _on_press_key(key: InputEventKey) -> void:
 		_use_vehicle()
 	elif key.is_action(PlaylotBindings.FLASHLIGHT):
 		_toggle_flashlight()
-	elif key.is_action(PlaylotBindings.RELOAD):
-		_unfreeze_all()
 	elif key.is_action(PlaylotBindings.PHYS_GUN):
 		_set_tool(TOOL_PHYS)
 	elif key.is_action(PlaylotBindings.GRAV_GUN):
