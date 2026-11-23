@@ -1,5 +1,7 @@
 extends Control
 
+const PlaylotZee := preload("playlot_zee.gd")
+
 const Playlot := preload("playlot.gd")
 const PlaylotWeaponIcons := preload("playlot_weapon_icons.gd")
 const PlaylotGeometry := preload("playlot_geometry.gd")
@@ -78,7 +80,7 @@ var _status: Label = null
 var _tools: Label = null
 var _crosshair: GSCrosshair = null
 ## Through a scoped zee gun at full aim: zee's circle and reticle (the gun is not drawn then).
-var scope: ZeeScopeOverlay = null
+var scope: Control = null
 ## Whether the host's GSCrosshair fades while aiming (gs-ui API 5).
 var _crosshair_fades: bool = GSAddonApi.build_level("gs_ui") >= 5
 var _notice_until: float = 0.0
@@ -153,11 +155,13 @@ func _ready() -> void:
 
 	# A crosshair, because every tool here is aimed. Under it and the pieces: the scope is the
 	# view, the HUD reads over it.
-	scope = ZeeScopeOverlay.new()
-	scope.name = "Scope"
-	add_child(scope)
-	# First child, so drawn first: the run timer and the tool lines read over the black.
-	move_child(scope, 0)
+	# Zee's scope, when the zee_weapons addon is installed; without it there is no scoped gun.
+	scope = PlaylotZee.new_scope_overlay()
+	if scope != null:
+		scope.name = "Scope"
+		add_child(scope)
+		# First child, so drawn first: the run timer and the tool lines read over the black.
+		move_child(scope, 0)
 
 	_crosshair = GSCrosshair.new()
 	_crosshair.name = "Crosshair"
@@ -289,8 +293,7 @@ func _process(delta: float) -> void:
 		ammo.clear()
 		return
 
-	var held: Variant = player.zee_rig
-	show_weapon(held as ZeeWeaponRig if is_instance_valid(held) and held is ZeeWeaponRig else null)
+	show_weapon(PlaylotZee.rig_of(player))
 
 	if _status != null:
 		var map := playlot.maps.current
@@ -335,16 +338,17 @@ func _process(delta: float) -> void:
 ## weapon says so), the reserve alone for a weapon that feeds straight from it, the name alone
 ## for a blade. Public so a check and a render tool can call it. On a connected client the
 ## rig is the predicting one, which spends the same rounds the server's does.
-func show_weapon(rig: ZeeWeaponRig) -> void:
+func show_weapon(rig: Node) -> void:
 	if ammo == null:
 		return
 
-	if rig == null or rig.arsenal == null or rig.arsenal.current() == null:
+	var arsenal := PlaylotZee.arsenal_of(rig)
+	if arsenal == null or arsenal.current() == null:
 		ammo.clear()
 		weapon_icon.clear()
 		return
 
-	var slot := rig.arsenal.current()
+	var slot := arsenal.current()
 	var def := slot.def
 	var title := def.display_name if def.display_name != "" else String(def.id).capitalize()
 	var sprite := PlaylotWeaponIcons.shared.texture(def.id)
@@ -354,7 +358,7 @@ func show_weapon(rig: ZeeWeaponRig) -> void:
 		ammo.show_ammo(title, -1, -1)
 		return
 
-	var reserve := rig.arsenal.ammo().count(def.ammo_type)
+	var reserve := arsenal.ammo().count(def.ammo_type)
 
 	if def.magazine > 0:
 		# Low at a quarter of a magazine, which is when a reload is worth starting.
@@ -454,16 +458,19 @@ func set_alive(alive: bool) -> void:
 
 
 ## The client's hands this frame: the scope follows their progressive fade-in and the crosshair gives way as it rises.
-func follow_hands(hands: ZeeViewModel) -> void:
-	set_aim(hands.aim_fraction() if hands != null else 0.0, hands != null and hands.scope_fraction() > 0.0)
+func follow_hands(hands: Variant) -> void:
+	if hands != null and not PlaylotZee.is_view_model(hands):
+		hands = null
+	var fraction: float = hands.aim_fraction() if hands != null else 0.0
+	set_aim(fraction, hands != null and float(hands.scope_fraction()) > 0.0)
 	if scope != null and hands != null:
-		scope.follow(hands)
+		scope.call(&"follow", hands)
 
 
 ## The aim this frame: the dot fades as the gun comes up; [param scoped] hides it for the scope.
 func set_aim(fraction: float, scoped: bool) -> void:
 	if scope != null:
-		scope.fraction = fraction if scoped else 0.0
+		scope.set(&"fraction", fraction if scoped else 0.0)
 	if _crosshair != null:
 		_crosshair.visible = not scoped
 		if _crosshair_fades:

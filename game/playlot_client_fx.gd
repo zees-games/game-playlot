@@ -255,8 +255,8 @@ func _process(_delta: float) -> void:
 		if presentation != null and presentation.settings != null else 100.0
 	# The aim's zoom multiplies the lens after the speed widening (`present_camera`), from the
 	# player's own field of view, so it never compounds.
-	var hands := zee_view as ZeeViewModel if zee_view != null and is_instance_valid(zee_view) and _zee_rig() != null else null
-	var zoom := hands.aim_fov_scale() if hands != null else 1.0
+	var hands: Variant = zee_view if PlaylotZee.is_view_model(zee_view) and _zee_rig() != null else null
+	var zoom: float = hands.aim_fov_scale() if hands != null else 1.0
 	# The look slows with the lens, so a zoomed scope is steady to aim (the arena's look_scale).
 	for sampler: GSFpsSampler in [_sampler, player.sampler]:
 		if sampler != null:
@@ -276,8 +276,8 @@ func _aim_may() -> bool:
 ## What the command says about the sights: the view model's own state (a toggle in the rules reaches the server's spread and pace as it does the
 ## picture), and nothing when the sights may not come up.
 func _aim_sent() -> bool:
-	var hands := zee_view as ZeeViewModel if zee_view != null and is_instance_valid(zee_view) else null
-	return _aim_may() and (hands.is_aim_held() if hands != null else _aiming)
+	var hands: Variant = zee_view if PlaylotZee.is_view_model(zee_view) else null
+	return _aim_may() and (bool(hands.is_aim_held()) if hands != null else _aiming)
 
 
 func _present_zee() -> Vector2:
@@ -291,12 +291,13 @@ func _present_zee() -> Vector2:
 
 	zee_view.visible = view_id() == &"fp"
 	# Down the sights: only first person, with the pointer on the view and no menu up.
-	var hands := zee_view as ZeeViewModel
+	var hands: Variant = zee_view if PlaylotZee.is_view_model(zee_view) else null
 	if hands != null:
 		hands.aim_input(_aiming and _aim_may())
 	var state := player.controller.state
-	rig.drive_view(Vector2.ZERO, player.speed(), state.is_grounded(), state.is_crouched())
-	return rig.view_punch()
+	rig.call(&"drive_view", Vector2.ZERO, player.speed(), state.is_grounded(), state.is_crouched())
+	var punch: Variant = rig.call(&"view_punch")
+	return punch if punch is Vector2 else Vector2.ZERO
 
 
 func _exit_tree() -> void:

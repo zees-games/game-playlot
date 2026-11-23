@@ -203,9 +203,10 @@ func _register_addon_cvars() -> void:
 		add_cvar, GSConVar.FLAG_ARCHIVE | GSConVar.FLAG_NOTIFY | GSConVar.FLAG_REPLICATED
 	)
 	# Aim down sights: the numbers the simulation reads cross as one JSON cvar, `zee_ads_rules`.
-	var _ads := game.ads_rules.bind_cvars(
-		add_cvar, GSConVar.FLAG_ARCHIVE | GSConVar.FLAG_NOTIFY | GSConVar.FLAG_REPLICATED
-	)
+	if game.ads_rules != null:
+		var _ads: Variant = game.ads_rules.call(&"bind_cvars",
+			add_cvar, GSConVar.FLAG_ARCHIVE | GSConVar.FLAG_NOTIFY | GSConVar.FLAG_REPLICATED
+		)
 
 	# gs-player-controller's mp_forceview (view mode) and mp_solidplayers (players block each other),
 	# REPLICATED: the client places its camera under the first and predicts its player under the second.

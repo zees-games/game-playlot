@@ -250,7 +250,7 @@ func _test_zee_weapons() -> void:
 
 	for i in range(200):
 		var held := GSFpsCommand.BUTTON_USER_0 if (i / 20) % 2 == 0 else 0
-		var outcome := rig.simulate_tick(
+		var outcome: Variant = rig.simulate_tick(
 			PlaylotZee.command_for(held, _zw_state.yaw, _zw_state.pitch, PlaylotZee.slot_of(rig)),
 			playlot.current_tick() + i
 		) if rig != null else null
@@ -293,12 +293,12 @@ func _test_zee_weapons_2() -> void:
 	_check(smg != null and smg.arsenal.tick_rate == rate,
 		"a zee rig's arsenal runs at the server's rate", "%d Hz" % rate)
 	if smg != null:
-		var row := smg.current_def()
+		var row: Variant = smg.current_def()
 		var base := playlot.current_tick() + 1000
 		var fired := 0
 		for i in range(rate * 3):
 			var held := GSFpsCommand.BUTTON_USER_0 if i >= rate * 2 else 0
-			var out := smg.simulate_tick(
+			var out: Variant = smg.simulate_tick(
 				PlaylotZee.command_for(held, _zw_state.yaw, _zw_state.pitch, PlaylotZee.slot_of(smg)),
 				base + i
 			)
@@ -481,7 +481,7 @@ func _test_workshop_2() -> void:
 	var state := _wx_player.controller.state
 	for i in range(120):
 		var held := GSFpsCommand.BUTTON_USER_0 if (i / 10) % 2 == 0 else 0
-		var outcome := rig.simulate_tick(
+		var outcome: Variant = rig.simulate_tick(
 			PlaylotZee.command_for(held, state.yaw, state.pitch, PlaylotZee.slot_of(rig)),
 			playlot.current_tick() + i
 		) if rig != null else null

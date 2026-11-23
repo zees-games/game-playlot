@@ -69,7 +69,7 @@ var profile: Dictionary = {}
 var _lap_at := 0
 
 var _slice: GSFrameSlice = null
-var _spare_view: ZeeViewModel = null
+var _spare_view: Node3D = null
 var _parts_warmed := false
 ## True while [constant HOLD] is held.
 var _covering := false
@@ -311,7 +311,7 @@ func _items_for(phase: Phase) -> Array:
 			var out: Array = []
 			for def in PlaylotZee.defs():
 				if PlaylotZee.is_zee(def):
-					var art := ZeeWeaponArtTable.get_art(PlaylotZee.zee_id(def))
+					var art := PlaylotZee.art_for(PlaylotZee.zee_id(def))
 					if art != null:
 						out.append(art)
 			return out
@@ -404,7 +404,7 @@ func _warm_one_inner(phase: Phase, item: Variant) -> void:
 		Phase.PROPS:
 			_warm_prop(item as GSPropDef)
 		Phase.SHOT_FX:
-			_hand(ZeeShotFx.warm())
+			_hand(PlaylotZee.shot_fx_warm())
 			if shot_sound != null and is_instance_valid(shot_sound):
 				var _layers_ready: bool = shot_sound.call(&"warm")
 		Phase.MUZZLE:
@@ -412,7 +412,7 @@ func _warm_one_inner(phase: Phase, item: Variant) -> void:
 		Phase.BLOOD:
 			_warm_blood()
 		Phase.WEAPONS:
-			_warm_weapon(item as ZeeWeaponArt)
+			_warm_weapon(item as Resource)
 		Phase.FX:
 			_warm_fx_scene(str(item))
 		Phase.ICONS:
@@ -452,22 +452,24 @@ func _warm_prop(def: GSPropDef) -> void:
 
 ## Draws the weapon into a spare view model and drops it again: the model file loads, its
 ## materials are made, and the reload parts are built once.
-func _warm_weapon(art: ZeeWeaponArt) -> void:
+func _warm_weapon(art: Resource) -> void:
 	if art == null:
 		return
 	if _spare_view == null:
-		_spare_view = ZeeViewModel.new()
+		_spare_view = PlaylotZee.new_view_model()
+		if _spare_view == null:
+			return
 		_spare_view.name = "PrewarmView"
-	var equipped := _spare_view.equip(art)
+	var equipped: Variant = _spare_view.call(&"equip", art)
 	_lap("weapon.equip")
-	if equipped.ok:
+	if equipped is GSResult and (equipped as GSResult).ok:
 		_hand(GSRenderWarmup.collect(_spare_view))
 	_lap("weapon.collect")
-	_spare_view.clear()
+	_spare_view.call(&"clear")
 	_lap("weapon.clear")
 	if not _parts_warmed:
 		_parts_warmed = true
-		_spare_view.prewarm(art)
+		_spare_view.call(&"prewarm", art)
 		_lap("weapon.parts")
 
 

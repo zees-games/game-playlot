@@ -109,7 +109,7 @@ func _register_net_vars() -> void:
 	replicate(&"net_beacon", GSNetVar.Type.BOOL).server_driven()
 	replicate(&"net_creative", GSNetVar.Type.BOOL).server_driven()
 
-	for spec in ZeeWeaponNet.all_specs():
+	for spec in PlaylotZee.net_specs():
 		var weapon := replicate(spec["property"], GSNetVar.Type[spec["type"]])
 		if int(spec["bits"]) > 0:
 			weapon.bits(int(spec["bits"]))
@@ -170,8 +170,7 @@ func pull() -> void:
 		net_flashlight = player.flashlight
 		net_multi = PlaylotMultitool.pack(player.multi_raised, player.multi_mode, player.multi_fire)
 		# A rig that has gone leaves the last values: the counter stops, so nothing fires.
-		if player.zee_rig != null:
-			ZeeWeaponNet.pull(player.zee_rig, self)
+		PlaylotZee.net_pull(player.zee_rig, self)
 	GSFrameCost.add(&"pn.pull", t)
 
 
@@ -224,11 +223,10 @@ func _net_interpolated(_tick: int) -> void:
 ## the drawn one on its owner: a LOCAL rig without the authority. Watchers have no rig, and the
 ## owner-only fields are stale on them.
 func _correct_drawn() -> void:
-	var rig: Variant = player.zee_rig
-	if not (rig is ZeeWeaponRig) or not is_instance_valid(rig):
+	var drawn := PlaylotZee.rig_of(player)
+	if drawn == null:
 		return
-	var drawn := rig as ZeeWeaponRig
-	if drawn.authority or drawn.role != ZeeWeaponRig.Role.LOCAL:
+	if bool(drawn.get(&"authority")) or PlaylotZee.role_of(drawn) != PlaylotZee.ROLE_LOCAL:
 		return
 	var _corrected := PlaylotZee.correct(drawn, net_magazine, net_reserve, net_slot,
 		net_reloading or net_switching, player.zee_quiet)
@@ -239,9 +237,7 @@ func _correct_drawn() -> void:
 ## for the reasons `ZeeWeaponNet.apply` gives.
 func _apply_weapon() -> void:
 	var held: Variant = player.zee_world
-	var model: ZeeWorldModel = null
-	if held is ZeeWorldModel and is_instance_valid(held):
-		model = held as ZeeWorldModel
+	var model: Variant = held if PlaylotZee.is_world_model(held) else null
 
-	var answer := ZeeWeaponNet.apply(self, model, _seen_fire_seq)
+	var answer := PlaylotZee.net_apply(self, model, _seen_fire_seq)
 	_seen_fire_seq = int(answer["seq"])

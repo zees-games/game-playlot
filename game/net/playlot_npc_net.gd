@@ -25,14 +25,14 @@ var net_switching: bool = false
 var _seen_fire_seq: int = 0
 var _shown_weapon: String = ""
 var _hands: Node3D = null
-var _model: ZeeWorldModel = null
+var _model: Node3D = null
 
 
 func _register_net_vars() -> void:
 	super()
 	replicate(&"net_weapon", GSNetVar.Type.STRING)
 
-	for spec in ZeeWeaponNet.all_specs():
+	for spec in PlaylotZee.net_specs():
 		var name: StringName = spec["property"]
 
 		# Only the fields a watcher's world model reads. The magazine and the reserve are the
@@ -57,8 +57,7 @@ func pull() -> void:
 
 	var rig: Variant = prop.get("zee_rig")
 
-	if rig is ZeeWeaponRig and is_instance_valid(rig):
-		ZeeWeaponNet.pull(rig, self)
+	PlaylotZee.net_pull(rig, self)
 
 
 func _net_state_applied(tick: int) -> void:
@@ -70,7 +69,7 @@ func _net_state_applied(tick: int) -> void:
 	_show_weapon()
 
 	if _model != null:
-		var answer := ZeeWeaponNet.apply(self, _model, _seen_fire_seq)
+		var answer := PlaylotZee.net_apply(self, _model, _seen_fire_seq)
 		_seen_fire_seq = int(answer["seq"])
 
 
@@ -93,19 +92,20 @@ func _show_weapon() -> void:
 		prop.add_child(_hands)
 		_hands.position = Vector3(0.35, 0.25, -0.35)
 
-	var art: Variant = ZeeWeaponArtTable.table().get(
-		PlaylotZee.zee_id(PlaylotZee.find_def(StringName(net_weapon)))
-	)
+	# Without the zee_weapons addon there is no art and no model: the NPC is seen unarmed.
+	var art := PlaylotZee.art_for(PlaylotZee.zee_id(PlaylotZee.find_def(StringName(net_weapon))))
 
-	if not (art is ZeeWeaponArt):
+	if art == null:
 		return
 
-	_model = ZeeWorldModel.new()
-	_model.name = "ZeeWorldModel"
+	_model = PlaylotZee.new_world_model()
 
-	if not _model.attach_to(_hands):
+	if _model == null:
+		return
+
+	if not bool(_model.call(&"attach_to", _hands)):
 		_model.free()
 		_model = null
 		return
 
-	var _equipped := _model.equip(art as ZeeWeaponArt)
+	var _equipped: Variant = _model.call(&"equip", art)

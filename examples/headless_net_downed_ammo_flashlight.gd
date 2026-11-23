@@ -263,7 +263,7 @@ func _test_the_aim_bit_crosses() -> void:
 		_done()
 		return
 
-	var paced := _server_game.ads_rules.move_speed_for(rig.current_def().id)
+	var paced: float = _server_game.ads_rules.move_speed_for(rig.current_def().id)
 	var start := theirs.global_position
 	var walk_step := func(command: GSFpsCommand, aim: bool) -> void:
 		var _o := drawn.simulate_tick(PlaylotZee.command_for(0, 0.0, 0.0, PlaylotZee.slot_of(drawn), aim), _tick)

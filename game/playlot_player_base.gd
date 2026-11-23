@@ -1,5 +1,7 @@
 extends CharacterBody3D
 
+const PlaylotZee := preload("playlot_zee.gd")
+
 const PlaylotMaterials := preload("playlot_materials.gd")
 const PlaylotCharacter := preload("playlot_character.gd")
 
@@ -121,7 +123,7 @@ var zee_rig: Node = null
 ## `PlaylotZee.SETTLE_SEC`.
 var zee_quiet: float = 0.0
 
-## The zee weapon everybody else sees in this player's hands (a [ZeeWorldModel]), or null.
+## The zee weapon everybody else sees in this player's hands (zee's world model), or null.
 ## Built on a client from the server's WEAPON event by [method PlaylotZee.show_held].
 var zee_world: Node3D = null
 
@@ -327,17 +329,17 @@ func _hold_kind_now() -> int:
 	# The selector's raised arm: the gun hold, so the avatar shows the bracelet lifted to be read.
 	if multi_raised and multi_mode >= 0:
 		return GSHumanoidFigure.Hold.GUN
-	var model := zee_world as ZeeWorldModel if zee_world != null and is_instance_valid(zee_world) else null
+	var model: Variant = zee_world if PlaylotZee.is_world_model(zee_world) else null
 	if model == null or not model.visible:
 		return GSHumanoidFigure.Hold.NONE
-	var id := model.equipped()
+	var id: StringName = model.equipped()
 	if id != _hold_id:
 		_hold_id = id
-		var art: Variant = ZeeWeaponArtTable.table().get(id)
-		var pose: StringName = (art as ZeeWeaponArt).pose if art is ZeeWeaponArt else &""
-		if pose == &"" or not (art as ZeeWeaponArt).has_model() or pose == ZeeWeaponArtTable.POSE_THROWN:
+		var art := PlaylotZee.art_for(id)
+		var pose: StringName = art.get(&"pose") if art != null else &""
+		if pose == &"" or not bool(art.call(&"has_model")) or pose == PlaylotZee.POSE_THROWN:
 			_hold_kind = GSHumanoidFigure.Hold.NONE
-		elif pose == ZeeWeaponArtTable.POSE_MELEE:
+		elif pose == PlaylotZee.POSE_MELEE:
 			_hold_kind = GSHumanoidFigure.Hold.MELEE
 		else:
 			_hold_kind = GSHumanoidFigure.Hold.GUN
@@ -704,9 +706,10 @@ func component(type_name: StringName) -> Object:
 	match String(type_name):
 		"GSPlayerController", "GSFpsController":
 			return controller
-		"ZeeWeaponRig":
-			return zee_rig
 		_:
+			# The rig's class name only exists while the zee_weapons addon is installed.
+			if type_name == PlaylotZee.rig_class() and type_name != &"":
+				return zee_rig
 			return null
 
 

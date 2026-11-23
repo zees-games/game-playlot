@@ -3,13 +3,10 @@ extends "playlot_client_ui.gd"
 
 ## The held weapon's and the worn tool's first-person view: arming, seating the hands, disarming.
 
-func _zee_rig() -> ZeeWeaponRig:
+func _zee_rig() -> Node:
 	if player == null or not is_instance_valid(player):
 		return null
-	var rig: Variant = player.zee_rig
-	if rig is ZeeWeaponRig and is_instance_valid(rig):
-		return rig as ZeeWeaponRig
-	return null
+	return PlaylotZee.rig_of(player)
 
 
 ## Builds the hands under the camera and a rig to drive them. The rig has the authority only
@@ -19,22 +16,25 @@ func _arm_zee(def: PlaylotWeaponDef) -> bool:
 	if player == null or camera == null:
 		return false
 
-	zee_view = ZeeViewModel.new()
-	zee_view.name = "ZeeViewModel"
+	# Without the zee_weapons addon there are no zee hands; the caller falls back.
+	zee_view = PlaylotZee.new_view_model()
+	if zee_view == null:
+		return false
+	zee_view.name = "ZeeHands"
 	var own_hands := PlaylotViewGrip.available() and view_arms is GSPlayerViewArms
-	(zee_view as ZeeViewModel).show_arms = not own_hands
+	zee_view.set(&"show_arms", not own_hands)
 	if own_hands:
-		(zee_view as ZeeViewModel).hands_reached.connect(_on_hands_reached)
+		var _linked := zee_view.connect(&"hands_reached", _on_hands_reached)
 	camera.add_child(zee_view)
 	if own_hands:
 		# The viewmodel_fov lens scales the weapon 2.5x and pushes it past the arms' reach.
 		zee_view.remove_from_group(&"gs_view_model")
-		(zee_view as ZeeViewModel).hands_fov = 0.0
+		zee_view.set(&"hands_fov", 0.0)
 		# Before this client's frame, which then moves it to the avatar's hand (its lens resets the position each frame).
 		zee_view.process_priority = -1
 
 	var rig := PlaylotZee.arm(
-		player, def, ZeeWeaponRig.Role.LOCAL, bridge == null,
+		player, def, PlaylotZee.ROLE_LOCAL, bridge == null,
 		playlot.tick_rate, Engine.get_physics_frames(), zee_view, playlot.ads_rules
 	)
 
@@ -43,7 +43,7 @@ func _arm_zee(def: PlaylotWeaponDef) -> bool:
 		return false
 
 	if shot_sound != null:
-		shot_sound.attach(rig.shot_fx())
+		shot_sound.attach(rig.call(&"shot_fx"))
 
 	# Connected, the server's WEAPON event draws it (`PlaylotNetBridge`); offline nobody
 	# sends one, and the gun still belongs in the hands a third-person camera shows.
@@ -55,7 +55,7 @@ func _arm_zee(def: PlaylotWeaponDef) -> bool:
 
 ## The weapon's own measured grip and fore-end, onto the arms.
 func _on_hands_reached(anchor: Node3D, grip: Vector3, fore: Vector3, pose: StringName) -> void:
-	var hands := zee_view as ZeeViewModel
+	var hands: Variant = zee_view if PlaylotZee.is_view_model(zee_view) else null
 	if hands != null and hands.equipped() != _seated_for and hands.aim_fraction() <= 0.0:
 		# At the hip the grip is the art's rest grip in the view model's own space.
 		_seated_for = hands.equipped()
@@ -74,8 +74,8 @@ func _disarm_zee() -> void:
 
 	if zee_view != null and is_instance_valid(zee_view):
 		# queue_free is deferred: the dying model would emit once more and re-seat the arms.
-		if (zee_view as ZeeViewModel).hands_reached.is_connected(_on_hands_reached):
-			(zee_view as ZeeViewModel).hands_reached.disconnect(_on_hands_reached)
+		if zee_view.is_connected(&"hands_reached", _on_hands_reached):
+			zee_view.disconnect(&"hands_reached", _on_hands_reached)
 		zee_view.queue_free()
 	zee_view = null
 	_seated_for = &""

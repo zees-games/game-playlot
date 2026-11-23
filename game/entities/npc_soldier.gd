@@ -96,7 +96,7 @@ func arm_with(id: StringName) -> GSResult:
 	if def == null or not PlaylotZee.npc_can_use(def):
 		return GSResult.fail(GSError.CODE_INVALID, "An NPC cannot use that.", String(id))
 
-	var rig := PlaylotZee.arm(self, def, ZeeWeaponRig.Role.SERVER, true, game.tick_rate, game.current_tick(), null, game.ads_rules)
+	var rig := PlaylotZee.arm(self, def, PlaylotZee.ROLE_SERVER, true, game.tick_rate, game.current_tick(), null, game.ads_rules)
 
 	if rig == null:
 		return GSResult.fail(GSError.CODE_STATE, "That weapon could not be armed.")
@@ -146,7 +146,9 @@ var idle_ticks: int = 0
 
 
 func _drive_weapon() -> void:
-	var rig := zee_rig as ZeeWeaponRig
+	var rig: Variant = zee_rig if PlaylotZee.is_rig(zee_rig) else null
+	if rig == null:
+		return
 	var fire := bool(brain.get("wants_fire"))
 
 	var command := GSWeaponCommand.new()
@@ -163,8 +165,9 @@ func _drive_weapon() -> void:
 	# for its idle tick, which reads no context. Handing it none skips the muzzle, the context
 	# and the wall-barrel rays (most of an armed NPC's tick) on a tick no shot can leave; a
 	# server rig has no view, so the idle tick changes the same state the full one would.
-	if idle_rig_ticks and rig.is_ready() and rig.arsenal.is_idle_for(command, rig._previous_command):
-		var _idle := rig.simulate_tick(command, game.current_tick())
+	var arsenal := PlaylotZee.arsenal_of(rig)
+	if idle_rig_ticks and rig.is_ready() and arsenal != null and arsenal.is_idle_for(command, rig.get(&"_previous_command")):
+		var _idle := PlaylotZee.simulate(rig, command, game.current_tick())
 		idle_ticks += 1
 		PlaylotZee.top_up(rig)
 		return
@@ -180,7 +183,7 @@ func _drive_weapon() -> void:
 	ctx.entity = game.npc_entity_id(self)
 	ctx.authority = true
 
-	var outcome := rig.simulate_tick(command, ctx.tick, ctx)
+	var outcome := PlaylotZee.simulate(rig, command, ctx.tick, ctx)
 
 	if outcome != null and outcome.used:
 		game.npc_shots_fired(self, outcome)

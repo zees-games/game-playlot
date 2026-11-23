@@ -91,7 +91,7 @@ func _give_weapon(session_id: int, id: StringName, weapon_id: StringName) -> voi
 	# one would redraw it and say nothing. The client's drawn gun is not told; it takes the
 	# count from the owner's snapshot once quiet (`PlaylotPlayerNet._correct_drawn`).
 	if PlaylotZee.is_zee(def) and _tool_of.get(session_id, &"") == weapon_id \
-			and player.zee_rig is ZeeWeaponRig and is_instance_valid(player.zee_rig):
+			and PlaylotZee.is_rig(player.zee_rig):
 		if PlaylotZee.refill(player.zee_rig):
 			_tell(peer_for_player(session_id), PlaylotEvents.Kind.NOTICE,
 				PlaylotEvents.write_notice(session_id, "Ammunition refilled."))
@@ -102,7 +102,7 @@ func _give_weapon(session_id: int, id: StringName, weapon_id: StringName) -> voi
 		game.phys_gun_release(player)
 		player.grav_gun.drop()
 		if PlaylotZee.arm(
-			player, def, ZeeWeaponRig.Role.SERVER, true, game.tick_rate, game.current_tick(), null, game.ads_rules
+			player, def, PlaylotZee.ROLE_SERVER, true, game.tick_rate, game.current_tick(), null, game.ads_rules
 		) != null:
 			_tool_of[session_id] = weapon_id
 	else:

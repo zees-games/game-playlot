@@ -289,7 +289,8 @@ func _follow_server_rules() -> void:
 		var _bodies := playlot.ragdoll_rules.follow_cvars(link)
 		var _drops = playlot.weapon_layer.rules.follow_cvars(link)
 		var _toy_rules := playlot.toy_rules.follow_cvars(link)
-		var _ads := playlot.ads_rules.follow_cvars(link)
+		if playlot.ads_rules != null:
+			var _ads: Variant = playlot.ads_rules.call(&"follow_cvars", link)
 		# The server's mp_forceview and mp_solidplayers: this end places its own camera and
 		# predicts its own player.
 		var _view := playlot.view_rules.follow_cvars(link)

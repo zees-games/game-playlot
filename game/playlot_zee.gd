@@ -4,20 +4,23 @@ const PlaylotPaths := preload("playlot_paths.gd")
 const PlaylotWeaponDef := preload("weapons/playlot_weapon_def.gd")
 const PlaylotZeeSelf := preload("playlot_zee.gd")
 
-## zee-gs-weapons in the sandbox: twenty-seven real weapons beside the three toys.
+## zee-gs-weapons in the sandbox, when the player has it: twenty-seven real weapons beside the toys.
 ##
 ## [b]A second kind of weapon, not a SWEP with a gun painted on.[/b] `PlaylotWeapon` is a
 ## prop tool: two edge-triggered buttons and a float delta, run where the input is. A zee
 ## weapon is gs-weapon's: a held-button command per integer tick, its own cadence, reload
-## and ammunition, and an outcome full of shots that the game resolves. Wrapping one in the
-## other would throw away the cadence and run the shot on the client, which is a client
-## deciding what it hit. So the menu, the shop and the loadout see one list of
-## [PlaylotWeaponDef]s, and `meta.zee` says which machinery is behind an entry.
+## and ammunition, and an outcome full of shots that the game resolves. So the menu, the shop
+## and the loadout see one list of [PlaylotWeaponDef]s, and `meta.zee` says which machinery is
+## behind an entry.
 ##
-## [b]Named by class, not by path, and that is not the rule broken.[/b] The path rule is for
-## this game's OWN scripts, whose `class_name`s a mounted pack never registers. `Zee*` and
-## `GSWeapon*` are addons compiled into the host — the client shell carries both — so they
-## are registered wherever this runs. mg-smash-copter names them the same way.
+## [b]Optional, and this file is the only door.[/b] The pack does not require zee-gs-weapons:
+## the client shell does not carry it, and a Workshop subscription overlays it at
+## `res://addons/zee_weapons/` before the game starts. So nothing under `game/` or `scenes/`
+## names a Zee class: this file loads Zee's scripts by path after [method available], holds
+## them untyped and calls them by name. Without zee, [method defs] is empty, [method arm]
+## returns null, NPCs stand unarmed, the view and HUD draw no gun and the net schema is the
+## same ([method net_specs] never asks zee), so a server and a client may differ in having it.
+## `examples/headless_zee_optional.gd` holds both halves.
 ##
 ## [b]A shot hurts only when the arena is on.[/b] A sandbox is not a deathmatch, and a
 ## weapon pack is not a reason to make it one: with `pg_arena 0` a shot shoves the prop it
@@ -25,6 +28,23 @@ const PlaylotZeeSelf := preload("playlot_zee.gd")
 ## gs-combat resolves the same shot when it is on, through [member PlaylotNetBridge.shot_fn].
 
 const CHANNEL := "playlot.zee"
+
+## Where a subscribed (or linked) zee-gs-weapons lives. The one literal path to it in the game.
+const ZEE_DIR := "res://addons/zee_weapons/"
+## The script whose presence means zee is here.
+const PROBE := "runtime/zee_weapon_rig.gd"
+
+## Zee's rig roles (`ZeeWeaponRig.Role`), copied so a caller needs no Zee class to name one.
+const ROLE_LOCAL := 0
+const ROLE_REMOTE := 1
+const ROLE_SERVER := 2
+
+## Zee's hold poses and weapon tags (`ZeeWeaponArt.POSE_*`, `ZeeWeaponIds.TAG_*`).
+const POSE_MELEE := &"melee"
+const POSE_THROWN := &"thrown"
+const TAG_MELEE := &"melee"
+const TAG_THROWN := &"thrown"
+const TAG_EXPLOSIVE := &"explosive"
 
 ## Prefixed, because two weapon lists share one id space here and both have a `launcher`.
 const ID_PREFIX := "zee_"
@@ -51,13 +71,117 @@ const SLOT_COLOURS := {
 	5: Color(0.84, 0.74, 0.36),
 }
 
+## Tests set this to run the no-zee paths on a host that has zee linked. Call [method reset] after.
+static var force_absent := false
+
+## -1 unknown, 0 absent, 1 present.
+static var _present := -1
+## Zee scripts by path relative to [constant ZEE_DIR].
+static var _scripts: Dictionary = {}
+
+
+# --- Presence --------------------------------------------------------------------
+
+## Whether zee-gs-weapons is installed here (linked, built in, or overlaid from the Workshop).
+static func available() -> bool:
+	if force_absent:
+		return false
+	if _present < 0:
+		_present = 1 if ResourceLoader.exists(ZEE_DIR + PROBE) else 0
+	return _present == 1
+
+
+## Forgets the presence answer, the loaded scripts, the catalogue and the forced flag; for tests.
+static func reset() -> void:
+	force_absent = false
+	_present = -1
+	_scripts.clear()
+	_catalogue = null
+	_with_packs = null
+
+
+## Zee's script at [param rel] under [constant ZEE_DIR], or null without zee.
+static func zee_script(rel: String) -> Script:
+	if not available():
+		return null
+	var cached: Variant = _scripts.get(rel)
+	if cached is Script:
+		return cached
+	var path := ZEE_DIR + rel
+	if not ResourceLoader.exists(path):
+		return null
+	var loaded := load(path) as Script
+	_scripts[rel] = loaded
+	return loaded
+
+
+## [param method] on zee's script [param rel] with [param args], or [param fallback] without zee.
+static func call_static(rel: String, method: StringName, args: Array = [], fallback: Variant = null) -> Variant:
+	var s := zee_script(rel)
+	if s == null:
+		return fallback
+	return s.callv(method, args)
+
+
+## A new instance of zee's script [param rel], or null.
+static func make(rel: String) -> Object:
+	var s := zee_script(rel)
+	return s.new() as Object if s != null else null
+
+
+## Whether [param s] is, or extends, zee's script [param rel].
+static func _extends(x: Variant, rel: String) -> bool:
+	if not (x is Object) or not is_instance_valid(x):
+		return false
+	var want := zee_script(rel)
+	if want == null:
+		return false
+	var s := (x as Object).get_script() as Script
+	while s != null:
+		if s == want:
+			return true
+		s = s.get_base_script()
+	return false
+
+
+## Whether [param x] is a live weapon rig.
+static func is_rig(x: Variant) -> bool:
+	return _extends(x, PROBE)
+
+
+## [param node]'s `zee_rig`, when it is a live rig; else null.
+static func rig_of(node: Object) -> Node:
+	if node == null:
+		return null
+	var rig: Variant = node.get("zee_rig")
+	return rig as Node if is_rig(rig) else null
+
+
+## The rig's class name, for a [code]component()[/code] lookup by type name; empty without zee.
+static func rig_class() -> StringName:
+	var s := zee_script(PROBE)
+	return s.get_global_name() if s != null else &""
+
+
+static func is_world_model(x: Variant) -> bool:
+	return _extends(x, "view/zee_world_model.gd")
+
+
+static func is_view_model(x: Variant) -> bool:
+	return _extends(x, "view/zee_view_model.gd")
+
+
+# --- Catalogue -------------------------------------------------------------------
+
 ## The catalogue, built once. Every rig is handed this one rather than building its own.
+## Empty without zee.
 static var _catalogue: GSWeaponCatalogue = null
 
 
 static func catalogue() -> GSWeaponCatalogue:
 	if _catalogue == null:
-		_catalogue = ZeeWeaponPack.catalogue()
+		var built: Variant = call_static("content/zee_weapon_pack.gd", &"catalogue")
+		_catalogue = built if built is GSWeaponCatalogue else GSWeaponCatalogue.new()
 		# Built once at setup, under the loading cover; the first spawn then loads no script.
 		_catalogue.warm_scripts()
 	return _catalogue
@@ -92,20 +216,24 @@ static var _art_providers: Dictionary = {}
 ## arena pack's `lmg`) drew nothing at all. The provider's own art when it ships `weapon_art()`, else zee's gun of the same tier dressed with the provider's model (`art_rows()`).
 ## A provider's `weapon_art()` and `art_rows()` build its whole pack, so they are asked once per provider here rather than
 ## once per weapon (asked per weapon they cost about 1.5 s of one frame the first time zee's art table is built in PLAYLOT).
-static func pack_art() -> Array[ZeeWeaponArt]:
-	var out: Array[ZeeWeaponArt] = []
+static func pack_art() -> Array:
+	var out: Array = []
+	if not available():
+		return out
 	var asked := {}
 	for table: Dictionary in [_pack_defs, _provider_defs]:
 		for id: StringName in table:
 			var def: GSWeaponDef = table[id]
 			var ref: Variant = _art_providers.get(id)
 			var provider: Object = (ref as WeakRef).get_ref() if ref is WeakRef else null
-			out.append(_art_for(def, provider, asked))
+			var art: Variant = _art_for(def, provider, asked)
+			if art != null:
+				out.append(art)
 	return out
 
 
 ## [param asked] caches each provider's answers (instance id -> {arts, rows}) for one [method pack_art] call.
-static func _art_for(def: GSWeaponDef, provider: Object, asked: Dictionary = {}) -> ZeeWeaponArt:
+static func _art_for(def: GSWeaponDef, provider: Object, asked: Dictionary = {}) -> Variant:
 	var answers: Dictionary = {}
 	if provider != null:
 		var key := provider.get_instance_id()
@@ -113,12 +241,15 @@ static func _art_for(def: GSWeaponDef, provider: Object, asked: Dictionary = {})
 			asked[key] = _provider_answers(provider)
 		answers = asked[key]
 	var art: Variant = (answers.get("arts", {}) as Dictionary).get(def.id)
-	if art is ZeeWeaponArt:
+	if _extends(art, "art/zee_weapon_art.gd"):
 		return art
 	var rows: Variant = answers.get("rows", {})
-	var copy := ZeePackSource._base_for(def)
-	copy.id = def.id
-	ZeeArtDress.apply(copy, (rows as Dictionary).get(def.id, {}) if rows is Dictionary else {})
+	var copy: Variant = call_static("content/zee_pack_source.gd", &"_base_for", [def])
+	if copy == null:
+		return null
+	copy.set(&"id", def.id)
+	var row: Dictionary = (rows as Dictionary).get(def.id, {}) if rows is Dictionary else {}
+	var _dressed: Variant = call_static("art/zee_art_dress.gd", &"apply", [copy, row])
 	return copy
 
 
@@ -127,15 +258,19 @@ static func _provider_answers(provider: Object) -> Dictionary:
 	var arts := {}
 	if provider.has_method(&"weapon_art"):
 		for art: Variant in provider.call(&"weapon_art"):
-			if art is ZeeWeaponArt and not arts.has((art as ZeeWeaponArt).id):
-				arts[(art as ZeeWeaponArt).id] = art
+			if _extends(art, "art/zee_weapon_art.gd"):
+				var id: StringName = (art as Object).get(&"id")
+				if not arts.has(id):
+					arts[id] = art
 	var rows: Variant = provider.call(&"art_rows") if provider.has_method(&"art_rows") else {}
 	return {"arts": arts, "rows": rows}
 
 
 ## (Re)joins [method pack_art] to zee's art table; adding a source drops the table's cache.
 static func _learn_art() -> void:
-	ZeeWeaponArtTable.add_source(&"playlot_packs", Callable(PlaylotZeeSelf, &"pack_art"))
+	var _added: Variant = call_static(
+		"art/zee_weapon_art_table.gd", &"add_source", [&"playlot_packs", Callable(PlaylotZeeSelf, &"pack_art")]
+	)
 
 
 ## The pack's definition of the weapon [param id]: the zee catalogue's, a Workshop weapon's or a provider's.
@@ -161,10 +296,10 @@ static func set_pack_defs(defs: Array) -> void:
 ## does not already have (code wins an id, as in gs-weapon). A copy rather than an addition to
 ## [method catalogue], so a solo subscription never leaks into a table a server also reads.
 static func catalogue_for(def: PlaylotWeaponDef) -> GSWeaponCatalogue:
-	if def == null or not def.meta.has("pack_def") or catalogue().has(zee_id(def)):
+	if not available() or def == null or not def.meta.has("pack_def") or catalogue().has(zee_id(def)):
 		return catalogue()
 	if _with_packs == null:
-		_with_packs = ZeeWeaponPack.catalogue()
+		_with_packs = call_static("content/zee_weapon_pack.gd", &"catalogue")
 		for table: Dictionary in [_pack_defs, _provider_defs]:
 			for id: StringName in table:
 				if not _with_packs.has(id):
@@ -173,13 +308,16 @@ static func catalogue_for(def: PlaylotWeaponDef) -> GSWeaponCatalogue:
 	return _with_packs
 
 
-## The pack, as this game's weapon definitions. Read off the catalogue, so a weapon the pack
-## adds arrives in the menu without a line here.
+## The pack, as this game's weapon definitions; empty without zee. Read off the catalogue, so a
+## weapon the pack adds arrives in the menu without a line here.
 static func defs() -> Array[PlaylotWeaponDef]:
 	var out: Array[PlaylotWeaponDef] = []
+	if not available():
+		return out
 	var cat := catalogue()
+	var ids: Variant = call_static("content/zee_weapon_ids.gd", &"all", [], [])
 
-	for id: StringName in ZeeWeaponIds.all():
+	for id: StringName in ids:
 		var weapon := cat.get_def(id)
 
 		if weapon == null:
@@ -213,25 +351,31 @@ static func zee_id(def: PlaylotWeaponDef) -> StringName:
 	return StringName(str(def.meta.get("zee", ""))) if def != null else &""
 
 
-## Puts a rig on [param player] holding [param def], replacing whatever rig was there.
+# --- Rigs ------------------------------------------------------------------------
+
+## Puts a rig on [param player] holding [param def], replacing whatever rig was there. Null
+## without zee (the player keeps no rig).
 ##
-## [param role] is the rig's: SERVER draws nothing, LOCAL draws into [param view_model].
-## [param authority] is false only on a connected client, whose rig animates the hands and
-## decides nothing — the server's rig is the one whose shots land.
-## [param ads_rules] is the game's `zee_ads_rules` (null keeps the art's own); no command here carries the aim bit yet.
+## [param role] is the rig's ([constant ROLE_SERVER] draws nothing, [constant ROLE_LOCAL] draws
+## into [param view_model]). [param authority] is false only on a connected client, whose rig
+## animates the hands and decides nothing — the server's rig is the one whose shots land.
+## [param ads_rules] is the game's zee ads rules ([method load_ads_rules]; null keeps the art's own).
 static func arm(
 	player: Node3D,
 	def: PlaylotWeaponDef,
-	role: ZeeWeaponRig.Role,
+	role: int,
 	authority: bool,
 	tick_rate: int,
 	tick: int,
 	view_model: Node3D = null,
-	ads_rules: ZeeAdsRules = null
-) -> ZeeWeaponRig:
+	ads_rules: Resource = null
+) -> Node:
 	disarm(player)
 
-	var rig := ZeeWeaponRig.new()
+	var rig: Variant = make(PROBE)
+	if rig == null:
+		return null
+
 	rig.name = "ZeeWeapons"
 	rig.role = role
 	rig.authority = authority
@@ -248,7 +392,7 @@ static func arm(
 
 	player.add_child(rig)
 
-	var ready_now := rig.setup()
+	var ready_now: GSResult = rig.setup()
 
 	if not ready_now.ok:
 		GSLog.warn(CHANNEL, "a weapon rig would not set up", {
@@ -259,19 +403,20 @@ static func arm(
 		return null
 
 	var id := zee_id(def)
-	var given := rig.give(id)
+	var given: GSResult = rig.give(id)
 
 	if not given.ok:
 		GSLog.warn(CHANNEL, "the rig refused a weapon", {
 			"weapon": String(id), "why": given.error.message,
 		})
 
-	var weapon := rig.arsenal.catalogue.get_def(id)
+	var arsenal: GSWeaponArsenal = rig.arsenal
+	var weapon := arsenal.catalogue.get_def(id)
 
 	if weapon != null:
 		# equip, not select: select refuses while the arsenal is disabled (a spawn freeze).
-		if not rig.arsenal.equip(weapon.slot):
-			var _selected := rig.arsenal.select(weapon.slot, tick)
+		if not arsenal.equip(weapon.slot):
+			var _selected := arsenal.select(weapon.slot, tick)
 
 	player.set("zee_rig", rig)
 	return rig
@@ -293,20 +438,48 @@ static func disarm(player: Node) -> void:
 	player.set("zee_rig", null)
 
 
-## A tick's buttons and view as a weapon command.
-##
-## The same three bits every tool here rides on: USER_0 is fire, USER_1 the alt (a bash),
-## USER_2 reload. The slot is the one the rig already holds; this game switches weapons by
-## asking for one, not by a slot key. Buttons rather than a [GSFpsCommand] so the offline
-## client, which has no command until its controller samples one, builds it the same way.
+## The rig's arsenal, or null.
+static func arsenal_of(rig: Variant) -> GSWeaponArsenal:
+	if not is_rig(rig):
+		return null
+	var arsenal: Variant = (rig as Object).get(&"arsenal")
+	return arsenal as GSWeaponArsenal if arsenal is GSWeaponArsenal else null
+
+
+## The definition the rig holds, or null.
+static func current_def(rig: Variant) -> GSWeaponDef:
+	if not is_rig(rig):
+		return null
+	var def: Variant = (rig as Object).call(&"current_def")
+	return def as GSWeaponDef if def is GSWeaponDef else null
+
+
+## One tick of [param rig] (`simulate_tick`), or null when it is no rig.
+static func simulate(rig: Variant, command: GSWeaponCommand, tick: int, ctx: Variant = null) -> GSWeaponOutcome:
+	if not is_rig(rig):
+		return null
+	var outcome: Variant
+	if ctx == null:
+		outcome = (rig as Object).call(&"simulate_tick", command, tick)
+	else:
+		outcome = (rig as Object).call(&"simulate_tick", command, tick, ctx)
+	return outcome as GSWeaponOutcome if outcome is GSWeaponOutcome else null
+
+
+## The rig's `role`, or -1.
+static func role_of(rig: Variant) -> int:
+	return int((rig as Object).get(&"role")) if is_rig(rig) else -1
+
+
 # --- NPCs ----------------------------------------------------------------------
 
 ## Whether an NPC can use [param def]: a zee gun or melee weapon, not a thrown or
 ## explosive one. Grenades and rockets fly here ([PlaylotProjectiles]), but an NPC's
 ## brain aims along a straight line and has no throwing arc or blast-radius sense, so one
 ## holding a frag would bounce it off its own feet and a launcher would be fired point-blank.
+## Always false without zee: an NPC then stands unarmed.
 static func npc_can_use(def: PlaylotWeaponDef) -> bool:
-	if not is_zee(def):
+	if not is_zee(def) or not available():
 		return false
 
 	var weapon := catalogue().get_def(zee_id(def))
@@ -314,49 +487,49 @@ static func npc_can_use(def: PlaylotWeaponDef) -> bool:
 	if weapon == null:
 		return false
 
-	return not (weapon.tags.has(ZeeWeaponIds.TAG_THROWN) or weapon.tags.has(ZeeWeaponIds.TAG_EXPLOSIVE))
+	return not (weapon.tags.has(TAG_THROWN) or weapon.tags.has(TAG_EXPLOSIVE))
 
 
 ## Keeps an NPC's weapon fed: the reserve back to a few magazines' worth whenever it runs
 ## low. An NPC out of ammunition standing still reads as broken, and nobody counts its shots.
 static func top_up(rig: Node) -> void:
-	var zee := rig as ZeeWeaponRig
+	var arsenal := arsenal_of(rig)
 
-	if zee == null or zee.arsenal == null:
+	if arsenal == null:
 		return
 
-	var def := zee.current_def()
+	var def := current_def(rig)
 
 	if def == null or def.ammo_type == &"":
 		return
 
-	if zee.arsenal.ammo().count(def.ammo_type) < 60:
-		var _added := zee.arsenal.add_ammo(def.ammo_type, 120)
+	if arsenal.ammo().count(def.ammo_type) < 60:
+		var _added := arsenal.add_ammo(def.ammo_type, 120)
 
 
 ## Fills what [param rig] holds back up: a full magazine and at least the reserve a fresh one
 ## is given. True when anything changed. The server's answer to asking for (or walking over)
 ## the gun already in hand; the drawn gun on a client is brought to it by [method correct].
 static func refill(rig: Node) -> bool:
-	var zee := rig as ZeeWeaponRig
+	var arsenal := arsenal_of(rig)
 
-	if zee == null or zee.arsenal == null or zee.arsenal.current() == null:
+	if arsenal == null or arsenal.current() == null:
 		return false
 
-	var def := zee.current_def()
+	var def := current_def(rig)
 
 	if def == null or def.ammo_type == &"":
 		return false
 
-	var held := zee.arsenal.current()
+	var held := arsenal.current()
 	var changed := false
 
 	if def.uses_magazine() and held.magazine < def.magazine:
 		held.magazine = def.magazine
 		changed = true
 
-	if not def.infinite_reserve and zee.arsenal.ammo().count(def.ammo_type) < def.reserve:
-		zee.arsenal.ammo().set_count(def.ammo_type, def.reserve)
+	if not def.infinite_reserve and arsenal.ammo().count(def.ammo_type) < def.reserve:
+		arsenal.ammo().set_count(def.ammo_type, def.reserve)
 		changed = true
 
 	return changed
@@ -370,13 +543,14 @@ const SETTLE_SEC := 0.6
 
 ## One tick of the drawn gun's quiet clock on [param player] (`zee_quiet`): reset by a trigger,
 ## a reload or a switch, else counted up by [param delta] simulated seconds.
-static func note_drawn(player: Node, rig: ZeeWeaponRig, command: GSWeaponCommand, delta: float) -> void:
-	if player == null or rig == null or rig.arsenal == null:
+static func note_drawn(player: Node, rig: Node, command: GSWeaponCommand, delta: float) -> void:
+	var arsenal := arsenal_of(rig)
+	if player == null or arsenal == null:
 		return
 
 	var busy := command != null and (command.is_pressed(GSWeaponCommand.BUTTON_ATTACK)
 		or command.is_pressed(GSWeaponCommand.BUTTON_RELOAD))
-	busy = busy or rig.arsenal.is_reloading() or rig.arsenal.is_switching()
+	busy = busy or arsenal.is_reloading() or arsenal.is_switching()
 	var quiet: float = float(player.get("zee_quiet")) if player.get("zee_quiet") != null else 0.0
 	player.set("zee_quiet", 0.0 if busy else quiet + maxf(delta, 0.0))
 
@@ -389,11 +563,11 @@ static func note_drawn(player: Node, rig: ZeeWeaponRig, command: GSWeaponCommand
 ## server refused, a refill, a fresh rig on the server: each left the HUD on the client's own
 ## sum for good. Correcting on every snapshot instead would undo the shots still in flight and
 ## make the counter flicker up while you fire.
-static func correct(rig: ZeeWeaponRig, magazine: int, reserve: int, slot: int, server_busy: bool, quiet: float) -> bool:
-	if rig == null or rig.arsenal == null or server_busy or quiet < SETTLE_SEC:
+static func correct(rig: Node, magazine: int, reserve: int, slot: int, server_busy: bool, quiet: float) -> bool:
+	var arsenal := arsenal_of(rig)
+	if arsenal == null or server_busy or quiet < SETTLE_SEC:
 		return false
 
-	var arsenal := rig.arsenal
 	var held := arsenal.current()
 
 	if held == null or slot != arsenal.current_slot() or arsenal.is_reloading() or arsenal.is_switching():
@@ -414,23 +588,23 @@ static func correct(rig: ZeeWeaponRig, magazine: int, reserve: int, slot: int, s
 
 
 static func rig_is_melee(rig: Node) -> bool:
-	var def := (rig as ZeeWeaponRig).current_def() if rig is ZeeWeaponRig else null
-	return def != null and def.tags.has(ZeeWeaponIds.TAG_MELEE)
+	var def := current_def(rig)
+	return def != null and def.tags.has(TAG_MELEE)
 
 
 static func rig_is_automatic(rig: Node) -> bool:
-	var def := (rig as ZeeWeaponRig).current_def() if rig is ZeeWeaponRig else null
+	var def := current_def(rig)
 	return def != null and (def.fire_mode == GSWeaponDef.Fire.AUTO or def.fire_mode == GSWeaponDef.Fire.HOLD)
 
 
 static func rig_magazine_empty(rig: Node) -> bool:
-	var zee := rig as ZeeWeaponRig
+	var arsenal := arsenal_of(rig)
 
-	if zee == null or zee.arsenal == null or zee.arsenal.current() == null:
+	if arsenal == null or arsenal.current() == null:
 		return false
 
-	var def := zee.current_def()
-	return def != null and def.ammo_type != &"" and zee.arsenal.current().magazine_empty()
+	var def := current_def(rig)
+	return def != null and def.ammo_type != &"" and arsenal.current().magazine_empty()
 
 
 ## Where every pellet of every shot in [param outcome] lands: `[{collider, point,
@@ -473,6 +647,12 @@ static func trace_outcome(
 	return out
 
 
+## A tick's buttons and view as a weapon command.
+##
+## The same three bits every tool here rides on: USER_0 is fire, USER_1 the alt (a bash),
+## USER_2 reload. The slot is the one the rig already holds; this game switches weapons by
+## asking for one, not by a slot key. Buttons rather than a [GSFpsCommand] so the offline
+## client, which has no command until its controller samples one, builds it the same way.
 static func command_for(buttons: int, yaw: float, pitch: float, slot: int, aim: bool = false) -> GSWeaponCommand:
 	var command := GSWeaponCommand.new()
 	command.set_button(GSWeaponCommand.BUTTON_AIM, aim)
@@ -486,10 +666,8 @@ static func command_for(buttons: int, yaw: float, pitch: float, slot: int, aim: 
 
 
 ## The slot of the weapon a rig holds, or 0.
-static func slot_of(rig: ZeeWeaponRig) -> int:
-	if rig == null:
-		return 0
-	var def := rig.current_def()
+static func slot_of(rig: Node) -> int:
+	var def := current_def(rig)
 	return def.slot if def != null else 0
 
 
@@ -533,24 +711,24 @@ static func shove_props(
 	return moved
 
 
+# --- Views -----------------------------------------------------------------------
+
 ## What everybody else sees in [param player]'s hands: [param def]'s gun, or nothing.
 ##
-## A [ZeeWorldModel] on the character's `right_hand` mount, built on a CLIENT from the
+## Zee's world model on the character's `right_hand` mount, built on a CLIENT from the
 ## server's WEAPON event, so a remote player's gun is drawn, kicks when
 ## [PlaylotPlayerNet]'s fire counter moves, and goes when they put it away. Idempotent:
-## the same weapon twice keeps the model it has.
+## the same weapon twice keeps the model it has. Nothing without zee.
 static func show_held(player: Node, def: PlaylotWeaponDef) -> void:
 	if player == null:
 		return
 
 	var held: Variant = player.get("zee_world")
-	var model: ZeeWorldModel = null
-	if held is ZeeWorldModel and is_instance_valid(held):
-		model = held as ZeeWorldModel
+	var model: Variant = held if is_world_model(held) else null
 
-	if not is_zee(def):
+	if not is_zee(def) or not available():
 		if model != null:
-			model.queue_free()
+			(model as Node).queue_free()
 		player.set("zee_world", null)
 		return
 
@@ -558,26 +736,140 @@ static func show_held(player: Node, def: PlaylotWeaponDef) -> void:
 	if model != null and model.equipped() == id:
 		return
 
-	var art: Variant = ZeeWeaponArtTable.table().get(id)
-	if not (art is ZeeWeaponArt):
+	var art: Variant = art_for(id)
+	if art == null:
 		return
 
 	if model == null:
-		model = ZeeWorldModel.new()
-		model.name = "ZeeWorldModel"
+		model = new_world_model()
+		if model == null:
+			return
 		if not model.attach_to(player.get("character")):
-			model.free()
+			(model as Node).free()
 			return
 		player.set("zee_world", model)
 
-	var _equipped := model.equip(art as ZeeWeaponArt)
+	var _equipped: Variant = model.equip(art)
+
+
+## A fresh world model (a [Node3D]), or null.
+static func new_world_model() -> Node3D:
+	var model := make("view/zee_world_model.gd") as Node3D
+	if model != null:
+		model.name = "ZeeHeld"
+	return model
+
+
+## A fresh first-person view model (a [Node3D]), or null.
+static func new_view_model() -> Node3D:
+	return make("view/zee_view_model.gd") as Node3D
+
+
+## Zee's scope overlay (a [Control]), or null.
+static func new_scope_overlay() -> Control:
+	return make("view/zee_scope_overlay.gd") as Control
+
+
+## Zee's art for weapon [param id], or null.
+static func art_for(id: StringName) -> Resource:
+	var table: Variant = call_static("art/zee_weapon_art_table.gd", &"table", [], {})
+	var art: Variant = (table as Dictionary).get(id) if table is Dictionary else null
+	return art as Resource if _extends(art, "art/zee_weapon_art.gd") else null
+
+
+## Zee's whole weapon table (id -> art), or {}.
+static func weapon_table() -> Dictionary:
+	var table: Variant = call_static("content/zee_weapon_pack.gd", &"table", [], {})
+	return table if table is Dictionary else {}
+
+
+## The game's ads rules (zee's `load_config()`), or null.
+static func load_ads_rules() -> Resource:
+	var rules: Variant = call_static("content/zee_ads_rules.gd", &"load_config")
+	return rules as Resource if rules is Resource else null
+
+
+## Zee's shot effects to warm under the loading cover, or [].
+static func shot_fx_warm() -> Array:
+	var warm: Variant = call_static("view/zee_shot_fx.gd", &"warm", [], [])
+	return warm if warm is Array else []
 
 
 ## Points zee's art at this game's copy of it: `res://assets/` built in, the mount in a pack.
 static func use_this_games_art() -> void:
-	ZeeModelCache.set_asset_root(PlaylotPaths.root())
+	var _set: Variant = call_static("art/zee_model_cache.gd", &"set_asset_root", [PlaylotPaths.root()])
 
 
 ## Puts zee's art back where a built-in game keeps it, for whatever the shell loads next.
 static func release_art() -> void:
-	ZeeModelCache.set_asset_root("res://")
+	var _set: Variant = call_static("art/zee_model_cache.gd", &"set_asset_root", ["res://"])
+
+
+# --- Sound -----------------------------------------------------------------------
+
+const SHOT_LAYERS := "view/zee_shot_layers.gd"
+const WEAPON_SOUND := "view/zee_weapon_sound.gd"
+
+
+## Whether zee's layered shot player can run (zee and gs-audio both here).
+static func shot_layers_available() -> bool:
+	return call_static(SHOT_LAYERS, &"available", [], false) == true
+
+
+## A fresh layered shot player (a [Node]), or null.
+static func new_shot_layers() -> Node:
+	return make(SHOT_LAYERS) as Node
+
+
+## gs-audio's shot class for zee's sound class [param weapon_class], or empty.
+static func layer_shot_class(weapon_class: StringName) -> StringName:
+	return StringName(str(call_static(SHOT_LAYERS, &"shot_class", [weapon_class], &"")))
+
+
+## Zee's sound class for [param id] and [param kind], or empty.
+static func sound_class_for(id: StringName, kind: Variant) -> StringName:
+	return StringName(str(call_static(WEAPON_SOUND, &"class_for", [id, kind], &"")))
+
+
+## Zee's sound for [param id] and [param kind], or null.
+static func sound_stream_for(id: StringName, kind: Variant) -> AudioStream:
+	var stream: Variant = call_static(WEAPON_SOUND, &"stream_for", [id, kind])
+	return stream as AudioStream if stream is AudioStream else null
+
+
+# --- Net -------------------------------------------------------------------------
+
+## The weapon fields a carrier replicates: gs-weapon's, then zee's four.
+##
+## [b]Written out here rather than asked of zee[/b], so the schema is the same with zee and
+## without it: a server without the addon and a client with it (or the reverse) still agree
+## on every bit. These are `ZeeWeaponNet.specs()`; keep them in step.
+static func net_specs() -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	out.append_array(GSWeaponNetSync.specs())
+	out.append_array([
+		{"property": &"net_fire_seq", "type": "UINT", "bits": 4, "owner_only": false, "interpolated": false},
+		{"property": &"net_fire_kind", "type": "UINT", "bits": 3, "owner_only": false, "interpolated": false},
+		{"property": &"net_reloading", "type": "BOOL", "bits": 1, "owner_only": false, "interpolated": false},
+		{"property": &"net_switching", "type": "BOOL", "bits": 1, "owner_only": false, "interpolated": false},
+	])
+	return out
+
+
+## Copies a rig's state onto the replicating [param target] (zee's `pull`); nothing without a rig.
+static func net_pull(rig: Variant, target: Object) -> void:
+	if not is_rig(rig) or target == null:
+		return
+	var _pulled: Variant = call_static("net/zee_weapon_net.gd", &"pull", [rig, target])
+
+
+## Plays [param source]'s replicated state on a world [param model] (zee's `apply`), returning
+## `{"seq": ...}` as zee does; without zee only the counter is read, so nothing replays later.
+static func net_apply(source: Object, model: Variant, seen: int) -> Dictionary:
+	if source == null:
+		return {"seq": seen}
+	if available() and (model == null or is_world_model(model)):
+		var applied: Variant = call_static("net/zee_weapon_net.gd", &"apply", [source, model, seen])
+		if applied is Dictionary:
+			return applied
+	return {"seq": int(source.get(&"net_fire_seq")) if source.get(&"net_fire_seq") != null else seen}

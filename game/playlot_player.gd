@@ -133,9 +133,9 @@ func simulate(tick: int, delta: float) -> void:
 ## The motor's tick at the weapon's ADS pace while the rig says it is aimed. The server, offline and a predicting client all come through here
 ## and read the same rig rule, so the prediction agrees. The top speed is scaled for the one tick and put back (the tunables are shared).
 func step_controller(tick: int, delta: float) -> void:
-	var rig := zee_rig as ZeeWeaponRig if zee_rig != null and is_instance_valid(zee_rig) else null
+	var rig: Variant = zee_rig if PlaylotZee.is_rig(zee_rig) else null
 	var tunables := controller.tunables
-	var scale := rig.ads_move_scale() if rig != null else 1.0
+	var scale: float = rig.ads_move_scale() if rig != null else 1.0
 
 	if tunables == null or scale >= 1.0:
 		controller.simulate_tick(tick, delta)

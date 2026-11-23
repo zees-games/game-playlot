@@ -18,7 +18,7 @@ func _present_view_arms(delta: float) -> void:
 	if down != _arms_down:
 		_arms_down = down
 		view_arms.call("set_downed", down)
-	var hands := zee_view as ZeeViewModel if zee_view != null and is_instance_valid(zee_view) else null
+	var hands: Variant = zee_view if PlaylotZee.is_view_model(zee_view) else null
 	if hands != null and held_grip != null:
 		# The weapon to the avatar's hand, not the hand to the weapon; sights up, the art's own aim hold.
 		hands.position = hand_seat_offset * (1.0 - hands.aim_fraction())

@@ -139,8 +139,9 @@ func _net_physics(delta: float) -> void:
 				var drawn_command := PlaylotZee.command_for(
 					command.buttons, command.yaw, command.pitch, PlaylotZee.slot_of(rig), _aim_sent()
 				)
-				var drawn := rig.simulate_tick(drawn_command, tick)
-				var _flown := bridge.predict_launches(drawn, player)
+				var drawn := PlaylotZee.simulate(rig, drawn_command, tick)
+				if drawn != null:
+					var _flown := bridge.predict_launches(drawn, player)
 				# How long it has been quiet, so the server's count may correct it
 				# (`PlaylotPlayerNet._correct_drawn`) without undoing a shot in flight.
 				PlaylotZee.note_drawn(player, rig, drawn_command, 1.0 / float(maxi(playlot.tick_rate, 1)))
@@ -466,12 +467,15 @@ func _physics_process(delta: float) -> void:
 	var rig := _zee_rig()
 	if rig != null:
 		var state := player.controller.state
-		var outcome := rig.simulate_tick(
+		var outcome := PlaylotZee.simulate(
+			rig,
 			PlaylotZee.command_for(
 				_zee_buttons, state.yaw, state.pitch, PlaylotZee.slot_of(rig), _aim_sent()
 			),
 			Engine.get_physics_frames()
 		)
+		if outcome == null:
+			return
 		var _moved := PlaylotZee.shove_props(player, outcome, playlot.may_touch_others())
 		# And the NPCs it hits are hurt, and the ones in earshot hear it.
 		playlot.player_shots_fired(player_id, outcome)

@@ -227,13 +227,15 @@ func _drive_tools(session_id: int, behaviour: PlaylotPlayerNet) -> void:
 
 	# A zee weapon owns all three buttons while it is in hand, and the physics gun none of
 	# them: falling through to it would grab a crate with every shot.
-	var rig := player.zee_rig as ZeeWeaponRig
-	if rig != null and is_instance_valid(rig):
+	var rig := PlaylotZee.rig_of(player)
+	if rig != null:
 		var command := PlaylotZee.command_for(
 			buttons, behaviour.last_move.yaw, behaviour.last_move.pitch,
 			PlaylotZee.slot_of(rig), behaviour.last_aim
 		)
-		var outcome := rig.simulate_tick(command, game.current_tick())
+		var outcome := PlaylotZee.simulate(rig, command, game.current_tick())
+		if outcome == null:
+			return
 		var _moved := PlaylotZee.shove_props(player, outcome, may_touch)
 		# NPCs hear it, and the ones it hits are hurt.
 		game.player_shots_fired(player.player_id, outcome)

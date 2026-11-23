@@ -16,7 +16,7 @@ const PlaylotUserFiles := preload("../game/playlot_user_files.gd")
 const ROOT_ARG := "--cfgroot="
 var ROOT := _root()
 const GAME := "game-playlot"
-const CHECKS := 51
+const CHECKS := 52
 const SECTIONS := 6
 
 var _entered := 0
@@ -156,6 +156,8 @@ func _ambience_cvars() -> void:
 
 ## The pack ships only game/, maps/ and the committed addons/pg_*: a web shell carries gs_* alone, and solo play fetches every other addon from the names in requires.floor.json. A Zee* or Aw*
 ## class named in a shipped script whose addon the floor leaves out is a grey screen on playlot.app ("Could not find type ZeeViewModel"), so every such addon must be named, at a sound floor.
+## zee_weapons is the exception the other way: Playlot's own tools are the default and Zee is a Workshop extra, reached
+## only through `game/playlot_zee.gd` by path, so derive must not find it (a hard zee was "This game needs zee-weapons" in solo).
 func _pack_floor() -> void:
 	var derived := GSAddonApi.derive("res://")
 	for dir in DirAccess.get_directories_at("res://addons"):
@@ -171,7 +173,8 @@ func _pack_floor() -> void:
 	for addon: String in derived:
 		if not addon.begins_with("gs_") and not addon.begins_with("pg_") and not floors.has(addon):
 			unnamed.append(addon)
-	_check(derived.has("zee_weapons") and unnamed.is_empty(), "%s names every addon the shell does not carry" % GSAddonApi.FLOOR_FILE, ",".join(unnamed))
+	_check(not derived.has("zee_weapons"), "zee_weapons stays optional (no Zee class named outside game/playlot_zee.gd)", str(derived.keys()))
+	_check(unnamed.is_empty(), "%s names every addon the shell does not carry" % GSAddonApi.FLOOR_FILE, ",".join(unnamed))
 	var audit := GSAddonApi.floor_audit(floors, derived, GSAddonApi.guarded("res://"))
 	_check(not floors.is_empty() and audit.is_empty(), "its floors are sound", "; ".join(audit))
 

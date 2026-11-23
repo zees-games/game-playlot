@@ -119,7 +119,7 @@ func _test_grenades() -> void:
 		var command := GSWeaponCommand.new()
 		command.set_button(GSWeaponCommand.BUTTON_ATTACK, i < 6)
 		command.slot = PlaylotZee.slot_of(rig)
-		var outcome := rig.simulate_tick(command, ctx.tick, ctx)
+		var outcome: Variant = rig.simulate_tick(command, ctx.tick, ctx)
 		thrown += outcome.spawns.size()
 		playlot.player_shots_fired(&"bot", outcome)
 		if thrown > 0:
@@ -491,7 +491,7 @@ func _test_armed_npcs() -> void:
 		var command := GSWeaponCommand.new()
 		command.set_button(GSWeaponCommand.BUTTON_ATTACK, i % 2 == 0)
 		command.slot = PlaylotZee.slot_of(rig)
-		var outcome := rig.simulate_tick(command, ctx.tick, ctx)
+		var outcome: Variant = rig.simulate_tick(command, ctx.tick, ctx)
 		playlot.player_shots_fired(&"bot", outcome)
 		if float(_an_body.get("health")) < _an_before:
 			break
@@ -679,9 +679,9 @@ func _test_zee_aim() -> void:
 		_done()
 		return
 
-	var held := rig.current_def()
+	var held: Variant = rig.current_def()
 	var rules := playlot.ads_rules
-	var paced := rules.move_speed_for(held.id)
+	var paced: float = rules.move_speed_for(held.id)
 	var dt := 1.0 / float(maxi(playlot.tick_rate, 1))
 	var start := bot.global_position
 	var tick := 200000
@@ -691,7 +691,7 @@ func _test_zee_aim() -> void:
 		command.move = direction
 		bot.controller.apply_command(command)
 		tick += 1
-		var _o := rig.simulate_tick(PlaylotZee.command_for(0, 0.0, 0.0, PlaylotZee.slot_of(rig), aim), tick)
+		var _o: Variant = rig.simulate_tick(PlaylotZee.command_for(0, 0.0, 0.0, PlaylotZee.slot_of(rig), aim), tick)
 		bot.simulate(tick, dt)
 		await get_tree().physics_frame
 	var walk := func(direction: Vector2, aim: bool) -> float:
@@ -709,9 +709,9 @@ func _test_zee_aim() -> void:
 		if reach > hip:
 			hip = reach
 			best = direction
-	var hip_scale := rig.ads_move_scale()
+	var hip_scale: float = rig.ads_move_scale()
 	var aimed: float = await walk.call(best, true)
-	var aimed_scale := rig.ads_move_scale()
+	var aimed_scale: float = rig.ads_move_scale()
 	_check(hip > 1.0 and hip_scale == 1.0 and absf(aimed_scale - paced) < 0.001,
 		"aimed, the rig is at the rules' pace and unaimed it is not", "hip %.2f aimed %.2f of %.2f" % [hip_scale, aimed_scale, paced])
 	_check(absf(aimed / maxf(hip, 0.001) - paced) < 0.1,
