@@ -158,12 +158,43 @@ static func add_solo_available(catalogue: GSMapCatalogue) -> int:
 		if not map.validate().ok or not catalogue.add(map).ok:
 			continue
 		added += 1
+	if added > 0:
+		ensure_data_scene()
 	return added
 
 
 ## True for a map listed by [method add_solo_available] that is not downloaded yet.
 static func needs_download(map: GSMapDef) -> bool:
 	return map != null and bool(map.meta.get("download", false))
+
+
+## Makes sure [constant DATA_MAP_SCENE] loads as a PackedScene where the map loader will ask for it. A delivered build has been seen to
+## answer `exists` and then load nothing (the loader's "must point at a PackedScene"), with no reason given, so a failure is logged
+## here with what the engine knows, and the scene is built in memory from the script and answered for that path instead.
+static func ensure_data_scene() -> bool:
+	var scene_path := PlaylotPaths.rebase(DATA_MAP_SCENE)
+	if ResourceLoader.load(scene_path, "PackedScene", ResourceLoader.CACHE_MODE_REUSE) is PackedScene:
+		return true
+	var script := _data_map_script()
+	GSLog.error(CHANNEL, "the data map scene did not load; building it in memory", {
+		"scene": scene_path,
+		"exists": ResourceLoader.exists(scene_path),
+		"file": FileAccess.file_exists(scene_path),
+		"script": script != null,
+		"can_instantiate": script != null and script.can_instantiate(),
+	})
+	if script == null or not script.can_instantiate():
+		return false
+	var root := Node3D.new()
+	root.name = "PgData"
+	root.set_script(script)
+	var packed := PackedScene.new()
+	var packed_ok := packed.pack(root) == OK
+	root.free()
+	if not packed_ok:
+		return false
+	packed.take_over_path(scene_path)
+	return true
 
 
 ## `maps/pg_data.gd`, loaded when first wanted rather than preloaded: it extends the map

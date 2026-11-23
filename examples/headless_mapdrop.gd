@@ -7,7 +7,7 @@ const PlaylotWorldMaps := preload("../game/playlot_world_maps.gd")
 ## Maps dropped on the window or the executable: PLAYLOT's documents (alone, in a folder, in a zip) are copied into the maps folder; anything else, a bad document or a taken id is refused with a line that says why. A Garry's Mod map (gm_fork's Workshop folder, its .bsp or .gma) is the PLAYLOT map converted from it (pgc_fork), or a refusal saying what to drop instead; the converted map knows its Garry's Mod name, which is what `pg_map gm_fork` finds.
 ## Run: godot --headless --path . res://examples/headless_mapdrop.tscn
 
-const CHECKS := 35
+const CHECKS := 37
 const SECTIONS := 4
 const ROOT := "user://headless_mapdrop"
 const OUTSIDE := ROOT + "/outside"
@@ -84,6 +84,10 @@ func _test_source_maps() -> void:
 	var fork := catalogue.get_map(&"pgt_fork")
 	_check(added == 1 and fork != null and str(fork.meta.get("source_map", "")) == "gm_fork",
 			"a loaded document keeps its Garry's Mod name", str(fork.meta if fork != null else {}))
+	var data_scene := load(fork.scene_path) if fork != null else null
+	_check(data_scene is PackedScene and (data_scene as PackedScene).get_state().get_node_count() == 1,
+			"the document's scene loads as a PackedScene with its script", str(fork.scene_path if fork != null else ""))
+	_check(PlaylotWorldMaps.ensure_data_scene(), "ensure_data_scene answers true when the scene file loads")
 	_check(PlaylotMapSources.find(catalogue, "gm_fork") == fork and PlaylotMapSources.find(catalogue, "GM_FORK.bsp") == fork,
 			"pg_map's alias: gm_fork finds the converted map")
 	_check(PlaylotMapSources.find(catalogue, "gm_other") == null, "a map with no conversion finds nothing")
