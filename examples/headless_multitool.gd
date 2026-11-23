@@ -190,16 +190,16 @@ func _mounts() -> void:
 		"mixamo": ["mixamorig_Hips", "mixamorig_LeftArm", "mixamorig_LeftForeArm", "mixamorig_LeftHand", "mixamorig_LeftHandIndex1", "mixamorig_RightHand"],
 		"unreal": ["pelvis", "upperarm_l", "lowerarm_l", "hand_l", "index_01_l", "hand_r"],
 		"blender": ["Hips", "UpperArm.L", "LowerArm.L", "Hand.L", "Hand.R"],
-		"forearm only": ["Hips", "Shoulder_Left", "Forearm_Left", "Chest"],
+		"forearm only": ["Hips", "Shoulder_Right", "Forearm_Right", "Chest"],
 	}
-	var expect := {"mixamo": "mixamorig_LeftHand", "unreal": "hand_l", "blender": "Hand.L", "forearm only": "Forearm_Left"}
+	var expect := {"mixamo": "mixamorig_RightHand", "unreal": "hand_r", "blender": "Hand.R", "forearm only": "Forearm_Right"}
 	for key in rigs:
 		var skeleton := _rig(rigs[key])
 		_check(PlaylotMultiMount.wrist_bone(skeleton) == expect[key],
-			"the left wrist of a %s rig is %s" % [key, expect[key]], PlaylotMultiMount.wrist_bone(skeleton))
+			"the right wrist of a %s rig is %s" % [key, expect[key]], PlaylotMultiMount.wrist_bone(skeleton))
 		skeleton.free()
-	var bare := _rig(["Hips", "Spine", "RightHand"])
-	_check(PlaylotMultiMount.wrist_bone(bare) == "", "a rig with no left arm has no wrist")
+	var bare := _rig(["Hips", "Spine", "LeftHand"])
+	_check(PlaylotMultiMount.wrist_bone(bare) == "", "a rig with no right arm has no wrist")
 	bare.free()
 	_check(PlaylotMultiMount.wrist_bone(null) == "", "no skeleton, no wrist")
 

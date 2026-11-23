@@ -149,11 +149,11 @@ gs-props counts a `limit_group` per definition (`props`, `npcs`, `entities`, `ve
 
 ## The multi-tool
 
-The physics gun, gravity gun, push, spawn, remover and tool gun are one device with modes: a bracelet on the wrist (`game/playlot_multi_device.gd`), with a screen on the top plate that always shows the current mode as an icon (`playlot_multi_icons.gd`, drawn once per mode and cached) and a palm emitter whose `Muzzle` marker every beam starts from. The aim trace stays camera-based. The modes are listed in `playlot_multitool.gd`; a mode id is the tool or weapon id, so the server reuses `_select_tool` and `_give_weapon`. Zee weapons stay separate.
+The physics gun, gravity gun, push, spawn, remover and tool gun are one device with modes: a bracelet on the right wrist (`game/playlot_multi_device.gd`), with a screen on the top plate that always shows the current mode as an icon (`playlot_multi_icons.gd`, drawn once per mode and cached) and a palm emitter whose `Muzzle` marker every beam starts from. The aim trace stays camera-based. The modes are listed in `playlot_multitool.gd`; a mode id is the tool or weapon id, so the server reuses `_select_tool` and `_give_weapon`. Zee weapons stay separate.
 
 A tap of R is the old R (reload a zee gun or the tool gun's third button, else unfreeze all). Holding R past `multitool_hold_seconds` (0.25, 0 = instant) raises the wrist and opens a hologram menu above the screen; hover or move the mouse, scroll, the right stick or the number keys 1..N choose, release R confirms. Number keys and the mouse mean modes only while R is held, and are swallowed then; without R, 1/2/3 and the wheel are the weapon inventory.
 
-The mode crosses as `ARM_MULTI_MODE` (an id the server checks: a bad one logs a warning, sends a NOTICE and changes nothing) and the raised arm as `ARM_MULTI_RAISE`. Everyone else sees mode, raise and fire as one 11-bit word, `PlaylotPlayerNet.net_multi`, with no extra traffic; their device sits on the figure's hand mount. Held props are released on a mode switch like on any tool switch. Suite: `headless_multitool`.
+The mode crosses as `ARM_MULTI_MODE` (an id the server checks: a bad one logs a warning, sends a NOTICE and changes nothing) and the raised arm as `ARM_MULTI_RAISE`. Everyone else sees mode, raise and fire as one 11-bit word, `PlaylotPlayerNet.net_multi`, with no extra traffic; their device sits on the figure's right wrist, fitted to the forearm (`playlot_multi_mount.gd`), and in first person it is worn on your avatar's own arms (see [client.md](client.md#the-multi-tool-selector)). Held props are released on a mode switch like on any tool switch. Suite: `headless_multitool`.
 
 ## The tool gun
 

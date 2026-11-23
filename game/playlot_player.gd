@@ -81,6 +81,9 @@ func build_view_switch() -> bool:
 	tps.name = "ThirdPerson"
 	tps.controller_id = &"tp"
 	tps.tunables = GSTpsTunables.new()
+	# The GSPlayer is a sibling, not an ancestor, so the walk up never found it: unbound, the
+	# controller read no body and its camera followed the world origin instead of the player.
+	tps.player_ref = GSNodeRef.of_path(NodePath("../%s" % player_node.name))
 	add_child(tps)
 
 	# [b]The id BEFORE the switch is added, and that ordering is the bug.[/b]

@@ -235,6 +235,11 @@ func set_skins(p_skins: PackedInt32Array) -> void:
 		refresh_body()
 
 
+## The body's standing height in metres (the character definition's, 1.8 before one is built).
+func body_height() -> float:
+	return maxf(_character_def.height, 0.4) if _character_def != null else 1.8
+
+
 func build_character(def: GSPlayerCharDef, colour: Color) -> void:
 	if def == null:
 		return

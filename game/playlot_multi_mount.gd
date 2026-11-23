@@ -1,5 +1,6 @@
 extends RefCounted
-## Where the multi-tool's bracelet sits on a person: the wrist, found on whatever rig the avatar has.
+## Where the multi-tool's bracelet sits on a person: the right wrist (the hand that wears it in first person),
+## found on whatever rig the avatar has, along the forearm and sized to it.
 ##
 ## [b]Tolerant, then shared, then loud.[/b] The family's figure hands out a hand mount
 ## ([code]GSHumanoidFigure.attachment[/code]); a rig whose bones are named another way (a
@@ -13,6 +14,13 @@ const CHANNEL := "playlot.multi.mount"
 const FINGERS: Array[String] = ["thumb", "index", "middle", "ring", "pinky", "little", "finger", "metacarpal"]
 ## In order of preference: the hand itself, then the end of the forearm.
 const WRIST_WORDS: Array[String] = ["hand", "wrist", "forearm", "lowerarm", "lowarm", "arm2"]
+## The band's radius over the forearm's length, and how far up the forearm from the wrist joint it sits: the
+## first-person device's own fit (PlaylotMultiDevice WRIST_FIT, WRIST_BACK), so both views wear it alike.
+const FIT := 0.16
+const BACK := 0.22
+## The device's band radius at scale 1 (PlaylotMultiDevice BAND_RADIUS), and a forearm for a rig with no parent bone.
+const BAND := 0.05
+const FOREARM := 0.25
 
 
 ## [param name] with the rig's prefix, case and separators removed: `mixamorig:LeftHand`,
@@ -27,16 +35,25 @@ static func normal(bone: String) -> String:
 
 ## True when the bone name says "left": a `left` word or a trailing `.l`, `_l`, `-l` or `l` after a letter.
 static func is_left(bone: String) -> bool:
+	return _is_side(bone, "left", "l")
+
+
+## True when the bone name says "right", as [method is_left] reads "left".
+static func is_right(bone: String) -> bool:
+	return _is_side(bone, "right", "r")
+
+
+static func _is_side(bone: String, word: String, letter: String) -> bool:
 	var s := normal(bone)
-	if s.contains("left"):
+	if s.contains(word):
 		return true
-	for tail in [".l", "_l", "-l", " l"]:
-		if s.ends_with(tail):
+	for sep in [".", "_", "-", " "]:
+		if s.ends_with(sep + letter):
 			return true
 	return false
 
 
-## The name of the left wrist bone in [param skeleton] (the hand, else the forearm), or "" when none
+## The name of the right wrist bone in [param skeleton] (the hand, else the forearm), or "" when none
 ## reads as one. Fingers never match.
 static func wrist_bone(skeleton: Skeleton3D) -> String:
 	if skeleton == null:
@@ -45,7 +62,7 @@ static func wrist_bone(skeleton: Skeleton3D) -> String:
 		for i in range(skeleton.get_bone_count()):
 			var bone := skeleton.get_bone_name(i)
 			var s := normal(bone)
-			if not s.contains(word) or not is_left(bone):
+			if not s.contains(word) or not is_right(bone):
 				continue
 			var finger := false
 			for f in FINGERS:
@@ -56,9 +73,10 @@ static func wrist_bone(skeleton: Skeleton3D) -> String:
 	return ""
 
 
-## A node on [param figure]'s left wrist to hang the device from, or null (logged as an error) when
+## A node on [param figure]'s right wrist to hang the device from, or null (logged as an error) when
 ## the figure has no skeleton and no mount at all. [param who] names the player in the log.
-## The node's axes are the figure's own (-Z forward, +Y up) at rest, whatever the bone's axes are.
+## At rest the node's -Z runs down the forearm to the hand, +Y is as near the figure's up as that allows, and its
+## scale fits the device's band to the forearm's length (so chibi and tall avatars wear it alike).
 static func mount(figure: Node3D, who: String) -> Node3D:
 	if figure == null:
 		GSLog.error(CHANNEL, "multi-tool: no figure to mount on", {"player": who})
@@ -73,9 +91,7 @@ static func mount(figure: Node3D, who: String) -> Node3D:
 		var node := Node3D.new()
 		node.name = "MultiToolMount"
 		attach.add_child(node)
-		var index := skeleton.find_bone(bone)
-		var rest := skeleton.global_transform.basis * skeleton.get_bone_global_rest(index).basis
-		node.transform = Transform3D(rest.inverse() * figure.global_transform.basis, Vector3.ZERO)
+		node.transform = _fit(skeleton, skeleton.find_bone(bone), figure.global_transform.basis)
 		return node
 	if figure.has_method(&"attachment"):
 		var shared: Node3D = figure.call(&"attachment", &"hand")
@@ -86,3 +102,26 @@ static func mount(figure: Node3D, who: String) -> Node3D:
 			return shared
 	GSLog.error(CHANNEL, "multi-tool: this figure has no wrist, no hand mount; the bracelet is not drawn", {"player": who})
 	return null
+
+
+## The mount's transform under bone [param index]'s attachment: along the forearm, upright, sized to it.
+static func _fit(skeleton: Skeleton3D, index: int, figure: Basis) -> Transform3D:
+	var to_world := skeleton.global_transform
+	var at := to_world * skeleton.get_bone_global_rest(index)
+	var parent := skeleton.get_bone_parent(index)
+	var along := at.basis.y.normalized()
+	var length := FOREARM * to_world.basis.get_scale().y
+	if parent >= 0:
+		var elbow := (to_world * skeleton.get_bone_global_rest(parent)).origin
+		if at.origin.distance_to(elbow) > 0.01:
+			along = (at.origin - elbow).normalized()
+			length = at.origin.distance_to(elbow)
+	var z := -along
+	var up := figure.y.normalized()
+	var y := up - z * up.dot(z)
+	if y.length() < 0.2:
+		y = -figure.z.normalized() - z * (-figure.z.normalized()).dot(z)
+	y = y.normalized()
+	var k := FIT * length / BAND
+	var world := Transform3D(Basis(y.cross(z), y, z) * Basis.from_scale(Vector3.ONE * k), at.origin + z * BACK * length)
+	return at.affine_inverse() * world

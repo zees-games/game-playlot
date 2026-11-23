@@ -77,7 +77,7 @@ The landing is kicked when the drawn eye reaches the floor, not on the `landed` 
 
 ## The multi-tool selector
 
-`playlot_client_multi.gd` owns R: a tap keeps the old reload-or-unfreeze, a hold opens the mode selector (see [sandbox.md](sandbox.md#the-multi-tool)). While R is held it swallows the number keys and the mouse. The first-person bracelet follows `viewmodel_fov` through the `gs_view_model` group and sways from the player's motion state; other players' devices (and your own in third person) are mounted on the figure's hand attachment, and a figure with none logs a warning.
+`playlot_client_multi.gd` owns R: a tap keeps the old reload-or-unfreeze, a hold opens the mode selector (see [sandbox.md](sandbox.md#the-multi-tool)). While R is held it swallows the number keys and the mouse. In first person the bracelet is worn on the avatar's own arms (`GSPlayerViewArms`, dressed as the player's avatar and rebuilt when the skins change): the device is a grip anchor the right hand reaches for (`PlaylotViewGrip.wrist`, an open-hand pose of kind `multitool`), then `wear` fits the band to that forearm and puts the emitter's glow on the real palm. It eases between a rest and a raised palm-in pose, keeps the device across a mode change (only the screen flashes), and sways from the player's motion state. Without gs-player-char's view arms it falls back to its own sleeve under `viewmodel_fov`. Other players' devices (and your own in third person) sit on the figure's right wrist bone, along the forearm and sized to it (`PlaylotMultiMount`); a figure with none uses the hand attachment and logs a warning.
 
 ## The HUD
 

@@ -28,3 +28,27 @@ static func update(old: GSViewGrip, anchor: Node3D, grip: Vector3, fore: Vector3
 	if "kind" in made:
 		made.kind = POSE_KINDS.get(pose, &"rifle")
 	return made
+
+
+## The multi-tool's hand: open and relaxed, palm forward and down so the palm emitter faces the aim, fingers
+## loose. [method wrist] grips with it; [method add_poses] teaches it to the arms.
+const MULTI_KIND := &"multitool"
+const MULTI_HAND := {&"fingers": Vector3(0.0, 0.55, 0.84), &"palm": Vector3(0.0, -0.84, 0.55), &"centre": Vector3(0.0, 0.05, 0.0),
+	&"thumb": Vector3(10.0, 14.0, 8.0), &"index": Vector3(12.0, 14.0, 8.0), &"middle": Vector3(16.0, 18.0, 10.0),
+	&"ring": Vector3(20.0, 22.0, 12.0), &"pinky": Vector3(24.0, 26.0, 14.0), &"spread": 4.0}
+
+
+static func add_poses(arms: Node) -> void:
+	var poses: Variant = arms.get(&"hand_poses") if arms != null else null
+	if poses is Dictionary and not (poses as Dictionary).has(MULTI_KIND):
+		(poses as Dictionary)[MULTI_KIND] = {&"firing": MULTI_HAND.duplicate()}
+
+
+## The arms' grip on the multi-tool's [param anchor]: one hand, its palm on the anchor's origin. Its bounds are a
+## sliver round that point, so the elbow-clearance scan does not steer the arm round the band it wears.
+static func wrist(anchor: Node3D) -> GSViewGrip:
+	var made := GSViewGrip.one_hand(anchor, Vector3.ZERO)
+	made.bounds = AABB(Vector3(-0.005, -0.005, -0.005), Vector3(0.01, 0.01, 0.01))
+	if "kind" in made:
+		made.kind = MULTI_KIND
+	return made

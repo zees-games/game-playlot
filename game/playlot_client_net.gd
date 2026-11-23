@@ -739,11 +739,16 @@ func _disarm_zee() -> void:
 			(zee_view as ZeeViewModel).hands_reached.disconnect(_on_hands_reached)
 		zee_view.queue_free()
 	zee_view = null
-	held_grip = null
 	_seated_for = &""
 	hand_seat_offset = Vector3.ZERO
-	if view_arms is GSPlayerViewArms:
-		(view_arms as GSPlayerViewArms).set_held(null)
+	# The bracelet's wrist grip outlives a mode change (_arm_toy_view drops it if the bracelet goes): letting go
+	# and re-gripping in one frame hid the real hand for a frame.
+	var on_bracelet := held_grip != null and held_grip.anchor != null and toy_view != null \
+		and is_instance_valid(toy_view) and toy_view.is_ancestor_of(held_grip.anchor)
+	if not on_bracelet:
+		held_grip = null
+		if view_arms is GSPlayerViewArms:
+			(view_arms as GSPlayerViewArms).set_held(null)
 
 	_zee_buttons = 0
 	_net_buttons &= ~GSFpsCommand.BUTTON_USER_2
@@ -751,16 +756,33 @@ func _disarm_zee() -> void:
 
 ## Builds the first-person model for a toy or tool, after [method _disarm_zee] cleared the last.
 func _arm_toy_view(id: StringName) -> void:
+	var own_hands := PlaylotViewGrip.available() and view_arms is GSPlayerViewArms
+	var kept := toy_view != null and is_instance_valid(toy_view) and not toy_view.is_queued_for_deletion()
+	if kept and zee_view == null and camera != null and id != &"" and toy_view.get(&"on_arms") == own_hands:
+		# A mode change keeps the bracelet on the arm: its screen flashes, the arm does not drop and re-reach.
+		toy_view.call(&"set_modes", PlaylotMultitool.available(playlot))
+		toy_view.call(&"set_mode", id)
+		if own_hands and held_grip == null:
+			held_grip = PlaylotViewGrip.wrist(toy_view.call(&"anchor"))
+			(view_arms as GSPlayerViewArms).set_held(held_grip)
+		return
 	if toy_view != null and is_instance_valid(toy_view):
+		if held_grip != null and held_grip.anchor != null and toy_view.is_ancestor_of(held_grip.anchor):
+			held_grip = null
+			(view_arms as GSPlayerViewArms).set_held(null)
 		toy_view.queue_free()
 	toy_view = null
 	if zee_view != null or camera == null or id == &"":
 		return
-	# Every sandbox tool is a mode of the one bracelet: the mode's glow, the same device.
-	var device := PlaylotMultiDevice.make(camera)
+	# Every sandbox tool is a mode of the one bracelet: the mode's glow, the same device, on the avatar's own arm.
+	var device := PlaylotMultiDevice.make(camera, own_hands)
 	device.call(&"set_modes", PlaylotMultitool.available(playlot))
 	device.call(&"set_mode", id)
 	toy_view = device
+	if own_hands:
+		PlaylotViewGrip.add_poses(view_arms)
+		held_grip = PlaylotViewGrip.wrist(device.call(&"anchor"))
+		(view_arms as GSPlayerViewArms).set_held(held_grip)
 
 
 func _set_reload(down: bool) -> void:

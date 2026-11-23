@@ -18,7 +18,10 @@ func _present_view_arms(delta: float) -> void:
 	arms_pivot.visible = first and (hands == null or not hands.is_scoped())
 	arms_pivot.global_position = camera.global_position
 	arms_pivot.global_rotation = Vector3(0.0, camera.global_rotation.y, 0.0)
+	_dress_view_arms()
 	view_arms.call("tick", player.speed(), delta)
+	if toy_view != null and is_instance_valid(toy_view) and toy_view.get(&"on_arms") == true:
+		toy_view.call(&"wear", view_arms)
 	_present_own_held()
 
 

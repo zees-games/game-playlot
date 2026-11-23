@@ -24,6 +24,7 @@ const PlaylotWeaponDef := preload("weapons/playlot_weapon_def.gd")
 const PlaylotTouch := preload("client/playlot_touch.gd")
 const PlaylotMultitool := preload("playlot_multitool.gd")
 const PlaylotMultiDevice := preload("playlot_multi_device.gd")
+const PlaylotFigure := preload("playlot_figure.gd")
 const PlaylotMultiMount := preload("playlot_multi_mount.gd")
 const PlaylotMapDrop := preload("client/playlot_map_drop.gd")
 const PlaylotClientPrewarm := preload("client/playlot_client_prewarm.gd")
@@ -322,7 +323,29 @@ func _build_view_arms() -> void:
 	# The avatar's body never leans toward a weapon: a weapon is moved to the hand instead.
 	if "max_lean" in view_arms:
 		view_arms.set("max_lean", 0.0)
-	view_arms.call("build")
+	# gs_player_char's detailed material writes POSITION only when draw_depth > 1, so a GPU draws nothing:
+	# the plain avatar material until the addon writes it on every path.
+	if "detailed" in view_arms:
+		view_arms.set("detailed", false)
+	_dress_view_arms()
+
+
+## Dresses the arms as the avatar the player wears (their GameSpice avatar, else TMC's default figure for
+## their id), rebuilt only when the skins or id change.
+var _arms_dressed_skins := PackedInt32Array([-2])
+var _arms_dressed_id: StringName = &""
+
+
+func _dress_view_arms() -> void:
+	if view_arms == null or player == null:
+		return
+	if player.skins == _arms_dressed_skins and player.player_id == _arms_dressed_id:
+		return
+	_arms_dressed_skins = player.skins
+	_arms_dressed_id = player.player_id
+	var key := String(player.player_id)
+	var look: GSHumanoidLook = PlaylotFigure.look_of(player.skins, key) if key != "" or not player.skins.is_empty() else null
+	view_arms.call("build", look, player.body_height())
 
 
 ## The hit drawn on the body the server says was hit: zee's red burst at [param point], for a body

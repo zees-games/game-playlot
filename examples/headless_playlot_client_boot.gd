@@ -24,15 +24,17 @@ func _the_client_mounts_the_downed_arms() -> void:
 		"the client mounts the downed arms under a yaw pivot, not the camera")
 	if arms == null:
 		return
+	# On their feet the arms show only to wear the multi-tool's bracelet (a held grip).
+	var worn := _tcb_client.held_grip != null
 	_tcb_client.player.downed = false
 	_tcb_client._present_view_arms(0.016)
-	_check(not arms.arms().visible, "the arms are hidden while on their feet")
+	_check(arms.arms().visible == worn, "on their feet the arms show only to wear the bracelet", "worn %s" % worn)
 	_tcb_client.player.downed = true
 	_tcb_client._present_view_arms(0.016)
 	_check(arms.arms().visible and arms.shown, "and shown while downed in first person")
 	_tcb_client.player.downed = false
 	_tcb_client._present_view_arms(0.016)
-	_check(not arms.arms().visible, "and hidden again on a revive")
+	_check(arms.arms().visible == worn, "and back to that on a revive")
 
 
 ## One weapon of every pose the catalogue ships, in the client's own hands: the arms are up with the
@@ -81,7 +83,9 @@ func _the_arms_hold_each_weapon_class() -> void:
 		_check(not _tcb_client.zee_view.show_arms, "%s: the view model's own hands are off" % pose)
 		_tcb_client._set_tool(&"phys")
 		await get_tree().process_frame
-		_check(_tcb_client.held_grip == null and not arms.shown, "%s: the arms are gone on the holster" % pose)
+		var band: Variant = _tcb_client.toy_view.call(&"anchor") if _tcb_client.toy_view != null else null
+		_check(_tcb_client.held_grip != null and _tcb_client.held_grip.anchor == band and arms.shown,
+			"%s: on the holster the arms go back to the bracelet" % pose)
 
 
 func _test_the_client_boots_2() -> void:
@@ -682,17 +686,23 @@ func _test_the_client_boots_12() -> void:
 		"and the physics gun takes it back out of their hands"
 	)
 	var toy_in_hand: Node3D = _tcb_client.toy_view
+	# Worn on the view arms it rides their pose; alone it is a gun-like model in the viewmodel_fov group.
+	var on_arms: bool = toy_in_hand != null and toy_in_hand.get(&"on_arms") == true
 	_check(
 		toy_in_hand != null and toy_in_hand.get_parent() == _tcb_client.camera
-			and toy_in_hand.is_in_group(&"gs_view_model"),
-		"a toy in hand draws a first-person model under the camera, in the viewmodel_fov group"
+			and (on_arms or toy_in_hand.is_in_group(&"gs_view_model")),
+		"a toy in hand draws a first-person model under the camera, on the arms or in the viewmodel_fov group"
 	)
 	_tcb_client._set_tool(&"launcher")
-	_check(_tcb_client.toy_view != null and _tcb_client.toy_view != toy_in_hand,
-		"and picking another toy swaps the model")
+	_check(_tcb_client.toy_view == toy_in_hand and _tcb_client.toy_view.call(&"mode") == &"launcher",
+		"and picking another toy keeps the bracelet and switches its mode")
 	_tcb_client.toy_view.call(&"set_hands_fov_at_4_3", 40.0)
 	_tcb_client.toy_view.call(&"_process", 0.016)
-	_check(_tcb_client.toy_view.scale.x != 1.0, "and viewmodel_fov scales it like a gun")
+	if on_arms:
+		# viewmodel_fov on the arms belongs to gs_player_char (gs-player-char-viewarms-fov-1); the bracelet keeps their scale.
+		_check(_tcb_client.toy_view.scale.is_equal_approx(Vector3.ONE), "and on the arms it rides their scale, not its own lens")
+	else:
+		_check(_tcb_client.toy_view.scale.x != 1.0, "and viewmodel_fov scales it like a gun")
 	_tcb_client._set_tool(&"phys")
 
 	# Water splashes: a crate dropped into Nature's pond, heard on the client's own frames.
