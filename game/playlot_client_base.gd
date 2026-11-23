@@ -323,10 +323,9 @@ func _build_view_arms() -> void:
 	# The avatar's body never leans toward a weapon: a weapon is moved to the hand instead.
 	if "max_lean" in view_arms:
 		view_arms.set("max_lean", 0.0)
-	# gs_player_char's detailed material writes POSITION only when draw_depth > 1, so a GPU draws nothing:
-	# the plain avatar material until the addon writes it on every path.
-	if "detailed" in view_arms:
-		view_arms.set("detailed", false)
+	# The bracelet's viewmodel_fov lens draws the arms life size at Playlot's defaults (100 degree camera, 54).
+	if "lens_neutral" in view_arms:
+		view_arms.set("lens_neutral", GSViewLens.lens_scale(100.0, GSViewLens.vertical_from_horizontal_4_3(54.0)))
 	_dress_view_arms()
 
 

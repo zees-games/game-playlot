@@ -82,6 +82,9 @@ signal build_chosen(build_name: String)
 ## A pack trail was picked: the local player wears it.
 signal trail_chosen(trail_id: String)
 
+## "Spawn with multi-tool" on a card's right-click menu: [param kind] is a [code]PlaylotMultitool.PICK_KINDS[/code] key.
+signal multi_spawn_chosen(kind: String, item_id: StringName)
+
 ## What the props and entities tabs are built from. Set before the first push.
 var catalogue: GSPropCatalogue = null
 

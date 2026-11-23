@@ -1,6 +1,6 @@
 extends "res://examples/headless_net_downed_ammo_flashlight.gd"
 
-const CHECKS := 452
+const CHECKS := 457
 
 ## Sections entered against sections that ran to their last line, and against this. A
 ## runtime error inside a section aborts that function and nothing says so; a section that

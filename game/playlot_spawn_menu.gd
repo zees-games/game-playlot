@@ -366,6 +366,7 @@ func _prop_card(def: GSPropDef) -> Button:
 		]
 
 	card.pressed.connect(_on_prop_pressed.bind(def.id))
+	_wire_context(card, "prop", def.id)
 	if def.id == selected:
 		_style_card(card, true)
 	# The id on the button, so `shown()` and `card_for()` read what is actually on
@@ -388,17 +389,10 @@ func _weapon_card(def: PlaylotWeaponDef) -> Button:
 	card.pressed.connect(_on_weapon_pressed.bind(def.id))
 	card.set_meta(&"entry", def.id)
 
-	# Right click puts one on the ground instead — a weapon to hand to somebody, or to
-	# leave for whoever walks past. Only the zee weapons: a tool gun lying in the road is
-	# not a thing anybody wants.
+	# Right click: spawn it with the multi-tool, or put one on the ground, a weapon to hand to
+	# somebody. Only the zee weapons have a pickup: a tool gun lying in the road is not a thing.
 	if PlaylotZee.is_zee(def):
-		card.tooltip_text += "\nRight click to drop one on the ground."
-		card.gui_input.connect(func(event: InputEvent) -> void:
-			var click := event as InputEventMouseButton
-			if click != null and click.pressed and click.button_index == MOUSE_BUTTON_RIGHT:
-				weapon_spawn_requested.emit(def.id)
-				card.accept_event()
-		)
+		_wire_context(card, "weapon", def.id, true)
 
 	return card
 
@@ -416,10 +410,13 @@ func _pack_card(row: Dictionary) -> Button:
 	var card := _card(icon, str(row.get("name", id)), str(row.get("tip", "")))
 	if row.get("kind") == &"weapon":
 		card.pressed.connect(_on_weapon_pressed.bind(id))
+		if def is PlaylotWeaponDef and PlaylotZee.is_zee(def as PlaylotWeaponDef):
+			_wire_context(card, "weapon", id, true)
 	elif row.get("kind") == &"trail":
 		card.pressed.connect(func() -> void: trail_chosen.emit(str(row.get("trail", ""))))
 	else:
 		card.pressed.connect(_on_prop_pressed.bind(id))
+		_wire_context(card, "prop", id)
 	card.set_meta(&"entry", id)
 	return card
 

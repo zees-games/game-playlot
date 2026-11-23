@@ -103,6 +103,7 @@ Beside the fourteen built-in block props the catalogue carries 120-odd real obje
 
 - **The look is one `GSUiTheme` palette** (`_palette`, rounder than the default) built onto the menu: rounded plate cards with the thumbnail on them, pill tabs and category chips filled with the accent, a rounded search field. The helpers `_box`, `_style_card`, `_style_pill` and `_style_tabs` are the only places a `StyleBoxFlat` is made. Node names and the `shown()`/`card_for()` metadata did not change.
 - The **Addons** tab lists what addon hooks registered ([below](#the-addons-folder-hook)); clicking an entry emits `addon_item_chosen("addon/item")`.
+- **Right click on any spawnable card** (prop, entity, pack row, zee weapon, build, addon item) opens a small context menu: **Spawn with multi-tool**, and for zee weapons also **Drop one on the ground** (what their right click did before). The choice emits `multi_spawn_chosen(kind, id)`; the client equips the multi-tool in spawn mode with that item armed and closes the menu ([below](#spawn-mode)). Left click still spawns as before.
 
 ## The addons folder hook
 
@@ -154,6 +155,12 @@ The physics gun, gravity gun, push, spawn, remover and tool gun are one device w
 A tap of R is the old R (reload a zee gun or the tool gun's third button, else unfreeze all). Holding R past `multitool_hold_seconds` (0.25, 0 = instant) raises the wrist and opens a hologram menu above the screen; hover or move the mouse, scroll, the right stick or the number keys 1..N choose, release R confirms. Number keys and the mouse mean modes only while R is held, and are swallowed then; without R, 1/2/3 and the wheel are the weapon inventory.
 
 The mode crosses as `ARM_MULTI_MODE` (an id the server checks: a bad one logs a warning, sends a NOTICE and changes nothing) and the raised arm as `ARM_MULTI_RAISE`. Everyone else sees mode, raise and fire as one 11-bit word, `PlaylotPlayerNet.net_multi`, with no extra traffic; their device sits on the figure's right wrist, fitted to the forearm (`playlot_multi_mount.gd`), and in first person it is worn on your avatar's own arms (see [client.md](client.md#the-multi-tool-selector)). Held props are released on a mode switch like on any tool switch. Suite: `headless_multitool`.
+
+### Spawn mode
+
+The multi-tool's spawn mode (`game/weapons/swep_spawn.gd`) puts the armed item down where you point: at the aimed surface point, pushed off it by the item's half size along the normal, upright and turned to face you; with nothing in reach, a few metres ahead. Left click places one; holding it places another every `pg_multi_spawn_repeat` seconds (0.15, 0 = every tick; the spawner's own `prop_spawn_interval` still applies). Nothing is put down where it would stand in the player, so a held pile stops short of you. Right click opens the Q menu pinned, to pick another item; the hologram changes mode. The bracelet's screen and its spawn row name the armed item. The launcher stays a separate weapon.
+
+What is armed is a pick, `kind:id` (`PlaylotMultitool.pick`; kinds `prop`, `weapon` (its pickup), `addon`, `build`). It crosses as `ARM_MULTI_SPAWN`; the server checks kind and id (an unknown one logs a warning, sends a NOTICE and keeps the old pick). Spawns go through the same server path as a menu spawn: limits, the prop budget, undo, ownership and the creative/protection rules apply, and a refusal shows its reason. The burst is drawn from the palm emitter, for everyone. Suites: `headless_multitool` (context menu, equip, aimed position, repeat rate, refusal) and `headless_net_props_and_tools` (a remote client's pick and held repeat).
 
 ## The tool gun
 

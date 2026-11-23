@@ -1,6 +1,6 @@
 extends "res://examples/headless_playlot_grenades_and_tools.gd"
 
-const CHECKS := 788 + 22 + 9 + 10 + 8 + 1 + 4 + 15 + 2 + 1 + 26 + 3 + 2 + 2 + 1 + 8 + 1 + 5 + 10 + 25 + 1 + 1 + 30 + 18 + 1 + 6 + 3 + 1 + 2 + 1 + 8 + 4 + 5 + 3 + 1 + 3 + 6 + 5
+const CHECKS := 788 + 22 + 9 + 10 + 8 + 1 + 4 + 15 + 2 + 1 + 26 + 3 + 2 + 2 + 1 + 8 + 1 + 5 + 10 + 25 + 1 + 1 + 30 + 18 + 1 + 6 + 3 + 1 + 2 + 1 + 8 + 4 + 5 + 3 + 1 + 3 + 6 + 5 + 1
 const PlaylotClientPrewarm := preload("res://game/client/playlot_client_prewarm.gd")
 
 ## Sections entered against sections that ran to their last line, and against this. A

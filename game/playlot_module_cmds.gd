@@ -124,6 +124,16 @@ func _bind_props_feel() -> void:
 		game.config.prop_surfing = value.to_int() != 0
 	)
 
+	var repeat := add_cvar("pg_multi_spawn_repeat", str(game.config.multi_spawn_repeat),
+		"Seconds between spawns while the multi-tool's spawn mode is held; 0 spawns one every tick.",
+		GSConVar.FLAG_NOTIFY)
+	repeat.changed.connect(func(_old: String, value: String) -> void:
+		if not value.is_valid_float() or value.to_float() < 0.0:
+			GSLog.warn("playlot.cmds", "pg_multi_spawn_repeat wants seconds, 0 or more", {"value": value})
+			return
+		game.config.multi_spawn_repeat = value.to_float()
+	)
+
 
 func _cmd_creative(ctx: GSCmdContext) -> void:
 	var player := _caller(ctx)

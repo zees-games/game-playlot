@@ -73,6 +73,12 @@ func reload(space: Variant, origin: Vector3, aim: Vector3) -> GSResult:
 	return _reload(space, origin, aim.normalized())
 
 
+## Primary held past the press, every tick. A result when it did something (the spawn mode's
+## repeat), null otherwise; most toys do nothing while held.
+func held(space: Variant, origin: Vector3, aim: Vector3, delta: float) -> GSResult:
+	return _held(space, origin, aim.normalized(), delta)
+
+
 func tick(space: Variant, origin: Vector3, aim: Vector3, delta: float) -> void:
 	age += delta
 	_tick(space, origin, aim.normalized(), delta)
@@ -102,6 +108,10 @@ func _reload(_space: Variant, _origin: Vector3, _aim: Vector3) -> GSResult:
 
 func _tick(_space: Variant, _origin: Vector3, _aim: Vector3, _delta: float) -> void:
 	pass
+
+
+func _held(_space: Variant, _origin: Vector3, _aim: Vector3, _delta: float) -> GSResult:
+	return null
 
 
 # --- Helpers ----------------------------------------------------------------

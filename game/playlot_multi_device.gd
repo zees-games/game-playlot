@@ -11,6 +11,7 @@ extends Node3D
 
 const PlaylotMultitool := preload("playlot_multitool.gd")
 const PlaylotMultiIcons := preload("playlot_multi_icons.gd")
+const PlaylotMultiEffects := preload("playlot_multi_effects.gd")
 
 ## The first-person arm at rest, and raised to read the wrist like a watch. Under the camera, metres.
 const FP_LOW_POS := Vector3(0.2, -0.24, -0.42)
@@ -50,7 +51,8 @@ var first_person := false
 var on_arms := false
 
 ## Vertical field of view the first-person device is drawn at, set by gs-menu's applier (group
-## `gs_view_model`) from `viewmodel_fov`; 0 draws it under the camera's own lens.
+## `gs_view_model`) from `viewmodel_fov`; 0 draws it under the camera's own lens. On the arms, the
+## client hands it to them and [method wear] follows their lens.
 var hands_fov := 0.0
 
 var _camera: Camera3D = null
@@ -62,6 +64,7 @@ var _wear_hand: Node3D = null
 var _wear_bones := PackedInt32Array()
 var _holo: Node3D
 var _muzzle: Marker3D
+var _effects: Node3D
 var _glow_material: StandardMaterial3D
 var _screen: MeshInstance3D
 var _screen_material: StandardMaterial3D
@@ -77,6 +80,7 @@ var _labels: Array[Label3D] = []
 var _row_materials: Array[StandardMaterial3D] = []
 var _modes: Array[StringName] = []
 var _mode: StringName = &""
+var _pick := ""
 var _hover := -1
 var _raise := 0.0
 var _raised := false
@@ -106,8 +110,14 @@ func set_modes(ids: Array[StringName]) -> void:
 	for i in _rows.size():
 		var shown := i < ids.size()
 		_rows[i].visible = shown
-		_labels[i].text = "%d  %s" % [i + 1, PlaylotMultitool.label(ids[i])] if shown else ""
+		_labels[i].text = _row_text(i, ids[i]) if shown else ""
 	_paint()
+
+
+func _row_text(i: int, id: StringName) -> String:
+	if id == &"spawn" and _pick != "":
+		return "%d  %s: %s" % [i + 1, PlaylotMultitool.label(id), _pick]
+	return "%d  %s" % [i + 1, PlaylotMultitool.label(id)]
 
 
 func set_mode(id: StringName) -> void:
@@ -119,6 +129,16 @@ func set_mode(id: StringName) -> void:
 
 func mode() -> StringName:
 	return _mode
+
+
+## What spawn mode has armed, by name: on the screen under the mode and on the hologram's Spawn row.
+func set_pick(text: String) -> void:
+	_pick = text
+	set_modes(_modes)
+
+
+func pick_text() -> String:
+	return _pick
 
 
 ## Arm up and hologram open, or down and closed.
@@ -169,8 +189,23 @@ func feed(local_velocity: Vector3, grounded: bool, turn: Vector2, delta: float) 
 	_sway = bob + strafe + breath + Vector3(-_turn_lag.x * 0.2, _turn_lag.y * 0.2 - _dip * 0.03 + air, 0.0)
 
 
-func kick() -> void:
+## A shot: the device kicks and the mode's effect leaves the palm along [param aim] (world). Without one, the
+## first-person device fires along the camera and a worn one along its emitter.
+func kick(aim := Vector3.ZERO) -> void:
 	_kick = 1.0
+	if aim.length_squared() < 0.0001:
+		aim = -_camera.global_basis.z if _camera != null and is_instance_valid(_camera) else -_muzzle.global_basis.z
+	_effects.call(&"fire", _mode, muzzle_position(), aim)
+
+
+## A prop held by this device this frame, at [param to]: the palm's hold ring shows while it is called.
+func hold_to(to: Vector3) -> void:
+	_effects.call(&"hold", _mode, muzzle_position(), to - muzzle_position())
+
+
+## The palm effects' node, for the suites and the render tool.
+func effects() -> Node3D:
+	return _effects
 
 
 ## The anchor the avatar's right hand reaches for (the hand's grip is its origin), on the arms.
@@ -208,15 +243,19 @@ func wear(arms: Node) -> void:
 		y = Vector3.UP
 	var k := WRIST_FIT * length / BAND_RADIUS
 	var basis := Basis(y.cross(z), y, z) * Basis.from_scale(Vector3.ONE * k)
-	_wear.global_transform = Transform3D(basis, wrist + z * (WRIST_BACK * length))
+	# Solved on the arms' pose, then moved where their viewmodel_fov lens draws it.
+	var lens: bool = arms.has_method(&"lensed")
+	var band := Transform3D(basis, wrist + z * (WRIST_BACK * length))
+	_wear.global_transform = arms.call(&"lensed", band) if lens else band
 	var hand_on := _wear_hand != null and is_instance_valid(_wear_hand) and _wear_hand.visible
 	_palm_glow.visible = hand_on
+	var palm: Transform3D = _wear_hand.global_transform * Transform3D(Basis(), PALM_AT) if hand_on \
+		else Transform3D(basis, wrist - z * (0.5 * length))
+	if lens:
+		palm = arms.call(&"lensed", palm)
 	if hand_on:
-		var palm := _wear_hand.global_transform * Transform3D(Basis(), PALM_AT)
 		_palm_glow.global_transform = palm
-		_muzzle.global_position = palm * Vector3(0.0, 0.0, 0.01)
-	else:
-		_muzzle.global_position = wrist - z * (0.5 * length)
+	_muzzle.global_position = palm * Vector3(0.0, 0.0, 0.01) if hand_on else palm.origin
 	if _holo.visible:
 		_face_holo()
 
@@ -265,7 +304,8 @@ func _process(delta: float) -> void:
 	else:
 		_arm.position = Vector3(0.0, 0.0, kick * 0.02)
 
-	_holo.visible = _raise > 0.02
+	# Hidden before it shrinks onto the screen: at the last collapse frames it lay over the band's display.
+	_holo.visible = _raise > 0.12
 	if _holo.visible:
 		_face_holo()
 
@@ -282,10 +322,10 @@ func _process(delta: float) -> void:
 
 func _face_holo() -> void:
 	var out := 1.0 - pow(1.0 - _raise, 3.0)
-	_holo.scale = Vector3.ONE * (0.3 + 0.7 * out)
+	_holo.scale = Vector3.ONE * (0.1 + 0.9 * out)
 	if first_person and _camera != null and is_instance_valid(_camera):
 		# Rises off the band to a fixed spot in view, so the arm's raise never brings it up to the eye.
-		var from := _wear.global_transform * Vector3(0.0, BAND_RADIUS + 0.02, 0.0)
+		var from := _wear.global_transform * Vector3(0.0, BAND_RADIUS + 0.08, 0.0)
 		_holo.global_position = from.lerp(_camera.global_transform * HOLO_VIEW, out)
 		var away := _holo.global_position - _camera.global_position
 		if away.length_squared() > 0.0001:
@@ -305,6 +345,8 @@ func _paint() -> void:
 	if _screen_material != null:
 		_screen_material.albedo_texture = PlaylotMultiIcons.texture(_mode, tint)
 		_name_label.text = PlaylotMultitool.label(_mode)
+		if _mode == &"spawn" and _pick != "":
+			_name_label.text += "\n" + _pick
 		_name_label.modulate = tint.lightened(0.4)
 	if _glow_material != null:
 		_glow_material.emission = tint
@@ -326,7 +368,7 @@ func _paint() -> void:
 func _build(camera: Camera3D) -> void:
 	first_person = camera != null
 	_camera = camera
-	if first_person and not on_arms:
+	if first_person:
 		add_to_group(&"gs_view_model")
 	if on_arms:
 		# Before the client's frame, which ticks the arms onto this anchor and then calls wear.
@@ -408,6 +450,9 @@ func _build(camera: Camera3D) -> void:
 	_muzzle.name = "Muzzle"
 	_muzzle.position = Vector3(0.0, 0.0, EMITTER_Z - 0.008)
 	_wear.add_child(_muzzle)
+	_effects = PlaylotMultiEffects.new()
+	_effects.set(&"muzzle", _muzzle)
+	add_child(_effects)
 	if on_arms:
 		# A lit lens on the real palm (its own frame, life-size metres), sharing the glow's material.
 		var lens := SurfaceTool.new()

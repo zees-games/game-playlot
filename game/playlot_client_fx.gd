@@ -74,6 +74,7 @@ func _build_screens() -> void:
 	menu.builds_opened.connect(_on_builds_opened)
 	menu.build_chosen.connect(_on_build_chosen)
 	menu.addon_item_chosen.connect(_on_addon_item_chosen)
+	menu.multi_spawn_chosen.connect(_on_multi_spawn_chosen)
 	if playlot.addons != null:
 		menu.addon_items = playlot.addons.describe_items()
 

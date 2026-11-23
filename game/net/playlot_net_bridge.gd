@@ -116,6 +116,7 @@ func remove_player(session_id: int) -> void:
 	_prev_buttons.erase(session_id)
 	_drop_toy(session_id)
 	_armed_of.erase(session_id)
+	_multi_pick_of.erase(session_id)
 
 	# Released before the game is told, so _on_player_removed finds nothing and this stays the one
 	# place a leaving player is announced.
@@ -254,6 +255,12 @@ func _drive_tools(session_id: int, behaviour: PlaylotPlayerNet) -> void:
 			and (before & GSFpsCommand.BUTTON_USER_2) == 0
 		if primary_pressed:
 			_toy_result(session_id, player.player_id, toy, toy.primary(space, origin, aim))
+		elif primary:
+			# Held: the spawn mode repeats at `pg_multi_spawn_repeat`; each one kicks the device too.
+			var again := toy.held(space, origin, aim, delta)
+			if again != null:
+				player.multi_fire = (player.multi_fire + 1) & 0xF
+				_toy_result(session_id, player.player_id, toy, again)
 		if secondary_pressed:
 			_toy_result(session_id, player.player_id, toy, toy.secondary(space, origin, aim))
 		if reload_pressed:
@@ -262,6 +269,7 @@ func _drive_tools(session_id: int, behaviour: PlaylotPlayerNet) -> void:
 		return
 
 	if tool_id == &"grav":
+		var carried_before := player.grav_gun.carried
 		if primary_pressed:
 			player.grav_gun.punt(space, origin, aim, may_touch)
 		if secondary_pressed:
@@ -270,6 +278,10 @@ func _drive_tools(session_id: int, behaviour: PlaylotPlayerNet) -> void:
 			player.grav_gun.carry(origin, aim, delta)
 		elif not secondary and player.grav_gun.is_carrying():
 			player.grav_gun.drop()
+		# A carry is told like a physics-gun hold (`HELD`), so every client draws its beam from the palm.
+		if player.grav_gun.carried != carried_before:
+			var now := player.grav_gun.carried
+			_on_held_changed(player.grav_gun.wielder, now if now != null else carried_before, now != null)
 		return
 
 	if primary_pressed:
@@ -384,6 +396,8 @@ func _on_arm(peer_id: int, session_id: int, id: StringName, arm: Dictionary) -> 
 			var _gun = game.weapon_layer.throw_for(id)
 		PlaylotEvents.ARM_MULTI_MODE:
 			_set_multi_mode(peer_id, session_id, id, arm["id"] as StringName)
+		PlaylotEvents.ARM_MULTI_SPAWN:
+			_set_multi_spawn(peer_id, session_id, id, str(arm["payload"]), arm["id"] as StringName)
 		PlaylotEvents.ARM_MULTI_RAISE:
 			var raising: PlaylotPlayer = game.players.get(id)
 			if raising != null:
@@ -408,6 +422,7 @@ func _on_arm(peer_id: int, session_id: int, id: StringName, arm: Dictionary) -> 
 			var prop_id := arm["id"] as StringName
 			if game.props.catalogue != null and game.props.catalogue.get_prop(prop_id) != null:
 				_armed_of[session_id] = prop_id
+				_multi_pick_of[session_id] = prop_id
 				var toy: PlaylotWeapon = _toy_of.get(session_id)
 				if toy != null:
 					toy.armed = prop_id

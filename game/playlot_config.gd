@@ -148,6 +148,10 @@ extends GSConfig
 ## of your weight. Off leaves a crate exactly as solid and as still as the floor.
 @export var prop_surfing: bool = true
 
+## Seconds between spawns while the multi-tool's spawn mode is held down (`pg_multi_spawn_repeat`).
+## 0 spawns one every tick; the prop budget and limits still apply to each.
+@export var multi_spawn_repeat: float = 0.15
+
 ## Whether shots and blasts break props that have health (`PlaylotSpawnables.BREAKABLE`):
 ## a crate shot apart into debris, a barrel that goes up. Off by default: a sandbox where
 ## somebody can shoot your build to pieces is a different server, and an operator chooses

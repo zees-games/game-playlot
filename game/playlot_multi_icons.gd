@@ -56,7 +56,7 @@ static func _shape(mode: StringName, p: Vector2) -> float:
 			var ray := 1.0 if absf(sin(a * 4.0)) > 0.8 else 0.0
 			var span := _ring(r, 0.62, 0.2) if ray > 0.0 else 0.0
 			return maxf(span, _disc(r, 0.2))
-		&"launcher":
+		&"spawn":
 			# A plus: something to put into the world.
 			var bar := 0.11
 			var h := _box(p, Vector2(0.62, bar))

@@ -114,6 +114,8 @@ func _give_weapon(session_id: int, id: StringName, weapon_id: StringName) -> voi
 			toy.equip(game, def)
 			toy.wielder = id
 			toy.armed = _armed_of.get(session_id, &"")
+			if toy.get(&"place_build") != null:
+				_rig_spawn_toy(session_id, toy)
 			_restore_tool_mode(session_id, toy)
 			_toy_of[session_id] = toy
 			_tool_of[session_id] = weapon_id
@@ -299,6 +301,54 @@ func describe() -> Dictionary:
 		"link": link.describe() if link != null else {},
 		"inventory": inventory_net.describe() if inventory_net != null else {},
 	}
+
+
+## What the multi-tool's spawn mode puts down, asked for by a client: the kind and the id are checked
+## against what this server offers and refused out loud (a NOTICE and a warning) when either is not.
+func _set_multi_spawn(peer_id: int, session_id: int, id: StringName, kind: String, item_id: StringName) -> void:
+	var why := _multi_pick_refusal(kind, item_id)
+	if why != "":
+		GSLog.warn(CHANNEL, "a multi-tool spawn pick was refused", {
+			"player": String(id), "kind": kind, "item": String(item_id), "why": why,
+		})
+		_tell(peer_id, PlaylotEvents.Kind.NOTICE, PlaylotEvents.write_notice(session_id, why))
+		return
+	_multi_pick_of[session_id] = PlaylotMultitool.pick(kind, String(item_id))
+	var toy: PlaylotWeapon = _toy_of.get(session_id)
+	if toy != null and toy.get(&"place_build") != null:
+		toy.armed = _multi_pick_of[session_id]
+
+
+## Why [param kind]/[param item_id] cannot be a spawn pick here, or "" when it can.
+func _multi_pick_refusal(kind: String, item_id: StringName) -> String:
+	if item_id == &"":
+		return "Pick something for the spawn mode."
+	match kind:
+		"prop":
+			if game.props.catalogue == null or game.props.catalogue.get_prop(item_id) == null:
+				return "There is no prop '%s'." % String(item_id)
+		"weapon":
+			if game.weapon_def(item_id) == null or game.props.catalogue == null \
+					or game.props.catalogue.get_prop(Playlot.pickup_id_of(item_id)) == null:
+				return "There is no weapon '%s' to put down." % String(item_id)
+		"addon":
+			if game.addons == null or game.addons.find(String(item_id)) == null:
+				return "There is no addon item '%s'." % String(item_id)
+		"build":
+			pass  # The builds are the player's own store's; a missing one is refused when it is put down.
+		_:
+			return "The spawn mode cannot put down a '%s'." % kind
+	return ""
+
+
+## The spawn mode's toy: what its player picked, the session addon items run for, and where builds go.
+func _rig_spawn_toy(session_id: int, toy: PlaylotWeapon) -> void:
+	toy.armed = _multi_pick_of.get(session_id, toy.armed)
+	toy.set(&"session_id", session_id)
+	var peer_id := peer_for_player(session_id)
+	toy.set(&"place_build", func(build_name: String, at: Vector3, yaw: float) -> GSResult:
+		build_place_requested.emit(peer_id, build_name, at, yaw)
+		return GSResult.success(build_name))
 
 
 ## The multi-tool's mode, asked for by a client. An id that is not a mode is refused out loud and

@@ -101,6 +101,7 @@ func _build_card(entry: Dictionary) -> Button:
 		]
 	)
 	card.pressed.connect(func() -> void: build_chosen.emit(build_name))
+	_wire_context(card, "build", StringName(build_name))
 	card.set_meta(&"entry", StringName(build_name))
 	return card
 
@@ -118,8 +119,60 @@ func _addon_card(entry: Dictionary) -> Button:
 		icon = PlaylotIcons.for_provider(str(entry.get("kind", "")), str(entry.get("label", key)))
 	var card := _card(icon, str(entry.get("label", key)), str(entry.get("hint", "")))
 	card.pressed.connect(func() -> void: addon_item_chosen.emit(key))
+	_wire_context(card, "addon", StringName(key))
 	card.set_meta(&"entry", StringName(key))
 	return card
+
+
+## The right-click menu's entries.
+enum Context { MULTI_SPAWN, DROP }
+
+var _context: PopupMenu = null
+var _context_pick: Array = []
+
+
+## Right click on a spawnable [param card] opens the one shared context menu; [param drop] adds the
+## zee weapons' "Drop one on the ground".
+func _wire_context(card: Button, kind: String, id: StringName, drop := false) -> void:
+	card.tooltip_text += "\nRight click for more."
+	card.gui_input.connect(func(event: InputEvent) -> void:
+		var click := event as InputEventMouseButton
+		if click != null and click.pressed and click.button_index == MOUSE_BUTTON_RIGHT:
+			card.accept_event()
+			open_context(kind, id, drop, Vector2i(card.get_screen_position() + click.position))
+	)
+
+
+## Opens the context menu for one item at [param at] (screen pixels). Returned for the suites.
+func open_context(kind: String, id: StringName, drop: bool, at: Vector2i) -> PopupMenu:
+	if _context == null:
+		_context = PopupMenu.new()
+		_context.name = "Context"
+		_context.id_pressed.connect(choose_context)
+		add_child(_context)
+	_context.clear()
+	_context.add_item("Spawn with multi-tool", Context.MULTI_SPAWN)
+	if drop:
+		_context.add_item("Drop one on the ground", Context.DROP)
+	_context_pick = [kind, id]
+	_context.reset_size()
+	_context.popup(Rect2i(at, Vector2i.ZERO))
+	return _context
+
+
+## What picking entry [param which] of the open context menu does.
+func choose_context(which: int) -> void:
+	if _context_pick.size() != 2:
+		return
+	var kind: String = _context_pick[0]
+	var id: StringName = _context_pick[1]
+	if _context != null:
+		_context.hide()
+	match which:
+		Context.MULTI_SPAWN:
+			multi_spawn_chosen.emit(kind, id)
+		Context.DROP:
+			weapon_spawn_requested.emit(id)
 
 
 func _builds_empty_text() -> String:

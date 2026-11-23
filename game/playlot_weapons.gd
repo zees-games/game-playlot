@@ -93,6 +93,14 @@ static func built_in() -> Array[PlaylotWeaponDef]:
 	launcher.meta = {"speed": 26.0, "heavy_scale": 2.4, "muzzle": 2.0}
 	out.append(launcher)
 
+	# The multi-tool's spawn mode: the armed item put down where you point, repeated while held.
+	var spawn := PlaylotWeaponDef.make(&"spawn", "Spawn", "%s/swep_spawn.gd" % DIRECTORY)
+	spawn.description = "Puts what you armed down where you point. Hold to keep spawning."
+	spawn.category = &"tools"
+	spawn.colour = Color(0.4, 1.0, 0.5)
+	spawn.meta = {"reach": 64.0, "gap": 0.02, "near": 3.0}
+	out.append(spawn)
+
 	var remover := PlaylotWeaponDef.make(
 		&"remover", "Remover", "%s/swep_remover.gd" % DIRECTORY
 	)

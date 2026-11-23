@@ -108,14 +108,11 @@ static func mount(figure: Node3D, who: String) -> Node3D:
 static func _fit(skeleton: Skeleton3D, index: int, figure: Basis) -> Transform3D:
 	var to_world := skeleton.global_transform
 	var at := to_world * skeleton.get_bone_global_rest(index)
-	var parent := skeleton.get_bone_parent(index)
-	var along := at.basis.y.normalized()
-	var length := FOREARM * to_world.basis.get_scale().y
-	if parent >= 0:
-		var elbow := (to_world * skeleton.get_bone_global_rest(parent)).origin
-		if at.origin.distance_to(elbow) > 0.01:
-			along = (at.origin - elbow).normalized()
-			length = at.origin.distance_to(elbow)
+	var ends := arm_ends(skeleton, index)
+	var wrist: Vector3 = to_world * ends[0]
+	var elbow: Vector3 = to_world * ends[1]
+	var along := (wrist - elbow).normalized()
+	var length := wrist.distance_to(elbow)
 	var z := -along
 	var up := figure.y.normalized()
 	var y := up - z * up.dot(z)
@@ -123,5 +120,36 @@ static func _fit(skeleton: Skeleton3D, index: int, figure: Basis) -> Transform3D
 		y = -figure.z.normalized() - z * (-figure.z.normalized()).dot(z)
 	y = y.normalized()
 	var k := FIT * length / BAND
-	var world := Transform3D(Basis(y.cross(z), y, z) * Basis.from_scale(Vector3.ONE * k), at.origin + z * BACK * length)
+	var world := Transform3D(Basis(y.cross(z), y, z) * Basis.from_scale(Vector3.ONE * k), wrist + z * BACK * length)
 	return at.affine_inverse() * world
+
+
+## The wrist and the elbow at rest, skeleton space, for the bone [method wrist_bone] chose. A forearm bone
+## starts at the elbow, so its wrist is where its child (the hand) starts; a hand bone starts at the wrist, and
+## its elbow is the first ancestor a forearm away (twist bones skipped). A bare bone gets [constant FOREARM].
+static func arm_ends(skeleton: Skeleton3D, index: int) -> Array[Vector3]:
+	var origin := skeleton.get_bone_global_rest(index)
+	var s := normal(skeleton.get_bone_name(index))
+	var unit := FOREARM * 0.5
+	if not s.contains("hand") and not s.contains("wrist"):
+		var tip := Vector3.ZERO
+		var found := false
+		for child in skeleton.get_bone_children(index):
+			var p := skeleton.get_bone_global_rest(child).origin
+			if p.distance_to(origin.origin) > tip.distance_to(origin.origin) or not found:
+				tip = p
+				found = true
+		if not found or tip.distance_to(origin.origin) < 0.01:
+			tip = origin.origin + origin.basis.y.normalized() * FOREARM
+		return [tip, origin.origin]
+	var elbow := origin.origin - origin.basis.y.normalized() * FOREARM
+	var parent := skeleton.get_bone_parent(index)
+	for step in 3:
+		if parent < 0:
+			break
+		var p := skeleton.get_bone_global_rest(parent).origin
+		elbow = p
+		if p.distance_to(origin.origin) >= unit:
+			break
+		parent = skeleton.get_bone_parent(parent)
+	return [origin.origin, elbow]

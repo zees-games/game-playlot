@@ -446,6 +446,25 @@ func on_tool_beam_from(from: Vector3, to: Vector3, key: int = 0) -> Node3D:
 	return fresh
 
 
+## Colours [param beam] (a `tool_beam`): the core near white, the glow [param colour]. Its own
+## materials, made once per beam, since the scene's are shared by every beam.
+static func tint_beam(beam: Node3D, colour: Color) -> void:
+	if beam == null or not is_instance_valid(beam) or beam.get_meta(&"tint", Color.TRANSPARENT) == colour:
+		return
+	beam.set_meta(&"tint", colour)
+	for part: Array in [["Core", colour.lerp(Color.WHITE, 0.45), 0.9], ["Glow", colour, 0.24]]:
+		var mesh := beam.get_node_or_null(NodePath(String(part[0]))) as MeshInstance3D
+		if mesh == null or mesh.mesh == null:
+			continue
+		var material := mesh.material_override as StandardMaterial3D
+		if material == null:
+			var base: Material = (mesh.mesh as PrimitiveMesh).material if mesh.mesh is PrimitiveMesh else mesh.mesh.surface_get_material(0)
+			material = base.duplicate() as StandardMaterial3D if base is StandardMaterial3D else StandardMaterial3D.new()
+			mesh.material_override = material
+		var c: Color = part[1]
+		material.albedo_color = Color(c.r, c.g, c.b, float(part[2]))
+
+
 ## How many splashes this has made. For the suites and `describe`.
 var splashes: int = 0
 

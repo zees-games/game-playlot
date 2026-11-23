@@ -343,10 +343,8 @@ func _set_tool(id: StringName) -> void:
 		menu.tool = tool
 
 	_arm_toy_view(tool)
+	# No notice: the HUD's tools line and the bracelet's screen already name the mode (it read twice).
 	_sync_hud()
-
-	if hud != null:
-		hud.notice(_tool_name().capitalize())
 
 
 func _cycle_weapon() -> void:
@@ -372,6 +370,9 @@ func _cycle_weapon() -> void:
 func _primary_down() -> void:
 	if toy_view != null and is_instance_valid(toy_view):
 		toy_view.call(&"kick")
+	if bridge == null and player != null:
+		# Offline nobody counts the shots: this client does, so its third-person device fires too.
+		player.multi_fire = (player.multi_fire + 1) & 0xF
 	if bridge != null:
 		_net_buttons |= GSFpsCommand.BUTTON_USER_0
 		return

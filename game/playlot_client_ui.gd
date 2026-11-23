@@ -2,6 +2,13 @@ extends "playlot_client_profiles.gd"
 
 
 ## Shows the arms only while downed in first person, and drives them at the player's speed.
+## The bracelet worn on the view arms this frame, or null.
+func _worn_device() -> Node3D:
+	if toy_view != null and is_instance_valid(toy_view) and toy_view.get(&"on_arms") == true:
+		return toy_view
+	return null
+
+
 func _present_view_arms(delta: float) -> void:
 	if view_arms == null or not is_instance_valid(view_arms):
 		return
@@ -19,9 +26,13 @@ func _present_view_arms(delta: float) -> void:
 	arms_pivot.global_position = camera.global_position
 	arms_pivot.global_rotation = Vector3(0.0, camera.global_rotation.y, 0.0)
 	_dress_view_arms()
+	var worn := _worn_device()
+	# Only the bracelet's own view goes through the arms' lens: a zee weapon in the hands is not lensed itself.
+	if "hands_fov" in view_arms:
+		view_arms.set("hands_fov", float(worn.get(&"hands_fov")) if worn != null and worn == toy_view else 0.0)
 	view_arms.call("tick", player.speed(), delta)
-	if toy_view != null and is_instance_valid(toy_view) and toy_view.get(&"on_arms") == true:
-		toy_view.call(&"wear", view_arms)
+	if worn != null:
+		worn.call(&"wear", view_arms)
 	_present_own_held()
 
 
@@ -456,13 +467,20 @@ static func present_beams(p_bridge: PlaylotNetBridge, p_presentation: PlaylotPre
 		var to: Vector3 = (each["prop"] as Node3D).global_position
 		# Every beam leaves the palm emitter of the tool that fires it, when that is on screen.
 		var device := mine_device if who == mine else who.get(&"multi_device") as Node3D
+		var beam: Node3D = null
 		if device != null and is_instance_valid(device) and device.visible:
-			var _from := p_presentation.on_tool_beam_from(device.call(&"muzzle_position"), to, 1 if who == mine else who.get_instance_id())
+			beam = p_presentation.on_tool_beam_from(device.call(&"muzzle_position"), to, 1 if who == mine else who.get_instance_id())
+			device.call(&"hold_to", to)
 		elif who == mine:
-			var _mine := p_presentation.on_tool_beam(eye, forward, to, 1)
+			beam = p_presentation.on_tool_beam(eye, forward, to, 1)
 		else:
 			var their_eye: Vector3 = who.call("eye_position")
-			var _theirs := p_presentation.on_tool_beam(their_eye, (to - their_eye).normalized(), to, who.get_instance_id())
+			beam = p_presentation.on_tool_beam(their_eye, (to - their_eye).normalized(), to, who.get_instance_id())
+		# The holder's mode colours it: blue for the physics gun, orange for the gravity gun's carry.
+		var mode_at: Variant = who.get(&"multi_mode")
+		var mode: int = int(mode_at) if mode_at != null else -1
+		var id: StringName = PlaylotMultitool.MODES[mode] if mode >= 0 and mode < PlaylotMultitool.MODES.size() else &"phys"
+		PlaylotPresentation.tint_beam(beam, PlaylotMultitool.colour(id))
 		drawn += 1
 	return drawn
 
@@ -472,16 +490,26 @@ func _present_tool_beam(eye: Vector3, forward: Vector3) -> void:
 		var _drawn := present_beams(bridge, presentation, player, eye, forward, toy_view as Node3D)
 		return
 
-	if not _holding or tool != TOOL_PHYS or player == null or presentation == null:
+	if player == null or presentation == null:
 		return
-
-	var held: GSPropInstance = player.phys_gun.held
+	var held: GSPropInstance = null
+	if tool == TOOL_PHYS and _holding:
+		held = player.phys_gun.held
+	elif tool == TOOL_GRAV and player.grav_gun != null:
+		held = player.grav_gun.carried
 	var body := held.node as Node3D if held != null else null
 	if body != null and body.is_inside_tree():
-		if toy_view != null and is_instance_valid(toy_view):
-			var _from := presentation.on_tool_beam_from(toy_view.call(&"muzzle_position"), body.global_position)
+		var beam: Node3D = null
+		# The first-person device, or in third person the one on the body's wrist.
+		var device: Node3D = toy_view as Node3D
+		if device == null or not is_instance_valid(device) or not device.visible:
+			device = player.multi_device
+		if device != null and is_instance_valid(device) and device.visible:
+			beam = presentation.on_tool_beam_from(device.call(&"muzzle_position"), body.global_position)
+			device.call(&"hold_to", body.global_position)
 		else:
-			presentation.on_tool_beam(eye, forward, body.global_position)
+			beam = presentation.on_tool_beam(eye, forward, body.global_position)
+		PlaylotPresentation.tint_beam(beam, PlaylotMultitool.colour(tool))
 
 
 func _spawn() -> void:

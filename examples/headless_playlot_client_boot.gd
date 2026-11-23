@@ -693,14 +693,17 @@ func _test_the_client_boots_12() -> void:
 			and (on_arms or toy_in_hand.is_in_group(&"gs_view_model")),
 		"a toy in hand draws a first-person model under the camera, on the arms or in the viewmodel_fov group"
 	)
-	_tcb_client._set_tool(&"launcher")
-	_check(_tcb_client.toy_view == toy_in_hand and _tcb_client.toy_view.call(&"mode") == &"launcher",
+	_tcb_client._set_tool(&"spawn")
+	_check(_tcb_client.toy_view == toy_in_hand and _tcb_client.toy_view.call(&"mode") == &"spawn",
 		"and picking another toy keeps the bracelet and switches its mode")
 	_tcb_client.toy_view.call(&"set_hands_fov_at_4_3", 40.0)
 	_tcb_client.toy_view.call(&"_process", 0.016)
 	if on_arms:
-		# viewmodel_fov on the arms belongs to gs_player_char (gs-player-char-viewarms-fov-1); the bracelet keeps their scale.
-		_check(_tcb_client.toy_view.scale.is_equal_approx(Vector3.ONE), "and on the arms it rides their scale, not its own lens")
+		_tcb_client._present_view_arms(0.016)
+		var arms_fov := float(_tcb_client.view_arms.get(&"hands_fov"))
+		var lens: float = _tcb_client.view_arms.call(&"lens")
+		_check(is_equal_approx(arms_fov, float(_tcb_client.toy_view.get(&"hands_fov"))) and lens != 1.0,
+			"and on the arms viewmodel_fov is the arms' lens, the bracelet drawn with them (%.2f)" % lens)
 	else:
 		_check(_tcb_client.toy_view.scale.x != 1.0, "and viewmodel_fov scales it like a gun")
 	_tcb_client._set_tool(&"phys")

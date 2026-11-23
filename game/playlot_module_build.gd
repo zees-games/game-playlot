@@ -227,6 +227,7 @@ func _build_extras() -> GSResult:
 	bridge.loadout_requested.connect(_on_loadout_requested)
 	bridge.builds_requested.connect(_on_builds_requested)
 	bridge.build_load_requested.connect(_on_build_load_requested)
+	bridge.build_place_requested.connect(_on_build_place_requested)
 	bridge.peer_admitted.connect(_on_peer_admitted)
 	services.command_entered.connect(_on_chat_command)
 	services.chat.message_accepted.connect(_on_chat_accepted)

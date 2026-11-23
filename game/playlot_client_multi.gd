@@ -20,8 +20,12 @@ var _multi_cursor := 0.0
 var _multi_stick_armed := true
 ## A mode was chosen with R down, so releasing is no tap.
 var _multi_used := false
-## The first-person device built only for the selector, when a zee gun owns the view model.
+## The bracelet built only for the selector while a zee gun owns the hands: worn on the arm that holds the gun.
 var _multi_temp: Node3D = null
+## Left button down with the multi-tool in hand, for spawn mode's hold-to-repeat offline.
+var _spawn_firing := false
+## What spawn mode has armed, by name, for the device's screen and hologram.
+var _spawn_pick_name := ""
 
 
 func multi_held() -> bool:
@@ -133,6 +137,9 @@ func _multi_tick(delta: float) -> void:
 	if _multi_held and not _multi_open and player != null \
 			and _multi_held_for >= _multi_hold_seconds():
 		_multi_open_selector()
+	if tool == &"spawn" and toy_view != null and is_instance_valid(toy_view) \
+			and toy_view.call(&"pick_text") != _spawn_pick_name:
+		toy_view.call(&"set_pick", _spawn_pick_name)
 	if _multi_temp != null and is_instance_valid(_multi_temp) and not _multi_open \
 			and float(_multi_temp.call(&"raise_amount")) <= 0.0:
 		_multi_temp.queue_free()
@@ -161,9 +168,16 @@ func _multi_device() -> Node3D:
 	if camera == null:
 		return null
 	if _multi_temp == null or not is_instance_valid(_multi_temp):
-		_multi_temp = PlaylotMultiDevice.make(camera)
+		_multi_temp = PlaylotMultiDevice.make(camera, PlaylotViewGrip.available() and view_arms is GSPlayerViewArms)
 		_multi_temp.call(&"set_modes", multi_modes())
 	return _multi_temp
+
+
+func _worn_device() -> Node3D:
+	var own := super()
+	if own == null and _multi_temp != null and is_instance_valid(_multi_temp) and _multi_temp.get(&"on_arms") == true:
+		return _multi_temp
+	return own
 
 
 func _multi_raise(up: bool) -> void:
@@ -313,4 +327,86 @@ func _multi_mount(who: PlaylotPlayer, modes: Array[StringName], mine: bool) -> v
 	device.call(&"set_raised", who.multi_raised)
 	if who.multi_fire != who.multi_mount_fire:
 		who.multi_mount_fire = who.multi_fire
-		device.call(&"kick")
+		device.call(&"kick", who.aim_direction())
+
+
+func _primary_down() -> void:
+	_spawn_firing = true
+	super()
+
+
+func _primary_up() -> void:
+	_spawn_firing = false
+	super()
+
+
+## Right click in spawn mode opens the Q menu, pinned, to pick something else.
+func _secondary_down() -> void:
+	if tool == &"spawn" and _zee_rig() == null and menu != null and screens != null:
+		open_spawn_menu()
+		return
+	super()
+
+
+func open_spawn_menu() -> void:
+	if screens.is_open(menu.screen_id()):
+		return
+	_primary_up()
+	_secondary_up()
+	_rotating = false
+	menu.selected = selected_prop
+	menu.tool = tool
+	screens.push(menu.screen_id())
+	_menu_pinned = true
+
+
+## Offline, a held left button repeats spawn mode (online the server reads the held button).
+func _physics_process(delta: float) -> void:
+	super(delta)
+	if link != null or bridge != null or not _spawn_firing or weapon == null or player == null or _covered():
+		return
+	var again := weapon.held(_space(), player.eye_position(), player.aim_direction(), delta)
+	if again == null:
+		return
+	_report(again)
+	if toy_view != null and is_instance_valid(toy_view):
+		toy_view.call(&"kick")
+	player.multi_fire = (player.multi_fire + 1) & 0xF
+
+
+## "Spawn with multi-tool" on a Q menu card: spawn mode in hand with [param item_id] armed, menu closed.
+func _on_multi_spawn_chosen(kind: String, item_id: StringName) -> void:
+	if not PlaylotMultitool.PICK_KINDS.has(kind) or item_id == &"":
+		GSLog.warn("playlot.client", "spawn mode was asked for something it cannot put down", {"kind": kind, "id": String(item_id)})
+		return
+	if kind == "prop":
+		selected_prop = item_id
+	_set_tool(&"spawn")
+	if tool != &"spawn":
+		return
+	var picked := PlaylotMultitool.pick(kind, String(item_id))
+	if bridge != null:
+		bridge.ask_multi_spawn(kind, item_id)
+	elif weapon != null:
+		weapon.armed = picked
+	_spawn_pick_name = _pick_name(kind, item_id)
+	if toy_view != null and is_instance_valid(toy_view):
+		toy_view.call(&"set_pick", _spawn_pick_name)
+	if menu != null and screens != null and screens.is_open(menu.screen_id()):
+		screens.pop(menu.screen_id())
+	_menu_pinned = false
+
+
+func _pick_name(kind: String, item_id: StringName) -> String:
+	match kind:
+		"prop":
+			var def: GSPropDef = playlot.props.catalogue.get_prop(item_id) if playlot.props.catalogue != null else null
+			return def.name_or_id() if def != null else String(item_id)
+		"weapon":
+			var weapon_def := playlot.weapon_def(item_id)
+			return weapon_def.name_or_id() if weapon_def != null else String(item_id)
+		"addon":
+			for row in (menu.addon_items if menu != null else []):
+				if str((row as Dictionary).get("key", "")) == String(item_id):
+					return str((row as Dictionary).get("label", item_id))
+	return String(item_id)

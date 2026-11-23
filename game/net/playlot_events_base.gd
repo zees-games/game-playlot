@@ -448,6 +448,9 @@ const ARM_FLASHLIGHT := 8
 const ARM_MULTI_MODE := 9
 ## The multi-tool's arm is raised (R held, the selector open): payload `1` or `0`.
 const ARM_MULTI_RAISE := 10
+## The multi-tool's spawn mode puts this down: id is the item, payload its kind (`prop`, `weapon`,
+## `addon` or `build`, `PlaylotMultitool.PICK_KINDS`). The server checks both and refuses out loud.
+const ARM_MULTI_SPAWN := 11
 
 ## The most a tool's settings may take on the wire. A tool has a handful of numbers.
 const TOOL_SETTINGS_BYTES := 512

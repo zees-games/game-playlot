@@ -648,6 +648,16 @@ func _on_builds_requested(peer_id: int) -> void:
 
 ## A card on the Builds tab was clicked: the same as `pg_load <name>`, asked over the wire.
 func _on_build_load_requested(peer_id: int, build_name: String) -> void:
+	_put_build(peer_id, build_name, null, 0.0)
+
+
+## The multi-tool's spawn mode put a build down at [param at], turned to [param yaw].
+func _on_build_place_requested(peer_id: int, build_name: String, at: Vector3, yaw: float) -> void:
+	_put_build(peer_id, build_name, at, yaw)
+
+
+## Puts a saved build down at [param at] (a Vector3), or where the player stands when null.
+func _put_build(peer_id: int, build_name: String, at: Variant, yaw: float) -> void:
 	var session := server.session_of(peer_id) if server != null else null
 	if session == null:
 		return
@@ -661,7 +671,8 @@ func _on_build_load_requested(peer_id: int, build_name: String) -> void:
 		return
 	var state := player.controller.state
 	_apply_build_limit()
-	var placed := builds.place(game, player.player_id, doc.value, state.position, state.yaw)
+	var placed := builds.place(game, player.player_id, doc.value,
+		state.position if at == null else at as Vector3, state.yaw if at == null else yaw)
 	if not placed.ok:
 		bridge.tell_notice(peer_id, placed.error.message)
 		return

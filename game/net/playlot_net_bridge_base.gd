@@ -66,6 +66,8 @@ signal loadout_requested(peer_id: int, pairs: Array)
 ## the builds and answers with [method send_builds].
 signal builds_requested(peer_id: int)
 signal build_load_requested(peer_id: int, name: String)
+## The multi-tool's spawn mode put a build down where its player aimed. Server side.
+signal build_place_requested(peer_id: int, name: String, at: Vector3, yaw: float)
 ## This player's saved builds arrived, for the Q menu. Client side.
 signal builds_received(builds: Array)
 
@@ -156,6 +158,8 @@ var _prev_buttons: Dictionary = {}
 ## and the prop each one has armed. See [method _give_weapon].
 var _toy_of: Dictionary = {}
 var _armed_of: Dictionary = {}
+## session_id -> what the multi-tool's spawn mode puts down (`PlaylotMultitool.pick`; a bare id is a prop).
+var _multi_pick_of: Dictionary = {}
 
 ## Wave NPCs replicated through the prop table: instance id -> their catalogue id. They are
 ## not props, so the spawner cannot be asked what they are when a late joiner arrives.
@@ -561,6 +565,11 @@ func ask_flashlight() -> void:
 ## Switch the multi-tool to a mode. The server validates it. Client side.
 func ask_multi_mode(mode: StringName) -> void:
 	_ask(PlaylotEvents.Ask.ARM_PROP, PlaylotEvents.write_arm(PlaylotEvents.ARM_MULTI_MODE, mode))
+
+
+## What the multi-tool's spawn mode puts down: [param kind] is one of `PlaylotMultitool.PICK_KINDS`.
+func ask_multi_spawn(kind: String, item_id: StringName) -> void:
+	_ask(PlaylotEvents.Ask.ARM_PROP, PlaylotEvents.write_arm(PlaylotEvents.ARM_MULTI_SPAWN, item_id, kind))
 
 
 ## The multi-tool's arm goes up or down (the selector). Client side.
