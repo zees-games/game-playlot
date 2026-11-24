@@ -660,6 +660,8 @@ func _build_vote_stage() -> GSResult:
 		vote.director.follow_hibernation(server)
 	if game.maps != null:
 		game.maps.follow_hibernation(server)
+	if game.run_timer != null and game.run_timer.has_method("follow_hibernation"):
+		game.run_timer.call("follow_hibernation", server)
 	vote.announced.connect(_on_vote_announced)
 
 	_wire_vote_out()

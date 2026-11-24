@@ -150,6 +150,12 @@ func tick(_tick: int) -> void:
 		)
 
 
+## Holds the timer's engine-rate check while the server hibernates (the engine idles at a few Hz then).
+func follow_hibernation(server: Object) -> void:
+	if manager != null:
+		manager.get("rate_guard").call("follow_hibernation", server, manager)
+
+
 func set_tick_rate(rate: int) -> void:
 	manager.call("set_tick_rate", rate)
 
