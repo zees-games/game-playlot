@@ -88,7 +88,7 @@ func _test_profiles() -> void:
 	_check(float(chaser.meta["speed"]) == 9.0, "and changes the key it states")
 	_check(float(chaser.meta["sight"]) == 40.0, "while a key it does not state keeps the catalogue's value")
 	_check(chaser.category == &"pursuers", "menu.category regroups it")
-	_check(chaser.icon_path == "res://assets/blaster-kit/Textures/colormap.png", "menu.icon sets the entry's icon")
+	_check(chaser.icon_path == "res://assets/props/market/Textures/colormap.png", "menu.icon sets the entry's icon")
 	_check(cat.get_prop(&"npc_hunter").icon_path == "", "and an entry without one keeps the drawn icon")
 	_check(bool(cat.get_prop(&"npc_hopper").meta.get("hidden", false)), "menu.hidden hides an entry")
 	var mini := cat.get_prop(&"mini_hunter")

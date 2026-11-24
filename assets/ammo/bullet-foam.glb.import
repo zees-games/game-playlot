@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://d0qtmihc6eu68"
-path="res://.godot/imported/clip-large.glb-307f022170f76efa13762e10718cee6d.scn"
+uid="uid://bteiu5njny7vn"
+path="res://.godot/imported/bullet-foam.glb-e6cffc107ee303e55d7918a18c9d088f.scn"
 
 [deps]
 
-source_file="res://assets/blaster-kit/clip-large.glb"
-dest_files=["res://.godot/imported/clip-large.glb-307f022170f76efa13762e10718cee6d.scn"]
+source_file="res://assets/ammo/bullet-foam.glb"
+dest_files=["res://.godot/imported/bullet-foam.glb-e6cffc107ee303e55d7918a18c9d088f.scn"]
 
 [params]
 
@@ -41,5 +41,5 @@ materials/extract_format=0
 materials/extract_path=""
 _subresources={}
 gltf/naming_version=2
-gltf/embedded_image_handling=1
+gltf/embedded_image_handling=2
 gltf/texture_map_mode=1
