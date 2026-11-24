@@ -323,7 +323,8 @@ func _process(delta: float) -> void:
 
 func _face_holo() -> void:
 	var out := 1.0 - pow(1.0 - _raise, 3.0)
-	_holo.scale = Vector3.ONE * (0.1 + 0.9 * out)
+	# Squared, so by the frame the hologram hides it has shrunk to a speck rather than popping off at a third of its size.
+	_holo.scale = Vector3.ONE * (0.04 + 0.96 * out * out)
 	if first_person and _camera != null and is_instance_valid(_camera):
 		# Rises off the band to a fixed spot in view, so the arm's raise never brings it up to the eye.
 		var from := _wear.global_transform * Vector3(0.0, BAND_RADIUS + 0.08, 0.0)
@@ -603,7 +604,8 @@ static func _cylinder_z(st: SurfaceTool, at: Vector3, radius: float, length: flo
 			st.add_vertex(at + (q[0] as Vector3))
 		for cap in [[half, Vector3(0, 0, 1)], [-half, Vector3(0, 0, -1)]]:
 			var z: float = cap[0]
-			var order: Array = [Vector3.ZERO, p0, p1] if z > 0.0 else [Vector3.ZERO, p1, p0]
+			# Godot's front face is clockwise seen from outside: the +Z cap runs p1, p0 and the -Z cap p0, p1.
+			var order: Array = [Vector3.ZERO, p1, p0] if z > 0.0 else [Vector3.ZERO, p0, p1]
 			for p in order:
 				st.set_normal(cap[1])
 				st.add_vertex(at + (p as Vector3) + Vector3(0, 0, z))
