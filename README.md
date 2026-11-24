@@ -204,6 +204,7 @@ An optional pack can add weapons, NPCs and bots to the Q menu by shipping `addon
 | --- | --- |
 | `headless_config`, `headless_workbench`, `headless_mapcfg` | Settings, the workbench and per-map config |
 | `headless_mapdrop` | Maps dropped on the window or the executable, a dropped Garry's Mod map as its PLAYLOT conversion (gm_fork is pgc_fork), and the refusal of anything else |
+| `headless_mountload` | A maps pack mounted at runtime through gs-cloud (replaced files allowed): its documents are listed and the map loads as a PackedScene |
 | `headless_playlot` | The whole game: props, NPCs, weapons, every tool, limits, the menu, map changes, and the run timer when linked |
 | `headless_net` | A server and a client in one process, over the network code |
 | `headless_presentation` | What a client draws and plays |

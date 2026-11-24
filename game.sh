@@ -37,7 +37,7 @@
 GAME_NAME="Playlot"
 PACK="playlot"
 EXTRA_PACKS=""
-SUITES="headless_config headless_mapdrop headless_workbench headless_workbench_scope headless_playlot headless_net headless_presentation headless_stack headless_packs_real dedicated headless_mapcfg headless_box_batch headless_weapondrop headless_npc_weapon_idle headless_spawntool headless_avatar_arms headless_avatar_library headless_zee_optional"
+SUITES="headless_config headless_mapdrop headless_mountload headless_workbench headless_workbench_scope headless_playlot headless_net headless_presentation headless_stack headless_packs_real dedicated headless_mapcfg headless_box_batch headless_weapondrop headless_npc_weapon_idle headless_spawntool headless_avatar_arms headless_avatar_library headless_zee_optional"
 # --------------------------------------------------------------------------------
 
 set -uo pipefail
