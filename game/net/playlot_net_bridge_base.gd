@@ -191,8 +191,13 @@ static func _player_key(session_id: int) -> StringName:
 	return StringName("u%d" % session_id)
 
 
-static func session_of(id: StringName) -> int:
+static func session_of(id: Variant) -> int:
 	return String(id).trim_prefix("u").to_int()
+
+
+## The net behaviour of a session's player, or null.
+func behaviour_for(session_id: int) -> PlaylotPlayerNet:
+	return _behaviours.get(session_id)
 
 
 func peer_for_player(session_id: int) -> int:
@@ -316,6 +321,9 @@ func client_tick(tick: int, command: GSFpsCommand, aim: bool = false) -> void:
 	packet.delta = net.clock.tick_duration()
 	packet.move = command if command != null else GSFpsCommand.new()
 	packet.aim = aim
+	# The view the hull rewind uses, from this tick's frame: the server and the replay both read it back off the packet.
+	if game.hull_view != null and game.hull_view.live():
+		game.hull_view.fill(packet, tick)
 
 	# Into the local history BEFORE predicting: reconciliation replays it.
 	net.local_inputs().push(packet)
@@ -327,6 +335,10 @@ func client_tick(tick: int, command: GSFpsCommand, aim: bool = false) -> void:
 	if mine != null:
 		mine.last_move = packet.move
 		mine.last_aim = aim
+		mine.last_view_q = packet.view_lag_q
+		mine.last_view_back = packet.view_back
+		mine.last_view_span = packet.view_span
+		mine.last_view_tick = packet.tick
 
 	if link != null:
 		var payload := net.encode_ack()

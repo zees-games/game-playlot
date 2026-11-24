@@ -221,7 +221,11 @@ func _simulate_players(step: float) -> void:
 		var body := players[id] as PlaylotPlayer
 		if body.is_inside_tree() and not body.can_process():
 			continue
-		body.simulate(_tick, step)
+		# A mover's step against the hulls where its own view had them, when the rules ask (mp_solidplayers_unlag).
+		if hull_view != null and hull_view.live():
+			var _stepped: Variant = hull_view.around(id, _tick, body.simulate.bind(_tick, step))
+		else:
+			body.simulate(_tick, step)
 
 
 ## One authoritative tick driven from outside, at a tick number the driver chose. The net bridge calls this instead of

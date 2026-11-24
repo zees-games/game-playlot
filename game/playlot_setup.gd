@@ -310,6 +310,8 @@ signal toys_built()
 var ambient_rules: GSAmbienceRules = PlaylotAmbience.make_rules()
 var view_rules: GSPlayerViewRules = make_view_rules()
 var body_rules: GSPlayerBodyRules = GSPlayerBodyRules.new()
+## Lag-compensated hulls (`mp_solidplayers_unlag`): `PlaylotHullView`, set by a netcode bridge on both ends; null in a game with no network, where nothing is lagged.
+var hull_view: RefCounted = null
 ## gs-mobile's touch cvars (`sv_mobile_*`, `sv_aim_assist*`, `sv_autofire*`): bound by the module (REPLICATED), followed
 ## by the client's overlay. Nothing here has an enemy to shoot at, so the defaults stay (no auto-fire, no aim assist).
 var mobile_rules: GSMobileRules = GSMobileRules.new()

@@ -101,6 +101,7 @@ Short forms; the reasoning is in the linked file.
 **Netcode**
 
 - A client predicts only its own player (owned by `local_peer_id`, claimed on HELLO). [netcode](docs/netcode.md#a-client-predicts-its-own-player-and-nobody-else)
+- Solid players are lag-compensated (`mp_solidplayers_unlag`): the command carries `view_lag_q/back/span`, `PlaylotHullView` wraps each player step in `GSPlayerHullView.around`. [netcode](docs/netcode.md#lag-compensated-player-hulls)
 - Nothing goes to a peer before READY: `_broadcast` is peer by peer, greet from `peer_admitted`, voice is held. `remove_player` asks `net.peers()`. [netcode](docs/netcode.md#a-broadcast-reaches-ready-peers-only-pg-rpc-before-scene)
 - **A READY before the player is seated is kept** (`_ready_unseated`) and answered by `add_player`; a dropped one left the client waiting for ever. [netcode](docs/netcode.md#a-ready-before-the-seat)
 - `Ask` is full: new requests are ARM_PROP sub-kinds. New event kinds and message fields are appended. [netcode](docs/netcode.md#the-request-enum-is-full)

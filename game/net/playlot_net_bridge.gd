@@ -1,5 +1,7 @@
 extends "playlot_net_bridge_ask.gd"
 
+const PlaylotHullView := preload("playlot_hull_view.gd")
+
 
 
 func attach(p_game: Playlot, p_net: GSNetManager, link_parent: Node) -> GSResult:
@@ -16,7 +18,7 @@ func attach(p_game: Playlot, p_net: GSNetManager, link_parent: Node) -> GSResult
 	game = p_game
 	net = p_net
 	weapon_net.attach(self)
-
+	game.hull_view = PlaylotHullView.new(game, self, net.is_server)
 	_entities = Node.new()
 	_entities.name = "Entities"
 	add_child(_entities)
@@ -170,6 +172,8 @@ func ensure_game_ticked(tick: int) -> void:
 
 	var _t_g := GSFrameCost.now()
 	game.tick_once(tick)
+	if game.hull_view != null:
+		game.hull_view.record(tick)
 	GSFrameCost.add(&"br.game_tick_once", _t_g)
 
 	# The tools, from the buttons the commands carried. After the movement, because a
@@ -699,3 +703,9 @@ func _apply_prop(reader: GSNetReader) -> void:
 	behaviour.tick_seconds_fn = func() -> float: return net.clock.tick_duration()
 	props_changed.emit()
 	prop_arrived.emit(body.global_position, int(info["owner_id"]))
+
+
+## A bridge leaving the tree takes its hull view off the game: the view holds the bridge, and a game that outlives it would rewind through nothing.
+func _exit_tree() -> void:
+	if game != null and is_instance_valid(game) and game.hull_view != null:
+		game.hull_view = null

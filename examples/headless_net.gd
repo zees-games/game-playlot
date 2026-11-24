@@ -1,12 +1,14 @@
 extends "res://examples/headless_net_downed_ammo_flashlight.gd"
 
-const CHECKS := 457
+const PlaylotHullView := preload("../game/net/playlot_hull_view.gd")
+
+const CHECKS := 468
 
 ## Sections entered against sections that ran to their last line, and against this. A
 ## runtime error inside a section aborts that function and nothing says so; a section that
 ## bailed out early after a failed guard is counted as not finished on purpose. The CHECKS
 ## total above is the other half — see docs/testing.md.
-const SECTIONS := 54
+const SECTIONS := 55
 
 func _ready() -> void:
 	GSLog.set_level(GSLog.Level.ERROR)
@@ -21,6 +23,7 @@ func _run() -> void:
 	print("")
 
 	_test_command_wire()
+	_test_hull_view_wire()
 	_test_event_wire()
 	_test_inventory_wire()
 
@@ -114,3 +117,48 @@ func _connected_sequence_two() -> void:
 
 func _finish() -> void:
 	_report_sections(_entered, _completed, SECTIONS, CHECKS)
+
+func _test_hull_view_wire() -> void:
+	_section("a command names how the sender drew the others, and the server answers from a ring")
+	var packet := PlaylotNetCommand.new()
+	packet.tick = 500
+	packet.view_lag_q = 37
+	packet.view_back = 9
+	packet.view_span = 2
+	var writer := GSNetWriter.new()
+	packet.write(writer)
+	var back := PlaylotNetCommand.new()
+	back.read(GSNetReader.new(writer.to_bytes()))
+	_check(back.view_lag_q == 37 and back.view_back == 9 and back.view_span == 2, "the lag and the snapshot pair survive the wire", "%d %d %d" % [back.view_lag_q, back.view_back, back.view_span])
+	var bare := PlaylotNetCommand.new()
+	var bare_writer := GSNetWriter.new()
+	bare.write(bare_writer)
+	var bare_back := PlaylotNetCommand.new()
+	bare_back.view_lag_q = 5
+	bare_back.read(GSNetReader.new(bare_writer.to_bytes()))
+	_check(bare_back.view_lag_q == -1 and bare_back.view_back == -1, "no view sent reads back as none")
+	var huge := PlaylotNetCommand.new()
+	huge.view_lag_q = 1 << 20
+	huge.view_back = 1 << 20
+	huge.view_span = 1 << 20
+	huge._sanitise()
+	_check(huge.view_lag_q == PlaylotNetCommand.MAX_VIEW_LAG_Q and huge.view_back < (1 << PlaylotNetCommand.VIEW_BACK_BITS) and huge.view_span < (1 << PlaylotNetCommand.VIEW_SPAN_BITS), "a hostile view is clamped to what the wire holds")
+	back._neutralise()
+	_check(back.view_lag_q == -1, "a silent player's view is cleared")
+	_check(PlaylotHullView.session_of(&"u12") == 12, "a player key names its session")
+
+	var holder := PlaylotHullView.new(null, null, true)
+	var view := holder.view
+	view.capacity = 4
+	for tick in range(10, 16):
+		view.record(tick, {&"u1": Vector3(float(tick), 0.0, 0.0), &"u2": Vector3(0.0, 0.0, float(tick))})
+	_check(view.ring_at(&"u1", 15) != null and view.ring_at(&"u1", 11) == null, "the ring keeps capacity ticks and drops the older")
+	var mid: Variant = view.ring_between(&"u1", 13, 14, 13.5)
+	_check(mid != null and absf((mid as Vector3).x - 13.5) < 0.05, "a sample between two ticks is blended", str(mid))
+	_check(view.ring_between(&"u1", 2, 3, 2.5) == null and int(view.counts["miss"]) == 1, "a tick the ring no longer holds is a counted miss")
+	view.record(16, {&"u1": Vector3(500.0, 0.0, 0.0)})
+	_check(view.ring_between(&"u1", 15, 16, 15.5) == null and int(view.counts["teleport"]) == 1, "a jump inside the pair is a teleport and the hull stays")
+	_check(view.ring_at(&"u2", 16) == null, "a player who left keeps nothing")
+	var aged := GSPlayerHullView.resolve(8, 100, 6, 2, 100)
+	_check(is_equal_approx(aged[0], 98.0) and aged[1] == 98 and aged[2] == 2, "the render tick is the lag back from the step", str(aged))
+	_done()
