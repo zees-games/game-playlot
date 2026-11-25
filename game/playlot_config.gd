@@ -23,9 +23,7 @@ extends GSConfig
 @export var initial_map: StringName = &"pg_flatgrass"
 
 ## A map catalogue JSON file. Empty uses the maps this build ships.
-##
-## The seam between "a game with its own maps" and "a server with a map pool": an
-## operator points this at a file and the built-in list is not used at all.
+## The seam between "a game with its own maps" and "a server with a map pool": an operator points this at a file and the built-in list is not used at all.
 @export var catalogue_path: String = ""
 
 ## The seed a generated map is built from. Zero picks one and announces it.
@@ -308,9 +306,8 @@ static func make_binder(config: GSConfig, json_path := "") -> GSGameConfigBinder
 func env_prefix() -> String:
 	return "PLAYLOT_"
 
-
-## The environment prefix under the old Playlot name, which servers were started with until
-## 2026-11-17. Still read so a host's unit file keeps working; every variable found is a warning
+## The environment prefix under the old Playlot name, which servers were started with before the rename. Still read so a host's unit file keeps working;
+## every variable found is a warning naming its replacement, and a variable under [method env_prefix] wins over it.
 ## naming its replacement, and a variable under [method env_prefix] wins over it.
 const FORMER_ENV_PREFIX := "PLAYGROUND_"
 

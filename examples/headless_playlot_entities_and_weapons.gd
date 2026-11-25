@@ -323,8 +323,7 @@ func _test_zee_weapons_2() -> void:
 	_done()
 
 
-## Each weapon picked used to build its own layered shot on its first shot (~30 ms, ~30 nodes); the client's
-## one PlaylotShotSound now plays every rig's.
+## Each weapon builds no layered shot of its own on its first shot (~30 ms, ~30 nodes); the client's one PlaylotShotSound plays every rig's.
 func _test_shared_shot_sound() -> void:
 	var sound := preload("res://game/client/playlot_shot_sound.gd").new()
 	add_child(sound)

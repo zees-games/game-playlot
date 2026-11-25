@@ -108,12 +108,8 @@ static func doc_map(path: String) -> GSMapDef:
 	return map
 
 
-## Turns the maps a followed content pack lists (gs-map's [method GSMapCatalogue.follow_content]) into maps this game can build.
-## A playlot-maps entry's `scene` is its document, `maps/<id>.json`, which is no PackedScene: left as it came, the loader
-## refused it ("A map's scene path must point at a PackedScene") and a switch on the web, where the pack mounts after the
-## first map, failed. Each such def keeps its content id, version and entry key (so ensure finds the pack mounted, and an
-## unfollow still drops it) and is built by [constant DATA_MAP_SCENE] from the document. On the web its download group is
-## the map's own, so the first switch fetches that map's world files and nothing else. Returns how many were shaped.
+## Turns the maps a followed content pack lists (gs-map's [method GSMapCatalogue.follow_content]) into maps this game can build. A playlot-maps entry's `scene` is its document, `maps/<id>.json`, which is no PackedScene, so the loader would refuse it ("A map's scene path must point at a PackedScene"), and a switch on the web, where the pack mounts after the first map, would fail.
+## Each such def keeps its content id, version and entry key (so ensure finds the pack mounted, and an unfollow still drops it) and is built by [constant DATA_MAP_SCENE] from the document. On the web its download group is the map's own, so the first switch fetches that map's world files and nothing else. Returns how many were shaped.
 static func shape_content_maps(catalogue: GSMapCatalogue, web: bool = OS.has_feature("web")) -> int:
 	if catalogue == null:
 		return 0
@@ -136,11 +132,8 @@ static func shape_content_maps(catalogue: GSMapCatalogue, web: bool = OS.has_fea
 	return shaped
 
 
-## Placeholders for the maps the solo host lists as downloadable but has not mounted ([code]available_maps()[/code] on the
-## `gs_solo` host: `{id, name, map_kind, pack, key}` rows from the map pack's manifest), so the list shows every map whether
-## or not the player chose to download them all. Each is marked `meta.download` (and `meta.pack`), is out of the rotation,
-## and is fetched by [method PlaylotWorld.change_map] when picked. An id the catalogue has is skipped. Empty with no host or
-## an older shell. Returns how many were added.
+## Placeholders for the maps the solo host lists as downloadable but has not mounted ([code]available_maps()[/code] on the `gs_solo` host: `{id, name, map_kind, pack, key}` rows from the map pack's manifest), so the list shows every map whether or not the player chose to download them all.
+## Each is marked `meta.download` (and `meta.pack`), is out of the rotation, and is fetched by [method PlaylotWorld.change_map] when picked. An id the catalogue has is skipped. Empty with no host or an older shell. Returns how many were added.
 static func add_solo_available(catalogue: GSMapCatalogue) -> int:
 	var host: Object = GSRegistry.get_service(SOLO_SERVICE)
 	if catalogue == null or host == null or not host.has_method(&"available_maps"):

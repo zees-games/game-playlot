@@ -1,12 +1,7 @@
 extends "swep_launcher.gd"
 
-## The multi-tool's spawn mode: puts the armed item down where you point. Left click places one,
-## holding it places another every `pg_multi_spawn_repeat` seconds (0 = every tick). Right click is
-## the client's: it opens the Q menu to change the item. Extends the launcher for its armed prop.
-##
-## [b]What is armed is a pick[/b] (`PlaylotMultitool.pick`): a prop or a weapon's pickup is spawned
-## through the spawner (limits, budget, undo, ownership; a refusal is told by its `refused` signal),
-## an addon item runs at the point, a build is handed to [member place_build] (the server's builds).
+## The multi-tool's spawn mode: puts the armed item down where you point. Left click places one, holding it places another every `pg_multi_spawn_repeat` seconds (0 = every tick). Right click is the client's: it opens the Q menu to change the item. Extends the launcher for its armed prop.
+## [b]What is armed is a pick[/b] (`PlaylotMultitool.pick`): a prop or a weapon's pickup is spawned through the spawner (limits, budget, undo, ownership; a refusal is told by its `refused` signal), an addon item runs at the point, a build is handed to [member place_build] (the server's builds).
 
 const PlaylotMultitool := preload("../playlot_multitool.gd")
 const PlaylotProp := preload("../playlot_prop.gd")

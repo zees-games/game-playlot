@@ -1,12 +1,7 @@
 extends RefCounted
-## Where the multi-tool's bracelet sits on a person: the right wrist (the hand that wears it in first person),
-## found on whatever rig the avatar has, along the forearm and sized to it.
-##
-## [b]Tolerant, then shared, then loud.[/b] The family's figure hands out a hand mount
-## ([code]GSHumanoidFigure.attachment[/code]); a rig whose bones are named another way (a
-## library avatar, a `mixamorig:` rig, `lowerarm_l`) still gets the bracelet, on the bone this
-## finds by reading the names, and a rig with nothing that looks like an arm is drawn at the
-## figure's own fallback spot with an error in the log, never silently.
+## Where the multi-tool's bracelet sits on a person: the right wrist (the hand that wears it in first person), found on whatever rig the avatar has, along the forearm and sized to it.
+## [b]Tolerant, then shared, then loud.[/b] The family's figure hands out a hand mount ([code]GSHumanoidFigure.attachment[/code]); a rig whose bones are named another way (a library avatar, a `mixamorig:` rig, `lowerarm_l`) still gets the bracelet, on the bone this finds by reading the names.
+## A rig with nothing that looks like an arm is drawn at the figure's own fallback spot with an error in the log, never silently.
 
 const CHANNEL := "playlot.multi.mount"
 
@@ -73,10 +68,8 @@ static func wrist_bone(skeleton: Skeleton3D) -> String:
 	return ""
 
 
-## A node on [param figure]'s right wrist to hang the device from, or null (logged as an error) when
-## the figure has no skeleton and no mount at all. [param who] names the player in the log.
-## At rest the node's -Z runs down the forearm to the hand, +Y is as near the figure's up as that allows, and its
-## scale fits the device's band to the forearm's length (so chibi and tall avatars wear it alike).
+## A node on [param figure]'s right wrist to hang the device from, or null (logged as an error) when the figure has no skeleton and no mount at all. [param who] names the player in the log.
+## At rest the node's -Z runs down the forearm to the hand, +Y is as near the figure's up as that allows, and its scale fits the device's band to the forearm's length (so chibi and tall avatars wear it alike).
 static func mount(figure: Node3D, who: String) -> Node3D:
 	if figure == null:
 		GSLog.error(CHANNEL, "multi-tool: no figure to mount on", {"player": who})

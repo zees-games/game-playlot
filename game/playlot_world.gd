@@ -586,10 +586,8 @@ func change_map(id: StringName) -> GSResult:
 	return await maps.change_to(id)
 
 
-## Downloads the listed map [param def] through the solo host (`fetch_map(id)`, which shows the shell's progress panel), then
-## re-reads the host's mounted map folders so the real document replaces the placeholder. A failure is said loudly, through
-## [signal GSMapSession.change_failed] as a failed load is (the client releases its cover and tells the player), and the
-## placeholder stays, so picking the map again retries.
+## Downloads the listed map [param def] through the solo host (`fetch_map(id)`, which shows the shell's progress panel), then re-reads the host's mounted map folders so the real document replaces the placeholder.
+## A failure is said loudly, through [signal GSMapSession.change_failed] as a failed load is (the client releases its cover and tells the player), and the placeholder stays, so picking the map again retries.
 func download_map(def: GSMapDef) -> GSResult:
 	var host: Object = GSRegistry.get_service(SOLO_SERVICE)
 	var got: GSResult = null

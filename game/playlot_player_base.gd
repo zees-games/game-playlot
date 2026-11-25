@@ -376,10 +376,8 @@ func drive_character(delta: float) -> void:
 
 	if character != null:
 		character.set_stance(state.crouch_fraction > 0.5)
-		# The body faces where the player is looking. Without this the capsule keeps the
-		# rotation it was built with and a third-person camera orbiting a player shows a
-		# character who never turns — which reads as the model being broken rather than
-		# as a missing line.
+		# The body faces where the player is looking. Without this the capsule keeps the rotation it was built with and a
+		# third-person camera orbiting a player shows a character who never turns, which reads as the model being broken.
 		_face(state.yaw)
 
 

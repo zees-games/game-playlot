@@ -5,17 +5,8 @@ const PlaylotWeapons := preload("../game/playlot_weapons.gd")
 const PlaylotShotSound := preload("../game/client/playlot_shot_sound.gd")
 const PlaylotHud := preload("../game/playlot_hud.gd")
 
-## zee-gs-weapons is optional: Playlot's own tools are the default and Zee is a Workshop extra.
-##
-## Both halves in one run. Absent ([member PlaylotZee.force_absent], which every Zee use in
-## game/ passes through): no Zee weapons, no rigs, no views, the HUD and the shot sound quiet,
-## the same net schema. Present (the linked addon): the pack's weapons arm and fire. The pack's
-## derived requirements must not name zee_weapons, or the solo shell refuses to start the game
-## ("This game needs zee-weapons") for everybody who has not subscribed to it.
-##
-## [codeblock]
-## ./game.sh test headless_zee_optional
-## [/codeblock]
+## zee-gs-weapons is optional: Playlot's own tools are the default and Zee is a Workshop extra. Both halves run in one. Absent ([member PlaylotZee.force_absent], which every Zee use in game/ passes through): no Zee weapons, rigs or views, the HUD and the shot sound quiet, the same net schema. Present (the linked addon): the pack's weapons arm and fire.
+## The pack's derived requirements must not name zee_weapons, or the solo shell refuses to start the game ("This game needs zee-weapons") for everybody who has not subscribed to it. Run: ./game.sh test headless_zee_optional
 
 const CHECKS := 24
 const SECTIONS := 3

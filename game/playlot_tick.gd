@@ -21,7 +21,7 @@ func _ready() -> void:
 		return
 
 	authoritative = config.authoritative
-	# The default records folder had the old Playlot name until 2026-11-17; adopt it once.
+	# The default records folder had the old Playlot name; adopt it once.
 	if authoritative:
 		var records := PlaylotUserFiles.resolve(config.records_directory)
 		if records != config.records_directory:

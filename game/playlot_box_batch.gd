@@ -2,11 +2,8 @@ extends RefCounted
 
 const PlaylotMaterials := preload("playlot_materials.gd")
 
-## Playlot's rules for [GSMapBoxBatch]: which of a map's boxes may be folded into the shared
-## per-material, per-cell meshes. The folding itself is the addon's.
-##
-## Only `pg_box` bodies fold, and a box of a breakable material stays a mesh of its own so it can
-## break and be hidden on its own.
+## Playlot's rules for [GSMapBoxBatch]: which of a map's boxes may be folded into the shared per-material, per-cell meshes. The folding itself is the addon's.
+## Only `pg_box` bodies fold, and a box of a breakable material stays a mesh of its own so it can break and be hidden on its own.
 
 const GROUP := GSMapBoxBatch.GROUP
 const CELL := GSMapBoxBatch.CELL

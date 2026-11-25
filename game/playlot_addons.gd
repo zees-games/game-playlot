@@ -454,11 +454,9 @@ func _runtime_npcs(world: Node) -> Dictionary:
 	return out
 
 
-## Damage to a pack monster. A monster's body has no `take_damage` (its health is the pack
-## spawner's, gs-npc's), so every shot and blast that asks for that method used to treat it as a wall.
-## [param collider] is what the ray or shape hit: the body, or a node under it. Hurts the limb at
-## [param point], then the monster, and tells the shooter ([method confirm_hit]). True when [param collider]
-## was a monster, dead or alive: the caller has nothing more to do with it.
+## Damage to a pack monster. A monster's body has no `take_damage` (its health is the pack spawner's, gs-npc's), so a shot or blast that asks for that method must not treat it as a wall.
+## [param collider] is what the ray or shape hit: the body, or a node under it. Hurts the limb at [param point], then the monster, and tells the shooter ([method confirm_hit]).
+## True when [param collider] was a monster, dead or alive: the caller has nothing more to do with it.
 func hurt_monster(game: Node, collider: Node, damage: float, by: StringName, point: Vector3, direction: Vector3 = Vector3.ZERO) -> bool:
 	var body := collider
 	while body != null and not body.has_method(&"zhm_limb_hit"):

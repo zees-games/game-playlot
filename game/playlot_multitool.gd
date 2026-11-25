@@ -1,8 +1,6 @@
 extends RefCounted
-## The multi-tool: the sandbox's physics gun, gravity gun, push, spawn (`swep_spawn.gd`), remover and tool gun
-## as ONE worn device with modes. A mode is the id of the tool or weapon it stands for, so the wire
-## and the server's `_tool_of` already speak it; this file is the list, its labels and the packing of
-## the replicated state. Zee guns are not modes: they stay separate weapons.
+## The multi-tool: the sandbox's physics gun, gravity gun, push, spawn (`swep_spawn.gd`), remover and tool gun as ONE worn device with modes. A mode is the id of the tool or weapon it stands for, so the wire and the server's `_tool_of` already speak it.
+## This file is the list, its labels and the packing of the replicated state. Zee guns are not modes: they stay separate weapons.
 
 ## The modes in menu order. The id is the tool (`phys`, `grav`) or the weapon def's id.
 const MODES: Array[StringName] = [&"phys", &"grav", &"impulse", &"spawn", &"remover", &"toolgun"]

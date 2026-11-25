@@ -4,18 +4,11 @@ const PlaylotPaths := preload("playlot_paths.gd")
 const PlaylotZee := preload("playlot_zee.gd")
 const PlaylotWeaponDef := preload("weapons/playlot_weapon_def.gd")
 
-## Zee's art, models and sounds, when the player has zee: the held gun others see, the
-## first-person hands, the scope, the art table, the ads rules and the shot sounds.
-##
-## Reached as `PlaylotZee.Art`; like the rest of [code]playlot_zee.gd[/code] it loads zee by path
-## after the presence check and answers null, empty or nothing without it.
+## Zee's art, models and sounds, when the player has zee: the held gun others see, the first-person hands, the scope, the art table, the ads rules and the shot sounds.
+## Reached as `PlaylotZee.Art`; like the rest of [code]playlot_zee.gd[/code] it loads zee by path after the presence check and answers null, empty or nothing without it.
 
-## What everybody else sees in [param player]'s hands: [param def]'s gun, or nothing.
-##
-## Zee's world model on the character's `right_hand` mount, built on a CLIENT from the
-## server's WEAPON event, so a remote player's gun is drawn, kicks when
-## [PlaylotPlayerNet]'s fire counter moves, and goes when they put it away. Idempotent:
-## the same weapon twice keeps the model it has. Nothing without zee.
+## What everybody else sees in [param player]'s hands: [param def]'s gun, or nothing. Zee's world model on the character's `right_hand` mount, built on a CLIENT from the server's WEAPON event, so a remote player's gun is drawn,
+## kicks when [PlaylotPlayerNet]'s fire counter moves, and goes when they put it away. Idempotent: the same weapon twice keeps the model it has. Nothing without zee.
 static func show_held(player: Node, def: PlaylotWeaponDef) -> void:
 	if player == null:
 		return
@@ -102,7 +95,7 @@ static func release_art() -> void:
 	var _set: Variant = PlaylotZee.call_static("art/zee_model_cache.gd", &"set_asset_root", ["res://"])
 
 
-# --- Sound -----------------------------------------------------------------------
+# Sound
 
 const SHOT_LAYERS := "view/zee_shot_layers.gd"
 const WEAPON_SOUND := "view/zee_weapon_sound.gd"

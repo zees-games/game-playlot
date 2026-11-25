@@ -1,9 +1,6 @@
 extends Node3D
-## What leaves the multi-tool's palm emitter, one look per mode: the physics gun's grab flare, the gravity
-## gun's punt shock ring, push's double pulse, spawn's orb, the remover's red lance and the tool
-## gun's thin trace; and while a prop is held, a ring spinning round the palm. Owned by the device and drawn in
-## world space from its muzzle, so it is the same on the player's own arms, on everyone else's wrist and in
-## third person. Driven only by replicated state: a mode, the fire counter's kick and the server's held list.
+## What leaves the multi-tool's palm emitter, one look per mode: the physics gun's grab flare, the gravity gun's punt shock ring, push's double pulse, spawn's orb, the remover's red lance and the tool gun's thin trace; and while a prop is held, a ring spinning round the palm.
+## Owned by the device and drawn in world space from its muzzle, so it is the same on the player's own arms, on everyone else's wrist and in third person. Driven only by replicated state: a mode, the fire counter's kick and the server's held list.
 ## Five nodes built once and reused, so a burst allocates nothing.
 
 const PlaylotMultitool := preload("playlot_multitool.gd")

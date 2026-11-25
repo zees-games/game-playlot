@@ -82,7 +82,7 @@ static var _present := -1
 static var _scripts: Dictionary = {}
 
 
-# --- Presence --------------------------------------------------------------------
+# Presence
 
 ## Whether zee-gs-weapons is installed here (linked, built in, or overlaid from the Workshop).
 static func available() -> bool:
@@ -173,7 +173,7 @@ static func is_view_model(x: Variant) -> bool:
 	return extends_zee(x, "view/zee_view_model.gd")
 
 
-# --- Catalogue -------------------------------------------------------------------
+# Catalogue
 
 ## The catalogue, built once. Every rig is handed this one rather than building its own.
 ## Empty without zee.
@@ -214,10 +214,8 @@ static func add_provider_def(def: PlaylotWeaponDef, provider: Object = null) -> 
 static var _art_providers: Dictionary = {}
 
 
-## Every pack and provider weapon gets art in zee's table, so each draws a first-person model on the avatar's arms and a gun in a remote player's hand. Without it a weapon zee has no art for (the
-## arena pack's `lmg`) drew nothing at all. The provider's own art when it ships `weapon_art()`, else zee's gun of the same tier dressed with the provider's model (`art_rows()`).
-## A provider's `weapon_art()` and `art_rows()` build its whole pack, so they are asked once per provider here rather than
-## once per weapon (asked per weapon they cost about 1.5 s of one frame the first time zee's art table is built in PLAYLOT).
+## Every pack and provider weapon gets art in zee's table, so each draws a first-person model on the avatar's arms and a gun in a remote player's hand; a weapon zee has no art for (the arena pack's `lmg`) would draw nothing. The provider's own art when it ships `weapon_art()`, else zee's gun of the same tier dressed with the provider's model (`art_rows()`).
+## A provider's `weapon_art()` and `art_rows()` build its whole pack, so they are asked once per provider here rather than once per weapon (per weapon they cost about 1.5 s of one frame the first time zee's art table is built in PLAYLOT).
 static func pack_art() -> Array:
 	var out: Array = []
 	if not available():
@@ -353,7 +351,7 @@ static func zee_id(def: PlaylotWeaponDef) -> StringName:
 	return StringName(str(def.meta.get("zee", ""))) if def != null else &""
 
 
-# --- Rigs ------------------------------------------------------------------------
+# Rigs
 
 ## Puts a rig on [param player] holding [param def], replacing whatever rig was there. Null
 ## without zee (the player keeps no rig).
@@ -473,7 +471,7 @@ static func role_of(rig: Variant) -> int:
 	return int((rig as Object).get(&"role")) if is_rig(rig) else -1
 
 
-# --- NPCs ----------------------------------------------------------------------
+# NPCs
 
 ## Whether an NPC can use [param def]: a zee gun or melee weapon, not a thrown or
 ## explosive one. Grenades and rockets fly here ([PlaylotProjectiles]), but an NPC's
@@ -713,9 +711,9 @@ static func shove_props(
 	return moved
 
 
-# --- Views -----------------------------------------------------------------------
+# Views
 
-# --- Net -------------------------------------------------------------------------
+# Net
 
 ## The weapon fields a carrier replicates: gs-weapon's, then zee's four.
 ##

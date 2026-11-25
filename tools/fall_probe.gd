@@ -1,26 +1,8 @@
 extends Node
 
-## Fall-through probe for the converted custom maps: where the drawn world (the map's world pack) shows a floor
-## that the game's collision (the document's boxes, brushes and prop bodies) does not hold up, a player falls
-## through the ground. Per map:
-##
-## - the drawn world's meshes get a temporary trimesh body on a layer of their own (PROBE_LAYER);
-## - on a grid of --cell metres over the drawn bounds, every upward-facing drawn surface (normal.y > 0.7) is
-##   found, and the game collision is asked for a floor within FLOOR_TOLERANCE below it (the ray starts
-##   RAY_UP above, so a box a little over the drawn face still counts). None: a HOLE, `deep` when nothing
-##   holds within --deep metres (a fall), `sunk` when the game floor is lower but within it;
-##   a drawn surface inside a liquid volume is water, not a hole;
-## - the game collision's own floors are flooded from the spawns (a step of at most STEP metres between
-##   neighbouring cells), and a hole is EXPOSED when a reached floor next to it is within STEP of its height:
-##   a player walks onto it;
-## - a capsule is dropped at each spawn: it must come to rest within FELL metres of where it started.
-##
-## Prints one line per map and the exposed deep holes (clustered), writes --json, and exits 1 when a map has
-## more exposed deep holes than --max-holes (default 0) or a spawn drop falls. --max-holes -1 never fails on
-## holes (report only). Same idea as game-zombie-zone tools/fall_probe.gd (HOLE_DRAWN), on Playlot's documents.
-##
-##   tools/fall_probe.tscn -- pgc_fork pgc_southside [--cell=1.0] [--deep=2.5] [--max-holes=0] [--json=user://fall.json]
-##   (no id: every maps/custom/*.json); through hv: hv <wt> scene res://tools/fall_probe.tscn -- pgc_fork
+## Fall-through probe for the converted custom maps: where the drawn world (the map's world pack) shows a floor that the game's collision (the document's boxes, brushes and prop bodies) does not hold up, a player falls through the ground. Per map: the drawn meshes get a temporary trimesh body (PROBE_LAYER); on a grid of --cell metres every upward-facing drawn surface (normal.y > 0.7) is asked for a game floor within FLOOR_TOLERANCE below it (the ray starts RAY_UP above); none is a HOLE, `deep` when nothing holds within --deep metres, `sunk` when the game floor is lower but within it; a surface inside a liquid volume is water, not a hole.
+## The game collision's own floors are flooded from the spawns (steps of at most STEP metres), and a hole is EXPOSED when a reached floor next to it is within STEP of its height. A capsule is dropped at each spawn and must come to rest within FELL metres. Prints one line per map and the exposed deep holes (clustered), writes --json, exits 1 when a map has more exposed deep holes than --max-holes (default 0, -1 = report only) or a spawn drop falls.
+## Run: tools/fall_probe.tscn -- pgc_fork pgc_southside [--cell=1.0] [--deep=2.5] [--max-holes=0] [--json=user://fall.json]   (no id: every maps/custom/*.json); through hv: hv <wt> scene res://tools/fall_probe.tscn -- pgc_fork
 
 const PROBE_LAYER := 1 << 30
 const RAY_UP := 0.6

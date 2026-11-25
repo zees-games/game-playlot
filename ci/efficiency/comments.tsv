@@ -135,7 +135,7 @@ game/playlot_services.gd::history	1
 game/playlot_services.gd::long_block	12
 game/playlot_shop.gd::long_block	6
 game/playlot_spawn_menu.gd::banner	2
-game/playlot_spawn_menu.gd::long_block	8
+game/playlot_spawn_menu.gd::long_block	7
 game/playlot_spawnables.gd::banner	1
 game/playlot_spawnables.gd::long_block	12
 game/playlot_spectate.gd::long_block	2
@@ -148,7 +148,6 @@ game/playlot_waves.gd::long_block	10
 game/playlot_weapons.gd::long_block	4
 game/playlot_workshop.gd::long_block	1
 game/playlot_worldgen.gd::long_block	5
-game/playlot_zee.gd::banner	1
 game/playlot_zee.gd::history	1
 game/playlot_zee.gd::long_block	8
 game/toolgun/playlot_tool.gd::banner	1
@@ -169,12 +168,9 @@ game/weapons/swep_remover.gd::long_block	1
 game/weapons/swep_toolgun.gd::banner	2
 game/weapons/swep_toolgun.gd::history	1
 game/weapons/swep_toolgun.gd::long_block	3
-maps/pg_data.gd::banner	1
-maps/pg_data.gd::history	2
 maps/pg_data.gd::long_block	1
 maps/pg_flatgrass.gd::long_block	3
 maps/pg_generated.gd::long_block	2
-tools/audio_probe.gd::long_block	1
 tools/bake_props_pack.gd::long_block	1
 tools/camera_check.gd::long_block	1
 tools/cover_server.gd::long_block	1

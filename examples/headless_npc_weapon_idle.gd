@@ -4,8 +4,7 @@ const Playlot := preload("../game/playlot.gd")
 const PlaylotConfig := preload("../game/playlot_config.gd")
 const NpcSoldier := preload("../game/entities/npc_soldier.gd")
 
-## An armed NPC's idle weapon tick: the rig's own idle tick (no context, no wall probe) against
-## the full tick with a built context, on twin soldiers fed the same seeded trigger pattern.
+## An armed NPC's idle weapon tick: the rig's own idle tick (no context, no wall probe) against the full tick with a built context, on twin soldiers fed the same seeded trigger pattern.
 ## Every tick both rigs' snapshots (arsenal, RNG, cooldowns, previous buttons) must agree.
 ## Run: godot --headless --path . res://examples/headless_npc_weapon_idle.tscn
 
@@ -78,10 +77,8 @@ func _test_parity() -> void:
 
 	var rng := RandomNumberGenerator.new()
 	var all_idle := 0
-	# Both paths timed in the same process every tick, so box load falls on both alike. The two
-	# soldiers swap roles each weapon and take turns going first in a tick (the first pays the
-	# tick's one-off costs), so neither soldier's own costs land on one side. Medians, as a loaded
-	# box puts a few long stalls on either side.
+	# Both paths are timed in the same process every tick, so box load falls on both alike; the two soldiers swap roles each weapon and take turns going first (the first pays the tick's one-off costs).
+	# Medians, as a loaded box puts a few long stalls on either side.
 	var idle_on_list: Array[int] = []
 	var idle_off_list: Array[int] = []
 	var full_on_list: Array[int] = []

@@ -297,10 +297,8 @@ static func _footprint_gap(a: Solid, b: Solid) -> float:
 	return best
 
 
-## A box's outline seen from above, as a convex polygon: its four plan corners when it is
-## turned only about the vertical, else the hull of all eight corners. A tilted box's world
-## AABB would reach past its slope on both sides, so two hillside slabs a cell apart would
-## read as a crack.
+## A box's outline seen from above, as a convex polygon: its four plan corners when it is turned only about the vertical, else the hull of all eight corners.
+## A tilted box's world AABB would reach past its slope on both sides, so two hillside slabs a cell apart would read as a crack.
 static func _footprint(s: Solid) -> PackedVector2Array:
 	if not s.upright:
 		var points := PackedVector2Array()

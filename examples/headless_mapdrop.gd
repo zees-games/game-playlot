@@ -4,14 +4,8 @@ const PlaylotMapDrop := preload("../game/client/playlot_map_drop.gd")
 const PlaylotMapSources := preload("../game/client/playlot_map_sources.gd")
 const PlaylotWorldMaps := preload("../game/playlot_world_maps.gd")
 
-## Maps dropped on the window or the executable: PLAYLOT's documents (alone, in a folder, in a zip) are copied into
-## the maps folder; anything else, a bad document or a taken id is refused with a line that says why. A Garry's Mod map
-## (gm_fork's Workshop folder, its .bsp or .gma) is the PLAYLOT map converted from it (pgc_fork), or a refusal saying
-## what to drop instead; the converted map knows its Garry's Mod name, which is what `pg_map gm_fork` finds.
-##
-## [codeblock]
-## godot --headless --path . res://examples/headless_mapdrop.tscn
-## [/codeblock]
+## Maps dropped on the window or the executable: PLAYLOT's documents (alone, in a folder, in a zip) are copied into the maps folder; anything else, a bad document or a taken id is refused with a line that says why. A Garry's Mod map (gm_fork's Workshop folder, its .bsp or .gma) is the PLAYLOT map converted from it (pgc_fork), or a refusal saying what to drop instead; the converted map knows its Garry's Mod name, which is what `pg_map gm_fork` finds.
+## Run: godot --headless --path . res://examples/headless_mapdrop.tscn
 
 const CHECKS := 35
 const SECTIONS := 4

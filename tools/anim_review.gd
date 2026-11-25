@@ -6,14 +6,8 @@ const PlaylotViewGrip := preload("../game/playlot_view_grip.gd")
 const PlaylotPresentation := preload("../game/playlot_presentation.gd")
 const PlaylotZee := preload("../game/playlot_zee.gd")
 
-## The animation review (docs/anim-review.md): the offline client plays each zee weapon's clips and the avatar's locomotion
-## at --fps, and every frame is saved three times: first person (the root viewport), behind-right, and an opponent's view
-## from in front (two SubViewports of the same world that see your body and the gun in its hand, and not the first-person
-## arms or view model). Per clip it prints `ANIMREVIEW {json}` (a verdict from the numbers) and writes
-## <out>/<weapon>/_frames/fp_<clip>/{f,t,o}_NNN.jpg, which tools/anim_review_shot.sh turns into sheets and clips.
-##
-## Run through tools/anim_review.sh. Arguments after `--`: --out DIR, --fps N, --only id,id (zee ids, or `all`; default
-## one weapon per pose), --anims clip,clip, --no-avatar.
+## The animation review (docs/anim-review.md): the offline client plays each zee weapon's clips and the avatar's locomotion at --fps, and every frame is saved three times: first person (the root viewport), behind-right, and an opponent's view from in front. Per clip it prints `ANIMREVIEW {json}` (a verdict from the numbers) and writes <out>/<weapon>/_frames/fp_<clip>/{f,t,o}_NNN.jpg, which tools/anim_review_shot.sh turns into sheets and clips.
+## Run through tools/anim_review.sh. Arguments after `--`: --out DIR, --fps N, --only id,id (zee ids, or `all`; default one weapon per pose), --anims clip,clip, --no-avatar.
 
 ## Your own body draws only in the outside views; the first-person arms and view model only in the first-person one.
 const BODY_LAYER := 1 << 18

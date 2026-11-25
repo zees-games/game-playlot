@@ -1,12 +1,7 @@
 extends GSGameVisualQaCapture
 
-## Playlot's visual QA capture for the people (gs-game docs/visual-qa.md): one item per site skin
-## (`person_a` .. `person_r`, the kit's eighteen, face, top and legs all that skin), each idling,
-## walking, running a circle and jumping, seen from the front, behind-right and (first person is
-## free here) the centre of the circle, at 60 fps. The weapons and the player's first-person view are
-## tools/anim_review.gd (docs/anim-review.md); this is the body every other player sees.
-##
-##   bash tools/visual_qa_shot.sh --only person_a,person_k --clips walk,run
+## Playlot's visual QA capture for the people (gs-game docs/visual-qa.md): one item per site skin (`person_a` .. `person_r`, the kit's eighteen), each idling, walking, running a circle and jumping, seen from the front, behind-right and the centre of the circle, at 60 fps. The weapons and the player's first-person view are tools/anim_review.gd (docs/anim-review.md); this is the body every other player sees.
+## Run: bash tools/visual_qa_shot.sh --only person_a,person_k --clips walk,run
 
 const PlaylotAvatars := preload("../game/playlot_avatars.gd")
 const PlaylotFigure := preload("../game/playlot_figure.gd")

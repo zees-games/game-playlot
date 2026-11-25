@@ -266,8 +266,7 @@ func _bodies() -> Array:
 
 
 ## Every way a player hurts something reaches a monster: a rifle shot, a grenade's blast, a blow.
-## The pack's body is a CharacterBody3D with no `take_damage`, and its health lives in the pack's spawner, so a
-## shot used to land on it as on a wall.
+## The pack's body is a CharacterBody3D with no `take_damage`, and its health lives in the pack's spawner, so a shot must not land on it as on a wall.
 func _test_monster_damage() -> void:
 	_section("a player's weapons hurt every monster, and kill it")
 	var bot: PlaylotPlayer = _game.players[&"bot"]

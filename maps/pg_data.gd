@@ -35,7 +35,7 @@ const PlaylotBoxBatch := preload("../game/playlot_box_batch.gd")
 ## this game's `sky_top`; a map without one gets the game's daylight
 ## (`PlaylotLighting.DAYLIGHT`).
 ##
-## A box's `material` (optional, 2026-10-07) is one of gs-physics' standard surfaces
+## A box's `material` (optional) is one of gs-physics' standard surfaces
 ## (`PlaylotMaterials`): concrete, metal, wood, glass, dirt, grass, sand, snow, ice, rock,
 ## mud, rubber, and the liquids water and lava. A solid one is drawn in its material's look
 ## unless it names a colour, slides and bounces as that material, and is that material to a
@@ -49,7 +49,7 @@ const PlaylotBoxBatch := preload("../game/playlot_box_batch.gd")
 ## `params` its [code]{steps, segments, thickness, holes}[/code], and `at`, `turn`, `colour` and
 ## `material` read as for a box. Convex pieces collide; the survey (boxes only) does not see them.
 ##
-## `world` (optional, 2026-11-15) names the converted world pack a map converted from a BSP is
+## `world` (optional) names the converted world pack a map converted from a BSP is
 ## drawn with (gs-map-convert's mesh route): textured faces, terrain and sky where the boxes are
 ## flat colour. It is hide-n-seek's key, `{"pack": "pg_world_<id>", "metres_per_unit": S,
 ## "offset": [x, y, z]}` (the converter's ground shift, undone), or only the pack's name. The
@@ -58,7 +58,7 @@ const PlaylotBoxBatch := preload("../game/playlot_box_batch.gd")
 ## physics, the survey and a server are unchanged, and a pack that is missing, will not read or
 ## was made at another scale leaves the boxes drawn with a WARN.
 ##
-## `props` and `wires` are optional (2026-10-07), so every older document still reads. A prop
+## `props` and `wires` are optional, so every older document still reads. A prop
 ## is a catalogue id, put down by the SERVER when the map loads ([method map_props]) and owned
 ## by nobody in particular (`Playlot.MAP_OWNER`): a door with a button beside it, a stack
 ## of barrels, planks at the top of a slope. Frozen unless it says otherwise, because map
@@ -171,13 +171,10 @@ func configure_doc(path: String) -> GSResult:
 	return GSResult.success(self)
 
 
-# --- The drawn world ------------------------------------------------------------
+# The drawn world
 
-## Whether the box meshes are what is seen, so they want gs-lighting's contact shade. A
-## document with a world pack is seen through the pack ([method attach_world] drops the shade),
-## and a headless server sees nothing: building the shade there is all cost. It is not cheap:
-## gm_fork's 21,329 boxes took two minutes of it on the build box, and timed out a suite. A
-## pack that does not load gets the shade then ([method _boxes_stay_drawn]).
+## Whether the box meshes are what is seen, so they want gs-lighting's contact shade. A document with a world pack is seen through the pack ([method attach_world] drops the shade), and a headless server sees nothing: building the shade there is all cost (gm_fork's 21,329 boxes took two minutes of it on the build box).
+## A pack that does not load gets the shade then ([method _boxes_stay_drawn]).
 func _shades_boxes() -> bool:
 	if world_spec(doc).is_empty():
 		return true
@@ -249,12 +246,8 @@ func load_world() -> GSResult:
 	return GSResult.success(drawn != null)
 
 
-## Lays [param world] over the map at [param offset] and hides what it replaces: every box and
-## brush mesh but a see-through one (glass the pack does not draw, and a pane that breaks
-## must vanish), and the contact shade under them. Their bodies stay: the pack is only what is
-## seen. Liquids stay drawn. Null when the map went away during the build.
-## [param original] draws the map's own textures the pack carries (the `_orig` variant).
-## Props and vegetation the pack places are drawn too.
+## Lays [param world] over the map at [param offset] and hides what it replaces: every box and brush mesh but a see-through one (glass the pack does not draw, and a pane that breaks must vanish), and the contact shade under them. Their bodies stay: the pack is only what is seen. Liquids stay drawn.
+## Null when the map went away during the build. [param original] draws the map's own textures the pack carries (the `_orig` variant). Props and vegetation the pack places are drawn too.
 func attach_world(world: GSMapBspMesh, offset: Vector3, original: bool = false) -> GSMapDrawnWorld:
 	var environment: Environment = null
 	var lamps: Array = []
@@ -351,7 +344,7 @@ func _build_fallback() -> void:
 	fallback_spawn = Vector3(0.0, 1.0, 0.0)
 
 
-# --- The document --------------------------------------------------------------
+# The document
 
 ## Reads and checks a map document.
 static func read_doc(path: String) -> GSResult:

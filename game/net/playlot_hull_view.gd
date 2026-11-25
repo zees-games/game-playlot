@@ -2,10 +2,8 @@ extends RefCounted
 
 const PlaylotNetCommand := preload("playlot_net_command.gd")
 
-## Where every other player stood on a mover's screen, for lag-compensated hulls (`mp_solidplayers_unlag`): this game's half of [GSPlayerHullView].
-## The addon owns the ring, the resolve rule and the fill maths; this class only says where Playlot keeps things. A command carries `view_lag_q`, `view_back` and `view_span`
-## ([PlaylotNetCommand]), the behaviour keeps the last heard ([PlaylotPlayerNet]), the server records feet after each tick, the client answers from the interpolator.
-## The hulls are the players' own bodies ([GSPlayerBodyRules.apply_hull] adds the capsule to the player), so `game.players` is the body table.
+## Where every other player stood on a mover's screen, for lag-compensated hulls (`mp_solidplayers_unlag`): this game's half of [GSPlayerHullView]. The addon owns the ring, the resolve rule and the fill maths; this class only says where Playlot keeps things.
+## A command carries `view_lag_q`, `view_back` and `view_span` ([PlaylotNetCommand]), the behaviour keeps the last heard ([PlaylotPlayerNet]), the server records feet after each tick, the client answers from the interpolator. The hulls are the players' own bodies ([GSPlayerBodyRules.apply_hull] adds the capsule), so `game.players` is the body table.
 
 var view := GSPlayerHullView.new()
 

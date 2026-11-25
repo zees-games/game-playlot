@@ -1,12 +1,8 @@
 extends "playlot_client_net.gd"
 
-## The multi-tool's input and presentation, split out of the client: R held opens the mode selector
-## (the wrist device raises its hologram), R tapped keeps its old job; the device is drawn on every
-## hand. No `class_name`; the flash half extends this.
-##
-## [b]Held R owns the keyboard and mouse.[/b] Number keys pick a mode only while it is down; without it
-## 1 2 3 and the wheel are the weapon inventory. While down the mouse moves the cursor on the hologram
-## rather than the view, and a click confirms.
+## The multi-tool's input and presentation, split out of the client: R held opens the mode selector (the wrist device raises its hologram), R tapped keeps its old job; the device is drawn on every hand. No `class_name`; the flash half extends this.
+## [b]Held R owns the keyboard and mouse.[/b] Number keys pick a mode only while it is down; without it 1 2 3 and the wheel are the weapon inventory.
+## While down the mouse moves the cursor on the hologram rather than the view, and a click confirms.
 
 ## Pixels of vertical mouse travel per hologram row.
 const MULTI_ROW_PIXELS := 24.0

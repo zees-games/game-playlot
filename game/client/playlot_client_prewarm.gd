@@ -106,10 +106,8 @@ func start() -> bool:
 	return true
 
 
-## Starts, before the first map loads, the NPC bodies' clip sets the PROPS phase would otherwise build on the main
-## thread when it dresses its first NPC ([method GSHumanoidAssets.prepare_libraries]: a worker thread where there are
-## threads, so it runs while the map loads). The bodies are the ones [method PlaylotFigure.dress_body] picks for each
-## NPC id. Nothing is waited for here; whatever is not done by then is built where it always was. Returns the bodies started.
+## Starts, before the first map loads, the NPC bodies' clip sets the PROPS phase would otherwise build on the main thread ([method GSHumanoidAssets.prepare_libraries]: a worker thread where there are threads). The bodies are the ones [method PlaylotFigure.dress_body] picks for each NPC id.
+## Nothing is waited for here; whatever is not done by then is built where it always was. Returns the bodies started.
 static func prefetch(p_config: PlaylotConfig) -> Array[StringName]:
 	var bodies: Array[StringName] = []
 	if p_config != null and not p_config.prewarm:
@@ -133,11 +131,8 @@ static func prefetch(p_config: PlaylotConfig) -> Array[StringName]:
 static var _script_requests := PackedStringArray()
 
 
-## Starts compiling the catalogue's entity scripts on the loader's worker threads before the first map loads
-## ([method ResourceLoader.load_threaded_request]), rather than on the main thread when the PROPS phase loads each
-## (about 150 ms under the cover, most of it the soldier's brain). Only where there are threads: without them a request
-## would compile on this frame. Nothing is waited for here; the PROPS phase takes each in ([method _settle_script]) and
-## whatever was not requested loads where it always did. Returns the paths requested.
+## Starts compiling the catalogue's entity scripts on the loader's worker threads before the first map loads ([method ResourceLoader.load_threaded_request]), not on the main thread when the PROPS phase loads each (about 150 ms, most of it the soldier's brain). Only where there are threads.
+## Nothing is waited for here; the PROPS phase takes each in ([method _settle_script]) and whatever was not requested loads where it always did. Returns the paths requested.
 static func prefetch_scripts(p_config: PlaylotConfig) -> PackedStringArray:
 	var requested := PackedStringArray()
 	if p_config != null and (not p_config.prewarm or not p_config.prewarm_entity_scripts_early):

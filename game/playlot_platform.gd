@@ -50,7 +50,7 @@ var service_scope: StringName = &""
 ## because gs-server's module host does not await that and a module whose load suspends
 ## returns null to it.
 func setup() -> GSResult:
-	# The default folder had the old Playlot name until 2026-11-17; adopt it once.
+	# The default folder had the old Playlot name; adopt it once.
 	directory = PlaylotUserFiles.resolve(directory)
 	var profiled: GSResult = await _build_users()
 

@@ -1,13 +1,7 @@
 extends Node3D
-## The multi-tool as a worn device: a chunky segmented wrist band in dark metal with glowing inset strips, a
-## raised top plate the selector hologram is projected from, and a cylinder emitter on the palm that every
-## beam starts at. Procedural: the body is ONE mesh with ONE surface (merged boxes), the glow a second, and the
-## hologram six translucent quads with a label each, so a device is a handful of draw calls.
-##
-## Three kinds, from the same build. On the avatar's arms (`make(camera, true)`) the child `Arm` is only the
-## camera-space anchor the arms' right hand reaches for, and [method wear] fits the band (`Arm/Wear`) to the solved
-## forearm and the emitter to the palm. Without the arms it keeps its own sleeve and hand block under the lens
-## (group `gs_view_model`). The worn kind hangs from a figure's wrist mount for everyone else and third person.
+## The multi-tool as a worn device: a chunky segmented wrist band in dark metal with glowing inset strips, a raised top plate the selector hologram is projected from, and a cylinder emitter on the palm that every beam starts at. Procedural: the body is ONE mesh with ONE surface (merged boxes), the glow a second, and the hologram six translucent quads with a label each.
+## Three kinds, from the same build. On the avatar's arms (`make(camera, true)`) the child `Arm` is only the camera-space anchor the arms' right hand reaches for, and [method wear] fits the band (`Arm/Wear`) to the solved forearm and the emitter to the palm.
+## Without the arms it keeps its own sleeve and hand block under the lens (group `gs_view_model`). The worn kind hangs from a figure's wrist mount for everyone else and third person.
 
 const PlaylotMultitool := preload("playlot_multitool.gd")
 const PlaylotPaths := preload("playlot_paths.gd")
@@ -167,10 +161,8 @@ func set_hands_fov_at_4_3(horizontal: float) -> void:
 	hands_fov = GSViewLens.vertical_from_horizontal_4_3(horizontal)
 
 
-## Motion for the first-person device, fed each frame by the client from the player's own state:
-## [param local_velocity] in the camera's frame (x right, z back), [param grounded], and
-## [param turn] the yaw and pitch change this frame in radians. Bob, strafe lean, sprint
-## and landing dip and turn lag all come from it.
+## Motion for the first-person device, fed each frame by the client from the player's own state: [param local_velocity] in the camera's frame (x right, z back), [param grounded], and [param turn] the yaw and pitch change this frame in radians.
+## Bob, strafe lean, sprint and landing dip and turn lag all come from it.
 func feed(local_velocity: Vector3, grounded: bool, turn: Vector2, delta: float) -> void:
 	var flat := Vector2(local_velocity.x, local_velocity.z)
 	var speed := flat.length()
@@ -365,7 +357,7 @@ func _paint() -> void:
 		_labels[i].outline_modulate = Color(0, 0, 0, 0.9) if on else c.darkened(0.85)
 
 
-# --- Building ---------------------------------------------------------------
+# Building
 
 func _build(camera: Camera3D) -> void:
 	first_person = camera != null
@@ -559,7 +551,7 @@ func _build_hologram() -> void:
 		m.render_priority = 1
 
 
-# --- Geometry: boxes and cylinders merged into one surface ------------------
+# Geometry: boxes and cylinders merged into one surface
 
 static func _box(st: SurfaceTool, xf: Transform3D, size: Vector3) -> void:
 	if size.x <= 0.0:

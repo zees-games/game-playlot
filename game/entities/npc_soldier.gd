@@ -161,10 +161,8 @@ func _drive_weapon() -> void:
 	command.slot = PlaylotZee.slot_of(rig)
 	_held_trigger = press
 
-	# Nothing pressed, nothing pressed last tick, nothing under way: exactly the rig's own test
-	# for its idle tick, which reads no context. Handing it none skips the muzzle, the context
-	# and the wall-barrel rays (most of an armed NPC's tick) on a tick no shot can leave; a
-	# server rig has no view, so the idle tick changes the same state the full one would.
+	# Nothing pressed, nothing pressed last tick, nothing under way: exactly the rig's own test for its idle tick, which reads no context.
+	# Handing it none skips the muzzle, the context and the wall-barrel rays (most of an armed NPC's tick) on a tick no shot can leave; a server rig has no view, so the idle tick changes the same state the full one would.
 	var arsenal := PlaylotZee.arsenal_of(rig)
 	if idle_rig_ticks and rig.is_ready() and arsenal != null and arsenal.is_idle_for(command, rig.get(&"_previous_command")):
 		var _idle := PlaylotZee.simulate(rig, command, game.current_tick())

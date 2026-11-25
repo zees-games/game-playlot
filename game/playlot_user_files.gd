@@ -1,15 +1,7 @@
 extends RefCounted
 
-## The game's own [code]user://[/code] files, which moved off the old Playlot name on 2026-11-17.
-##
-## [b]Read the new path; adopt the former one once.[/b] [method resolve] returns its argument
-## unchanged unless it is one of the defaults in [constant FORMER]. For those, when the new
-## file or folder is missing and the former one exists, the former is copied over (a folder
-## recursively) and the new path is what everything reads and writes from then on. The former
-## is left where it was, so an older build on the same machine still finds its own.
-##
-## A copy that fails is an error in the log and the former path is returned, so a player's
-## settings or a server's records are never silently replaced by an empty new file.
+## The game's own [code]user://[/code] files, which moved off the old Playlot name. [b]Read the new path; adopt the former one once.[/b] [method resolve] returns its argument unchanged unless it is one of the defaults in [constant FORMER]; for those, when the new file or folder is missing and the former exists, the former is copied over (a folder recursively) and the new path is what everything reads and writes from then on. The former is left where it was, so an older build on the same machine still finds its own.
+## A copy that fails is an error in the log and the former path is returned, so a player's settings or a server's records are never silently replaced by an empty new file.
 
 const CHANNEL := "playlot.user_files"
 

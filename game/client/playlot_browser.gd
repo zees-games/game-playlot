@@ -313,10 +313,8 @@ func _apply_filter() -> void:
 func _redraw() -> void:
 	_rows = browser.filtered()
 
-	# The selection is an index into a list that has just been rebuilt, and a refresh can
-	# reorder it — the default sort is by ping. Dropping it is the honest answer: keeping
-	# the index would silently move it onto a different server, and the failure is
-	# somebody joining a game they did not choose.
+	# The selection is an index into a list that has just been rebuilt, and a refresh can reorder it (the default sort is by ping).
+	# Dropping it is the honest answer: keeping the index would silently move it onto a different server.
 	if _selected >= _rows.size():
 		_selected = -1
 

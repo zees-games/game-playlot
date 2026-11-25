@@ -1,15 +1,7 @@
 extends RefCounted
 
-## Workshop trails in solo play: the `trail` entries of subscribed packs, loaded into one
-## gs-trail registry and worn by the local player as a ribbon.
-##
-## [b]gs-trail is the host's, not this game's.[/b] The shell carries the addon and a pack cannot
-## ship its classes, so they are reached by name ([method script_named]) the way the shell's trail
-## link does. A host without gs-trail lists no pack trails and logs why, instead of failing to parse.
-##
-## [b]A trail pack is data.[/b] Its `provides.json` names one `trail` entry per trail with
-## `def: trails.json`; the directory that file sits in is loaded with `GSTrailStore.load_dir`,
-## which reads the images as bytes (a data pack is not imported, so they are not resources).
+## Workshop trails in solo play: the `trail` entries of subscribed packs, loaded into one gs-trail registry and worn by the local player as a ribbon. [b]gs-trail is the host's, not this game's.[/b] The shell carries the addon and a pack cannot ship its classes, so they are reached by name ([method script_named]) the way the shell's trail link does; a host without gs-trail lists no pack trails and logs why.
+## [b]A trail pack is data.[/b] Its `provides.json` names one `trail` entry per trail with `def: trails.json`; the directory that file sits in is loaded with `GSTrailStore.load_dir`, which reads the images as bytes (a data pack is not imported, so they are not resources).
 
 const CHANNEL := "playlot.trails"
 

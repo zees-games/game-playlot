@@ -1,9 +1,7 @@
 extends RefCounted
 
-## Maps dropped on PLAYLOT's window or executable: map documents (`.json`), and folders and zips of them, copied into
-## `user://maps` by gs-map's GSMapDropIntake (API 26) and added to the solo game's maps. A Garry's Mod map (a `.bsp`, a
-## Workshop `.gma`, or a folder holding one) is claimed too: one PLAYLOT has a conversion of is that map (gm_fork is pgc_fork,
-## entry `source_map` set), any other is refused with what to drop instead. Anything else is refused out loud.
+## Maps dropped on PLAYLOT's window or executable: map documents (`.json`), and folders and zips of them, copied into `user://maps` by gs-map's GSMapDropIntake (API 26) and added to the solo game's maps.
+## A Garry's Mod map (a `.bsp`, a Workshop `.gma`, or a folder holding one) is claimed too: one PLAYLOT has a conversion of is that map (gm_fork is pgc_fork, entry `source_map` set), any other is refused with what to drop instead. Anything else is refused out loud.
 
 const CHANNEL := "playlot.map_drop"
 const NEEDS_LEVEL := 26
@@ -60,10 +58,8 @@ static func drop_args(args: PackedStringArray) -> PackedStringArray:
 	return out
 
 
-## The acceptor: `{}` when [param path] holds no PLAYLOT map document, else `{added, errors}`. Each document is checked
-## by `maps/pg_data.gd` and written to `<into>/<id>.json`. [param taken] is `func(id: StringName) -> String`, a reason
-## the id cannot be used or empty. [param depth] is how many folders down a folder is searched; 0 is no limit. With no
-## document, a Source map in [param path] is answered by [method source_maps] through [param converted].
+## The acceptor: `{}` when [param path] holds no PLAYLOT map document, else `{added, errors}`. Each document is checked by `maps/pg_data.gd` and written to `<into>/<id>.json`. [param taken] is `func(id: StringName) -> String`, a reason the id cannot be used or empty.
+## [param depth] is how many folders down a folder is searched; 0 is no limit. With no document, a Source map in [param path] is answered by [method source_maps] through [param converted].
 static func accept(path: String, into: String, depth: int, taken: Callable, converted: Callable = Callable()) -> Dictionary:
 	var found: Array = []
 	var errors := PackedStringArray()

@@ -8,14 +8,8 @@ const PlaylotMultiMount := preload("../game/playlot_multi_mount.gd")
 const PlaylotMultiDevice := preload("../game/playlot_multi_device.gd")
 const PlaylotMultitool := preload("../game/playlot_multitool.gd")
 
-## Renders the multi-tool on the offline client as filmstrip sheets (frames left to right, top to bottom), once per
-## avatar: the stock figure and two library avatars of other proportions. Per avatar: rest, walk, sprint, jump and
-## land, R-hold raise / mode-change flash / lower, the hologram open on every mode, every mode's burst from the palm
-## and the gravity carry, viewmodel_fov narrow to wide, third person rest and raised; then animated remote figures
-## wearing it in several modes, raised and not, and firing; and spawn mode from the Q menu's right click.
-##
-## Run: `tools/render_multitool.sh [out dir]` (GPU box via gpu.sh), or
-## `xvfb-run -a godot --path . --resolution 1280x720 res://tools/render_multitool.tscn -- <out dir>`
+## Renders the multi-tool on the offline client as filmstrip sheets (frames left to right, top to bottom), once per avatar: the stock figure and two library avatars of other proportions. Per avatar: rest, walk, sprint, jump and land, R-hold raise / mode-change flash / lower, the hologram open on every mode, every mode's burst from the palm and the gravity carry, viewmodel_fov narrow to wide, third person rest and raised; then animated remote figures wearing it in several modes, and spawn mode from the Q menu's right click.
+## Run: `tools/render_multitool.sh [out dir]` (GPU box via gpu.sh), or `xvfb-run -a godot --path . --resolution 1280x720 res://tools/render_multitool.tscn -- <out dir>`
 
 var AVATARS := [PackedInt32Array(), PackedInt32Array([5, 9, 12]), PackedInt32Array([16, 3, 7])]
 const CELL := Vector2i(640, 360)

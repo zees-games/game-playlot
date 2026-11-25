@@ -3,17 +3,8 @@ extends Node
 const PlaylotMapSurvey := preload("../game/playlot_map_survey.gd")
 const PlaylotPlayer := preload("../game/playlot_player.gd")
 
-## The vents of the custom maps: floor only a crouched player fits over, that no spawn leads
-## to. The suite's survey asks about a standing player, so a crawlspace, a low attic or a
-## duct is never a standable cell there and nothing says whether anyone can reach it. This
-## surveys each map twice (standing, then at the family crouch height) and prints every
-## crouch-only region no spawn reaches that the document does not declare.
-##
-## It does not widen a passage: a map whose vent is cut off declares it (the converter's
-## `declared`), or a climb is built to it, in the converter.
-##
-##   godot --headless --path . res://tools/map_crouch.tscn -- pgc_town pgc_site
-##   godot --headless --path . res://tools/map_crouch.tscn          # every maps/custom/*.json
+## The vents of the custom maps: floor only a crouched player fits over, that no spawn leads to. The suite's survey asks about a standing player, so a crawlspace or a duct is never a standable cell there. This surveys each map twice (standing, then at the family crouch height) and prints every crouch-only region no spawn reaches that the document does not declare; it does not widen a passage (the converter's `declared`, or a climb built to it, does).
+## Run: godot --headless --path . res://tools/map_crouch.tscn -- pgc_town pgc_site   (no ids: every maps/custom/*.json)
 
 func _ready() -> void:
 	GSLog.set_level(GSLog.Level.ERROR)

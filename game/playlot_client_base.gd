@@ -76,8 +76,7 @@ var last_undo_cue: Dictionary = {}
 @export var link: Node = null
 
 var playlot: Playlot = null
-## [member playlot] under its name from before the Playlot rename, read only: what a delivered
-## client is found by from outside (gs-server-deploy's client check reads it with [code]get[/code]).
+## [member playlot] under its name from before the Playlot rename, read only: what a delivered client is looked up by from outside (gs-server-deploy's client check reads it with [code]get[/code]).
 var playground: Playlot:
 	get:
 		return playlot

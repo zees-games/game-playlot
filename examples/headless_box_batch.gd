@@ -3,12 +3,8 @@ extends GSGameCheckSuite
 const PlaylotBoxBatch := preload("../game/playlot_box_batch.gd")
 const PgData := preload("../maps/pg_data.gd")
 
-## A box map is drawn as one mesh per material per cell, not one per box, and nothing a
-## player collides with or breaks changes. This is the draw budget for the web renderer.
-##
-## [codeblock]
-## godot --headless --path . res://examples/headless_box_batch.tscn
-## [/codeblock]
+## A box map is drawn as one mesh per material per cell, not one per box, and nothing a player collides with or breaks changes. This is the draw budget for the web renderer.
+## Run: godot --headless --path . res://examples/headless_box_batch.tscn
 
 const CHECKS := 9
 const SECTIONS := 1

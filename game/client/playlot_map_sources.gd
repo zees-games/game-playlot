@@ -1,8 +1,6 @@
 extends RefCounted
 
-## Garry's Mod (Source engine) maps by their own names. A converted PLAYLOT map says which map it came from: gs-map-convert
-## writes `source_frame.map` (`gm_fork.bsp`), and its attribution says "converted from gm_fork". That name is an alias for
-## the PLAYLOT map, so `pg_map gm_fork`, a dropped gm_fork folder, its `.bsp` or its Workshop `.gma` all reach pgc_fork.
+## Garry's Mod (Source engine) maps by their own names. A converted PLAYLOT map says which map it came from: gs-map-convert writes `source_frame.map` (`gm_fork.bsp`), and its attribution says "converted from gm_fork". That name is an alias for the PLAYLOT map, so `pg_map gm_fork`, a dropped gm_fork folder, its `.bsp` or its Workshop `.gma` all reach pgc_fork.
 ## PLAYLOT never loads a BSP itself; one it has no conversion of is refused with what to do instead.
 
 ## Files that are a Source map, or carry one (a Workshop addon).

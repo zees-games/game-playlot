@@ -154,10 +154,8 @@ func _ambience_cvars() -> void:
 	_check(not ambient.is_empty() and odd.is_empty(), "the ambience set offers the pg_ambient* cvars", ",".join(odd))
 
 
-## The pack ships only game/, maps/ and the committed addons/pg_*: a web shell carries gs_* alone, and solo play fetches every other addon from the names in requires.floor.json. A Zee* or Aw*
-## class named in a shipped script whose addon the floor leaves out is a grey screen on playlot.app ("Could not find type ZeeViewModel"), so every such addon must be named, at a sound floor.
-## zee_weapons is the exception the other way: Playlot's own tools are the default and Zee is a Workshop extra, reached
-## only through `game/playlot_zee.gd` by path, so derive must not find it (a hard zee was "This game needs zee-weapons" in solo).
+## The pack ships only game/, maps/ and the committed addons/pg_*; solo play fetches every other addon from the names in requires.floor.json. A Zee* or Aw* class named in a shipped script whose addon the floor leaves out is a grey screen on playlot.app, so every such addon must be named, at a sound floor.
+## zee_weapons is the exception: Zee is a Workshop extra reached only through `game/playlot_zee.gd` by path, so derive must not find it (a hard zee was "This game needs zee-weapons" in solo).
 func _pack_floor() -> void:
 	var derived := GSAddonApi.derive("res://")
 	for dir in DirAccess.get_directories_at("res://addons"):

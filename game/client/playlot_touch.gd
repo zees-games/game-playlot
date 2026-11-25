@@ -50,10 +50,8 @@ var buttons: GSTouchButtons:
 var _handlers: Dictionary = {}
 
 
-## Builds the overlay under [param host] (the HUD), following [param rules] (the server's) and driving [param sampler].
-## [param handlers] maps a button id to a Callable taking `down: bool` (fire, alt, spawn menu, tool steps, board, chat);
-## jump and crouch are held on the sampler by the overlay. The sampler's own `ignore_fn` (the Menu button's rectangle)
-## moves to the overlay, which keeps a finger on it off the stick.
+## Builds the overlay under [param host] (the HUD), following [param rules] (the server's) and driving [param sampler]. [param handlers] maps a button id to a Callable taking `down: bool` (fire, alt, spawn menu, tool steps, board, chat); jump and crouch are held on the sampler by the overlay.
+## The sampler's own `ignore_fn` (the Menu button's rectangle) moves to the overlay, which keeps a finger on it off the stick.
 static func build(host: Control, sampler: GSFpsSampler, rules: GSMobileRules, handlers: Dictionary) -> RefCounted:
 	var made = (load(PlaylotPaths.rebase("res://game/client/playlot_touch.gd")) as GDScript).new()
 	made.call(&"_setup", host, sampler, rules, handlers)
