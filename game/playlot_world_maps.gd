@@ -78,29 +78,99 @@ static func add_map_docs(catalogue: GSMapCatalogue, dir: String) -> int:
 	for file in files:
 		if not file.ends_with(".json"):
 			continue
-		var path := dir.path_join(file)
-		var read: GSResult = _data_map_script().read_doc(path)
-		if not read.ok:
-			GSLog.warn(CHANNEL, "a map document was left out", {"path": path, "why": read.error.message})
+		var made := doc_map(dir.path_join(file))
+		if made == null or catalogue.get_map(made.id) != null:
 			continue
-		var doc: Dictionary = read.value
-		var id := StringName(str(doc["id"]))
-		if catalogue.get_map(id) != null:
+		catalogue.add(made)
+		added += 1
+	return added
+
+
+## The map built by [constant DATA_MAP_SCENE] from the document at [param path] (its path in `meta.doc`, the Source map it was
+## converted from in `meta.source_map`), or null with a WARN when the document cannot be read.
+static func doc_map(path: String) -> GSMapDef:
+	var read: GSResult = _data_map_script().read_doc(path)
+	if not read.ok:
+		GSLog.warn(CHANNEL, "a map document was left out", {"path": path, "why": read.error.message})
+		return null
+	var doc: Dictionary = read.value
+	var map := GSMapDef.new()
+	map.id = StringName(str(doc["id"]))
+	map.display_name = str(doc.get("name", String(map.id)))
+	map.kind = StringName(str(doc.get("map_kind", GSMapDef.KIND_SANDBOX)))
+	map.tier = int(doc.get("tier", 1))
+	map.author = str(doc.get("author", ""))
+	map.scene_path = PlaylotPaths.rebase(DATA_MAP_SCENE)
+	map.meta["doc"] = path
+	var source := PlaylotMapSources.source_of(doc)
+	if source != "":
+		map.meta["source_map"] = source
+	return map
+
+
+## Turns the maps a followed content pack lists (gs-map's [method GSMapCatalogue.follow_content]) into maps this game can build.
+## A playlot-maps entry's `scene` is its document, `maps/<id>.json`, which is no PackedScene: left as it came, the loader
+## refused it ("A map's scene path must point at a PackedScene") and a switch on the web, where the pack mounts after the
+## first map, failed. Each such def keeps its content id, version and entry key (so ensure finds the pack mounted, and an
+## unfollow still drops it) and is built by [constant DATA_MAP_SCENE] from the document. On the web its download group is
+## the map's own, so the first switch fetches that map's world files and nothing else. Returns how many were shaped.
+static func shape_content_maps(catalogue: GSMapCatalogue, web: bool = OS.has_feature("web")) -> int:
+	if catalogue == null:
+		return 0
+	var shaped := 0
+	for map in catalogue.maps:
+		if map.entry_key == "" or not map.scene_path.ends_with(".json"):
+			continue
+		var path := map.scene_path
+		var made := doc_map(path) if FileAccess.file_exists(path) else null
+		map.scene_path = PlaylotPaths.rebase(DATA_MAP_SCENE)
+		map.meta["doc"] = path
+		if made != null:
+			if made.meta.has("source_map"):
+				map.meta["source_map"] = made.meta["source_map"]
+			if map.author == "":
+				map.author = made.author
+		if web and map.content_groups.is_empty():
+			map.content_groups = PackedStringArray([String(map.id)])
+		shaped += 1
+	return shaped
+
+
+## Placeholders for the maps the solo host lists as downloadable but has not mounted ([code]available_maps()[/code] on the
+## `gs_solo` host: `{id, name, map_kind, pack, key}` rows from the map pack's manifest), so the list shows every map whether
+## or not the player chose to download them all. Each is marked `meta.download` (and `meta.pack`), is out of the rotation,
+## and is fetched by [method PlaylotWorld.change_map] when picked. An id the catalogue has is skipped. Empty with no host or
+## an older shell. Returns how many were added.
+static func add_solo_available(catalogue: GSMapCatalogue) -> int:
+	var host: Object = GSRegistry.get_service(SOLO_SERVICE)
+	if catalogue == null or host == null or not host.has_method(&"available_maps"):
+		return 0
+	var added := 0
+	for row: Variant in host.call(&"available_maps"):
+		if not (row is Dictionary):
+			continue
+		var id := StringName(str((row as Dictionary).get("id", "")))
+		if id == &"" or catalogue.get_map(id) != null:
 			continue
 		var map := GSMapDef.new()
 		map.id = id
-		map.display_name = str(doc.get("name", String(id)))
-		map.kind = StringName(str(doc.get("map_kind", GSMapDef.KIND_SANDBOX)))
-		map.tier = int(doc.get("tier", 1))
-		map.author = str(doc.get("author", ""))
+		map.display_name = str(row.get("name", String(id)))
+		var kind := str(row.get("map_kind", ""))
+		map.kind = StringName(kind) if kind != "" else GSMapDef.KIND_SANDBOX
 		map.scene_path = PlaylotPaths.rebase(DATA_MAP_SCENE)
-		map.meta["doc"] = path
-		var source := PlaylotMapSources.source_of(doc)
-		if source != "":
-			map.meta["source_map"] = source
-		catalogue.add(map)
+		map.author = "playlot"
+		map.in_rotation = false
+		map.meta["download"] = true
+		map.meta["pack"] = str(row.get("pack", ""))
+		if not map.validate().ok or not catalogue.add(map).ok:
+			continue
 		added += 1
 	return added
+
+
+## True for a map listed by [method add_solo_available] that is not downloaded yet.
+static func needs_download(map: GSMapDef) -> bool:
+	return map != null and bool(map.meta.get("download", false))
 
 
 ## `maps/pg_data.gd`, loaded when first wanted rather than preloaded: it extends the map

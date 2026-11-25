@@ -576,8 +576,10 @@ func map_menu_rows() -> Array:
 		return out
 	var here := playlot.maps.current.id if playlot.maps.current != null else &""
 	for def in playlot.maps.catalogue.available():
+		# A listed map not downloaded yet says so; picking it downloads it (Playlot.change_map).
+		var detail := "not downloaded" if Playlot.needs_download(def) else ("tier %d" % def.tier if def.tier > 0 else "")
 		out.append({"id": String(def.id), "name": def.name_or_id(), "mode": String(def.kind).capitalize(),
-			"detail": "tier %d" % def.tier if def.tier > 0 else "", "current": def.id == here})
+			"detail": detail, "current": def.id == here})
 	return out
 
 

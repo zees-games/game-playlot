@@ -288,6 +288,10 @@ func _build_maps() -> void:
 	if authoritative:
 		for dir in solo_map_dirs("maps"):
 			var _added := add_map_docs(maps.catalogue, dir)
+		# Then every other map the host can download, marked as not downloaded: the list is the pack's, whatever the player
+		# answered about downloading them all. Picking one fetches it ([method change_map]).
+		var _listed := add_solo_available(maps.catalogue)
+		_follow_solo_host()
 
 	if config.catalogue_path != "":
 		var loaded := maps.load_catalogue(config.catalogue_path)
@@ -574,7 +578,80 @@ func start_for(track: int) -> Dictionary:
 
 
 func change_map(id: StringName) -> GSResult:
+	var def: GSMapDef = maps.catalogue.get_map(id) if maps != null and maps.catalogue != null else null
+	if needs_download(def):
+		var fetched := await download_map(def)
+		if not fetched.ok:
+			return fetched
 	return await maps.change_to(id)
+
+
+## Downloads the listed map [param def] through the solo host (`fetch_map(id)`, which shows the shell's progress panel), then
+## re-reads the host's mounted map folders so the real document replaces the placeholder. A failure is said loudly, through
+## [signal GSMapSession.change_failed] as a failed load is (the client releases its cover and tells the player), and the
+## placeholder stays, so picking the map again retries.
+func download_map(def: GSMapDef) -> GSResult:
+	var host: Object = GSRegistry.get_service(SOLO_SERVICE)
+	var got: GSResult = null
+	if host == null or not host.has_method(&"fetch_map"):
+		got = GSResult.fail(GSError.CODE_UNSUPPORTED, "This shell cannot download maps.", String(def.id))
+	else:
+		var answer: Variant = await host.call(&"fetch_map", def.id)
+		got = answer if answer is GSResult else GSResult.fail(GSError.CODE_INTERNAL, "The shell's map download returned no result.", str(answer))
+	if got.ok:
+		_reread_solo_maps()
+		if needs_download(maps.catalogue.get_map(def.id)):
+			got = GSResult.fail(GSError.CODE_IO, "The download finished but the map was not in it.", String(def.id))
+	if not got.ok:
+		GSLog.error(CHANNEL, "a map could not be downloaded", {"map": String(def.id), "why": got.error.message})
+		maps.change_failed.emit(def, got.error.message)
+	return got
+
+
+## Listens for the solo host's `maps_changed` (packs mounted in the background, or one map fetched), once.
+func _follow_solo_host() -> void:
+	var host: Object = GSRegistry.get_service(SOLO_SERVICE)
+	if host == null or not host.has_signal(&"maps_changed"):
+		return
+	var on_change := Callable(self, &"_reread_solo_maps")
+	if not host.is_connected(&"maps_changed", on_change):
+		host.connect(&"maps_changed", on_change)
+
+
+## Marks the catalogue's maps in or out of rotation; [code]playlot.gd[/code] reads maps.yml for it.
+func apply_rotation() -> void:
+	pass
+
+
+## Adds the map documents in [param dir] to this game's live catalogue, and puts them in
+## the rotation. For a mounted maps pack: the module calls it with each dependency's mount
+## prefix on a server, the client with each pack the server told it to fetch.
+func add_map_directory(dir: String) -> int:
+	if maps == null or maps.catalogue == null:
+		return 0
+	var added := add_map_docs(maps.catalogue, dir)
+	if added > 0:
+		maps.rotation = GSMapRotation.of(maps.catalogue)
+		maps.rotation.cooldown = 1
+		# A new rotation object has forgotten the file's order and its in/out marks.
+		apply_rotation()
+		GSLog.info(CHANNEL, "custom maps added", {"dir": dir, "maps": added})
+	return added
+
+
+## The host's mounted map folders again: a downloaded map's document replaces its placeholder, new documents join, and the
+## rotation is rebuilt by [method add_map_directory].
+func _reread_solo_maps() -> void:
+	if maps == null or maps.catalogue == null:
+		return
+	for dir in solo_map_dirs("maps"):
+		for file in DirAccess.get_files_at(dir):
+			var id := StringName(file.get_basename())
+			if file.ends_with(".json") and needs_download(maps.catalogue.get_map(id)):
+				var _gone := maps.catalogue.remove(id)
+		var _added := add_map_directory(dir)
+	# The shell lists the packs' maps after the game started: they join the list here.
+	var _listed := add_solo_available(maps.catalogue)
 
 
 func _on_map_changing(_from: GSMapDef, _to: GSMapDef) -> void:

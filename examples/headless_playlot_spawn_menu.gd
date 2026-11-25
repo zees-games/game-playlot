@@ -63,6 +63,11 @@ func _test_spawn_menu() -> void:
 	_sm_servers = PlaylotBrowser.new()
 	add_child(_sm_servers)
 
+	_check(
+		_sm_servers.browser == null,
+		"the server browser queries nothing until it is shown, so a solo game asks no server about itself"
+	)
+
 	var browser_registered := _sm_stack.register(_sm_servers)
 	_check(browser_registered.ok, "the server browser registers too")
 

@@ -263,6 +263,17 @@ func _wire_gate_to_maps() -> void:
 	playlot.maps.changed.connect(
 		func(_map: GSMapDef, _loaded: Node) -> void: gate.release(&"map")
 	)
+	# A change that failed lets go too, loudly. Unhandled, the cover stayed up for the gate's
+	# whole timeout ("a load step did not finish ... Loading the map") and the player was left
+	# on the old map with no word of why.
+	playlot.maps.change_failed.connect(
+		func(map: GSMapDef, reason: String) -> void:
+			gate.release(&"map")
+			var map_name := String(map.id) if map != null else "?"
+			GSLog.error(CHANNEL, "the map change failed", {"map": map_name, "why": reason})
+			if hud != null:
+				hud.notice("Could not load %s: %s Pick it again to retry." % [map_name, reason])
+	)
 
 
 ## The warm-up that runs under the cover once the first map is in.

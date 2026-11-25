@@ -192,14 +192,15 @@ func apply_rotation() -> void:
 
 	if rotation_file != null and rotation_file.has_rotations():
 		# An empty rotation plays every installed map: the same set as having no file.
-		rotation_file.fallback_in = func(_map: GSMapDef) -> bool: return true
+		rotation_file.fallback_in = func(map: GSMapDef) -> bool: return not needs_download(map)
 		rotation_file.apply(maps.rotation)
 		return
 
 	maps.rotation.order = []
 
 	for def in maps.catalogue.maps:
-		def.in_rotation = true
+		# A listed map not downloaded yet is played when picked, never rotated to.
+		def.in_rotation = not needs_download(def)
 
 
 ## Whether maps.yml's active rotation plays [param id]. A map the catalogue lacks is not.
@@ -224,22 +225,6 @@ func command_names(role: String) -> PackedStringArray:
 		return PackedStringArray([role])
 
 	return GSCommandNames.all_of("", names, {}, role)
-
-
-## Adds the map documents in [param dir] to this game's live catalogue, and puts them in
-## the rotation. For a mounted maps pack: the module calls it with each dependency's mount
-## prefix on a server, the client with each pack the server told it to fetch.
-func add_map_directory(dir: String) -> int:
-	if maps == null or maps.catalogue == null:
-		return 0
-	var added := add_map_docs(maps.catalogue, dir)
-	if added > 0:
-		maps.rotation = GSMapRotation.of(maps.catalogue)
-		maps.rotation.cooldown = 1
-		# A new rotation object has forgotten the file's order and its in/out marks.
-		apply_rotation()
-		GSLog.info(CHANNEL, "custom maps added", {"dir": dir, "maps": added})
-	return added
 
 
 ## Reads the prop folders again and adds what is new, so a model dropped in while the game
@@ -501,8 +486,18 @@ func follow_workshop(index: GSContentIndex = null) -> PlaylotWorkshop:
 		workshop.changed.connect(func() -> void: workshop_changed.emit())
 	workshop.follow(shared, props.catalogue, weapons)
 	if maps != null and maps.catalogue != null:
+		var on_refresh := Callable(self, &"_shape_followed_maps")
+		if not maps.catalogue.content_refreshed.is_connected(on_refresh):
+			maps.catalogue.content_refreshed.connect(on_refresh)
 		maps.catalogue.follow_content(shared, PlaylotWorkshop.accepted_map_kinds())
+		_shape_followed_maps()
 	return workshop
+
+
+## The followed packs' maps, made buildable each time the content index refreshes them. See [method shape_content_maps].
+func _shape_followed_maps() -> void:
+	if maps != null:
+		var _shaped := shape_content_maps(maps.catalogue)
 
 
 ## Stops [method follow_workshop]: the pack rows leave the catalogue and the weapon list.

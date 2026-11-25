@@ -81,7 +81,23 @@ func _ready() -> void:
 	# family has shipped that twice and gs-ui had five of them.
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_build()
-	_start()
+	# [b]Not started here.[/b] The screen is registered at game start, offline and in a
+	# GameSpice Solo tab too, and a started browser queries the player's history, favourites
+	# and the site listing at once: a solo game was asking public servers about themselves
+	# before anybody opened the list. It starts the first time it is shown.
+
+
+## Starts the browser the first time the screen is shown.
+func _on_push() -> void:
+	super._on_push()
+	_ensure_started()
+
+
+## True once the browser exists. Every path that touches [member browser] goes through here.
+func _ensure_started() -> bool:
+	if browser == null:
+		_start()
+	return browser != null
 
 
 func _build() -> void:
@@ -149,7 +165,9 @@ func _build() -> void:
 
 	var refresh := Button.new()
 	refresh.text = "Refresh"
-	refresh.pressed.connect(func() -> void: browser.refresh())
+	refresh.pressed.connect(func() -> void:
+		if _ensure_started():
+			browser.refresh())
 	row.add_child(refresh)
 
 	var join := Button.new()
@@ -272,6 +290,7 @@ func add_address(text: String) -> bool:
 		_status.text = "That is not an address: %s" % parsed.error.message
 		return false
 
+	_ensure_started()
 	browser.add_target(parsed.value as GSBrowserTarget)
 	browser.refresh()
 	return true
@@ -279,6 +298,8 @@ func add_address(text: String) -> bool:
 
 ## Applies the mode filter, which is the only game-specific thing on this screen.
 func _apply_filter() -> void:
+	if not _ensure_started():
+		return
 	var selected := _mode.get_selected_id()
 	var wanted: Variant = _mode.get_item_metadata(_mode.get_item_index(selected))
 
