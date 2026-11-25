@@ -4,7 +4,7 @@
 # --- Content
 # The map to load on boot.
 # initial_map: "pg_flatgrass"
-# A map catalogue JSON file. Empty uses the maps this build ships.
+# A map catalogue JSON file. Empty uses the maps this build ships. The seam between "a game with its own maps...
 # catalogue_path: ""
 # The seed a generated map is built from. Zero picks one and announces it.
 # map_seed: 0
