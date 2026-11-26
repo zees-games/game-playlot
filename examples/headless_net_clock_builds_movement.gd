@@ -596,16 +596,16 @@ func _test_avatars_over_the_wire() -> void:
 	_check(person != null and person.look != null and person.look.skin.is_equal_approx(wanted_skin),
 		"and draws the member's face on the figure", str(person.look.to_dict()) if person != null and person.look != null else "no person")
 	if person != null and GSAddonApi.build_level("gs_player_char") >= 11:
-		var clip: AnimationPlayer = person.get("_anim")
+		var has_clip: bool = person.has_method("_clip_position")
 		Engine.time_scale = 0.05
 		mine.character.move_person({"speed": 3.0})
 		await get_tree().process_frame
-		var before := clip.current_animation_position if clip != null else 0.0
+		var before := float(person.call("_clip_position")) if has_clip else 0.0
 		OS.delay_msec(80)
 		mine.character.move_person({"speed": 3.0})
-		var moved := absf(clip.current_animation_position - before) if clip != null else 0.0
+		var moved := absf(float(person.call("_clip_position")) - before) if has_clip else 0.0
 		Engine.time_scale = 1.0
-		_check(clip != null and moved < 0.04, "a figure posed in slow motion moves its clip by under half the wall time",
+		_check(has_clip and moved < 0.04, "a figure posed in slow motion moves its clip by under half the wall time",
 			"%.4f s of clip over 0.08 s of wall" % moved)
 	_server_bridge.skin_fn = Callable()
 	_done()
