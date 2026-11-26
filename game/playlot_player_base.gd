@@ -622,12 +622,7 @@ func enable_camera_motion() -> void:
 func set_camera_motion_scales(landing: float, strafe: float, widen: float) -> void:
 	if camera_motion == null:
 		return
-	var picks := camera_motion_picks()
-	camera_motion.landing_dip = picks.landing_dip * maxf(landing, 0.0)
-	camera_motion.landing_pitch = picks.landing_pitch * maxf(landing, 0.0)
-	camera_motion.strafe_roll = picks.strafe_roll * maxf(strafe, 0.0)
-	camera_motion.roll_limit = picks.roll_limit * maxf(strafe, 0.0)
-	camera_motion.fov_speed_gain = picks.fov_speed_gain * maxf(widen, 0.0)
+	camera_motion.apply_scales(camera_motion_picks(), landing, strafe, 0.0, widen)
 
 
 ## Writes [param camera] for this frame: the interpolated eye, the view's angles, and the
