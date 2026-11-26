@@ -19,6 +19,13 @@ extends GSNetBehaviour
 
 var prop: Node3D = null
 
+
+## [method _note_velocity] measures the motion between two snapshots, so it needs the hook on
+## every one: skipped while a prop rests (gs-net API 26), a stopped prop would keep its last
+## velocity and carry its rider on. Set before registration, where the native batch reads it.
+func _init() -> void:
+	state_applied_every_snapshot = true
+
 var net_position: Vector3 = Vector3.ZERO
 var net_rotation: Quaternion = Quaternion.IDENTITY
 
