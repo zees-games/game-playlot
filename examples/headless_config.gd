@@ -154,7 +154,7 @@ func _ambience_cvars() -> void:
 	_check(not ambient.is_empty() and odd.is_empty(), "the ambience set offers the pg_ambient* cvars", ",".join(odd))
 
 
-## The pack ships only game/, maps/ and the committed addons/pg_*; solo play fetches every other addon from the names in requires.floor.json. A Zee* or Aw* class named in a shipped script whose addon the floor leaves out is a grey screen on playlot.app, so every such addon must be named, at a sound floor.
+## The pack ships only game/, maps/ and the committed addons/pg_*; solo play fetches every other addon the pack's requires.json names. A Zee* or Aw* addon left unnamed is a grey screen on playlot.app, so each is named: in requires.floor.json at a sound floor when a build_level guard backs one, else in requires.uses.json (no floor, so it never trails the addon's LEVEL).
 ## zee_weapons is the exception: Zee is a Workshop extra reached only through `game/playlot_zee.gd` by path, so derive must not find it (a hard zee was "This game needs zee-weapons" in solo).
 func _pack_floor() -> void:
 	var derived := GSAddonApi.derive("res://")
@@ -167,12 +167,13 @@ func _pack_floor() -> void:
 		var parsed := GSAddonApi.parse(FileAccess.get_file_as_string(path), GSAddonApi.FLOOR_FILE)
 		if parsed.ok:
 			floors = parsed.value
+	var uses := GSAddonApi.declared_uses("res://")
 	var unnamed := PackedStringArray()
 	for addon: String in derived:
-		if not addon.begins_with("gs_") and not addon.begins_with("pg_") and not floors.has(addon):
+		if not addon.begins_with("gs_") and not addon.begins_with("pg_") and not floors.has(addon) and not uses.has(addon):
 			unnamed.append(addon)
 	_check(not derived.has("zee_weapons"), "zee_weapons stays optional (no Zee class named outside game/playlot_zee.gd)", str(derived.keys()))
-	_check(unnamed.is_empty(), "%s names every addon the shell does not carry" % GSAddonApi.FLOOR_FILE, ",".join(unnamed))
+	_check(unnamed.is_empty(), "%s or %s names every addon the shell does not carry" % [GSAddonApi.FLOOR_FILE, GSAddonApi.USES_FILE], ",".join(unnamed))
 	var audit := GSAddonApi.floor_audit(floors, derived, GSAddonApi.guarded("res://"))
 	_check(not floors.is_empty() and audit.is_empty(), "its floors are sound", "; ".join(audit))
 
