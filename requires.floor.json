@@ -2,6 +2,7 @@
   "format": 1,
   "addons": {
     "gs_map": 32,
+    "gs_net": 26,
     "gs_mobile": 1,
     "natural_disasters": 1,
     "gs_player_char": 34,
